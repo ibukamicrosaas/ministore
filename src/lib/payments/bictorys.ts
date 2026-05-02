@@ -1,0 +1,68 @@
+const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
+
+export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit'
+export type BictorysMethod = BictorysPaymentType
+
+export interface BictorysChargePayload {
+  amount: number
+  currency: string
+  paymentReference: string
+  successRedirectUrl: string
+  errorRedirectUrl: string
+  merchantReference?: string
+  orderDetails?: { name: string; price: number; quantity: number; taxRate: number }[]
+  customerObject?: {
+    name?: string
+    phone?: string
+    email?: string
+    locale?: string
+  }
+}
+
+export interface BictorysWebhookPayload {
+  id: string
+  status: 'succeed' | 'failed' | 'pending'
+  amount: number
+  currency: string
+  merchantReference?: string
+}
+
+export async function createBictorysCharge(
+  apiKey: string,
+  payload: BictorysChargePayload,
+  paymentType?: BictorysPaymentType,
+): Promise<{ checkoutUrl: string; transactionId: string }> {
+  const url = paymentType
+    ? `${BICTORYS_BASE_URL}/charges?payment_type=${paymentType}`
+    : `${BICTORYS_BASE_URL}/charges`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Api-Key': apiKey,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Bictorys error ${res.status}: ${text}`)
+  }
+
+  const json = await res.json() as Record<string, unknown>
+
+  // L'API Bictorys retourne 'link' (CheckoutLinkObject), 'url', ou 'confirmationLink'
+  const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink) as string | undefined
+  const transactionId = (json.id ?? json.transactionId) as string | undefined
+
+  if (!checkoutUrl) {
+    throw new Error(`Bictorys: pas d'URL dans la réponse: ${JSON.stringify(json)}`)
+  }
+
+  return { checkoutUrl, transactionId: transactionId ?? '' }
+}
+
+export function verifyBictorysSignature(headerSecret: string, envSecret: string): boolean {
+  return headerSecret === envSecret
+}
