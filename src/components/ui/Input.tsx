@@ -27,7 +27,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             'focus:outline-none focus:ring-2 focus:ring-offset-0',
             error
               ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200'
-              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#E85D04)] focus:ring-orange-100',
+              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#0EA5E9)] focus:ring-sky-100',
             'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
             className
           )}
@@ -69,7 +69,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             'focus:outline-none focus:ring-2 focus:ring-offset-0',
             error
               ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200'
-              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#E85D04)] focus:ring-orange-100',
+              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#0EA5E9)] focus:ring-sky-100',
             'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
             className
           )}
@@ -112,7 +112,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             'focus:outline-none focus:ring-2 focus:ring-offset-0',
             error
               ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200'
-              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#E85D04)] focus:ring-orange-100',
+              : 'border-gray-200 bg-white focus:border-[var(--color-primary,#0EA5E9)] focus:ring-sky-100',
             'disabled:cursor-not-allowed disabled:bg-gray-50',
             className
           )}

@@ -3,19 +3,19 @@ import { notFound } from 'next/navigation'
 import { SalonPlanEditor } from './SalonPlanEditor'
 import type { SalonAdminData } from './SalonPlanEditor'
 
-export const metadata = { title: 'Modifier le salon — Admin Sheka' }
+export const metadata = { title: 'Modifier la boutique — Admin TekkiShop' }
 
-export default async function AdminSalonDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminShopDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
-    .from('salons')
+    .from('shops')
     .select('id, name, slug, plan, trial_ends_at, is_active, phone_whatsapp, city, created_at')
     .eq('id', id)
     .single()
 
   if (error || !data) notFound()
 
-  return <SalonPlanEditor salon={data as SalonAdminData} />
+  return <SalonPlanEditor salon={data as unknown as SalonAdminData} />
 }

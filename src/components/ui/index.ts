@@ -1,6 +1,6 @@
 export { Button } from './Button'
 export { Input, Textarea, Select } from './Input'
-export { Badge, BookingStatusBadge } from './Badge'
+export { Badge } from './Badge'
 export { Card, CardHeader } from './Card'
 export { Skeleton, SkeletonCard, SkeletonTable } from './Skeleton'
 export { Modal } from './Modal'

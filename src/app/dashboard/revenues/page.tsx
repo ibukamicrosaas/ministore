@@ -5,10 +5,10 @@ import { fr } from 'date-fns/locale'
 import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { RequestPayoutButton } from './RequestPayoutButton'
-import { SHEKA_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
+import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
 import type { Profile, Payout } from '@/types'
 
-export const metadata = { title: 'Revenus — Sheka' }
+export const metadata = { title: 'Revenus — TekkiShop' }
 
 export default async function RevenuesPage() {
   const supabase = await createServerClient()
@@ -17,40 +17,40 @@ export default async function RevenuesPage() {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('salon_id, role')
+    .select('shop_id, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'salon_id' | 'role'> | null
-  if (!profile?.salon_id || profile.role !== 'owner') redirect('/dashboard')
+  const profile = profileData as Pick<Profile, 'shop_id' | 'role'> | null
+  if (!profile?.shop_id || profile.role !== 'owner') redirect('/dashboard')
 
-  const salonId = profile.salon_id
+  const shopId = profile.shop_id
 
-  const { data: salonData } = await supabase
-    .from('salons')
+  const { data: shopData } = await supabase
+    .from('shops')
     .select('name, payout_wave_number, payout_om_number')
-    .eq('id', salonId)
+    .eq('id', shopId)
     .single()
 
-  const salon = salonData as { name: string; payout_wave_number: string | null; payout_om_number: string | null } | null
-  if (!salon) redirect('/dashboard')
+  const shop = shopData as { name: string; payout_wave_number: string | null; payout_om_number: string | null } | null
+  if (!shop) redirect('/dashboard')
 
   // Total collecté via paiements en ligne (status completed)
   const { data: paymentsData } = await supabase
     .from('payments')
     .select('amount')
-    .eq('salon_id', salonId)
+    .eq('shop_id', shopId)
     .eq('status', 'completed')
 
   const totalCollected = (paymentsData ?? []).reduce((s, p) => s + p.amount, 0)
-  const commissionTotal = Math.floor(totalCollected * (SHEKA_COMMISSION_RATE / 100))
+  const commissionTotal = Math.floor(totalCollected * (TEKKISHOP_COMMISSION_RATE / 100))
   const totalNet = totalCollected - commissionTotal
 
   // Historique des reversements
   const { data: payoutsData } = await supabase
     .from('payouts')
     .select('*')
-    .eq('salon_id', salonId)
+    .eq('shop_id', shopId)
     .order('requested_at', { ascending: false })
 
   const payouts = (payoutsData ?? []) as Payout[]
@@ -65,14 +65,14 @@ export default async function RevenuesPage() {
 
   const availableBalance = totalNet - totalPaidOut - totalPending
 
-  const hasPayoutMethod = !!(salon.payout_wave_number || salon.payout_om_number)
+  const hasPayoutMethod = !!(shop.payout_wave_number || shop.payout_om_number)
   const canRequestPayout = availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod
 
   return (
     <div className="space-y-5 pb-8">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Revenus</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Paiements en ligne collectés via Sheka</p>
+        <p className="text-sm text-gray-500 mt-0.5">Paiements en ligne collectés via TekkiShop</p>
       </div>
 
       {/* Solde disponible */}
@@ -89,10 +89,10 @@ export default async function RevenuesPage() {
             </p>
           </div>
           <RequestPayoutButton
-            salonId={salonId}
+            shopId={shopId}
             availableBalance={Math.max(0, availableBalance)}
-            waveNumber={salon.payout_wave_number}
-            omNumber={salon.payout_om_number}
+            waveNumber={shop.payout_wave_number}
+            omNumber={shop.payout_om_number}
             canRequest={canRequestPayout}
             minAmount={PAYOUT_MIN_AMOUNT}
           />
@@ -102,9 +102,9 @@ export default async function RevenuesPage() {
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
             <LinkIcon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700">
-              Ajoutez un numéro Wave ou Orange Money dans vos{' '}
+              Ajoute un numéro Wave ou Orange Money dans tes{' '}
               <a href="/dashboard/settings" className="font-semibold underline">Paramètres</a>{' '}
-              pour pouvoir retirer vos fonds.
+              pour pouvoir retirer tes fonds.
             </p>
           </div>
         )}
@@ -147,9 +147,9 @@ export default async function RevenuesPage() {
 
         <Card padding="md">
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-xs text-gray-500">Commission Sheka</p>
+            <p className="text-xs text-gray-500">Commission TekkiShop</p>
           </div>
-          <p className="text-lg font-bold text-gray-900">{SHEKA_COMMISSION_RATE}%</p>
+          <p className="text-lg font-bold text-gray-900">{TEKKISHOP_COMMISSION_RATE}%</p>
           <p className="text-xs text-gray-400">{commissionTotal.toLocaleString('fr-FR')} FCFA déduits</p>
         </Card>
       </div>
@@ -164,7 +164,7 @@ export default async function RevenuesPage() {
               <span className="font-medium text-gray-900">{totalCollected.toLocaleString('fr-FR')} FCFA</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Commission Sheka ({SHEKA_COMMISSION_RATE}%)</span>
+              <span className="text-gray-500">Commission TekkiShop ({TEKKISHOP_COMMISSION_RATE}%)</span>
               <span className="font-medium text-red-500">− {commissionTotal.toLocaleString('fr-FR')} FCFA</span>
             </div>
             <div className="border-t border-gray-100 pt-2 flex justify-between text-sm">

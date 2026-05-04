@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
-import { createSalon } from '@/lib/actions/settings'
+import { createShop } from '@/lib/actions/settings'
 import { TRIAL_DAYS } from '@/constants'
 import toast from 'react-hot-toast'
 
@@ -33,7 +33,7 @@ export function OnboardingForm() {
     setErrors({})
 
     const formData = new FormData(event.currentTarget)
-    const result = await createSalon(formData)
+    const result = await createShop(formData)
 
     if (result?.error) {
       toast.error(result.error)
@@ -46,13 +46,13 @@ export function OnboardingForm() {
   return (
     <Card padding="lg">
       <h2 className="text-base font-semibold text-gray-900 mb-5">
-        Informations du salon
+        Informations du shop
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           name="name"
-          label="Nom du salon"
-          placeholder="Salon Aminata Beauté"
+          label="Nom du shop"
+          placeholder="Shop Aminata Beauté"
           required
           autoFocus
           error={errors.name}
@@ -77,7 +77,7 @@ export function OnboardingForm() {
         <Input
           name="phone_whatsapp"
           type="tel"
-          label="Numéro WhatsApp du salon"
+          label="Numéro WhatsApp du shop"
           placeholder="+221 77 000 00 00"
           required
           hint="Le numéro qui recevra les notifications de réservations"
@@ -95,7 +95,7 @@ export function OnboardingForm() {
           size="lg"
           className="mt-2"
         >
-          Créer mon salon →
+          Créer mon shop →
         </Button>
       </form>
 

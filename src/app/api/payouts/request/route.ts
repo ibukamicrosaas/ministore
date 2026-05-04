@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { SHEKA_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
+import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -9,11 +9,11 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('salon_id, role')
+    .select('shop_id, role')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.salon_id || profile.role !== 'owner') {
+  if (!profile?.shop_id || profile.role !== 'owner') {
     return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
@@ -24,29 +24,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Montant minimum : ${PAYOUT_MIN_AMOUNT} FCFA` }, { status: 400 })
   }
 
-  const { data: salon } = await supabase
-    .from('salons')
+  const { data: shop } = await supabase
+    .from('shops')
     .select('payout_wave_number, payout_om_number')
-    .eq('id', profile.salon_id)
+    .eq('id', profile.shop_id)
     .single()
 
-  const payoutNumber = method === 'wave' ? salon?.payout_wave_number : salon?.payout_om_number
+  const payoutNumber = method === 'wave' ? shop?.payout_wave_number : shop?.payout_om_number
   if (!payoutNumber) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
   }
 
-  const grossAmount = amount
-  const commissionAmount = Math.floor(grossAmount * (SHEKA_COMMISSION_RATE / 100))
-  const netAmount = grossAmount - commissionAmount
+  const grossAmount      = amount
+  const commissionAmount = Math.floor(grossAmount * (TEKKISHOP_COMMISSION_RATE / 100))
+  const netAmount        = grossAmount - commissionAmount
 
   const { error } = await supabase.from('payouts').insert({
-    salon_id: profile.salon_id,
-    gross_amount: grossAmount,
+    shop_id:          profile.shop_id,
+    gross_amount:     grossAmount,
     commission_amount: commissionAmount,
-    net_amount: netAmount,
-    payout_method: method,
-    payout_number: payoutNumber,
-    status: 'pending',
+    net_amount:       netAmount,
+    payout_method:    method,
+    payout_number:    payoutNumber,
+    status:           'pending',
   })
 
   if (error) {

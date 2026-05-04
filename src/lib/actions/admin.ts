@@ -13,7 +13,7 @@ async function assertAdmin() {
   return { error: null }
 }
 
-export async function updateSalonPlan(salonId: string, input: {
+export async function updateShopPlan(shopId: string, input: {
   plan: string
   is_active: boolean
   trial_ends_at?: string | null
@@ -23,21 +23,21 @@ export async function updateSalonPlan(salonId: string, input: {
 
   const supabase = createAdminClient()
   const { error } = await supabase
-    .from('salons')
+    .from('shops')
     .update({
-      plan: input.plan,
-      is_active: input.is_active,
+      plan:          input.plan,
+      is_active:     input.is_active,
       trial_ends_at: input.trial_ends_at === null ? undefined : input.trial_ends_at,
-      updated_at: new Date().toISOString(),
+      updated_at:    new Date().toISOString(),
     })
-    .eq('id', salonId)
+    .eq('id', shopId)
 
   if (error) {
-    console.error('[admin/updateSalonPlan]', error.message)
-    return { error: 'Impossible de mettre à jour le salon.' }
+    console.error('[admin/updateShopPlan]', error.message)
+    return { error: 'Impossible de mettre à jour la boutique.' }
   }
 
-  revalidatePath('/admin/salons')
-  revalidatePath(`/admin/salons/${salonId}`)
+  revalidatePath('/admin/shops')
+  revalidatePath(`/admin/shops/${shopId}`)
   return { success: true }
 }

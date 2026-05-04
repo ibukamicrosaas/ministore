@@ -2,33 +2,24 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, CalendarRange, Banknote, Users, Scissors, CalendarCheck } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, Settings } from 'lucide-react'
 import { clsx } from 'clsx'
-import type { Profile, Salon } from '@/types'
+import type { Profile, Shop } from '@/types'
 
 interface BottomNavProps {
   profile: Profile
-  salon: Salon
+  shop: Shop
 }
 
-const ownerTabs = [
-  { href: '/dashboard',               label: 'Accueil',      icon: LayoutDashboard, exact: true,  salonOnly: false },
-  { href: '/dashboard/calendar',      label: 'Agenda',       icon: CalendarRange,                  salonOnly: false },
-  { href: '/dashboard/services',      label: 'Prestations',  icon: Scissors,                       salonOnly: false },
-  { href: '/dashboard/staff',         label: 'Employées',    icon: Users,                          salonOnly: true  },
-  { href: '/dashboard/commissions',   label: 'Commissions',  icon: Banknote,                       salonOnly: true  },
+const tabs = [
+  { href: '/dashboard',          label: 'Accueil',     icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/orders',   label: 'Commandes',   icon: ShoppingBag,     exact: false },
+  { href: '/dashboard/products', label: 'Produits',    icon: Package,         exact: false },
+  { href: '/dashboard/settings', label: 'Paramètres',  icon: Settings,        exact: false },
 ]
 
-const staffTabs = [
-  { href: '/dashboard/my-schedule', label: 'Mon planning', icon: CalendarCheck, exact: true, salonOnly: false },
-]
-
-export function BottomNav({ profile, salon }: BottomNavProps) {
+export function BottomNav({ profile, shop }: BottomNavProps) {
   const pathname = usePathname()
-  const isOwner = profile.role === 'owner'
-  const isSalon = salon.business_type === 'salon'
-  const allTabs = isOwner ? ownerTabs : staffTabs
-  const tabs = allTabs.filter(t => !t.salonOnly || isSalon)
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href
@@ -47,10 +38,10 @@ export function BottomNav({ profile, salon }: BottomNavProps) {
               href={tab.href}
               className={clsx(
                 'flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
-                active ? 'text-[#E85D04]' : 'text-gray-400'
+                active ? 'text-[var(--color-primary)]' : 'text-gray-400'
               )}
             >
-              <Icon className={clsx('h-5 w-5', active ? 'text-[#E85D04]' : 'text-gray-400')} />
+              <Icon className={clsx('h-5 w-5', active ? 'text-[var(--color-primary)]' : 'text-gray-400')} />
               <span>{tab.label}</span>
             </Link>
           )

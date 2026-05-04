@@ -5,55 +5,42 @@ import { usePathname } from 'next/navigation'
 import { clsx } from 'clsx'
 import {
   LayoutDashboard,
-  CalendarDays,
-  CalendarRange,
-  Users,
-  Scissors,
+  ShoppingBag,
+  Package,
   UserCircle,
-  BarChart3,
   Settings,
   LogOut,
   X,
-  Banknote,
-  CalendarCheck,
-  AlertCircle,
   Wallet,
+  AlertCircle,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
-import type { Salon, Profile } from '@/types'
+import type { Shop, Profile } from '@/types'
 
 interface NavItem {
   href: string
   label: string
   icon: React.ElementType
-  ownerOnly?: boolean
-  staffOnly?: boolean
-  salonOnly?: boolean
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',               label: 'Tableau de bord', icon: LayoutDashboard, ownerOnly: true },
-  { href: '/dashboard/my-schedule',   label: 'Mon planning',    icon: CalendarCheck,  staffOnly: true },
-  { href: '/dashboard/calendar',      label: 'Calendrier',      icon: CalendarRange,  ownerOnly: true },
-  { href: '/dashboard/services',      label: 'Prestations',     icon: Scissors,       ownerOnly: true },
-  { href: '/dashboard/staff',         label: 'Employées',       icon: Users,          ownerOnly: true, salonOnly: true },
-  { href: '/dashboard/bookings',      label: 'Réservations',    icon: CalendarDays,   ownerOnly: true },
-  { href: '/dashboard/commissions',   label: 'Commissions',     icon: Banknote,       ownerOnly: true, salonOnly: true },
-  { href: '/dashboard/clients',       label: 'Clientes',        icon: UserCircle,     ownerOnly: true },
-  { href: '/dashboard/reports',       label: 'Rapports',        icon: BarChart3,      ownerOnly: true },
-  { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet,         ownerOnly: true },
-  { href: '/dashboard/settings',      label: 'Paramètres',      icon: Settings,       ownerOnly: true },
+  { href: '/dashboard',          label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/dashboard/orders',   label: 'Commandes',       icon: ShoppingBag },
+  { href: '/dashboard/products', label: 'Produits',        icon: Package },
+  { href: '/dashboard/clients',  label: 'Clients',         icon: UserCircle },
+  { href: '/dashboard/revenues', label: 'Revenus',         icon: Wallet },
+  { href: '/dashboard/settings', label: 'Paramètres',      icon: Settings },
 ]
 
 interface SidebarProps {
-  salon: Salon
+  shop: Shop
   profile: Profile
   open?: boolean
   onClose?: () => void
 }
 
-export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
+export function Sidebar({ shop, profile, open, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
@@ -63,7 +50,6 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Overlay mobile */}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-black/40 lg:hidden"
@@ -79,19 +65,22 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Header */}
+        {/* Header boutique */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            {salon.logo_url ? (
-              <Avatar src={salon.logo_url} name={salon.name} size="sm" />
+            {shop.logo_url ? (
+              <Avatar src={shop.logo_url} name={shop.name} size="sm" />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E85D04] text-white text-sm font-bold">
-                {salon.name[0]?.toUpperCase()}
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-sm font-bold"
+                style={{ backgroundColor: shop.primary_color ?? 'var(--color-primary)' }}
+              >
+                {shop.name[0]?.toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{salon.name}</p>
-              <TrialBadge plan={salon.plan} trialEndsAt={salon.trial_ends_at} />
+              <p className="text-sm font-semibold text-gray-900 truncate">{shop.name}</p>
+              <PlanBadge plan={shop.plan} />
             </div>
           </div>
           <button
@@ -105,12 +94,6 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isOwner = profile.role === 'owner'
-            const isSalon = salon.business_type === 'salon'
-            if (item.ownerOnly && !isOwner) return null
-            if (item.staffOnly && isOwner) return null
-            if (item.salonOnly && !isSalon) return null
-
             const Icon = item.icon
             const active = isActive(item.href)
             return (
@@ -121,11 +104,11 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
                 className={clsx(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   active
-                    ? 'bg-orange-50 text-[#E85D04]'
+                    ? 'bg-sky-50 text-[var(--color-primary)]'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 )}
               >
-                <Icon className={clsx('h-4 w-4 shrink-0', active ? 'text-[#E85D04]' : 'text-gray-400')} />
+                <Icon className={clsx('h-4 w-4 shrink-0', active ? 'text-[var(--color-primary)]' : 'text-gray-400')} />
                 {item.label}
               </Link>
             )
@@ -140,14 +123,15 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Avatar
-              name={[profile.first_name, profile.last_name].filter(Boolean).join(' ') || salon.name}
+              src={shop.logo_url ?? undefined}
+              name={[profile.first_name, profile.last_name].filter(Boolean).join(' ') || shop.name}
               size="sm"
             />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-gray-900 truncate">
-                {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || salon.name}
+                {[profile.first_name, profile.last_name].filter(Boolean).join(' ') || shop.name}
               </p>
-              <p className="text-xs text-gray-500">{profile.role === 'owner' ? 'Propriétaire' : 'Employée'}</p>
+              <p className="text-xs text-gray-500">Propriétaire</p>
             </div>
           </Link>
           <form action={signOut}>
@@ -165,28 +149,21 @@ export function Sidebar({ salon, profile, open, onClose }: SidebarProps) {
   )
 }
 
-function TrialBadge({ plan, trialEndsAt }: { plan: string; trialEndsAt: string }) {
-  if (plan !== 'trial') {
-    return <p className="text-xs text-gray-500 capitalize">{plan}</p>
+function PlanBadge({ plan }: { plan: string }) {
+  if (plan === 'trial') {
+    return (
+      <Link
+        href="/dashboard/upgrade"
+        className="flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+      >
+        <AlertCircle className="h-3 w-3 shrink-0" />
+        Non activé
+      </Link>
+    )
   }
-
-  const daysLeft = Math.max(0, Math.ceil(
-    (new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  ))
-  const urgent = daysLeft <= 5
-
-  return (
-    <Link
-      href={urgent ? '/dashboard/upgrade' : '/dashboard/settings'}
-      className={clsx(
-        'flex items-center gap-1 text-xs font-medium transition-colors',
-        urgent ? 'text-red-500 hover:text-red-600' : 'text-orange-500 hover:text-orange-600'
-      )}
-    >
-      {urgent && <AlertCircle className="h-3 w-3 shrink-0" />}
-      {daysLeft > 0
-        ? `Essai · ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`
-        : 'Essai expiré'}
-    </Link>
-  )
+  const label = plan === 'starter' ? 'Starter'
+    : plan === 'business' ? 'Business'
+    : plan === 'pro' ? 'Pro'
+    : plan
+  return <p className="text-xs text-emerald-600 font-medium capitalize">Plan {label}</p>
 }

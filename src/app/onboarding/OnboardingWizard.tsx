@@ -1,63 +1,57 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Check, Copy, Scissors } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, Camera, ExternalLink, ImagePlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   startOnboarding,
   saveOnboardingType,
   saveOnboardingInfo,
-  saveOnboardingService,
+  saveOnboardingProduct,
   skipOnboardingStep,
   completeOnboarding,
 } from '@/lib/actions/onboarding'
+import { uploadShopLogo } from '@/lib/actions/settings'
+import { uploadProductPhoto } from '@/lib/actions/products'
 import { APP_URL } from '@/constants'
 
 // ── Données métier ────────────────────────────────────────────────────────────
 
-type Specialty = 'hair' | 'nails' | 'makeup' | 'beauty' | 'fashion' | 'other'
-type BusinessType = 'independent' | 'salon'
+type Specialty = 'food' | 'fashion' | 'beauty' | 'crafts' | 'electronics' | 'home' | 'other'
+type BusinessType = 'individual' | 'business'
 
 const SPECIALTIES: { value: Specialty; icon: string; label: string }[] = [
-  { value: 'hair',    icon: '✂️', label: 'Coiffure' },
-  { value: 'nails',   icon: '💅', label: 'Onglerie' },
-  { value: 'makeup',  icon: '💄', label: 'Maquillage' },
-  { value: 'beauty',  icon: '🧖', label: 'Soins & Beauté' },
-  { value: 'fashion', icon: '👁', label: 'Cils & Sourcils' },
-  { value: 'other',   icon: '✨', label: 'Autre' },
+  { value: 'food',        icon: '🍽️', label: 'Alimentation' },
+  { value: 'fashion',     icon: '👗', label: 'Mode & Vêtements' },
+  { value: 'beauty',      icon: '💄', label: 'Beauté & Cosmétiques' },
+  { value: 'crafts',      icon: '🎨', label: 'Artisanat' },
+  { value: 'electronics', icon: '📱', label: 'Électronique' },
+  { value: 'home',        icon: '🏡', label: 'Maison & Déco' },
+  { value: 'other',       icon: '✨', label: 'Autre' },
 ]
 
-const SUGGESTIONS: Record<Specialty, string[]> = {
-  hair:    ['Tresses simples', 'Tresses avec mèches', 'Tissage', 'Coiffure naturelle', 'Soins capillaires'],
-  nails:   ['Pose résine', 'Pose gel', 'Nail art', 'Dépose + repose', 'Manucure simple'],
-  makeup:  ['Maquillage mariée', 'Maquillage événement', 'Maquillage naturel', 'Cours maquillage'],
-  beauty:  ['Soin visage', 'Épilation', 'Massage', 'Gommage', 'Soin corps'],
-  fashion: ['Pose cils volume russe', 'Pose cils classic', 'Rehaussement cils', 'Design sourcils', 'Épilation sourcils'],
-  other:   ['Prestation sur mesure', 'Consultation', 'Forfait découverte'],
+const PRODUCT_SUGGESTIONS: Record<Specialty, string[]> = {
+  food:        ['Thiéboudienne', 'Attiéké poulet', 'Jus de bissap', 'Pain de mil', 'Gâteau au wax'],
+  fashion:     ['Robe wax', 'Boubou brodé', 'Ensemble ankara', 'Foulard en soie', 'Sac à main'],
+  beauty:      ['Savon karité', 'Huile de coco', 'Crème éclaircissante', 'Shampoing naturel', 'Parfum local'],
+  crafts:      ['Tableau africain', 'Sculpture bois', 'Bijou fait main', 'Panier tressé', 'Poterie'],
+  electronics: ['Écouteurs Bluetooth', 'Chargeur solaire', 'Batterie externe', 'Câble USB-C', 'Coque téléphone'],
+  home:        ['Coussin wax', 'Bougie parfumée', 'Nappe brodée', 'Miroir décoratif', 'Vase artisanal'],
+  other:       ['Mon produit phare', 'Service sur mesure', 'Pack découverte'],
 }
 
 const DESC_PLACEHOLDERS: Record<Specialty, string> = {
-  hair:    'Ex : Salon de coiffure pour femmes et enfants. Tresses, tissages, soins...',
-  nails:   "Ex : Pose d'ongles gel, résine, nail art. Sur rendez-vous.",
-  makeup:  'Ex : Maquillage professionnel pour mariages, événements et shooting.',
-  beauty:  'Ex : Soins du visage, épilation, massage. Prenez soin de vous.',
-  fashion: 'Ex : Pose de cils, rehaussement, design sourcils. Sur rendez-vous.',
-  other:   'Ex : Décrivez votre activité en quelques mots...',
+  food:        'Ex : Cuisine africaine maison. Livraison disponible sur Dakar. Commandez à l\'avance...',
+  fashion:     'Ex : Créations en tissu wax et bazin. Tenues sur mesure et prêt-à-porter...',
+  beauty:      'Ex : Produits cosmétiques 100% naturels, fabriqués localement sans produits chimiques...',
+  crafts:      'Ex : Artisan créateur. Pièces uniques faites main, sur commande ou en stock...',
+  electronics: 'Ex : Accessoires et matériel électronique. Garantie incluse, livraison rapide...',
+  home:        'Ex : Décoration intérieure africaine. Pièces uniques pour sublimer votre intérieur...',
+  other:       'Décrivez votre boutique en quelques mots...',
 }
 
-const DURATIONS = [
-  { value: 30,  label: '30 min' },
-  { value: 45,  label: '45 min' },
-  { value: 60,  label: '1h' },
-  { value: 90,  label: '1h30' },
-  { value: 120, label: '2h' },
-  { value: 150, label: '2h30' },
-  { value: 180, label: '3h' },
-  { value: 240, label: 'Plus de 3h' },
-]
-
-// ── Props ────────────────────────────────────────────────────────────────────
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface WizardProps {
   initialStep: 1 | 2 | 3 | 4 | 5
@@ -65,76 +59,63 @@ interface WizardProps {
   salon: { name: string; slug: string; business_type: string | null; specialty: string | null } | null
 }
 
-// ── Composant principal ───────────────────────────────────────────────────────
-
 export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps) {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep)
+
+  const [step, setStep]     = useState<1 | 2 | 3 | 4 | 5>(initialStep)
   const [saving, setSaving] = useState(false)
 
-  // État de progression
-  const [salonSlug, setSalonSlug] = useState(salon?.slug ?? null)
+  // Step 1
+  const [shopName, setShopName] = useState(salon?.name ?? '')
 
-  // Étape 1
-  const [salonName, setSalonName] = useState(salon?.name ?? '')
-
-  // Étape 2
-  const [businessType, setBusinessType] = useState<BusinessType | null>(
-    (salon?.business_type as BusinessType) ?? null
+  // Step 2
+  const [businessType, setBusinessType] = useState<BusinessType>(
+    (salon?.business_type as BusinessType | null) ?? 'individual'
   )
-  const [specialty, setSpecialty] = useState<Specialty | null>(
-    (salon?.specialty as Specialty) ?? null
+  const [specialty, setSpecialty] = useState<Specialty>(
+    (salon?.specialty as Specialty | null) ?? 'other'
   )
-  const [specialtyCustom, setSpecialtyCustom] = useState('')
 
-  // Étape 3
-  const [city, setCity] = useState('')
+  // Step 3
+  const [shopSlug, setShopSlug]   = useState(salon?.slug ?? '')
+  const [city, setCity]           = useState('')
+  const [whatsapp, setWhatsapp]   = useState(userPhone ?? '')
   const [description, setDescription] = useState('')
-  const [whatsapp, setWhatsapp] = useState(userPhone ?? '')
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [logoUrl, setLogoUrl]     = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const fileInputRef              = useRef<HTMLInputElement>(null)
 
-  // Étape 4
-  const [serviceName, setServiceName] = useState('')
-  const [serviceDuration, setServiceDuration] = useState(60)
-  const [servicePrice, setServicePrice] = useState('')
+  // Step 4
+  const [productName, setProductName]       = useState('')
+  const [productPrice, setProductPrice]     = useState('')
+  const [productDesc, setProductDesc]       = useState('')
+  const [productImageUrl, setProductImageUrl] = useState<string | null>(null)
+  const [uploadingProductImg, setUploadingProductImg] = useState(false)
+  const productFileRef = useRef<HTMLInputElement>(null)
 
-  // Victory
-  const [linkCopied, setLinkCopied] = useState(false)
+  // Step 5
+  const [copied, setCopied] = useState(false)
 
-  const salonUrl = salonSlug ? `${APP_URL}/${salonSlug}` : null
+  const shopUrl = shopSlug ? `${APP_URL}/${shopSlug}` : null
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   async function handleStep1() {
-    if (salonName.trim().length < 2) {
+    if (!shopName.trim() || shopName.trim().length < 2) {
       toast.error('Le nom doit faire au moins 2 caractères.')
       return
     }
     setSaving(true)
-    const result = await startOnboarding(salonName.trim())
+    const result = await startOnboarding(shopName.trim())
     setSaving(false)
     if (result.error) { toast.error(result.error); return }
-    setSalonSlug(result.slug ?? null)
+    if (result.slug) setShopSlug(result.slug)
     setStep(2)
   }
 
   async function handleStep2() {
-    if (!businessType || !specialty) {
-      toast.error('Veuillez sélectionner votre type d\'activité et votre spécialité.')
-      return
-    }
-    if (specialty === 'other' && !specialtyCustom.trim()) {
-      toast.error('Précisez votre activité.')
-      return
-    }
     setSaving(true)
-    const result = await saveOnboardingType({
-      businessType,
-      specialty,
-      specialtyCustom: specialtyCustom || undefined,
-    })
+    const result = await saveOnboardingType({ businessType, specialty })
     setSaving(false)
     if (result.error) { toast.error(result.error); return }
     setStep(3)
@@ -143,26 +124,40 @@ export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps)
   async function handleStep3() {
     setSaving(true)
     const fd = new FormData()
-    if (city) fd.append('city', city)
+    if (city)        fd.append('city', city)
+    if (whatsapp)    fd.append('whatsapp', whatsapp)
     if (description) fd.append('description', description)
-    if (whatsapp) fd.append('whatsapp', whatsapp)
-    if (logoFile) fd.append('logo', logoFile)
     const result = await saveOnboardingInfo(fd)
     setSaving(false)
     if (result.error) { toast.error(result.error); return }
     setStep(4)
   }
 
+  async function handleProductImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingProductImg(true)
+    const fd = new FormData()
+    fd.append('photo', file)
+    const result = await uploadProductPhoto(fd)
+    if (result.error) toast.error(result.error)
+    else if (result.url) setProductImageUrl(result.url)
+    setUploadingProductImg(false)
+    if (productFileRef.current) productFileRef.current.value = ''
+  }
+
   async function handleStep4() {
-    if (!serviceName.trim() || !servicePrice) {
-      toast.error('Nom et prix sont obligatoires.')
+    if (!productName.trim()) { toast.error('Le nom du produit est obligatoire.'); return }
+    if (!productPrice || isNaN(parseInt(productPrice, 10))) {
+      toast.error('Le prix est obligatoire.')
       return
     }
     setSaving(true)
-    const result = await saveOnboardingService({
-      name: serviceName.trim(),
-      duration_minutes: serviceDuration,
-      price: parseInt(servicePrice, 10),
+    const result = await saveOnboardingProduct({
+      name:        productName.trim(),
+      price:       parseInt(productPrice, 10),
+      description: productDesc.trim() || undefined,
+      photo_url:   productImageUrl ?? undefined,
     })
     setSaving(false)
     if (result.error) { toast.error(result.error); return }
@@ -173,568 +168,386 @@ export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps)
     setSaving(true)
     await skipOnboardingStep(s)
     setSaving(false)
-    if (s === 4) {
-      setStep(5)
-    } else {
-      setStep((s + 1) as 4)
-    }
+    setStep(s === 3 ? 4 : 5)
   }
 
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFinish() {
+    setSaving(true)
+    await completeOnboarding()
+    router.push('/dashboard')
+  }
+
+  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) { toast.error('Le fichier doit faire moins de 2 Mo.'); return }
-    setLogoFile(file)
-    setLogoPreview(URL.createObjectURL(file))
-  }
-
-  function applySuggestion(name: string) {
-    setServiceName(name)
+    setUploadingLogo(true)
+    const fd = new FormData()
+    fd.append('logo', file)
+    const result = await uploadShopLogo(fd)
+    if (result.error) toast.error(result.error)
+    else if (result.url) setLogoUrl(result.url)
+    setUploadingLogo(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   async function handleCopyLink() {
-    if (!salonUrl) return
-    await navigator.clipboard.writeText(salonUrl)
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
+    if (!shopUrl) return
+    await navigator.clipboard.writeText(shopUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
-  function handleWhatsAppShare() {
-    if (!salonUrl) return
-    const msg = encodeURIComponent(
-      `Bonjour ! 👋 Réserve maintenant ta prochaine séance chez ${salonName} 👉 ${salonUrl}`
-    )
-    const a = document.createElement('a')
-    a.href = `https://wa.me/?text=${msg}`
-    a.rel = 'noopener noreferrer'
-    a.click()
+  function applySuggestion(name: string) {
+    setProductName(name)
   }
 
-  // ── Layout ───────────────────────────────────────────────────────────────
+  // ── UI ───────────────────────────────────────────────────────────────────────
 
   const TOTAL_STEPS = 4
   const progressPct = step === 5 ? 100 : ((step - 1) / TOTAL_STEPS) * 100
 
-  return (
-    <div className="min-h-screen bg-white flex flex-col md:bg-[#FAF7F2]">
-      <div className="flex-1 flex flex-col md:items-center md:justify-center md:py-12 md:px-4">
-        <div className="w-full md:max-w-[480px] flex-1 flex flex-col bg-white md:rounded-2xl md:shadow-lg md:overflow-hidden">
+  const inputCls = 'w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[var(--color-primary)] transition-colors bg-white'
 
-          {/* Barre de progression */}
-          <div className="h-1 bg-gray-100 shrink-0">
+  return (
+    <div className="w-full">
+
+      {/* Barre de progression */}
+      {step < 5 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => step > 1 && setStep((s) => Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5)}
+              className={`flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors ${step === 1 ? 'invisible' : ''}`}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour
+            </button>
+            <span className="text-xs text-gray-400 font-medium">
+              Étape {step} sur {TOTAL_STEPS}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-200">
             <div
-              className="h-full bg-[#E85D04] transition-all duration-500 ease-out"
+              className="h-1.5 rounded-full bg-[var(--color-primary)] transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
-          </div>
-
-          {/* Header */}
-          {step < 5 && (
-            <div className="px-5 pt-5 pb-1 flex items-center justify-between shrink-0">
-              {step > 1 ? (
-                <button
-                  onClick={() => setStep((s) => Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4 text-gray-500" />
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E85D04]">
-                    <Scissors className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-sm font-bold text-[#1A0A00]">Sheka</span>
-                </div>
-              )}
-              <span className="text-xs font-medium text-gray-400">
-                Étape {step} sur {TOTAL_STEPS}
-              </span>
-            </div>
-          )}
-
-          {/* Contenu principal */}
-          <div className="flex-1 flex flex-col overflow-y-auto">
-
-            {/* ── ÉTAPE 1 — Nom du salon ──────────────────────────────── */}
-            {step === 1 && (
-              <div className="flex-1 flex flex-col px-5 pt-8 pb-6">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-black text-[#1A0A00] leading-tight">
-                    Bienvenue 👋
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Commençons par les bases. Ça prend moins de 5 minutes.
-                  </p>
-
-                  <div className="mt-8">
-                    <label className="block text-sm font-semibold text-[#1A0A00] mb-2">
-                      Nom de votre salon ou activité
-                    </label>
-                    <input
-                      type="text"
-                      value={salonName}
-                      onChange={e => setSalonName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleStep1()}
-                      placeholder="Ex : Chez Aïssatou, Glamour Studio, Fatou Beauty..."
-                      autoFocus
-                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3.5 text-base text-[#1A0A00] placeholder-gray-300 outline-none focus:border-[#E85D04] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={handleStep1}
-                    disabled={saving || salonName.trim().length < 2}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E85D04] py-4 text-base font-bold text-white shadow-lg shadow-[#E85D04]/20 disabled:opacity-40 disabled:shadow-none transition-all active:scale-[0.98]"
-                  >
-                    {saving ? 'Création...' : 'Continuer'}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 2 — Type + spécialité ─────────────────────────── */}
-            {step === 2 && (
-              <div className="flex-1 flex flex-col px-5 pt-8 pb-6">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-black text-[#1A0A00] leading-tight">Vous êtes…</h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Cela nous permet de personnaliser votre espace.
-                  </p>
-
-                  {/* Structure */}
-                  <div className="mt-7">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
-                      Votre situation
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {([
-                        { value: 'independent' as BusinessType, icon: '🏠', label: 'Indépendante', sub: 'Seule, à domicile ou en déplacement' },
-                        { value: 'salon' as BusinessType,       icon: '💼', label: 'Salon', sub: 'Local physique avec employées' },
-                      ] as const).map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setBusinessType(opt.value)}
-                          className={`flex flex-col items-start gap-1 rounded-2xl border-2 p-4 text-left transition-all ${
-                            businessType === opt.value
-                              ? 'border-[#E85D04] bg-orange-50'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
-                          }`}
-                        >
-                          <span className="text-2xl">{opt.icon}</span>
-                          <span className="text-sm font-bold text-[#1A0A00]">{opt.label}</span>
-                          <span className="text-xs text-gray-400 leading-tight">{opt.sub}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Spécialité */}
-                  <div className="mt-7">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
-                      Votre spécialité principale
-                    </p>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {SPECIALTIES.map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setSpecialty(opt.value)}
-                          className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3.5 px-2 text-center transition-all ${
-                            specialty === opt.value
-                              ? 'border-[#E85D04] bg-orange-50'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
-                          }`}
-                        >
-                          <span className="text-xl">{opt.icon}</span>
-                          <span className="text-xs font-semibold text-[#1A0A00] leading-tight">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {specialty === 'other' && (
-                      <input
-                        type="text"
-                        value={specialtyCustom}
-                        onChange={e => setSpecialtyCustom(e.target.value)}
-                        placeholder="Précisez votre activité"
-                        className="mt-3 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04]"
-                        autoFocus
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={handleStep2}
-                    disabled={saving || !businessType || !specialty}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E85D04] py-4 text-base font-bold text-white shadow-lg shadow-[#E85D04]/20 disabled:opacity-40 disabled:shadow-none transition-all active:scale-[0.98]"
-                  >
-                    {saving ? 'Enregistrement...' : 'Continuer'}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 3 — Informations du salon ─────────────────────── */}
-            {step === 3 && (
-              <div className="flex-1 flex flex-col px-5 pt-8 pb-6">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-black text-[#1A0A00] leading-tight">
-                    Votre page salon
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Ces informations seront visibles par vos clientes.
-                  </p>
-
-                  <div className="mt-7 space-y-4">
-                    {/* Ville */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1A0A00] mb-2">Ville</label>
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={e => setCity(e.target.value)}
-                        placeholder="Ex : Dakar, Abidjan, Douala..."
-                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04]"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1A0A00] mb-2">
-                        Description courte
-                      </label>
-                      <textarea
-                        value={description}
-                        onChange={e => setDescription(e.target.value)}
-                        maxLength={150}
-                        rows={3}
-                        placeholder={specialty ? DESC_PLACEHOLDERS[specialty] : 'Ex : Décrivez votre activité en quelques mots...'}
-                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04] resize-none"
-                      />
-                      <p className="mt-1 text-right text-xs text-gray-400">{description.length}/150</p>
-                    </div>
-
-                    {/* WhatsApp */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1A0A00] mb-2">
-                        Numéro WhatsApp
-                      </label>
-                      <input
-                        type="tel"
-                        value={whatsapp}
-                        onChange={e => setWhatsapp(e.target.value)}
-                        placeholder="+221 77 000 00 00"
-                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04]"
-                      />
-                    </div>
-
-                    {/* Logo */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1A0A00] mb-1">
-                        Logo ou photo du salon{' '}
-                        <span className="text-xs font-normal text-gray-400">(optionnel)</span>
-                      </label>
-                      <p className="text-xs text-gray-400 mb-3">Ça rend votre page plus professionnelle</p>
-                      <div className="flex items-center gap-3">
-                        {logoPreview ? (
-                          <div className="relative h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 border-[#E85D04]">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={logoPreview} alt="Logo" className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="h-16 w-16 shrink-0 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center">
-                            <span className="text-2xl">📷</span>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex-1 rounded-xl border-2 border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:border-[#E85D04] hover:text-[#E85D04] transition-colors"
-                        >
-                          {logoPreview ? 'Changer la photo' : 'Ajouter une photo'}
-                        </button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleLogoChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-3">
-                  <button
-                    onClick={handleStep3}
-                    disabled={saving}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E85D04] py-4 text-base font-bold text-white shadow-lg shadow-[#E85D04]/20 disabled:opacity-40 disabled:shadow-none transition-all active:scale-[0.98]"
-                  >
-                    {saving ? 'Enregistrement...' : 'Continuer'}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSkip(3)}
-                    disabled={saving}
-                    className="w-full py-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    Passer cette étape
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 4 — Première prestation ───────────────────────── */}
-            {step === 4 && (
-              <div className="flex-1 flex flex-col px-5 pt-8 pb-6">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-black text-[#1A0A00] leading-tight">
-                    Ajoutez votre première prestation
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Vous pourrez en ajouter d&apos;autres ensuite.
-                  </p>
-
-                  {/* Suggestions */}
-                  {specialty && SUGGESTIONS[specialty] && (
-                    <div className="mt-6">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
-                        Suggestions rapides
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {SUGGESTIONS[specialty].map(s => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => applySuggestion(s)}
-                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                              serviceName === s
-                                ? 'border-[#E85D04] bg-orange-50 text-[#E85D04]'
-                                : 'border-gray-200 text-gray-600 hover:border-[#E85D04] hover:text-[#E85D04]'
-                            }`}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-6 space-y-4">
-                    {/* Nom */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1A0A00] mb-2">
-                        Nom de la prestation
-                      </label>
-                      <input
-                        type="text"
-                        value={serviceName}
-                        onChange={e => setServiceName(e.target.value)}
-                        placeholder="Ex : Tresse box braid, Soin visage..."
-                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04]"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Durée */}
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1A0A00] mb-2">Durée</label>
-                        <select
-                          value={serviceDuration}
-                          onChange={e => setServiceDuration(Number(e.target.value))}
-                          className="w-full rounded-xl border-2 border-gray-200 px-3 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04] bg-white"
-                        >
-                          {DURATIONS.map(d => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Prix */}
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1A0A00] mb-2">Prix (FCFA)</label>
-                        <input
-                          type="number"
-                          value={servicePrice}
-                          onChange={e => setServicePrice(e.target.value)}
-                          placeholder="5000"
-                          min="0"
-                          className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-[#1A0A00] outline-none focus:border-[#E85D04]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-3">
-                  <button
-                    onClick={handleStep4}
-                    disabled={saving || !serviceName.trim() || !servicePrice}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E85D04] py-4 text-base font-bold text-white shadow-lg shadow-[#E85D04]/20 disabled:opacity-40 disabled:shadow-none transition-all active:scale-[0.98]"
-                  >
-                    {saving ? 'Enregistrement...' : 'Terminer'}
-                    <Check className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSkip(4)}
-                    disabled={saving}
-                    className="w-full py-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    Passer cette étape
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 5 — Victory screen ─────────────────────────────── */}
-            {step === 5 && (
-              <VictoryScreen
-                salonName={salonName}
-                salonUrl={salonUrl}
-                linkCopied={linkCopied}
-                onCopy={handleCopyLink}
-                onWhatsApp={handleWhatsAppShare}
-                onDashboard={async () => {
-                  await completeOnboarding()
-                  router.push('/dashboard')
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Victory screen ────────────────────────────────────────────────────────────
-
-function VictoryScreen({
-  salonName,
-  salonUrl,
-  linkCopied,
-  onCopy,
-  onWhatsApp,
-  onDashboard,
-}: {
-  salonName: string
-  salonUrl: string | null
-  linkCopied: boolean
-  onCopy: () => void
-  onWhatsApp: () => void
-  onDashboard: () => void
-}) {
-
-  return (
-    <div className="flex-1 flex flex-col px-5 pt-10 pb-8">
-      {/* Icône animée */}
-      <div className="flex justify-center mb-6">
-        <div className="relative flex h-20 w-20 items-center justify-center">
-          <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-30" />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-            <span className="text-4xl">🎉</span>
-          </div>
-        </div>
-      </div>
-
-      <h1 className="text-center text-2xl font-black text-[#1A0A00] leading-tight">
-        Votre page est prête&nbsp;!
-      </h1>
-      <p className="mt-2 text-center text-sm text-gray-500">
-        Partagez ce lien à vos clientes pour qu&apos;elles puissent réserver.
-      </p>
-
-      {/* Aperçu du lien */}
-      {salonUrl && (
-        <div className="mt-6 rounded-2xl border-2 border-gray-100 bg-gray-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
-            Votre lien de réservation
-          </p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1A0A00] truncate">{salonUrl}</p>
-            </div>
-            <a
-              href={salonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-[#E85D04] hover:text-[#E85D04] transition-colors"
-            >
-              Voir →
-            </a>
-          </div>
-
-          {/* Miniature salon */}
-          <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 bg-white">
-            <div className="h-2 bg-[#E85D04]" />
-            <div className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-[#E85D04]/15 flex items-center justify-center text-sm font-bold text-[#E85D04]">
-                  {salonName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#1A0A00]">{salonName}</p>
-                  <p className="text-[10px] text-gray-400">Page de réservation</p>
-                </div>
-              </div>
-              <div className="flex gap-1.5">
-                {['Choisir un service', 'Choisir une date', 'Réserver'].map((s, i) => (
-                  <div key={i} className={`flex-1 h-6 rounded text-[9px] font-medium flex items-center justify-center ${i === 0 ? 'bg-[#E85D04] text-white' : 'bg-gray-100 text-gray-400'}`}>
-                    {s}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="mt-6 space-y-3">
-        <button
-          onClick={onWhatsApp}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-4 text-base font-bold text-white shadow-lg shadow-green-500/20 transition-all active:scale-[0.98]"
-        >
-          <span>📲</span>
-          Envoyer sur WhatsApp
-        </button>
+      {/* ── Étape 1 — Nom ────────────────────────────────────────────────── */}
+      {step === 1 && (
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Donne un nom à ton site</h2>
+            <p className="mt-1 text-sm text-gray-500">Ce sera le nom affiché à tes clients.</p>
+          </div>
+          <input
+            value={shopName}
+            onChange={e => setShopName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleStep1()}
+            placeholder="Ex : Chez Awa, La Maison du Wax, Fatou Délices..."
+            className={inputCls}
+            autoFocus
+          />
+          <button
+            onClick={handleStep1}
+            disabled={saving || shopName.trim().length < 2}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {saving ? 'Création...' : 'Continuer'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
-        <button
-          onClick={onCopy}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 py-4 text-base font-bold text-[#1A0A00] hover:border-[#E85D04] hover:text-[#E85D04] transition-all"
-        >
-          {linkCopied ? (
-            <>
-              <Check className="h-4 w-4 text-green-500" />
-              <span className="text-green-600">Lien copié !</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              Copier le lien
-            </>
+      {/* ── Étape 2 — Type de commerce ───────────────────────────────────── */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Ton type d'activité</h2>
+            <p className="mt-1 text-sm text-gray-500">Choisis ce qui correspond le mieux à ton commerce.</p>
+          </div>
+
+          {/* Type */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: 'individual', label: 'Vendeur individuel', icon: '🙋' },
+              { value: 'business',   label: 'Boutique établie',   icon: '🏪' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setBusinessType(opt.value as BusinessType)}
+                className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-sm font-medium transition-colors ${
+                  businessType === opt.value
+                    ? 'border-[var(--color-primary)] bg-sky-50 text-[var(--color-primary)]'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-2xl">{opt.icon}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Spécialité */}
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Catégorie principale</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SPECIALTIES.map(s => (
+                <button
+                  key={s.value}
+                  onClick={() => setSpecialty(s.value)}
+                  className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-colors ${
+                    specialty === s.value
+                      ? 'border-[var(--color-primary)] bg-sky-50 text-[var(--color-primary)]'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <span>{s.icon}</span>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleStep2}
+            disabled={saving}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {saving ? 'Enregistrement...' : 'Continuer'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Étape 3 — Infos boutique ─────────────────────────────────────── */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Infos de ton site</h2>
+            <p className="mt-1 text-sm text-gray-500">Visible par tes clients sur ton mini site. (Optionnel — tu pourras compléter plus tard.)</p>
+          </div>
+
+          {/* Logo */}
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-16 w-16 rounded-2xl object-cover" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-100 text-2xl font-bold text-[var(--color-primary)]">
+                  {shopName[0]?.toUpperCase()}
+                </div>
+              )}
+              {uploadingLogo && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingLogo}
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              <Camera className="h-4 w-4 text-gray-400" />
+              {uploadingLogo ? 'Upload...' : 'Ajouter un logo'}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Ville</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="Dakar, Abidjan, Douala..." className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Numéro WhatsApp</label>
+            <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+221 77 000 00 00" className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={3}
+              placeholder={DESC_PLACEHOLDERS[specialty]}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          <button
+            onClick={handleStep3}
+            disabled={saving}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {saving ? 'Enregistrement...' : 'Continuer'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSkip(3)}
+            disabled={saving}
+            className="w-full text-sm text-gray-400 hover:text-gray-600 py-1"
+          >
+            Passer cette étape
+          </button>
+        </div>
+      )}
+
+      {/* ── Étape 4 — Premier produit ────────────────────────────────────── */}
+      {step === 4 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Ajoute ton premier produit</h2>
+            <p className="mt-1 text-sm text-gray-500">Tes clients pourront immédiatement passer commande.</p>
+          </div>
+
+          {/* Photo du produit */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Photo du produit</label>
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0 h-20 w-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                {productImageUrl ? (
+                  <img src={productImageUrl} alt="Produit" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus className="h-7 w-7 text-gray-300" />
+                )}
+                {uploadingProductImg && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <button
+                  type="button"
+                  onClick={() => productFileRef.current?.click()}
+                  disabled={uploadingProductImg}
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Camera className="h-4 w-4 text-gray-400" />
+                  {uploadingProductImg ? 'Upload...' : productImageUrl ? 'Changer la photo' : 'Ajouter une photo'}
+                </button>
+                <p className="text-[11px] text-gray-400 mt-1">JPG, PNG — max 5 Mo</p>
+              </div>
+            </div>
+            <input ref={productFileRef} type="file" accept="image/*" className="hidden" onChange={handleProductImageChange} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nom du produit *</label>
+            <input
+              value={productName}
+              onChange={e => setProductName(e.target.value)}
+              placeholder="Ex : Thiéboudienne, Robe wax..."
+              className={inputCls}
+            />
+            {/* Suggestions rapides */}
+            <div className="mt-2 flex gap-1.5 flex-wrap">
+              {PRODUCT_SUGGESTIONS[specialty].slice(0, 3).map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Prix (FCFA) *</label>
+            <input
+              type="number"
+              min="0"
+              value={productPrice}
+              onChange={e => setProductPrice(e.target.value)}
+              placeholder="5000"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Description (optionnel)</label>
+            <textarea
+              value={productDesc}
+              onChange={e => setProductDesc(e.target.value)}
+              rows={2}
+              placeholder="Décrivez brièvement votre produit..."
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          <button
+            onClick={handleStep4}
+            disabled={saving || !productName.trim() || !productPrice}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {saving ? 'Création...' : 'Ajouter ce produit'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSkip(4)}
+            disabled={saving}
+            className="w-full text-sm text-gray-400 hover:text-gray-600 py-1"
+          >
+            Passer cette étape
+          </button>
+        </div>
+      )}
+
+      {/* ── Étape 5 — Terminé ───────────────────────────────────────────── */}
+      {step === 5 && (
+        <div className="space-y-6 text-center">
+          <div>
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+              <Check className="h-10 w-10 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Ton site est prêt !</h2>
+            <p className="mt-2 text-sm text-gray-500">
+              Partage ton lien sur WhatsApp et Instagram pour recevoir tes premières commandes.
+            </p>
+          </div>
+
+          {shopUrl && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ton lien</p>
+              <p className="text-sm font-mono text-gray-700 break-all">{shopUrl}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopyLink}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  {copied ? <><CheckCheck className="h-4 w-4 text-green-500" /> Copié !</> : <><Copy className="h-4 w-4" /> Copier le lien</>}
+                </button>
+                <a
+                  href={shopUrl!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Voir mon site
+                </a>
+              </div>
+            </div>
           )}
-        </button>
-      </div>
 
-      {/* Vers le dashboard */}
-      <button
-        onClick={onDashboard}
-        className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#E85D04] py-4 text-sm font-bold text-white shadow-lg shadow-[#E85D04]/25 active:opacity-80 transition-opacity"
-      >
-        Accéder à mon tableau de bord
-        <ArrowRight className="h-4 w-4" />
-      </button>
+          <button
+            onClick={handleFinish}
+            disabled={saving}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {saving ? 'Chargement...' : 'Accéder à mon tableau de bord'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

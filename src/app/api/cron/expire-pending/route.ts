@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export async function GET(_req: NextRequest) {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase.rpc('expire_pending_bookings')
+  const { data, error } = await supabase.rpc('expire_pending_orders')
 
   if (error) {
     console.error('[cron/expire-pending]', error.message)

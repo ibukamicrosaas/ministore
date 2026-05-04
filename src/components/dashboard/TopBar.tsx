@@ -31,7 +31,7 @@ export function TopBar({ onMenuClick, title }: TopBarProps) {
 
       <Link
         href="/dashboard/notifications"
-        className={`relative rounded-lg p-2 transition-colors ${notifActive ? 'bg-orange-50 text-[#E85D04]' : 'text-gray-500 hover:bg-gray-100'}`}
+        className={`relative rounded-lg p-2 transition-colors ${notifActive ? 'bg-sky-50 text-[var(--color-primary)]' : 'text-gray-500 hover:bg-gray-100'}`}
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5" />

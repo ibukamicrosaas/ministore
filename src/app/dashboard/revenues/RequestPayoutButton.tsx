@@ -5,7 +5,7 @@ import { ArrowDownToLine, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Props {
-  salonId: string
+  shopId: string
   availableBalance: number
   waveNumber: string | null
   omNumber: string | null
@@ -13,7 +13,7 @@ interface Props {
   minAmount: number
 }
 
-export function RequestPayoutButton({ salonId, availableBalance, waveNumber, omNumber, canRequest, minAmount }: Props) {
+export function RequestPayoutButton({ shopId, availableBalance, waveNumber, omNumber, canRequest, minAmount }: Props) {
   const [open, setOpen] = useState(false)
   const [method, setMethod] = useState<'wave' | 'orange_money'>(waveNumber ? 'wave' : 'orange_money')
   const [loading, setLoading] = useState(false)
@@ -27,7 +27,7 @@ export function RequestPayoutButton({ salonId, availableBalance, waveNumber, omN
       const res = await fetch('/api/payouts/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ salonId, method, amount: availableBalance }),
+        body: JSON.stringify({ shopId, method, amount: availableBalance }),
       })
       const data = await res.json() as { success?: boolean; error?: string }
       if (!res.ok || !data.success) {

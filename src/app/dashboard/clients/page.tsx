@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Profile, Client } from '@/types'
 
-export const metadata = { title: 'Clientes — Sheka' }
+export const metadata = { title: 'Clients — TekkiShop' }
 
 interface Props {
   searchParams: Promise<{ q?: string }>
@@ -21,18 +21,18 @@ export default async function ClientsPage({ searchParams }: Props) {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('salon_id, role')
+    .select('shop_id, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'salon_id' | 'role'> | null
-  if (!profile?.salon_id || profile.role !== 'owner') redirect('/dashboard')
+  const profile = profileData as Pick<Profile, 'shop_id' | 'role'> | null
+  if (!profile?.shop_id || profile.role !== 'owner') redirect('/dashboard')
 
   let query = supabase
     .from('clients')
     .select('*')
-    .eq('salon_id', profile.salon_id)
-    .order('last_visit_at', { ascending: false, nullsFirst: false })
+    .eq('shop_id', profile.shop_id)
+    .order('last_order_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
 
   if (q) {
@@ -45,7 +45,7 @@ export default async function ClientsPage({ searchParams }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
+        <h1 className="text-xl font-bold text-gray-900">Clients</h1>
         <span className="text-sm text-gray-500">{clients.length} cliente{clients.length > 1 ? 's' : ''}</span>
       </div>
 
@@ -55,7 +55,7 @@ export default async function ClientsPage({ searchParams }: Props) {
           name="q"
           defaultValue={q}
           placeholder="Rechercher par nom ou téléphone..."
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E85D04]"
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
         />
       </form>
 
@@ -72,8 +72,8 @@ export default async function ClientsPage({ searchParams }: Props) {
           <div className="divide-y divide-gray-50">
             {clients.map((client) => (
               <div key={client.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 shrink-0">
-                  <span className="text-sm font-semibold text-[#E85D04]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 shrink-0">
+                  <span className="text-sm font-semibold text-[var(--color-primary)]">
                     {client.first_name[0]?.toUpperCase()}
                   </span>
                 </div>
@@ -84,10 +84,10 @@ export default async function ClientsPage({ searchParams }: Props) {
                   <p className="text-xs text-gray-500 truncate">{client.phone}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-medium text-gray-700">{client.total_visits ?? 0} visite{(client.total_visits ?? 0) > 1 ? 's' : ''}</p>
-                  {client.last_visit_at && (
+                  <p className="text-xs font-medium text-gray-700">{client.total_orders ?? 0} commande{(client.total_orders ?? 0) > 1 ? 's' : ''}</p>
+                  {client.last_order_at && (
                     <p className="text-xs text-gray-400">
-                      {format(new Date(client.last_visit_at), 'd MMM', { locale: fr })}
+                      {format(new Date(client.last_order_at), 'd MMM', { locale: fr })}
                     </p>
                   )}
                 </div>

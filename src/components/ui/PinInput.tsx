@@ -74,7 +74,7 @@ export function PinInput({ name, length = 6, onChange }: Props) {
             onKeyDown={e => handleKeyDown(i, e)}
             onPaste={handlePaste}
             onFocus={e => e.target.select()}
-            className="h-12 w-10 rounded-xl border-2 border-gray-200 bg-gray-50 text-center text-lg font-bold text-gray-900 outline-none transition-all focus:border-[#E85D04] focus:bg-white"
+            className="h-12 w-10 rounded-xl border-2 border-gray-200 bg-gray-50 text-center text-lg font-bold text-gray-900 outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white"
           />
         ))}
       </div>

@@ -1,50 +1,50 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
-import { Fraunces } from 'next/font/google'
+import { Outfit } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 import { APP_NAME, APP_URL } from '@/constants'
 
-const geist = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const fraunces = Fraunces({
+const outfit = Outfit({
   variable: '--font-display',
   subsets: ['latin'],
-  style: ['normal', 'italic'],
-  weight: ['700', '900'],
+  weight: ['400', '500', '600', '700', '800'],
 })
 
-const description = 'Créez une page de réservation pour votre salon en quelques minutes. Vos clientes réservent, paient par Wave ou Orange Money, reçoivent un rappel WhatsApp. Tout depuis votre téléphone.'
+const dmSans = DM_Sans({
+  variable: '--font-sans',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+})
+
+const description = 'Créez votre boutique en ligne en quelques minutes. Vos clients commandent, paient par Wave ou Orange Money, reçoivent une confirmation WhatsApp. Tout depuis votre téléphone.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: `${APP_NAME} — Mettez votre salon en ligne`,
+    default: `${APP_NAME} — Vendez en ligne facilement`,
     template: `%s — ${APP_NAME}`,
   },
   description,
-  keywords: ['salon de beauté', 'réservation en ligne', 'wave', 'orange money', 'coiffure', 'Dakar', 'Sénégal', 'Afrique', 'mobile money'],
-  authors: [{ name: 'Sheka', url: APP_URL }],
-  creator: 'Sheka',
+  keywords: ['boutique en ligne', 'vente en ligne', 'wave', 'orange money', 'mobile money', 'Dakar', 'Sénégal', 'Afrique de l\'ouest', 'e-commerce', 'petits vendeurs'],
+  authors: [{ name: 'TekkiShop', url: APP_URL }],
+  creator: 'TekkiShop',
   publisher: 'Tekki Studio',
   manifest: '/manifest.json',
   openGraph: {
-    title: `${APP_NAME} — Mettez votre salon en ligne`,
+    title: `${APP_NAME} — Vendez en ligne facilement`,
     description,
     url: APP_URL,
     siteName: APP_NAME,
-    images: [{ url: '/og-sheka.png', width: 1200, height: 630, alt: 'Sheka — Gestion de salon de beauté' }],
+    images: [{ url: '/og-ministore.png', width: 1200, height: 630, alt: 'TekkiShop — Votre boutique en ligne' }],
     locale: 'fr_FR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${APP_NAME} — Mettez votre salon en ligne`,
+    title: `${APP_NAME} — Vendez en ligne facilement`,
     description,
-    images: ['/og-sheka.png'],
+    images: ['/og-ministore.png'],
   },
   appleWebApp: {
     capable: true,
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#E85D04',
+  themeColor: '#0EA5E9',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -67,8 +67,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className={`${geist.variable} ${fraunces.variable} h-full antialiased`}>
-      <body className="h-full bg-gray-50 text-gray-900">
+    <html lang="fr" className={`${outfit.variable} ${dmSans.variable} h-full antialiased`}>
+      <body className="h-full bg-gray-50 text-gray-900 font-sans">
         {children}
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
       </body>

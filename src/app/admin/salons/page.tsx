@@ -4,32 +4,32 @@ import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { Settings, ExternalLink, MessageCircle } from 'lucide-react'
 
-export const metadata = { title: 'Salons — Admin Sheka' }
+export const metadata = { title: 'Boutiques — Admin TekkiShop' }
 
 export default async function AdminSalonsPage() {
   const supabase = createAdminClient()
 
   const { data } = await supabase
-    .from('salons')
+    .from('shops')
     .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
     .order('created_at', { ascending: false })
 
-  const salons = (data ?? []) as {
+  const shops = (data ?? []) as {
     id: string; name: string; slug: string; plan: string
     trial_ends_at: string | null; city: string | null; country: string
     is_active: boolean; created_at: string; phone_whatsapp: string | null
   }[]
 
-  const trialExpired = salons.filter(s => s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date())
-  const trialActive  = salons.filter(s => s.plan === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) >= new Date()))
-  const paid         = salons.filter(s => s.plan !== 'trial')
+  const trialExpired = shops.filter(s => s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date())
+  const trialActive  = shops.filter(s => s.plan === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) >= new Date()))
+  const paid         = shops.filter(s => s.plan !== 'trial')
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Salons</h1>
-          <p className="text-sm text-gray-500 mt-1">{salons.length} inscrits · {paid.length} payants · {trialActive.length} en essai · {trialExpired.length} expirés</p>
+          <h1 className="text-2xl font-bold text-gray-900">Boutiques</h1>
+          <p className="text-sm text-gray-500 mt-1">{shops.length} inscrits · {paid.length} payants · {trialActive.length} en essai · {trialExpired.length} expirés</p>
         </div>
       </div>
 
@@ -37,7 +37,7 @@ export default async function AdminSalonsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Salon</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Boutique</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Essai expire</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
@@ -46,7 +46,7 @@ export default async function AdminSalonsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {salons.map(s => {
+            {shops.map(s => {
               const trialExpiredRow = s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date()
               return (
                 <tr key={s.id} className="hover:bg-gray-50">
@@ -81,7 +81,7 @@ export default async function AdminSalonsPage() {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/admin/salons/${s.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg bg-[#E85D04] px-2.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-primary)] px-2.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                         title="Gérer le plan"
                       >
                         <Settings className="h-3 w-3" />

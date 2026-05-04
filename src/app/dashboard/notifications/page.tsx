@@ -6,13 +6,13 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Profile, NotificationLog } from '@/types'
 
-export const metadata = { title: 'Notifications — Sheka' }
+export const metadata = { title: 'Notifications — TekkiShop' }
 
 const TYPE_LABELS: Record<string, string> = {
-  booking_confirmation: 'Confirmation',
-  booking_reminder:    'Rappel J-1',
+  order_confirmation: 'Confirmation',
+  order_reminder:    'Rappel J-1',
   cancellation:        'Annulation',
-  new_booking_alert:   'Nouvelle résa',
+  new_order_shop:   'Nouvelle résa',
 }
 
 const STATUS_STYLES: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -33,21 +33,21 @@ export default async function NotificationsPage({ searchParams }: Props) {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('salon_id, role')
+    .select('shop_id, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'salon_id' | 'role'> | null
-  if (!profile?.salon_id || profile.role !== 'owner') redirect('/dashboard')
+  const profile = profileData as Pick<Profile, 'shop_id' | 'role'> | null
+  if (!profile?.shop_id || profile.role !== 'owner') redirect('/dashboard')
 
   let query = supabase
     .from('notification_logs')
     .select('*')
-    .eq('salon_id', profile.salon_id)
+    .eq('shop_id', profile.shop_id)
     .order('sent_at', { ascending: false })
     .limit(100)
 
-  if (type) query = query.eq('notification_type', type)
+  if (type) query = (query as any).eq('notification_type', type)
 
   const { data: logsData } = await query
   const logs = (logsData ?? []) as NotificationLog[]
@@ -80,7 +80,7 @@ export default async function NotificationsPage({ searchParams }: Props) {
 
       {/* Filtres */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {[undefined, 'booking_confirmation', 'booking_reminder', 'cancellation', 'new_booking_alert'].map((t) => (
+        {[undefined, 'order_confirmation', 'order_reminder', 'cancellation', 'new_order_shop'].map((t) => (
           <a
             key={t ?? 'all'}
             href={t ? `?type=${t}` : '?'}

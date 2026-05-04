@@ -4,12 +4,12 @@ import { useState, useCallback, useEffect } from 'react'
 import { RefreshCw, ExternalLink } from 'lucide-react'
 
 interface Props {
-  salonSlug: string
+  shopSlug: string
   appUrl: string
 }
 
-export function PWAPreviewPanel({ salonSlug, appUrl }: Props) {
-  const url = `${appUrl}/${salonSlug}`
+export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
+  const url = `${appUrl}/${shopSlug}`
   const [iframeKey, setIframeKey] = useState(0)
   const reload = useCallback(() => setIframeKey(k => k + 1), [])
 
@@ -17,8 +17,8 @@ export function PWAPreviewPanel({ salonSlug, appUrl }: Props) {
     const handler = () => {
       setTimeout(() => setIframeKey(k => k + 1), 800)
     }
-    window.addEventListener('salon-updated', handler)
-    return () => window.removeEventListener('salon-updated', handler)
+    window.addEventListener('shop-updated', handler)
+    return () => window.removeEventListener('shop-updated', handler)
   }, [])
 
   return (

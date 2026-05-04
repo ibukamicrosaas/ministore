@@ -16,7 +16,7 @@ export async function GET(
         style={{
           width: dim,
           height: dim,
-          background: '#E85D04',
+          background: '#0EA5E9',
           borderRadius: dim * 0.2,
           display: 'flex',
           alignItems: 'center',
@@ -32,7 +32,7 @@ export async function GET(
             fontFamily: 'sans-serif',
           }}
         >
-          B
+          M
         </div>
       </div>
     ),

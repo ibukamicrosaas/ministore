@@ -1,6 +1,6 @@
 import { ResetPinForm } from './ResetPinForm'
 
-export const metadata = { title: 'Réinitialisation PIN — Sheka' }
+export const metadata = { title: 'Réinitialisation PIN — TekkiShop' }
 
 export default function ResetPinPage() {
   return (

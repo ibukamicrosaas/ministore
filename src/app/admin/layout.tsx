@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* ── Navigation mobile (top bar) ── */}
       <header className="lg:hidden bg-gray-900 text-white">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-          <p className="text-xs font-bold tracking-widest text-orange-400 uppercase">Sheka Admin</p>
+          <p className="text-xs font-bold tracking-widest text-sky-400 uppercase">TekkiShop Admin</p>
           <form action={signOut}>
             <button type="submit" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white">
               <LogOut className="h-3.5 w-3.5" />
@@ -55,7 +55,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* ── Sidebar desktop ── */}
         <aside className="hidden lg:flex w-56 shrink-0 bg-gray-900 text-white flex-col min-h-screen">
           <div className="px-5 py-4 border-b border-white/10">
-            <p className="text-xs font-bold tracking-widest text-orange-400 uppercase">Sheka Admin</p>
+            <p className="text-xs font-bold tracking-widest text-sky-400 uppercase">TekkiShop Admin</p>
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1">
             {navLinks.map(({ href, label, icon: Icon }) => (

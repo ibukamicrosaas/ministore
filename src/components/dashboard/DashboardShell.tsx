@@ -4,22 +4,22 @@ import { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
-import type { Salon, Profile } from '@/types'
+import type { Shop, Profile } from '@/types'
 
 interface DashboardShellProps {
-  salon: Salon
+  shop: Shop
   profile: Profile
   children: React.ReactNode
   pageTitle?: string
 }
 
-export function DashboardShell({ salon, profile, children, pageTitle }: DashboardShellProps) {
+export function DashboardShell({ shop, profile, children, pageTitle }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar
-        salon={salon}
+        shop={shop}
         profile={profile}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -33,7 +33,7 @@ export function DashboardShell({ salon, profile, children, pageTitle }: Dashboar
           {children}
         </main>
       </div>
-      <BottomNav profile={profile} salon={salon} />
+      <BottomNav profile={profile} shop={shop} />
     </div>
   )
 }

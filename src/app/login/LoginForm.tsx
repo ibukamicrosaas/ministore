@@ -49,7 +49,7 @@ export function LoginForm() {
     setError(null)
 
     if (!localNumber.trim()) {
-      setError('Veuillez entrer votre numéro de téléphone.')
+      setError('Entre ton numéro de téléphone.')
       return
     }
     setLoading(true)
@@ -81,7 +81,7 @@ export function LoginForm() {
             onClick={() => switchMode('signin')}
             className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
               mode === 'signin'
-                ? 'bg-[#E85D04] text-white shadow-sm'
+                ? 'bg-[var(--color-primary)] text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -92,7 +92,7 @@ export function LoginForm() {
             onClick={() => switchMode('signup')}
             className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
               mode === 'signup'
-                ? 'bg-[#E85D04] text-white shadow-sm'
+                ? 'bg-[var(--color-primary)] text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -107,7 +107,7 @@ export function LoginForm() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Numéro WhatsApp
           </label>
-          <div className="flex rounded-xl border border-gray-200 overflow-visible focus-within:border-[#E85D04] focus-within:ring-1 focus-within:ring-[#E85D04] transition-all">
+          <div className="flex rounded-xl border border-gray-200 overflow-visible focus-within:border-[var(--color-primary)] focus-within:ring-1 focus-within:ring-[var(--color-primary)] transition-all">
             {/* Sélecteur pays */}
             <div className="relative shrink-0" ref={dropdownRef}>
               <button
@@ -132,7 +132,7 @@ export function LoginForm() {
                         setCountryOpen(false)
                       }}
                       className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                        dialCode === country.dial ? 'text-[#E85D04] font-medium bg-orange-50' : 'text-gray-700'
+                        dialCode === country.dial ? 'text-[var(--color-primary)] font-medium bg-sky-50' : 'text-gray-700'
                       }`}
                     >
                       <span className="text-base">{country.flag}</span>
@@ -162,10 +162,10 @@ export function LoginForm() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium text-gray-700">
-              {mode === 'signup' ? 'Choisissez votre code PIN (6 chiffres)' : 'Code PIN'}
+              {mode === 'signup' ? 'Choisis ton code PIN (6 chiffres)' : 'Code PIN'}
             </label>
             {mode === 'signin' && (
-              <Link href="/login/reset-pin" className="text-xs text-[#E85D04] hover:underline">
+              <Link href="/login/reset-pin" className="text-xs text-[var(--color-primary)] hover:underline">
                 PIN oublié ?
               </Link>
             )}
@@ -173,7 +173,7 @@ export function LoginForm() {
           <PinInput name="pin" length={6} onChange={setPin} />
           {mode === 'signup' && (
             <p className="mt-2 text-center text-xs text-gray-400">
-              Retenez bien ce code — il vous servira à chaque connexion
+              Retiens bien ce code — il te servira à chaque connexion
             </p>
           )}
         </div>
@@ -187,7 +187,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading || pin.length < 6}
-          className="w-full rounded-xl bg-[#E85D04] py-3.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
+          className="w-full rounded-xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
         >
           {loading
             ? 'Chargement...'
@@ -199,7 +199,7 @@ export function LoginForm() {
 
       {mode === 'signup' && (
         <p className="mt-4 text-center text-xs text-gray-500">
-          {TRIAL_DAYS} jours d&apos;essai gratuit · Aucun paiement requis
+          Paiement par Wave ou Orange Money · Aucune carte bancaire requise
         </p>
       )}
     </Card>

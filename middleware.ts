@@ -65,12 +65,12 @@ export async function middleware(request: NextRequest) {
 
     const { data: profileData2 } = await supabase
       .from('profiles')
-      .select('salon_id, role, onboarding_completed')
+      .select('shop_id, role, onboarding_completed')
       .eq('id', user.id)
       .single()
 
-    const profile2 = profileData2 as { salon_id: string | null; role: string; onboarding_completed: boolean } | null
-    if (profile2 && profile2.role === 'owner' && (!profile2.salon_id || !profile2.onboarding_completed)) {
+    const profile2 = profileData2 as { shop_id: string | null; role: string; onboarding_completed: boolean } | null
+    if (profile2 && profile2.role === 'owner' && (!profile2.shop_id || !profile2.onboarding_completed)) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
 

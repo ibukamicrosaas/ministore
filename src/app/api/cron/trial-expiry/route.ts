@@ -6,9 +6,8 @@ import { APP_URL } from '@/constants'
 export async function GET(_req: NextRequest) {
   const supabase = createAdminClient()
 
-  // Salons en trial actifs dont l'essai est expiré
   const { data, error } = await supabase
-    .from('salons')
+    .from('shops')
     .select('id, name, slug, phone_whatsapp')
     .eq('plan', 'trial')
     .eq('is_active', true)
@@ -19,18 +18,17 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const salons = (data ?? []) as {
+  const shops = (data ?? []) as {
     id: string; name: string; slug: string; phone_whatsapp: string | null
   }[]
 
-  if (salons.length === 0) {
+  if (shops.length === 0) {
     return NextResponse.json({ deactivated: 0, notified: 0 })
   }
 
-  // Désactiver tous en une requête
-  const ids = salons.map(s => s.id)
+  const ids = shops.map(s => s.id)
   const { error: updateError } = await supabase
-    .from('salons')
+    .from('shops')
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .in('id', ids)
 
@@ -42,25 +40,13 @@ export async function GET(_req: NextRequest) {
   let notified = 0
   const upgradeUrl = `${APP_URL}/dashboard/upgrade`
 
-  for (const salon of salons) {
-    if (!salon.phone_whatsapp) continue
+  for (const shop of shops) {
+    if (!shop.phone_whatsapp) continue
 
-    const msg = buildTrialExpiredMessage({ salonName: salon.name, upgradeUrl })
-    const result = await sendWhatsApp(salon.phone_whatsapp, msg)
-
-    await supabase.from('notification_logs').insert({
-      salon_id: salon.id,
-      booking_id: null,
-      recipient_phone: salon.phone_whatsapp,
-      notification_type: 'trial_expired',
-      channel: 'whatsapp',
-      message: msg,
-      status: result.success ? 'sent' : 'failed',
-      error_message: result.error ?? null,
-    })
-
+    const msg = buildTrialExpiredMessage({ shopName: shop.name, upgradeUrl })
+    const result = await sendWhatsApp(shop.phone_whatsapp, msg)
     if (result.success) notified++
   }
 
-  return NextResponse.json({ deactivated: salons.length, notified })
+  return NextResponse.json({ deactivated: shops.length, notified })
 }

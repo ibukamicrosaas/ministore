@@ -145,7 +145,7 @@ export async function requestPinReset(phone: string) {
     return { error: 'Impossible d\'envoyer le code. Réessaie.' }
   }
 
-  const message = `🔐 *Réinitialisation PIN Sheka*\n\nVotre code de réinitialisation : *${token}*\n\nValable 15 minutes. Ne le partagez pas.`
+  const message = `🔐 *Réinitialisation PIN TekkiShop*\n\nVotre code de réinitialisation : *${token}*\n\nValable 15 minutes. Ne le partagez pas.`
   const { success, error: waError } = await sendWhatsApp(normalizedPhone, message)
 
   if (!success) {

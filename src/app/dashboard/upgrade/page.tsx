@@ -4,9 +4,9 @@ import { CheckCircle2, MessageCircle, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { Profile, Salon } from '@/types'
+import type { Profile, Shop } from '@/types'
 
-export const metadata = { title: 'Choisir un plan — Sheka' }
+export const metadata = { title: 'Choisir un plan — TekkiShop' }
 
 const PLANS = [
   {
@@ -15,11 +15,11 @@ const PLANS = [
     price: '4 900',
     description: 'Idéal pour démarrer',
     features: [
-      'Jusqu\'à 3 employées',
-      'Réservations illimitées',
+      'Produits illimités',
+      'Commandes illimitées',
+      'Mini site marchand en ligne',
+      'Paiements Wave & Orange Money',
       'Notifications WhatsApp',
-      'Tableau de bord complet',
-      'Page de réservation en ligne',
       '3% de commission sur les paiements en ligne',
     ],
     highlighted: false,
@@ -30,12 +30,9 @@ const PLANS = [
     price: '9 900',
     description: 'Le plus populaire',
     features: [
-      'Employées illimitées',
-      'Réservations illimitées',
-      'Notifications WhatsApp',
-      'Tableau de bord complet',
-      'Page de réservation en ligne',
-      'Rapports avancés + export CSV',
+      'Tout ce qui est inclus dans Starter',
+      'Export CSV des commandes',
+      'Rapports de revenus avancés',
       'Support prioritaire',
       '3% de commission sur les paiements en ligne',
     ],
@@ -43,14 +40,13 @@ const PLANS = [
   },
   {
     key: 'multi',
-    name: 'Multi-salon',
+    name: 'Multi-boutique',
     price: '19 900',
     description: 'Pour les groupes',
     features: [
-      'Jusqu\'à 5 salons',
+      "Jusqu'à 5 boutiques",
       'Tout ce qui est inclus dans Pro',
       'Tableau de bord centralisé',
-      'Gestion multi-équipes',
       '3% de commission sur les paiements en ligne',
     ],
     highlighted: false,
@@ -64,24 +60,24 @@ export default async function UpgradePage() {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('salon_id, role')
+    .select('shop_id, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as Pick<Profile, 'salon_id' | 'role'> | null
-  if (!profile?.salon_id || profile.role !== 'owner') redirect('/dashboard')
+  const profile = profileData as Pick<Profile, 'shop_id' | 'role'> | null
+  if (!profile?.shop_id || profile.role !== 'owner') redirect('/dashboard')
 
   const { data: salonData } = await supabase
-    .from('salons')
+    .from('shops')
     .select('name, plan, trial_ends_at')
-    .eq('id', profile.salon_id)
+    .eq('id', profile.shop_id)
     .single()
 
-  const salon = salonData as Pick<Salon, 'name' | 'plan' | 'trial_ends_at'> | null
-  if (!salon) redirect('/dashboard')
+  const shop = salonData as Pick<Shop, 'name' | 'plan' | 'trial_ends_at'> | null
+  if (!shop) redirect('/dashboard')
 
-  const isActivePlan = salon.plan && salon.plan !== 'trial'
-  const trialEnd = salon.trial_ends_at ? new Date(salon.trial_ends_at) : null
+  const isActivePlan = shop.plan && shop.plan !== 'trial'
+  const trialEnd = shop.trial_ends_at ? new Date(shop.trial_ends_at) : null
   const daysLeft = trialEnd
     ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0
@@ -91,7 +87,7 @@ export default async function UpgradePage() {
 
   const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP ?? ''
   const waMessage = encodeURIComponent(
-    `Bonjour Sheka ! Je suis propriétaire du salon "${salon.name}" et je souhaite activer mon abonnement.`
+    `Bonjour TekkiShop ! Je suis propriétaire de la boutique "${shop.name}" et je souhaite activer mon abonnement.`
   )
   const waLink = supportPhone
     ? `https://wa.me/${supportPhone.replace(/\D/g, '')}?text=${waMessage}`
@@ -101,7 +97,7 @@ export default async function UpgradePage() {
     <div className="space-y-6 pb-8">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Choisir un plan</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Activez votre salon pour continuer à recevoir des réservations</p>
+        <p className="text-sm text-gray-500 mt-0.5">Active ton site pour continuer à recevoir des commandes</p>
       </div>
 
       {/* Statut actuel */}
@@ -122,8 +118,8 @@ export default async function UpgradePage() {
 
       {isActivePlan && (
         <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-          <p className="text-sm font-semibold text-green-700">Plan actif — {salon.plan}</p>
-          <p className="text-xs text-green-600 mt-0.5">Votre salon est actif et peut recevoir des réservations.</p>
+          <p className="text-sm font-semibold text-green-700">Plan actif — {shop.plan}</p>
+          <p className="text-xs text-green-600 mt-0.5">Ton site est actif et peut recevoir des commandes.</p>
         </div>
       )}
 
@@ -132,11 +128,11 @@ export default async function UpgradePage() {
         {PLANS.map(plan => (
           <div
             key={plan.key}
-            className={`rounded-xl border p-4 ${plan.highlighted ? 'border-[#E85D04] bg-orange-50' : 'border-gray-200 bg-white'}`}
+            className={`rounded-xl border p-4 ${plan.highlighted ? 'border-[var(--color-primary)] bg-sky-50' : 'border-gray-200 bg-white'}`}
           >
             {plan.highlighted && (
               <div className="mb-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#E85D04] px-2 py-0.5 text-xs font-semibold text-white">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-semibold text-white">
                   <Zap className="h-3 w-3" />
                   Recommandé
                 </span>
@@ -157,7 +153,7 @@ export default async function UpgradePage() {
             <ul className="space-y-1.5">
               {plan.features.map(f => (
                 <li key={f} className="flex items-center gap-2 text-xs text-gray-700">
-                  <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${plan.highlighted ? 'text-[#E85D04]' : 'text-gray-400'}`} />
+                  <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${plan.highlighted ? 'text-[var(--color-primary)]' : 'text-gray-400'}`} />
                   {f}
                 </li>
               ))}
@@ -166,13 +162,13 @@ export default async function UpgradePage() {
             {waLink && (
               <a
                 href={`https://wa.me/${supportPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                  `Bonjour Sheka ! Je souhaite activer le plan ${plan.name} pour mon salon "${salon.name}".`
+                  `Bonjour TekkiShop ! Je souhaite activer le plan ${plan.name} pour ma boutique "${shop.name}".`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity active:opacity-80 ${
                   plan.highlighted
-                    ? 'bg-[#E85D04] text-white'
+                    ? 'bg-[var(--color-primary)] text-white'
                     : 'border border-gray-200 text-gray-700 hover:border-gray-300'
                 }`}
               >

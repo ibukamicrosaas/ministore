@@ -28,8 +28,8 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, className 
           )}
         </div>
         {Icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 shrink-0">
-            <Icon className="h-5 w-5 text-[#E85D04]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 shrink-0">
+            <Icon className="h-5 w-5 text-[var(--color-primary)]" />
           </div>
         )}
       </div>

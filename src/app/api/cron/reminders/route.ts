@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendWhatsApp, buildReminderMessage } from '@/lib/notifications/whatsapp'
+import { sendWhatsApp, buildOrderReminderMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
-import type { Salon, Service } from '@/types'
 import { format, addDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -11,12 +10,20 @@ export async function GET(_req: NextRequest) {
 
   const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd')
 
-  // Bookings confirmés demain sans rappel envoyé
-  const { data: bookingsData, error } = await supabase
-    .from('bookings')
-    .select('id, booking_date, booking_time, client_token, salon_id, clients(first_name, whatsapp, phone), services(name), salons(name, slug, phone_whatsapp)')
-    .eq('booking_date', tomorrow)
-    .in('status', ['confirmed', 'present'])
+  // Commandes confirmées avec livraison demain et sans rappel envoyé
+  const { data: ordersData, error } = await supabase
+    .from('orders')
+    .select(`
+      id,
+      shop_id,
+      delivery_date,
+      delivery_type,
+      client_token,
+      clients(first_name, whatsapp, phone),
+      shops(name, slug, phone_whatsapp)
+    `)
+    .eq('delivery_date', tomorrow)
+    .in('status', ['confirmed', 'preparing'])
     .is('reminder_sent_at', null)
 
   if (error) {
@@ -24,54 +31,55 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const bookings = (bookingsData ?? []) as unknown as Array<{
+  const orders = (ordersData ?? []) as unknown as Array<{
     id: string
-    salon_id: string
-    booking_date: string
-    booking_time: string
+    shop_id: string
+    delivery_date: string
+    delivery_type: string
     client_token: string
-    clients: { first_name: string; whatsapp: string | null; phone: string }
-    services: Pick<Service, 'name'>
-    salons: Pick<Salon, 'name' | 'slug' | 'phone_whatsapp'>
+    clients: { first_name: string; whatsapp: string | null; phone: string } | null
+    shops: { name: string; slug: string; phone_whatsapp: string | null } | null
   }>
 
   let sent = 0
 
-  for (const booking of bookings) {
-    const clientWhatsapp = booking.clients.whatsapp ?? booking.clients.phone
-    const dateFormatted = format(new Date(booking.booking_date + 'T12:00:00'), 'EEEE d MMMM', { locale: fr })
-    const timeFormatted = booking.booking_time.slice(0, 5)
-    const bookingUrl = `${APP_URL}/${booking.salons.slug}/booking/${booking.id}?token=${booking.client_token}`
+  for (const order of orders) {
+    if (!order.clients || !order.shops) continue
 
-    const msg = buildReminderMessage({
-      salonName: booking.salons.name,
-      serviceName: booking.services.name,
-      date: dateFormatted,
-      time: timeFormatted,
-      bookingUrl,
+    const clientPhone   = order.clients.whatsapp ?? order.clients.phone
+    const dateFormatted = format(new Date(order.delivery_date + 'T12:00:00'), 'EEEE d MMMM', { locale: fr })
+    const orderUrl      = `${APP_URL}/${order.shops.slug}/commande/${order.id}?token=${order.client_token}`
+
+    const msg = buildOrderReminderMessage({
+      shopName:     order.shops.name,
+      clientName:   order.clients.first_name,
+      deliveryDate: dateFormatted,
+      deliveryType: order.delivery_type as 'home_delivery' | 'store_pickup',
+      orderUrl,
     })
 
-    const result = await sendWhatsApp(clientWhatsapp, msg)
-
-    await supabase.from('notification_logs').insert({
-      salon_id: booking.salon_id,
-      booking_id: booking.id,
-      recipient_phone: clientWhatsapp,
-      notification_type: 'booking_reminder',
-      channel: 'whatsapp',
-      message: msg,
-      status: result.success ? 'sent' : 'failed',
-      error_message: result.error ?? null,
-    })
+    const result = await sendWhatsApp(clientPhone, msg)
 
     if (result.success) {
       await supabase
-        .from('bookings')
+        .from('orders')
         .update({ reminder_sent_at: new Date().toISOString() })
-        .eq('id', booking.id)
+        .eq('id', order.id)
+
+      await supabase.from('notification_logs').insert({
+        shop_id:           order.shop_id,
+        order_id:          order.id,
+        recipient_phone:   clientPhone,
+        notification_type: 'order_reminder',
+        channel:           'whatsapp',
+        message:           msg,
+        status:            'sent',
+        error_message:     null,
+      })
+
       sent++
     }
   }
 
-  return NextResponse.json({ processed: bookings.length, sent })
+  return NextResponse.json({ processed: orders.length, sent })
 }

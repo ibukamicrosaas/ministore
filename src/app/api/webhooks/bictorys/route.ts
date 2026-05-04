@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyBictorysSignature, type BictorysWebhookPayload } from '@/lib/payments/bictorys'
-import { sendWhatsApp, buildBookingConfirmationMessage, buildNewBookingAlertMessage } from '@/lib/notifications/whatsapp'
+import {
+  sendWhatsApp,
+  buildOrderConfirmationMessage,
+  buildNewOrderAlertMessage,
+} from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
-import type { Salon, Service } from '@/types'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 
 export async function POST(req: NextRequest) {
-  const rawBody = await req.text()
+  const rawBody    = await req.text()
   const headerSecret = req.headers.get('x-secret-key') ?? ''
-  const envSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
+  const envSecret  = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
 
   if (envSecret && !verifyBictorysSignature(headerSecret, envSecret)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
@@ -18,15 +19,15 @@ export async function POST(req: NextRequest) {
 
   const payload = JSON.parse(rawBody) as BictorysWebhookPayload
 
-  // merchantReference is the booking ID
-  const bookingId = payload.merchantReference
-  if (!bookingId) {
+  // merchantReference is the order ID
+  const orderId = payload.merchantReference
+  if (!orderId) {
     return NextResponse.json({ error: 'merchantReference manquant' }, { status: 400 })
   }
 
   const supabase = createAdminClient()
 
-  // Idempotence: skip if already processed
+  // Idempotence
   const { data: existingPayment } = await supabase
     .from('payments')
     .select('status')
@@ -51,82 +52,98 @@ export async function POST(req: NextRequest) {
     .update({ status: 'completed', paid_at: new Date().toISOString() })
     .eq('provider_payment_id', payload.id)
 
-  const { data: bookingData } = await supabase
-    .from('bookings')
+  // Confirmer la commande
+  const { data: orderData } = await supabase
+    .from('orders')
     .update({
-      status: 'confirmed',
+      status:       'confirmed',
       deposit_paid: true,
-      confirmation_sent_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
     })
-    .eq('id', bookingId)
+    .eq('id', orderId)
     .eq('status', 'pending')
-    .select('*, clients(first_name, last_name, whatsapp, phone), services(name, price), salons(name, phone_whatsapp, slug)')
+    .select(`
+      id, shop_id, total_price, deposit_amount, payment_type, delivery_type, delivery_date, client_token,
+      clients(first_name, last_name, whatsapp, phone),
+      order_items(product_name, quantity, line_total),
+      shops(name, phone_whatsapp, slug)
+    `)
     .single()
 
-  if (!bookingData) {
-    return NextResponse.json({ ok: true })
-  }
+  if (!orderData) return NextResponse.json({ ok: true })
 
-  const b = bookingData as unknown as {
+  const o = orderData as unknown as {
     id: string
-    booking_date: string
-    booking_time: string
-    deposit_amount: number
+    shop_id: string
     total_price: number
-    salon_id: string
+    deposit_amount: number
+    payment_type: string
+    delivery_type: 'home_delivery' | 'store_pickup'
+    delivery_date: string | null
     client_token: string
-    clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string }
-    services: Pick<Service, 'name' | 'price'>
-    salons: Pick<Salon, 'name' | 'phone_whatsapp' | 'slug'>
+    clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string } | null
+    order_items: { product_name: string; quantity: number; line_total: number }[]
+    shops: { name: string; phone_whatsapp: string | null; slug: string } | null
   }
 
-  const dateFormatted = format(new Date(b.booking_date + 'T12:00:00'), 'EEEE d MMMM yyyy', { locale: fr })
-  const timeFormatted = b.booking_time.slice(0, 5)
-  const bookingUrl = `${APP_URL}/${b.salons.slug}/booking/${b.id}?token=${b.client_token}`
-  const clientName = `${b.clients.first_name} ${b.clients.last_name ?? ''}`.trim()
-  const clientWhatsapp = b.clients.whatsapp ?? b.clients.phone
+  if (!o.clients || !o.shops) return NextResponse.json({ ok: true })
 
-  const confirmMsg = buildBookingConfirmationMessage({
-    salonName: b.salons.name,
-    serviceName: b.services.name,
-    date: dateFormatted,
-    time: timeFormatted,
-    depositAmount: b.deposit_amount,
-    remainingAmount: b.total_price - b.deposit_amount,
-    bookingUrl,
+  const clientWhatsapp = o.clients.whatsapp ?? o.clients.phone
+  const clientName     = [o.clients.first_name, o.clients.last_name].filter(Boolean).join(' ')
+  const orderUrl       = `${APP_URL}/${o.shops.slug}/commande/${o.id}?token=${o.client_token}`
+
+  const itemsSummary = o.order_items
+    .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${i.line_total.toLocaleString('fr-FR')} FCFA`)
+    .join('\n')
+
+  // Message confirmation → client
+  const confirmMsg = buildOrderConfirmationMessage({
+    shopName:     o.shops.name,
+    clientName:   o.clients.first_name,
+    items:        itemsSummary,
+    totalPrice:   o.total_price,
+    deliveryType: o.delivery_type,
+    deliveryDate: o.delivery_date ?? undefined,
+    paymentType:  o.payment_type,
+    orderUrl,
   })
 
   const clientNotif = await sendWhatsApp(clientWhatsapp, confirmMsg)
   await supabase.from('notification_logs').insert({
-    salon_id: b.salon_id,
-    booking_id: b.id,
-    recipient_phone: clientWhatsapp,
-    notification_type: 'booking_confirmation',
-    channel: 'whatsapp',
-    message: confirmMsg,
-    status: clientNotif.success ? 'sent' : 'failed',
-    error_message: clientNotif.error ?? null,
+    shop_id:           o.shop_id,
+    order_id:          o.id,
+    recipient_phone:   clientWhatsapp,
+    notification_type: 'order_confirmation',
+    channel:           'whatsapp',
+    message:           confirmMsg,
+    status:            clientNotif.success ? 'sent' : 'failed',
+    error_message:     clientNotif.error ?? null,
   })
 
-  const alertMsg = buildNewBookingAlertMessage({
-    clientName,
-    serviceName: b.services.name,
-    date: dateFormatted,
-    time: timeFormatted,
-    depositAmount: b.deposit_amount,
-  })
+  // Alerte → vendeur
+  if (o.shops.phone_whatsapp) {
+    const alertMsg = buildNewOrderAlertMessage({
+      clientName,
+      clientPhone:  o.clients.phone,
+      items:        itemsSummary,
+      totalPrice:   o.total_price,
+      deliveryType: o.delivery_type,
+      deliveryDate: o.delivery_date ?? undefined,
+      paymentType:  o.payment_type,
+    })
 
-  const salonNotif = await sendWhatsApp(b.salons.phone_whatsapp ?? '', alertMsg)
-  await supabase.from('notification_logs').insert({
-    salon_id: b.salon_id,
-    booking_id: b.id,
-    recipient_phone: b.salons.phone_whatsapp ?? '',
-    notification_type: 'new_booking_salon',
-    channel: 'whatsapp',
-    message: alertMsg,
-    status: salonNotif.success ? 'sent' : 'failed',
-    error_message: salonNotif.error ?? null,
-  })
+    const shopNotif = await sendWhatsApp(o.shops.phone_whatsapp, alertMsg)
+    await supabase.from('notification_logs').insert({
+      shop_id:           o.shop_id,
+      order_id:          o.id,
+      recipient_phone:   o.shops.phone_whatsapp,
+      notification_type: 'new_order_shop',
+      channel:           'whatsapp',
+      message:           alertMsg,
+      status:            shopNotif.success ? 'sent' : 'failed',
+      error_message:     shopNotif.error ?? null,
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }

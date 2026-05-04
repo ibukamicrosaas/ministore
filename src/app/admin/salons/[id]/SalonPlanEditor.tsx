@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { updateSalonPlan } from '@/lib/actions/admin'
+import { updateShopPlan } from '@/lib/actions/admin'
 import { ChevronLeft, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -13,7 +13,7 @@ const PLANS = [
   { value: 'trial',   label: 'Essai gratuit' },
   { value: 'starter', label: 'Starter — 5 000 FCFA/mois' },
   { value: 'pro',     label: 'Pro — 10 000 FCFA/mois' },
-  { value: 'multi',   label: 'Multi-salon — 20 000 FCFA/mois' },
+  { value: 'multi',   label: 'Multi-boutique — 20 000 FCFA/mois' },
 ]
 
 export interface SalonAdminData {
@@ -39,7 +39,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
 
   async function handleSave() {
     setLoading(true)
-    const result = await updateSalonPlan(salon.id, {
+    const result = await updateShopPlan(salon.id, {
       plan,
       is_active: isActive,
       trial_ends_at: plan === 'trial' ? (trialEndsAt ? new Date(trialEndsAt).toISOString() : null) : undefined,
@@ -47,7 +47,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
     if ('error' in result) {
       toast.error(result.error ?? 'Erreur')
     } else {
-      toast.success('Salon mis à jour ✓')
+      toast.success('Boutique mise à jour ✓')
       router.refresh()
     }
     setLoading(false)
@@ -95,7 +95,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
           <select
             value={plan}
             onChange={e => setPlan(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
           >
             {PLANS.map(p => (
               <option key={p.value} value={p.value}>{p.label}</option>
@@ -110,7 +110,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
               type="date"
               value={trialEndsAt}
               onChange={e => setTrialEndsAt(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
             />
             <p className="text-xs text-gray-400 mt-1">Laisser vide pour pas de date limite (déconseillé)</p>
           </div>
@@ -120,13 +120,13 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
           <div>
             <p className="text-sm font-medium text-gray-900">Mini site actif</p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {isActive ? 'Le salon accepte des réservations' : 'Le mini site est suspendu'}
+              {isActive ? 'La boutique accepte des commandes' : 'Le mini site est suspendu'}
             </p>
           </div>
           <button
             type="button"
             onClick={() => setIsActive(!isActive)}
-            className={`relative h-6 w-11 rounded-full transition-colors ${isActive ? 'bg-[#E85D04]' : 'bg-gray-200'}`}
+            className={`relative h-6 w-11 rounded-full transition-colors ${isActive ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
           >
             <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-5' : ''}`} />
           </button>
@@ -136,7 +136,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
           type="button"
           onClick={handleSave}
           disabled={loading}
-          className="w-full rounded-xl bg-[#E85D04] py-3 text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
+          className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
         >
           {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
         </button>

@@ -3,23 +3,23 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { DEFAULT_OPENING_HOURS, TRIAL_DAYS } from '@/constants'
+import { TRIAL_DAYS } from '@/constants'
 
 async function getOwnerContext() {
   const supabase = await createServerClient()
   const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return { error: 'Non authentifié.', userId: null, salonId: null, supabase: null }
-  const { data: profile } = await supabase.from('profiles').select('salon_id, role').eq('id', user.id).single()
-  return { error: null, userId: user.id, salonId: profile?.salon_id ?? null, supabase }
+  if (error || !user) return { error: 'Non authentifié.', userId: null, shopId: null, supabase: null }
+  const { data: profile } = await supabase.from('profiles').select('shop_id, role').eq('id', user.id).single()
+  return { error: null, userId: user.id, shopId: profile?.shop_id ?? null, supabase }
 }
 
-async function getOwnerSalonId() {
-  const { error, salonId, supabase } = await getOwnerContext()
-  if (error || !salonId || !supabase) return { error: error ?? 'Pas de salon.', salonId: null, supabase: null }
-  return { error: null, salonId, supabase }
+async function getOwnerShopId() {
+  const { error, shopId, supabase } = await getOwnerContext()
+  if (error || !shopId || !supabase) return { error: error ?? 'Pas de boutique.', shopId: null, supabase: null }
+  return { error: null, shopId, supabase }
 }
 
-// ── ÉTAPE 1 — Créer le salon avec le nom ──────────────────────────────────────
+// ── ÉTAPE 1 — Créer la boutique avec le nom ──────────────────────────────────
 
 export async function startOnboarding(name: string): Promise<{ error?: string; slug?: string }> {
   const supabase = await createServerClient()
@@ -29,18 +29,15 @@ export async function startOnboarding(name: string): Promise<{ error?: string; s
   const trimmed = name.trim()
   if (trimmed.length < 2) return { error: 'Le nom doit faire au moins 2 caractères.' }
 
-  // Vérifier qu'il n'a pas déjà un salon
-  const { data: existing } = await supabase.from('profiles').select('salon_id').eq('id', user.id).single()
-  if (existing?.salon_id) {
-    // Le salon existe déjà, récupérer le slug
-    const { data: salon } = await supabase.from('salons').select('slug').eq('id', existing.salon_id).single()
-    if (salon) {
+  const { data: existing } = await supabase.from('profiles').select('shop_id').eq('id', user.id).single()
+  if (existing?.shop_id) {
+    const { data: shop } = await supabase.from('shops').select('slug').eq('id', existing.shop_id).single()
+    if (shop) {
       await supabase.from('profiles').update({ onboarding_step: 2 }).eq('id', user.id)
-      return { slug: salon.slug }
+      return { slug: shop.slug }
     }
   }
 
-  // Générer un slug unique
   const baseSlug = trimmed
     .toLowerCase()
     .normalize('NFD')
@@ -52,61 +49,60 @@ export async function startOnboarding(name: string): Promise<{ error?: string; s
   let slug = baseSlug
   let attempt = 0
   while (attempt < 10) {
-    const { data: exists } = await supabase.from('salons').select('id').eq('slug', slug).single()
+    const { data: exists } = await supabase.from('shops').select('id').eq('slug', slug).single()
     if (!exists) break
     attempt++
     slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
   }
 
   const admin = createAdminClient()
-  const { data: salon, error: salonError } = await admin
-    .from('salons')
+  const { data: shop, error: shopError } = await admin
+    .from('shops')
     .insert({
       slug,
       name: trimmed,
-      opening_hours: DEFAULT_OPENING_HOURS,
       trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select('id, slug')
     .single()
 
-  if (salonError || !salon) {
-    console.error('[startOnboarding]', salonError?.message)
-    return { error: 'Impossible de créer le salon. Réessaie.' }
+  if (shopError || !shop) {
+    console.error('[startOnboarding]', shopError?.message)
+    return { error: 'Impossible de créer la boutique. Réessaie.' }
   }
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ salon_id: salon.id, role: 'owner', onboarding_step: 2 })
+    .update({ shop_id: shop.id, role: 'owner', onboarding_step: 2 })
     .eq('id', user.id)
 
   if (profileError) {
     console.error('[startOnboarding profile]', profileError.message)
-    return { error: 'Salon créé mais liaison échouée.' }
+    return { error: 'Boutique créée mais liaison échouée.' }
   }
 
-  return { slug: salon.slug }
+  return { slug: shop.slug }
 }
 
 // ── ÉTAPE 2 — Type d'activité + spécialité ────────────────────────────────────
 
 export async function saveOnboardingType(input: {
-  businessType: 'independent' | 'salon'
-  specialty: 'hair' | 'nails' | 'makeup' | 'beauty' | 'fashion' | 'other'
+  businessType: string
+  specialty: string
   specialtyCustom?: string
 }): Promise<{ error?: string }> {
-  const { error: authError, salonId, supabase } = await getOwnerSalonId()
-  if (authError || !salonId || !supabase) return { error: authError ?? 'Erreur.' }
+  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   const { error } = await supabase
-    .from('salons')
+    .from('shops')
     .update({
       business_type: input.businessType,
       specialty: input.specialty,
       specialty_custom: input.specialtyCustom?.trim() || null,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', salonId)
+    .eq('id', shopId)
 
   if (error) {
     console.error('[saveOnboardingType]', error.message)
@@ -121,55 +117,54 @@ export async function saveOnboardingType(input: {
   return {}
 }
 
-// ── ÉTAPE 3 — Informations du salon ───────────────────────────────────────────
+// ── ÉTAPE 3 — Informations de la boutique ─────────────────────────────────────
 
 export async function saveOnboardingInfo(formData: FormData): Promise<{ error?: string }> {
   const supabase = await createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Non authentifié.' }
 
-  const { data: profile } = await supabase.from('profiles').select('salon_id, role').eq('id', user.id).single()
-  if (!profile?.salon_id) return { error: 'Salon introuvable.' }
+  const { data: profile } = await supabase.from('profiles').select('shop_id, role').eq('id', user.id).single()
+  if (!profile?.shop_id) return { error: 'Boutique introuvable.' }
 
-  const city = (formData.get('city') as string)?.trim() || null
+  const city        = (formData.get('city') as string)?.trim() || null
   const description = (formData.get('description') as string)?.trim() || null
-  const whatsapp = (formData.get('whatsapp') as string)?.trim() || null
+  const whatsapp    = (formData.get('whatsapp') as string)?.trim() || null
 
   const { error } = await supabase
-    .from('salons')
+    .from('shops')
     .update({
-      ...(city ? { city } : {}),
-      ...(description ? { description } : {}),
-      ...(whatsapp ? { phone_whatsapp: whatsapp } : {}),
+      ...(city        ? { city }                        : {}),
+      ...(description ? { description }                 : {}),
+      ...(whatsapp    ? { phone_whatsapp: whatsapp }    : {}),
       updated_at: new Date().toISOString(),
     })
-    .eq('id', profile.salon_id)
+    .eq('id', profile.shop_id)
 
   if (error) {
     console.error('[saveOnboardingInfo]', error.message)
     return { error: 'Impossible de sauvegarder.' }
   }
 
-  // Upload logo si fourni
   const logo = formData.get('logo') as File | null
   if (logo && logo.size > 0) {
     if (logo.size > 2 * 1024 * 1024) return { error: 'Le logo doit faire moins de 2 Mo.' }
     if (!logo.type.startsWith('image/')) return { error: 'Le logo doit être une image.' }
 
     const ext = logo.name.split('.').pop() ?? 'jpg'
-    const path = `${profile.salon_id}/logo.${ext}`
+    const path = `${profile.shop_id}/logo.${ext}`
     const admin = createAdminClient()
 
     const { error: uploadError } = await admin.storage
-      .from('salon-logos')
+      .from('shop-logos')
       .upload(path, logo, { upsert: true, contentType: logo.type })
 
     if (!uploadError) {
-      const { data: { publicUrl } } = admin.storage.from('salon-logos').getPublicUrl(path)
+      const { data: { publicUrl } } = admin.storage.from('shop-logos').getPublicUrl(path)
       await supabase
-        .from('salons')
+        .from('shops')
         .update({ logo_url: publicUrl })
-        .eq('id', profile.salon_id)
+        .eq('id', profile.shop_id)
     }
   }
 
@@ -177,37 +172,39 @@ export async function saveOnboardingInfo(formData: FormData): Promise<{ error?: 
   return {}
 }
 
-// ── ÉTAPE 4 — Première prestation ────────────────────────────────────────────
+// ── ÉTAPE 4 — Premier produit ─────────────────────────────────────────────────
 
-export async function saveOnboardingService(input: {
+export async function saveOnboardingProduct(input: {
   name: string
-  duration_minutes: number
   price: number
+  description?: string
+  photo_url?: string
 }): Promise<{ error?: string }> {
-  const { error: authError, salonId, supabase } = await getOwnerSalonId()
-  if (authError || !salonId || !supabase) return { error: authError ?? 'Erreur.' }
+  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
-  if (!input.name.trim()) return { error: 'Le nom de la prestation est obligatoire.' }
+  if (!input.name.trim()) return { error: 'Le nom du produit est obligatoire.' }
   if (input.price < 0) return { error: 'Le prix doit être positif.' }
 
-  const { error } = await supabase.from('services').insert({
-    salon_id: salonId,
+  const { error } = await supabase.from('products').insert({
+    shop_id: shopId,
     name: input.name.trim(),
-    duration_minutes: input.duration_minutes,
     price: input.price,
+    description: input.description?.trim() || null,
+    photo_url: input.photo_url ?? null,
     is_active: true,
   })
 
   if (error) {
-    console.error('[saveOnboardingService]', error.message)
-    return { error: 'Impossible de créer la prestation.' }
+    console.error('[saveOnboardingProduct]', error.message)
+    return { error: 'Impossible de créer le produit.' }
   }
 
   const ctx = await getOwnerContext()
   if (ctx.userId && ctx.supabase) {
     await ctx.supabase.from('profiles').update({ onboarding_step: 5 }).eq('id', ctx.userId)
   }
-  revalidatePath('/dashboard/services')
+  revalidatePath('/dashboard/products')
   return {}
 }
 
@@ -218,15 +215,15 @@ export async function completeOnboarding(): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  const { data: profile } = await supabase.from('profiles').select('salon_id').eq('id', user.id).single()
-  if (!profile?.salon_id) return
+  const { data: profile } = await supabase.from('profiles').select('shop_id').eq('id', user.id).single()
+  if (!profile?.shop_id) return
 
   const now = new Date().toISOString()
   await Promise.all([
     supabase
-      .from('salons')
+      .from('shops')
       .update({ onboarding_completed: true, onboarding_completed_at: now })
-      .eq('id', profile.salon_id),
+      .eq('id', profile.shop_id),
     supabase
       .from('profiles')
       .update({ onboarding_step: 5, onboarding_completed: true })
@@ -236,7 +233,7 @@ export async function completeOnboarding(): Promise<void> {
   revalidatePath('/dashboard')
 }
 
-// ── SKIP une étape (3 ou 4) ───────────────────────────────────────────────────
+// ── SKIP une étape ────────────────────────────────────────────────────────────
 
 export async function skipOnboardingStep(step: 3 | 4): Promise<{ error?: string }> {
   const supabase = await createServerClient()
@@ -248,41 +245,4 @@ export async function skipOnboardingStep(step: 3 | 4): Promise<{ error?: string 
     .update({ onboarding_step: step === 4 ? 5 : step + 1 })
     .eq('id', user.id)
   return {}
-}
-
-// ── LEGACY — conservé pour compatibilité ─────────────────────────────────────
-
-export async function onboardingCreateService(input: {
-  name: string
-  duration_minutes: number
-  price: number
-}) {
-  return saveOnboardingService(input)
-}
-
-export async function onboardingCreateStaff(input: {
-  first_name: string
-  last_name?: string
-}) {
-  const { error: authError, salonId, supabase } = await getOwnerSalonId()
-  if (authError || !salonId || !supabase) return { error: authError ?? 'Erreur.' }
-
-  if (!input.first_name.trim()) return { error: 'Le prénom est obligatoire.' }
-
-  const { error } = await supabase.from('staff').insert({
-    salon_id: salonId,
-    first_name: input.first_name.trim(),
-    last_name: input.last_name?.trim() || '',
-    remuneration_type: 'commission',
-    commission_rate: 0,
-    is_active: true,
-  })
-
-  if (error) {
-    console.error('[onboardingCreateStaff]', error.message)
-    return { error: "Impossible d'ajouter l'employée." }
-  }
-
-  revalidatePath('/dashboard/staff')
-  return { success: true }
 }

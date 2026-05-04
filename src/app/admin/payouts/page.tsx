@@ -3,21 +3,21 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { MarkPayoutDoneButton } from './MarkPayoutDoneButton'
 
-export const metadata = { title: 'Reversements — Admin Sheka' }
+export const metadata = { title: 'Reversements — Admin TekkiShop' }
 
 export default async function AdminPayoutsPage() {
   const supabase = createAdminClient()
 
   const { data } = await supabase
     .from('payouts')
-    .select('*, salons(name, slug)')
+    .select('*, shops(name, slug)')
     .order('requested_at', { ascending: true })
 
-  const payouts = (data ?? []) as {
+  const payouts = (data ?? []) as unknown as {
     id: string; gross_amount: number; commission_amount: number; net_amount: number
     payout_method: string; payout_number: string; status: string
     requested_at: string; completed_at: string | null
-    salons: { name: string; slug: string } | null
+    shops: { name: string; slug: string } | null
   }[]
 
   const pending = payouts.filter(p => p.status === 'pending')
@@ -37,7 +37,7 @@ export default async function AdminPayoutsPage() {
           {pending.map(p => (
             <div key={p.id} className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">{p.salons?.name ?? '—'}</p>
+                <p className="text-sm font-semibold text-gray-900">{p.shops?.name ?? '—'}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {p.payout_method === 'wave' ? 'Wave' : 'Orange Money'} · <span className="font-mono">{p.payout_number}</span>
                 </p>
@@ -71,7 +71,7 @@ export default async function AdminPayoutsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Salon</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Boutique</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Méthode</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">Montant net</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 hidden lg:table-cell">Date</th>
@@ -80,7 +80,7 @@ export default async function AdminPayoutsPage() {
               <tbody className="divide-y divide-gray-100">
                 {done.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{p.salons?.name ?? '—'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{p.shops?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{p.payout_method === 'wave' ? 'Wave' : 'OM'} · {p.payout_number}</td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">{p.net_amount.toLocaleString('fr-FR')} F</td>
                     <td className="px-4 py-3 text-gray-400 text-xs hidden lg:table-cell">

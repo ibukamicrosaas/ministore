@@ -105,16 +105,94 @@ export function buildClientCancelledAlertMessage(params: {
 ${refundText}`
 }
 
+export function buildOrderConfirmationMessage(params: {
+  shopName: string
+  clientName: string
+  items: string
+  totalPrice: number
+  deliveryType: 'home_delivery' | 'store_pickup'
+  deliveryDate?: string
+  paymentType: string
+  orderUrl: string
+}): string {
+  const deliveryText = params.deliveryType === 'home_delivery'
+    ? `📦 Livraison à domicile${params.deliveryDate ? ` le ${params.deliveryDate}` : ''}`
+    : `🏪 Retrait en boutique${params.deliveryDate ? ` le ${params.deliveryDate}` : ''}`
+
+  const paymentText = params.paymentType === 'on_delivery'
+    ? '💵 Paiement à la réception'
+    : params.paymentType === 'on_site'
+    ? '🏪 Paiement en boutique'
+    : '✅ Paiement en ligne confirmé'
+
+  return `✅ *Commande confirmée chez ${params.shopName} !*
+
+Bonjour ${params.clientName} 👋
+
+🛒 Articles :
+${params.items}
+
+💰 Total : ${params.totalPrice.toLocaleString('fr-FR')} FCFA
+${deliveryText}
+${paymentText}
+
+Voir votre commande : ${params.orderUrl}`
+}
+
+export function buildNewOrderAlertMessage(params: {
+  clientName: string
+  clientPhone: string
+  items: string
+  totalPrice: number
+  deliveryType: 'home_delivery' | 'store_pickup'
+  deliveryDate?: string
+  paymentType: string
+}): string {
+  const deliveryText = params.deliveryType === 'home_delivery' ? 'Livraison à domicile' : 'Retrait en boutique'
+  const paymentText = params.paymentType === 'on_delivery' ? 'À la réception' : params.paymentType === 'on_site' ? 'En boutique' : 'Payé en ligne'
+
+  return `🔔 *Nouvelle commande !*
+
+👤 Client : ${params.clientName} · ${params.clientPhone}
+🛒 Articles :
+${params.items}
+💰 Total : ${params.totalPrice.toLocaleString('fr-FR')} FCFA
+${params.deliveryDate ? `📅 Date : ${params.deliveryDate}` : ''}
+📦 Livraison : ${deliveryText}
+💳 Paiement : ${paymentText}`
+}
+
+export function buildOrderReminderMessage(params: {
+  shopName: string
+  clientName: string
+  deliveryDate: string
+  deliveryType: 'home_delivery' | 'store_pickup'
+  orderUrl: string
+}): string {
+  const deliveryText = params.deliveryType === 'home_delivery'
+    ? `📦 Livraison prévue demain (${params.deliveryDate})`
+    : `🏪 Retrait en boutique demain (${params.deliveryDate})`
+
+  return `⏰ *Rappel de commande*
+
+Bonjour ${params.clientName} 👋
+
+Votre commande chez *${params.shopName}* est prévue pour demain.
+${deliveryText}
+
+Voir les détails : ${params.orderUrl}`
+}
+
 export function buildTrialReminderMessage(params: {
-  salonName: string
+  shopName: string
   daysLeft: number
   upgradeUrl: string
 }): string {
-  return `⏳ *Votre essai Sheka expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''} !*
+  return `⏳ *Votre essai TekkiShop expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''} !*
 
-Bonjour ${params.salonName} 👋
+Bonjour ${params.shopName} 👋
 
-Votre période d'essai gratuite se termine bientôt. Pour continuer à recevoir des réservations en ligne, choisissez un plan avant la date d'expiration.
+Votre période d'essai gratuite se termine bientôt. Pour continuer à recevoir des commandes en ligne, choisissez un plan avant la date d'expiration.
 
 👉 ${params.upgradeUrl}
 
@@ -122,16 +200,16 @@ Paiement simple par Wave ou Orange Money. Des questions ? Répondez à ce messag
 }
 
 export function buildTrialExpiredMessage(params: {
-  salonName: string
+  shopName: string
   upgradeUrl: string
 }): string {
-  return `🔴 *Votre essai Sheka est terminé*
+  return `🔴 *Votre essai TekkiShop est terminé*
 
-Bonjour ${params.salonName},
+Bonjour ${params.shopName},
 
-Votre période d'essai gratuite est expirée. Votre page de réservation est temporairement suspendue.
+Votre période d'essai gratuite est expirée. Votre mini site est temporairement suspendu.
 
-Pour la réactiver, choisissez un plan :
+Pour le réactiver, choisissez un plan :
 👉 ${params.upgradeUrl}
 
 Paiement par Wave ou Orange Money. Répondez à ce message pour toute question.`

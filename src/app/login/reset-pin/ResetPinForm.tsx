@@ -53,7 +53,7 @@ export function ResetPinForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Numéro WhatsApp
             </label>
-            <div className="flex rounded-xl border border-gray-200 overflow-hidden focus-within:border-[#E85D04] focus-within:ring-1 focus-within:ring-[#E85D04] transition-all">
+            <div className="flex rounded-xl border border-gray-200 overflow-hidden focus-within:border-[var(--color-primary)] focus-within:ring-1 focus-within:ring-[var(--color-primary)] transition-all">
               <span className="flex items-center px-3 bg-gray-50 border-r border-gray-200 text-sm text-gray-500 shrink-0">
                 📱
               </span>
@@ -73,7 +73,7 @@ export function ResetPinForm() {
           <button
             type="submit"
             disabled={loading || !phone.trim()}
-            className="w-full rounded-xl bg-[#E85D04] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
+            className="w-full rounded-xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
           >
             {loading ? 'Envoi...' : 'Recevoir le code WhatsApp'}
           </button>
@@ -111,7 +111,7 @@ export function ResetPinForm() {
           <button
             type="submit"
             disabled={loading || code.length < 6 || newPin.length < 6}
-            className="w-full rounded-xl bg-[#E85D04] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
+            className="w-full rounded-xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
           >
             {loading ? 'Mise à jour...' : 'Changer le PIN'}
           </button>
