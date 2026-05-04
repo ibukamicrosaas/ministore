@@ -97,6 +97,34 @@ export async function signOut() {
   redirect('/login')
 }
 
+export async function changePin(currentPin: string, newPin: string) {
+  if (!currentPin || !newPin) return { error: 'Données manquantes.' }
+
+  if (!/^\d{6}$/.test(currentPin)) return { error: 'Le PIN actuel doit contenir 6 chiffres.' }
+  if (!/^\d{6}$/.test(newPin))     return { error: 'Le nouveau PIN doit contenir 6 chiffres.' }
+  if (currentPin === newPin)       return { error: 'Le nouveau PIN doit être différent de l\'actuel.' }
+
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) return { error: 'Non authentifié.' }
+
+  // Vérifier le PIN actuel via re-signin silencieux
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email:    user.email,
+    password: currentPin,
+  })
+  if (signInError) return { error: 'Code PIN actuel incorrect.' }
+
+  // Mettre à jour le PIN
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPin })
+  if (updateError) {
+    console.error('[changePin]', updateError.message)
+    return { error: 'Impossible de modifier le PIN. Réessaie.' }
+  }
+
+  return { success: true }
+}
+
 export async function getSession() {
   const supabase = await createServerClient()
   const { data: { user }, error } = await supabase.auth.getUser()

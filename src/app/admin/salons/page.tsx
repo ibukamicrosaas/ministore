@@ -56,11 +56,16 @@ export default async function AdminSalonsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      s.plan === 'pro'     ? 'bg-blue-100 text-blue-700' :
-                      s.plan === 'starter' ? 'bg-green-100 text-green-700' :
-                      s.plan === 'multi'   ? 'bg-purple-100 text-purple-700' :
+                      s.plan === 'pro'        ? 'bg-purple-100 text-purple-700' :
+                      s.plan === 'business'   ? 'bg-blue-100 text-blue-700' :
+                      s.plan === 'decouverte' ? 'bg-green-100 text-green-700' :
                       'bg-gray-100 text-gray-500'
-                    }`}>{s.plan}</span>
+                    }`}>{
+                      s.plan === 'decouverte' ? 'Découverte' :
+                      s.plan === 'business'   ? 'Business' :
+                      s.plan === 'pro'        ? 'Pro' :
+                      'Essai'
+                    }</span>
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
                     {s.plan === 'trial' && s.trial_ends_at ? (

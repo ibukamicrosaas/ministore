@@ -2,9 +2,10 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { SettingsForm } from './SettingsForm'
+import { ChangePinForm } from './ChangePinForm'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { PWAPreviewPanel } from '@/components/dashboard/PWAPreviewPanel'
-import { CheckCircle2, AlertCircle, MessageSquare, ChevronRight, Zap } from 'lucide-react'
+import { CheckCircle2, AlertCircle, MessageSquare, ChevronRight, Zap, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
 import type { Profile, Shop } from '@/types'
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
   if (!shop) redirect('/dashboard')
 
   const isActivePlan = shop.plan !== 'trial'
-  const planLabel    = shop.plan === 'starter' ? 'Starter'
+  const planLabel    = shop.plan === 'decouverte' ? 'Découverte'
     : shop.plan === 'business' ? 'Business'
     : shop.plan === 'pro' ? 'Pro'
     : shop.plan
@@ -92,6 +93,19 @@ export default async function SettingsPage() {
             <div className="mt-4">
               <SettingsForm shop={shop} />
             </div>
+          </Card>
+
+          {/* Sécurité — changement de PIN */}
+          <Card>
+            <CardHeader
+              title="Sécurité"
+              description="Modifie ton code PIN de connexion"
+            />
+            <div className="mt-1 mb-3 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-gray-400 shrink-0" />
+              <p className="text-xs text-gray-500">Ton code PIN contient 6 chiffres. Ne le communique jamais.</p>
+            </div>
+            <ChangePinForm />
           </Card>
 
           {/* Logs notifications */}

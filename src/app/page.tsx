@@ -160,15 +160,15 @@ export default async function LandingPage() {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 lg:gap-8 pt-2">
+            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-2">
               {STATS.map((s, i) => {
                 const Icon = s.icon
                 return (
-                  <div key={i} className="flex items-center gap-1.5 lg:gap-2.5">
-                    <Icon className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--color-primary)]" />
+                  <div key={i} className="flex items-center gap-1 lg:gap-2.5">
+                    <Icon className="h-3 w-3 lg:h-5 lg:w-5 shrink-0 text-[var(--color-primary)]" />
                     <div>
-                      <span className="text-sm lg:text-lg font-black text-gray-900">{s.value}</span>
-                      <span className="text-xs lg:text-sm text-gray-400 ml-1">{s.label}</span>
+                      <span className="text-[11px] lg:text-lg font-black text-gray-900">{s.value}</span>
+                      <span className="text-[10px] lg:text-sm text-gray-400 ml-0.5 lg:ml-1">{s.label}</span>
                     </div>
                   </div>
                 )

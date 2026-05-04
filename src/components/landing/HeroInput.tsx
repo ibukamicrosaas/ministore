@@ -21,7 +21,7 @@ export function HeroInput() {
   const [focused, setFocused] = useState(false)
   const slug = toSlug(value)
   const hasSlug = slug.length > 0
-  const active = hasSlug
+  const active = focused || hasSlug
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

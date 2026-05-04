@@ -8,12 +8,20 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 
-export async function POST(req: NextRequest) {
-  const rawBody    = await req.text()
-  const headerSecret = req.headers.get('x-secret-key') ?? ''
-  const envSecret  = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
+const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-  if (envSecret && !verifyBictorysSignature(headerSecret, envSecret)) {
+export async function POST(req: NextRequest) {
+  const rawBody      = await req.text()
+  const headerSecret = req.headers.get('x-secret-key') ?? ''
+  const envSecret    = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
+
+  // Fail closed : si le secret n'est pas configuré, refuser toutes les requêtes
+  if (!envSecret) {
+    console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré — webhook rejeté')
+    return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
+  }
+  if (!verifyBictorysSignature(headerSecret, envSecret)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
@@ -36,8 +44,14 @@ export async function POST(req: NextRequest) {
     const shopId  = merchantReference.slice(4, 40)
     const planKey = merchantReference.slice(41)
 
-    if (!shopId || !planKey) {
+    // Validation stricte : UUID format + plan connu
+    if (!UUID_REGEX.test(shopId)) {
+      console.error('[webhook] shopId invalide:', shopId)
       return NextResponse.json({ error: 'merchantReference invalide' }, { status: 400 })
+    }
+    if (!VALID_PLAN_KEYS.has(planKey)) {
+      console.error('[webhook] planKey non autorisé:', planKey)
+      return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
     }
 
     await supabase

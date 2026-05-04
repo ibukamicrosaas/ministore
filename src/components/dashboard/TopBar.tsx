@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, Bell } from 'lucide-react'
+import { PWAInstallButton } from './PWAInstallButton'
 
 interface TopBarProps {
   onMenuClick: () => void
@@ -28,6 +29,8 @@ export function TopBar({ onMenuClick, title }: TopBarProps) {
           <h1 className="text-sm font-semibold text-gray-900 lg:text-base">{title}</h1>
         )}
       </div>
+
+      <PWAInstallButton />
 
       <Link
         href="/dashboard/notifications"

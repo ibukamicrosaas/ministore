@@ -67,14 +67,16 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
 function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product)
+  const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
+  const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className="group">
       <div className="rounded-2xl bg-white overflow-hidden shadow-sm">
         {photo ? (
-          <img src={photo} alt={product.name} className="aspect-square w-full object-cover" />
+          <img src={photo} alt={product.name} className={`${aspectClass} w-full object-cover`} />
         ) : (
-          <div className="aspect-square flex items-center justify-center bg-gray-100">
+          <div className={`${aspectClass} flex items-center justify-center bg-gray-100`}>
             <Package className="h-10 w-10 text-gray-300" />
           </div>
         )}

@@ -74,6 +74,7 @@ export interface CreateProductInput {
   category?: string
   photos?: ProductPhoto[]
   video_url?: string | null
+  image_ratio?: 'square' | 'portrait' | null
   deposit_percentage?: number | null
   variants?: ProductVariant[] | null
   stock_count?: number | null

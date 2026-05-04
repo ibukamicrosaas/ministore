@@ -45,6 +45,7 @@ export async function createProduct(input: CreateProductInput) {
     photos:             input.photos ?? [],
     photo_url:          input.photos?.[0]?.url ?? null,
     video_url:          input.video_url ?? null,
+    image_ratio:        input.image_ratio ?? 'square',
     deposit_percentage: input.deposit_percentage ?? null,
     variants:           input.variants?.length ? input.variants : null,
     stock_count:        input.stock_count ?? null,
@@ -76,6 +77,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     updates.photo_url = input.photos[0]?.url ?? null
   }
   if (input.video_url !== undefined)          updates.video_url          = input.video_url ?? null
+  if (input.image_ratio !== undefined)        updates.image_ratio        = input.image_ratio ?? 'square'
   if (input.deposit_percentage !== undefined) updates.deposit_percentage = input.deposit_percentage
   if (input.variants !== undefined)           updates.variants           = input.variants?.length ? input.variants : null
   if (input.stock_count !== undefined)        updates.stock_count        = input.stock_count
@@ -140,10 +142,19 @@ export async function uploadProductPhoto(formData: FormData): Promise<{ error?: 
   const file = formData.get('photo') as File | null
   if (!file || file.size === 0) return { error: 'Aucun fichier sélectionné.' }
   if (file.size > 5 * 1024 * 1024) return { error: 'Le fichier doit faire moins de 5 Mo.' }
-  if (!file.type.startsWith('image/')) return { error: 'Le fichier doit être une image.' }
 
-  const ext  = file.name.split('.').pop() ?? 'jpg'
-  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  // Whitelist stricte — SVG exclu (risque XSS via scripts inline)
+  const ALLOWED_MIME: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png':  'png',
+    'image/webp': 'webp',
+    'image/gif':  'gif',
+  }
+  const ext = ALLOWED_MIME[file.type]
+  if (!ext) return { error: 'Format non autorisé. Utilise JPG, PNG, WebP ou GIF.' }
+
+  // Nom aléatoire — ne jamais utiliser le nom fourni par le client
+  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`
   const path = `${shopId}/${name}`
   const admin = createAdminClient()
 

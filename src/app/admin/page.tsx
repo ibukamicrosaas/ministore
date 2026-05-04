@@ -8,9 +8,9 @@ import { APP_URL } from '@/constants'
 export const metadata = { title: 'Admin — TekkiShop' }
 
 const PLAN_PRICES: Record<string, number> = {
-  starter: 5000,
-  pro: 10000,
-  multi: 20000,
+  decouverte: 2900,
+  business:   4900,
+  pro:        9900,
 }
 
 export default async function AdminOverviewPage() {
@@ -131,10 +131,10 @@ export default async function AdminOverviewPage() {
           <p className="text-sm font-semibold text-gray-900 mb-4">Répartition des plans</p>
           <div className="space-y-3">
             {[
-              { key: 'trial',   label: 'Essai gratuit', price: '0 F/mois' },
-              { key: 'starter', label: 'Starter',       price: '5 000 F/mois' },
-              { key: 'pro',     label: 'Pro',           price: '10 000 F/mois' },
-              { key: 'multi',   label: 'Multi-boutique', price: '20 000 F/mois' },
+              { key: 'trial',      label: 'Essai gratuit', price: '0 F/mois' },
+              { key: 'decouverte', label: 'Découverte',    price: '2 900 F/mois' },
+              { key: 'business',   label: 'Business',      price: '4 900 F/mois' },
+              { key: 'pro',        label: 'Pro',           price: '9 900 F/mois' },
             ].map(({ key, label, price }) => (
               <div key={key} className="flex items-center justify-between text-sm">
                 <div>
@@ -258,11 +258,17 @@ export default async function AdminOverviewPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                  s.plan === 'pro'     ? 'bg-blue-100 text-blue-700' :
-                  s.plan === 'starter' ? 'bg-green-100 text-green-700' :
-                  s.plan === 'multi'   ? 'bg-purple-100 text-purple-700' :
+                  s.plan === 'pro'        ? 'bg-purple-100 text-purple-700' :
+                  s.plan === 'business'   ? 'bg-blue-100 text-blue-700' :
+                  s.plan === 'decouverte' ? 'bg-green-100 text-green-700' :
                   'bg-gray-100 text-gray-500'
-                }`}>{s.plan}</span>
+                }`}>{
+                  s.plan === 'trial'      ? 'Essai' :
+                  s.plan === 'decouverte' ? 'Découverte' :
+                  s.plan === 'business'   ? 'Business' :
+                  s.plan === 'pro'        ? 'Pro' :
+                  s.plan
+                }</span>
                 <p className="text-xs text-gray-400">{format(new Date(s.created_at), 'd MMM', { locale: fr })}</p>
               </div>
             </div>

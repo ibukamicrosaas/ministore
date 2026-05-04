@@ -14,11 +14,18 @@ export const PAYOUT_MIN_AMOUNT           = 2000 // montant minimum pour déclenc
 // Plans
 export const TRIAL_DAYS  = 14
 export const PLAN_LIMITS = {
-  trial:   { maxProducts: 10 },
-  starter: { maxProducts: 50 },
-  pro:     { maxProducts: Infinity },
-  multi:   { maxProducts: Infinity },
+  trial:      { maxProducts: 10  },
+  decouverte: { maxProducts: 30  },
+  business:   { maxProducts: 100 },
+  pro:        { maxProducts: Infinity },
 } as const
+
+export const PLAN_LABELS: Record<string, string> = {
+  trial:      'Essai gratuit',
+  decouverte: 'Découverte',
+  business:   'Business',
+  pro:        'Pro',
+}
 
 // Couleurs
 export const DEFAULT_PRIMARY_COLOR = '#0EA5E9'

@@ -167,6 +167,7 @@ export type Database = {
           photo_url: string | null
           photos: Json
           video_url: string | null
+          image_ratio: string | null
           category: string | null
           is_active: boolean
           display_order: number
@@ -185,6 +186,7 @@ export type Database = {
           photo_url?: string | null
           photos?: Json
           video_url?: string | null
+          image_ratio?: string | null
           category?: string | null
           is_active?: boolean
           display_order?: number
@@ -203,6 +205,7 @@ export type Database = {
           photo_url?: string | null
           photos?: Json
           video_url?: string | null
+          image_ratio?: string | null
           category?: string | null
           is_active?: boolean
           display_order?: number

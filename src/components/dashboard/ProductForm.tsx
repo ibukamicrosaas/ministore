@@ -47,6 +47,11 @@ export function ProductForm({ product }: ProductFormProps) {
   // Vidéo
   const [videoUrl, setVideoUrl] = useState((product as Product & { video_url?: string | null })?.video_url ?? '')
 
+  // Format d'affichage
+  const [imageRatio, setImageRatio] = useState<'square' | 'portrait'>(
+    (product as Product & { image_ratio?: string | null })?.image_ratio === 'portrait' ? 'portrait' : 'square'
+  )
+
   // Acompte
   const [useDeposit, setUseDeposit]     = useState(product?.deposit_percentage != null)
   const [depositPct, setDepositPct]     = useState(product?.deposit_percentage ?? 30)
@@ -118,6 +123,7 @@ export function ProductForm({ product }: ProductFormProps) {
       category: categoryValue,
       photos,
       video_url: videoUrl.trim() || null,
+      image_ratio: imageRatio,
       deposit_percentage: useDeposit ? depositPct : null,
       variants: validVariants.length > 0 ? validVariants : null,
       stock_count: fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null,
@@ -205,6 +211,34 @@ export function ProductForm({ product }: ProductFormProps) {
         </div>
         <p className="mt-2 text-xs text-gray-400">Max 5 photos · JPG, PNG · 5 Mo. Cliquez sur une photo pour la définir comme principale.</p>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+
+        {/* Format d'affichage */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-700 mb-2">Format d&apos;affichage dans la boutique</p>
+          <div className="flex gap-2">
+            {([
+              { value: 'square',  label: 'Carré',    hint: '1:1', preview: 'w-8 h-8' },
+              { value: 'portrait', label: 'Portrait', hint: '3:4', preview: 'w-6 h-8' },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setImageRatio(opt.value)}
+                className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 transition-colors ${
+                  imageRatio === opt.value
+                    ? 'border-[var(--color-primary)] bg-sky-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className={`${opt.preview} rounded bg-gray-200 shrink-0 ${imageRatio === opt.value ? 'bg-[var(--color-primary)]/20' : ''}`} />
+                <div className="text-left">
+                  <p className={`text-xs font-semibold ${imageRatio === opt.value ? 'text-[var(--color-primary)]' : 'text-gray-700'}`}>{opt.label}</p>
+                  <p className="text-[10px] text-gray-400">{opt.hint}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </Card>
 
       {/* Vidéo */}

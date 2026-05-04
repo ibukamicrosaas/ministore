@@ -10,10 +10,10 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 const PLANS = [
-  { value: 'trial',   label: 'Essai gratuit' },
-  { value: 'starter', label: 'Starter — 5 000 FCFA/mois' },
-  { value: 'pro',     label: 'Pro — 10 000 FCFA/mois' },
-  { value: 'multi',   label: 'Multi-boutique — 20 000 FCFA/mois' },
+  { value: 'trial',      label: 'Essai gratuit' },
+  { value: 'decouverte', label: 'Découverte — 2 900 FCFA/mois' },
+  { value: 'business',   label: 'Business — 4 900 FCFA/mois' },
+  { value: 'pro',        label: 'Pro — 9 900 FCFA/mois' },
 ]
 
 export interface SalonAdminData {
