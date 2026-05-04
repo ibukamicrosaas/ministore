@@ -51,6 +51,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: APP_NAME,
   },
+  icons: {
+    icon:  '/favicon.png',
+    apple: '/favicon.png',
+  },
   robots: { index: true, follow: true },
 }
 

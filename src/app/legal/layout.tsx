@@ -1,16 +1,13 @@
 import Link from 'next/link'
-import { ShoppingBag } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100 px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary)]">
-              <ShoppingBag className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="text-sm font-bold text-gray-900">TekkiShop</span>
+          <Link href="/">
+            <Image src="/logo.svg" alt="TekkiShop" width={120} height={28} />
           </Link>
           <Link href="/" className="text-xs text-gray-500 hover:text-gray-900">← Retour</Link>
         </div>

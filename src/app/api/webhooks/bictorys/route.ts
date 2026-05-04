@@ -19,13 +19,38 @@ export async function POST(req: NextRequest) {
 
   const payload = JSON.parse(rawBody) as BictorysWebhookPayload
 
-  // merchantReference is the order ID
-  const orderId = payload.merchantReference
-  if (!orderId) {
+  const merchantReference = payload.merchantReference
+  if (!merchantReference) {
     return NextResponse.json({ error: 'merchantReference manquant' }, { status: 400 })
   }
 
   const supabase = createAdminClient()
+
+  // ── Paiement d'abonnement ─────────────────────────────────────────────
+  // Format: "sub-{36-char-uuid}-{planKey}"
+  if (merchantReference.startsWith('sub-')) {
+    if (payload.status !== 'succeed') {
+      return NextResponse.json({ ok: true })
+    }
+    // shopId = chars 4..39 (UUID = 36 chars), planKey = chars 41+
+    const shopId  = merchantReference.slice(4, 40)
+    const planKey = merchantReference.slice(41)
+
+    if (!shopId || !planKey) {
+      return NextResponse.json({ error: 'merchantReference invalide' }, { status: 400 })
+    }
+
+    await supabase
+      .from('shops')
+      .update({ plan: planKey, is_active: true, updated_at: new Date().toISOString() })
+      .eq('id', shopId)
+
+    console.log(`[webhook] Plan ${planKey} activé pour shop ${shopId}`)
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── Paiement de commande ──────────────────────────────────────────────
+  const orderId = merchantReference
 
   // Idempotence
   const { data: existingPayment } = await supabase

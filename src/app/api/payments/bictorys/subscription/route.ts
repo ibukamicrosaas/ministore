@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createBictorysCharge, type BictorysPaymentType } from '@/lib/payments/bictorys'
+import { APP_URL } from '@/constants'
+
+const PLAN_PRICES: Record<string, number> = {
+  decouverte: 2900,
+  business:   4900,
+  pro:        9900,
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  decouverte: 'Découverte',
+  business:   'Business',
+  pro:        'Pro',
+}
+
+export async function POST(req: NextRequest) {
+  const apiKey = process.env.BICTORYS_SECRET_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })
+  }
+
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  const body = await req.json() as { planKey?: string; paymentType?: BictorysPaymentType }
+  const { planKey, paymentType } = body
+
+  if (!planKey || !PLAN_PRICES[planKey]) {
+    return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
+  }
+  if (!paymentType) {
+    return NextResponse.json({ error: 'Mode de paiement requis' }, { status: 400 })
+  }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('shop_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id) {
+    return NextResponse.json({ error: 'Boutique introuvable' }, { status: 404 })
+  }
+
+  const shopId = profile.shop_id as string
+  const amount = PLAN_PRICES[planKey]
+  // merchantReference format: "sub-{36-char-uuid}-{planKey}"
+  const merchantReference = `sub-${shopId}-${planKey}`
+
+  try {
+    const { checkoutUrl } = await createBictorysCharge(
+      apiKey,
+      {
+        amount,
+        currency: 'XOF',
+        paymentReference: `ts-sub-${shopId.slice(0, 8)}`,
+        merchantReference,
+        successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
+        errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
+        orderDetails: [{
+          name:     `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
+          price:    amount,
+          quantity: 1,
+          taxRate:  0,
+        }],
+      },
+      paymentType,
+    )
+
+    return NextResponse.json({ checkoutUrl })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
+    console.error('[subscription/create]', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

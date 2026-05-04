@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ShoppingBag, MessageCircle, CheckCircle2, ArrowRight,
   Package, Smartphone, CreditCard, Bell, BarChart3,
@@ -93,11 +94,8 @@ export default async function LandingPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white text-sm font-black shadow-sm">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <span className="text-base font-bold text-gray-900">{APP_NAME}</span>
+          <div className="flex items-center">
+            <Image src="/logo.svg" alt="TekkiShop" width={140} height={32} priority />
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-gray-500">
             <a href="#comment" className="hover:text-gray-900 transition-colors">Comment ça marche</a>
@@ -553,11 +551,8 @@ export default async function LandingPage() {
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="bg-[#0a1020] border-t border-white/5 py-8">
         <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary)] text-white">
-              <TrendingUp className="h-3.5 w-3.5" />
-            </div>
-            <span className="text-sm font-semibold text-white/70">{APP_NAME}</span>
+          <div className="flex items-center opacity-70">
+            <Image src="/logo_white.svg" alt="TekkiShop" width={120} height={28} />
           </div>
           <div className="flex items-center gap-6 text-sm text-white/40">
             <Link href="/legal/cgu" className="hover:text-white/70 transition-colors">Conditions</Link>
