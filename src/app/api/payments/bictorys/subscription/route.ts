@@ -26,15 +26,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
-  const body = await req.json() as { planKey?: string; paymentType?: BictorysPaymentType }
+  const body = await req.json() as { planKey?: string; paymentType?: BictorysPaymentType | null }
   const { planKey, paymentType } = body
 
   if (!planKey || !PLAN_PRICES[planKey]) {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
   }
-  if (!paymentType) {
-    return NextResponse.json({ error: 'Mode de paiement requis' }, { status: 400 })
-  }
+  // paymentType null/undefined = page Bictorys générique (tous opérateurs)
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
           taxRate:  0,
         }],
       },
-      paymentType,
+      paymentType ?? undefined,
     )
 
     return NextResponse.json({ checkoutUrl })
