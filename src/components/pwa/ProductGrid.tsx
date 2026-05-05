@@ -36,7 +36,10 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
   const price = getPrice(product)
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm">
+    <Link
+      href={`/${shopSlug}/produit/${product.id}`}
+      className="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
+    >
       {photo ? (
         <img src={photo} alt={product.name} className="h-20 w-20 rounded-xl object-cover shrink-0" />
       ) : (
@@ -51,16 +54,15 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
         )}
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: primaryColor }}>{price}</span>
-          <Link
-            href={`/${shopSlug}/commander?product=${product.id}`}
-            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          <span
+            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
             style={{ backgroundColor: primaryColor }}
           >
             Commander
-          </Link>
+          </span>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
