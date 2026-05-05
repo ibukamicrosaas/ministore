@@ -56,7 +56,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/admin/salons" className="p-1.5 rounded-lg hover:bg-gray-100">
+        <Link href="/admin/shops" className="p-1.5 rounded-lg hover:bg-gray-100">
           <ChevronLeft className="h-5 w-5 text-gray-600" />
         </Link>
         <div className="flex-1">

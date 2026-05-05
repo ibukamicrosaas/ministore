@@ -11,7 +11,7 @@ const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.
 
 const navLinks = [
   { href: '/admin',          label: 'Vue d\'ensemble', icon: LayoutDashboard },
-  { href: '/admin/salons',   label: 'Boutiques',         icon: Building2 },
+  { href: '/admin/shops',   label: 'Boutiques',         icon: Building2 },
   { href: '/admin/payouts',  label: 'Reversements',     icon: Wallet },
 ]
 

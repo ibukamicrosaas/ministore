@@ -37,7 +37,7 @@ export async function updateShopPlan(shopId: string, input: {
     return { error: 'Impossible de mettre à jour la boutique.' }
   }
 
-  revalidatePath('/admin/salons')
-  revalidatePath(`/admin/salons/${shopId}`)
+  revalidatePath('/admin/shops')
+  revalidatePath(`/admin/shops/${shopId}`)
   return { success: true }
 }
