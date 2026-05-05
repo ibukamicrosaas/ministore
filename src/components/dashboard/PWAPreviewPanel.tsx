@@ -9,7 +9,10 @@ interface Props {
 }
 
 export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
-  const url = `${appUrl}/${shopSlug}`
+  // URL relative pour l'iframe (évite les problèmes mixed-content http/https)
+  // URL absolue HTTPS pour le lien "ouvrir dans un onglet"
+  const iframeUrl = `/${shopSlug}`
+  const externalUrl = `${appUrl.replace(/^http:\/\//, 'https://')}/${shopSlug}`
   const [iframeKey, setIframeKey] = useState(0)
   const reload = useCallback(() => setIframeKey(k => k + 1), [])
 
@@ -35,7 +38,7 @@ export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
           <a
-            href={url}
+            href={externalUrl}
             target="_blank"
             rel="noopener noreferrer"
             title="Ouvrir dans un nouvel onglet"
@@ -80,7 +83,7 @@ export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
             >
               <iframe
                 key={iframeKey}
-                src={url}
+                src={iframeUrl}
                 title="Aperçu PWA client"
                 style={{
                   width: 375,
@@ -100,7 +103,7 @@ export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
       </div>
 
       <p className="text-xs text-gray-400 text-center">
-        Vue en temps réel · {url.replace('http://', '').replace('https://', '')}
+        Vue en temps réel · {externalUrl.replace('https://', '')}
       </p>
     </div>
   )

@@ -25,13 +25,19 @@ export async function uploadShopLogo(formData: FormData) {
   if (file.size > 2 * 1024 * 1024) return { error: 'Le fichier doit faire moins de 2 Mo.' }
   if (!file.type.startsWith('image/')) return { error: 'Le fichier doit être une image.' }
 
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `${profile.shop_id}/logo.${ext}`
+  const ALLOWED_MIME: Record<string, string> = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+  }
+  const ext = ALLOWED_MIME[file.type]
+  if (!ext) return { error: 'Format non autorisé. Utilise JPG, PNG ou WebP.' }
+
+  // Timestamp dans le path pour invalider le cache CDN à chaque upload
+  const path = `${profile.shop_id}/logo-${Date.now()}.${ext}`
   const admin = createAdminClient()
 
   const { error: uploadError } = await admin.storage
     .from('shop-logos')
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, file, { upsert: false, contentType: file.type })
 
   if (uploadError) {
     console.error('[uploadShopLogo]', uploadError.message)
@@ -39,6 +45,9 @@ export async function uploadShopLogo(formData: FormData) {
   }
 
   const { data: { publicUrl } } = admin.storage.from('shop-logos').getPublicUrl(path)
+
+  // Récupérer le slug pour revalider la page publique
+  const { data: shopData } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
 
   const { error: updateError } = await supabase
     .from('shops')
@@ -51,6 +60,7 @@ export async function uploadShopLogo(formData: FormData) {
   }
 
   revalidatePath('/dashboard/settings')
+  if (shopData?.slug) revalidatePath(`/${shopData.slug}`)
   return { success: true, url: publicUrl }
 }
 
@@ -143,6 +153,9 @@ export async function updateShop(data: UpdateShopInput) {
     return { error: 'Accès non autorisé.' }
   }
 
+  // Récupérer le slug pour revalider la page publique
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase
     .from('shops')
@@ -155,5 +168,6 @@ export async function updateShop(data: UpdateShopInput) {
   }
 
   revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
   return { success: true }
 }
