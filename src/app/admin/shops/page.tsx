@@ -85,7 +85,7 @@ export default async function AdminSalonsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/admin/salons/${s.id}`}
+                        href={`/admin/shops/${s.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-primary)] px-2.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                         title="Gérer le plan"
                       >
