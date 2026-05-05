@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, Camera, ExternalLink, ImagePlus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, Camera, ImagePlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   startOnboarding,
@@ -175,6 +175,12 @@ export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps)
     setSaving(true)
     await completeOnboarding()
     router.push('/dashboard')
+  }
+
+  async function handleActivate() {
+    setSaving(true)
+    await completeOnboarding()
+    router.push('/dashboard/upgrade')
   }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -508,43 +514,40 @@ export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps)
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
               <Check className="h-10 w-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Ton site est prêt !</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Ton site est créé !</h2>
             <p className="mt-2 text-sm text-gray-500">
-              Partage ton lien sur WhatsApp et Instagram pour recevoir tes premières commandes.
+              Une dernière étape : choisis ton plan pour mettre ton site en ligne et commencer à recevoir des commandes.
             </p>
           </div>
 
           {shopUrl && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ton lien</p>
-              <p className="text-sm font-mono text-gray-700 break-all">{shopUrl}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCopyLink}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
-                  {copied ? <><CheckCheck className="h-4 w-4 text-green-500" /> Copié !</> : <><Copy className="h-4 w-4" /> Copier le lien</>}
-                </button>
-                <a
-                  href={shopUrl!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Voir mon site
-                </a>
-              </div>
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Ton futur lien</p>
+              <p className="text-sm font-mono text-gray-500 break-all">{shopUrl}</p>
+              <button
+                onClick={handleCopyLink}
+                className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {copied ? <><CheckCheck className="h-3.5 w-3.5 text-green-500" /> Copié !</> : <><Copy className="h-3.5 w-3.5" /> Copier le lien</>}
+              </button>
             </div>
           )}
 
           <button
-            onClick={handleFinish}
+            onClick={handleActivate}
             disabled={saving}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] py-4 text-sm font-semibold text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
           >
-            {saving ? 'Chargement...' : 'Accéder à mon tableau de bord'}
+            {saving ? 'Chargement...' : 'Activer mon site'}
             <ArrowRight className="h-4 w-4" />
+          </button>
+
+          <button
+            onClick={handleFinish}
+            disabled={saving}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            Passer pour l&apos;instant → Accéder au tableau de bord
           </button>
         </div>
       )}
