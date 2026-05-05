@@ -63,6 +63,18 @@ export async function createBictorysCharge(
   return { checkoutUrl, transactionId: transactionId ?? '' }
 }
 
+export async function getBictorysCharge(
+  apiKey: string,
+  chargeId: string,
+): Promise<BictorysWebhookPayload> {
+  const res = await fetch(`${BICTORYS_BASE_URL}/charges/${encodeURIComponent(chargeId)}`, {
+    headers: { 'X-Api-Key': apiKey },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Bictorys error ${res.status}`)
+  return res.json() as Promise<BictorysWebhookPayload>
+}
+
 export function verifyBictorysSignature(headerSecret: string, envSecret: string): boolean {
   return headerSecret === envSecret
 }

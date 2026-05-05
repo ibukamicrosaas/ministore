@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const merchantReference = `sub-${shopId}-${planKey}`
 
   try {
-    const { checkoutUrl } = await createBictorysCharge(
+    const { checkoutUrl, transactionId } = await createBictorysCharge(
       apiKey,
       {
         amount,
@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
       paymentType ?? undefined,
     )
 
-    return NextResponse.json({ checkoutUrl })
+    // Retourner transactionId pour que le client puisse le stocker et le vérifier au retour
+    return NextResponse.json({ checkoutUrl, transactionId })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
     console.error('[subscription/create]', message)

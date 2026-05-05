@@ -1,9 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Profile, Shop } from '@/types'
 import { UpgradePlans, type Plan } from './UpgradePlans'
+import { PaymentVerifier } from './PaymentVerifier'
 
 export const metadata = { title: 'Choisir un plan — TekkiShop' }
 
@@ -96,17 +96,9 @@ export default async function UpgradePage({
         <p className="text-sm text-gray-500 mt-0.5">Active ton site pour recevoir des commandes</p>
       </div>
 
-      {/* Succès de paiement */}
-      {success && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-green-700">Paiement reçu — ton site est maintenant actif !</p>
-            <p className="text-xs text-green-600 mt-0.5">
-              Plan {PLANS.find(p => p.key === activatedPlan)?.name ?? activatedPlan} activé.
-            </p>
-          </div>
-        </div>
+      {/* Vérification + activation au retour du paiement */}
+      {success && activatedPlan && (
+        <PaymentVerifier activatedPlan={activatedPlan} />
       )}
 
       {/* Erreur de paiement */}

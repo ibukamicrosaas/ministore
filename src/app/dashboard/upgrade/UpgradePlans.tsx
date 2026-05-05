@@ -50,12 +50,18 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ planKey: selectedPlan.key, paymentType: method }),
       })
-      const data = await res.json() as { checkoutUrl?: string; error?: string }
+      const data = await res.json() as { checkoutUrl?: string; transactionId?: string; error?: string }
 
       if (!res.ok || !data.checkoutUrl) {
         setError(data.error ?? 'Erreur lors de la création du paiement.')
         setLoading(null)
         return
+      }
+
+      // Stocker le txn pour vérification au retour de Bictorys
+      if (data.transactionId) {
+        sessionStorage.setItem('pending_sub_txn', data.transactionId)
+        sessionStorage.setItem('pending_sub_plan', selectedPlan.key)
       }
 
       window.location.href = data.checkoutUrl
