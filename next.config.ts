@@ -5,12 +5,16 @@ import type { NextConfig } from 'next'
 // Les iframes TikTok/Instagram/Facebook sont autorisées pour les vidéos produit
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://vercel.live",
+  // blob: requis pour les workers Next.js (RSC streaming, prefetch)
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://va.vercel-scripts.com https://vercel.live",
+  // worker-src blob: requis pour que Next.js puisse créer ses workers internes
+  "worker-src blob: 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://sentry.io https://o*.ingest.sentry.io",
+  // *.ingest.sentry.io (sans o* — le wildcard o* est invalide en CSP)
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://sentry.io https://*.ingest.sentry.io",
   "frame-src 'self' https://www.tiktok.com https://www.instagram.com https://www.facebook.com",
   "object-src 'none'",
   "base-uri 'self'",

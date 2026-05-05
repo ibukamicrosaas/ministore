@@ -173,7 +173,7 @@ export default async function AdminOverviewPage() {
             {trialExpired.slice(0, 5).map(s => (
               <div key={s.id} className="flex items-center justify-between">
                 <div>
-                  <Link href={`/admin/shops/${s.id}`} className="text-sm font-medium text-red-800 hover:underline">{s.name}</Link>
+                  <Link href={`/admin/salons/${s.id}`} className="text-sm font-medium text-red-800 hover:underline">{s.name}</Link>
                   {s.trial_ends_at && (
                     <p className="text-xs text-red-400">Expiré le {format(new Date(s.trial_ends_at), 'd MMM', { locale: fr })}</p>
                   )}
@@ -189,14 +189,14 @@ export default async function AdminOverviewPage() {
                       Relancer
                     </a>
                   )}
-                  <Link href={`/admin/shops/${s.id}`} className="text-xs bg-white border border-red-200 text-red-700 rounded-lg px-2.5 py-1 font-medium hover:bg-red-50">
+                  <Link href={`/admin/salons/${s.id}`} className="text-xs bg-white border border-red-200 text-red-700 rounded-lg px-2.5 py-1 font-medium hover:bg-red-50">
                     Activer
                   </Link>
                 </div>
               </div>
             ))}
             {trialExpired.length > 5 && (
-              <Link href="/admin/shops" className="text-xs text-red-500 hover:underline">Voir tous →</Link>
+              <Link href="/admin/salons" className="text-xs text-red-500 hover:underline">Voir tous →</Link>
             )}
           </div>
         </div>
@@ -212,7 +212,7 @@ export default async function AdminOverviewPage() {
           <div className="space-y-2">
             {(trialEndingSoonRes.data ?? []).map((s) => (
               <div key={s.id} className="flex items-center justify-between">
-                <Link href={`/admin/shops/${s.id}`} className="text-sm text-amber-800 hover:underline">{s.name}</Link>
+                <Link href={`/admin/salons/${s.id}`} className="text-sm text-amber-800 hover:underline">{s.name}</Link>
                 <span className="text-xs text-amber-600 font-medium">
                   {format(new Date(s.trial_ends_at!), 'd MMM', { locale: fr })}
                 </span>
@@ -247,13 +247,13 @@ export default async function AdminOverviewPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-semibold text-gray-900">Derniers inscrits</p>
-          <Link href="/admin/shops" className="text-xs text-[var(--color-primary)] hover:underline">Voir tous →</Link>
+          <Link href="/admin/salons" className="text-xs text-[var(--color-primary)] hover:underline">Voir tous →</Link>
         </div>
         <div className="space-y-2">
           {recentShops.map(s => (
             <div key={s.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
               <div>
-                <Link href={`/admin/shops/${s.id}`} className="text-sm font-medium text-gray-900 hover:text-sky-600">{s.name}</Link>
+                <Link href={`/admin/salons/${s.id}`} className="text-sm font-medium text-gray-900 hover:text-sky-600">{s.name}</Link>
                 <p className="text-xs text-gray-400">{s.slug}</p>
               </div>
               <div className="flex items-center gap-2">
