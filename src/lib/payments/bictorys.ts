@@ -54,7 +54,7 @@ export async function createBictorysCharge(
 
   // L'API Bictorys retourne 'link' (CheckoutLinkObject), 'url', ou 'confirmationLink'
   const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink) as string | undefined
-  const transactionId = (json.id ?? json.transactionId) as string | undefined
+  const transactionId = (json.chargeId ?? json.id ?? json.transactionId) as string | undefined
 
   if (!checkoutUrl) {
     throw new Error(`Bictorys: pas d'URL dans la réponse: ${JSON.stringify(json)}`)

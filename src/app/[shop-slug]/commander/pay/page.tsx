@@ -74,8 +74,11 @@ export default async function PayPage({ params, searchParams }: Props) {
     ? order.deposit_amount
     : order.total_price
 
+  // redirect() lance une exception interne Next.js — doit être hors du try/catch
+  let checkoutUrl: string | null = null
+
   try {
-    const { checkoutUrl, transactionId } = await createBictorysCharge(apiKey, {
+    const result = await createBictorysCharge(apiKey, {
       amount:             amountToCharge,
       currency:           'XOF',
       paymentReference:   `tekkishop-${order.id.slice(0, 8)}`,
@@ -95,19 +98,18 @@ export default async function PayPage({ params, searchParams }: Props) {
       },
     })
 
-    // Enregistrer le paiement
-    await supabase.from('payments').insert({
-      order_id:           order.id,
-      shop_id:            order.shop_id,
-      amount:             amountToCharge,
-      currency:           'XOF',
-      payment_method:     'bictorys',
-      payment_type:       order.payment_type === 'online_deposit' ? 'deposit' : 'full',
-      provider_payment_id: transactionId || `bictorys-${order.id}`,
-      status:             'pending',
-    })
+    checkoutUrl = result.checkoutUrl
 
-    redirect(checkoutUrl)
+    await supabase.from('payments').insert({
+      order_id:            order.id,
+      shop_id:             order.shop_id,
+      amount:              amountToCharge,
+      currency:            'XOF',
+      payment_method:      'bictorys',
+      payment_type:        order.payment_type === 'online_deposit' ? 'deposit' : 'full',
+      provider_payment_id: result.transactionId || result.checkoutUrl,
+      status:              'pending',
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erreur inconnue'
     console.error('[pay/page]', msg)
@@ -122,4 +124,6 @@ export default async function PayPage({ params, searchParams }: Props) {
       </div>
     )
   }
+
+  if (checkoutUrl) redirect(checkoutUrl)
 }
