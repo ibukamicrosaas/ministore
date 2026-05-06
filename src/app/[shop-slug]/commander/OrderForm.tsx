@@ -91,7 +91,7 @@ function PhoneInput({
         >
           {COUNTRIES.map((c) => (
             <option key={c.code} value={c.dial}>
-              {c.flag} {c.dial}
+              {c.dial}
             </option>
           ))}
         </select>
@@ -355,7 +355,7 @@ export function OrderForm({
       <div className="space-y-6 px-4 pt-5">
         {/* 1 — Articles */}
         <section>
-          <SectionLabel n={1} label="Vos articles" primaryColor={primaryColor} />
+          <SectionLabel n={1} label="Votre commande" primaryColor={primaryColor} />
           <div className="space-y-3">
             {items.map((item, i) => {
               const p = getProduct(item.product_id)
@@ -468,7 +468,7 @@ export function OrderForm({
         {deliveryDates.length > 0 && (
           <>
             <section>
-              <SectionLabel n={2} label="Date souhaitée" primaryColor={primaryColor} />
+              <SectionLabel n={2} label="Date de livraison" primaryColor={primaryColor} />
               <div className="relative">
                 <select
                   value={deliveryDate}

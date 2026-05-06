@@ -1,7 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { notFound, redirect } from 'next/navigation'
-import { createBictorysCharge } from '@/lib/payments/bictorys'
-import { APP_URL } from '@/constants'
+import { notFound } from 'next/navigation'
+import { PaymentMethodSelector } from './PaymentMethodSelector'
 import type { Shop } from '@/types'
 
 type Props = {
@@ -9,7 +8,7 @@ type Props = {
   searchParams: Promise<{ order_id?: string; cancelled?: string }>
 }
 
-export const metadata = { title: 'Paiement en cours...' }
+export const metadata = { title: 'Choisir un mode de paiement' }
 
 export default async function PayPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
@@ -19,13 +18,14 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   if (!order_id) notFound()
 
-  // Annulation depuis Bictorys
   if (cancelled === '1') {
     return (
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-screen px-6 text-center">
         <div className="text-4xl mb-4">😕</div>
         <h1 className="text-lg font-bold text-gray-900 mb-2">Paiement annulé</h1>
-        <p className="text-sm text-gray-500 mb-6">Votre commande est en attente. Vous pouvez réessayer ou choisir de payer à la réception.</p>
+        <p className="text-sm text-gray-500 mb-6">
+          Votre commande est en attente. Vous pouvez réessayer ou choisir de payer à la réception.
+        </p>
         <a
           href={`/${slug}/commander`}
           className="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white"
@@ -36,7 +36,6 @@ export default async function PayPage({ params, searchParams }: Props) {
     )
   }
 
-  // Charger la commande
   const { data: orderData } = await supabase
     .from('orders')
     .select('id, shop_id, total_price, deposit_amount, payment_type, status, clients(first_name, phone)')
@@ -46,84 +45,60 @@ export default async function PayPage({ params, searchParams }: Props) {
   if (!orderData || orderData.status !== 'pending') notFound()
 
   const order = orderData as unknown as {
-    id: string; shop_id: string; total_price: number; deposit_amount: number
-    payment_type: string; status: string
+    id: string
+    shop_id: string
+    total_price: number
+    deposit_amount: number
+    payment_type: string
+    status: string
     clients: { first_name: string; phone: string } | null
   }
 
-  // Charger la boutique
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, slug')
+    .select('name, slug, primary_color')
     .eq('id', order.shop_id)
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'slug'> | null
+  const shop = shopData as Pick<Shop, 'name' | 'slug' | 'primary_color'> | null
   if (!shop) notFound()
 
-  const apiKey = process.env.BICTORYS_SECRET_KEY
-  if (!apiKey) {
-    return (
-      <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <p className="text-sm text-red-500">Service de paiement non configuré. Veuillez contacter la boutique.</p>
+  const isDeposit = order.payment_type === 'online_deposit' && order.deposit_amount > 0
+  const amount    = isDeposit ? order.deposit_amount : order.total_price
+  const color     = shop.primary_color ?? '#0EA5E9'
+
+  return (
+    <div className="max-w-lg mx-auto min-h-screen px-4 pt-10 pb-10">
+      {/* En-tête */}
+      <div className="text-center mb-8">
+        <div
+          className="inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white text-xl font-bold mb-4 shadow-md"
+          style={{ backgroundColor: color }}
+        >
+          {shop.name[0]?.toUpperCase()}
+        </div>
+        <h1 className="text-xl font-bold text-gray-900">Choisir un mode de paiement</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {isDeposit ? 'Acompte pour confirmer votre commande' : 'Paiement de votre commande'} chez{' '}
+          <span className="font-semibold">{shop.name}</span>
+        </p>
+        <div
+          className="inline-block mt-3 rounded-full px-4 py-1.5 text-sm font-bold text-white"
+          style={{ backgroundColor: color }}
+        >
+          {amount.toLocaleString('fr-FR')} FCFA
+        </div>
       </div>
-    )
-  }
 
-  const amountToCharge = order.payment_type === 'online_deposit' && order.deposit_amount > 0
-    ? order.deposit_amount
-    : order.total_price
-
-  // redirect() lance une exception interne Next.js — doit être hors du try/catch
-  let checkoutUrl: string | null = null
-
-  try {
-    const result = await createBictorysCharge(apiKey, {
-      amount:             amountToCharge,
-      currency:           'XOF',
-      paymentReference:   `tekkishop-${order.id.slice(0, 8)}`,
-      merchantReference:  order.id,
-      successRedirectUrl: `${APP_URL}/${slug}/commander/success?order_id=${order.id}`,
-      errorRedirectUrl:   `${APP_URL}/${slug}/commander/pay?order_id=${order.id}&cancelled=1`,
-      orderDetails: [{
-        name:     `Commande ${shop.name}`,
-        price:    amountToCharge,
-        quantity: 1,
-        taxRate:  0,
-      }],
-      customerObject: {
-        name:  order.clients?.first_name,
-        phone: order.clients?.phone,
-        locale: 'fr-FR',
-      },
-    })
-
-    checkoutUrl = result.checkoutUrl
-
-    await supabase.from('payments').insert({
-      order_id:            order.id,
-      shop_id:             order.shop_id,
-      amount:              amountToCharge,
-      currency:            'XOF',
-      payment_method:      'bictorys',
-      payment_type:        order.payment_type === 'online_deposit' ? 'deposit' : 'full',
-      provider_payment_id: result.transactionId || result.checkoutUrl,
-      status:              'pending',
-    })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-    console.error('[pay/page]', msg)
-    return (
-      <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <div className="text-4xl mb-4">⚠️</div>
-        <h1 className="text-lg font-bold text-gray-900 mb-2">Erreur de paiement</h1>
-        <p className="text-sm text-gray-500 mb-6">Impossible d'initialiser le paiement. Réessayez ou choisissez le paiement à la réception.</p>
-        <a href={`/${slug}/commander`} className="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white">
-          Retour à la boutique
-        </a>
-      </div>
-    )
-  }
-
-  if (checkoutUrl) redirect(checkoutUrl)
+      <PaymentMethodSelector
+        orderId={order.id}
+        shopSlug={slug}
+        customerFirstName={order.clients?.first_name ?? ''}
+        customerPhone={order.clients?.phone ?? ''}
+        amount={amount}
+        primaryColor={color}
+        isDeposit={isDeposit}
+      />
+    </div>
+  )
 }
