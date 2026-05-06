@@ -22,10 +22,11 @@ const COLOR_PRESETS = [
 ]
 
 export function SettingsForm({ shop }: Props) {
-  const [saving, setSaving]               = useState(false)
-  const [logoUrl, setLogoUrl]             = useState<string | null>(shop.logo_url)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
-  const [primaryColor, setPrimaryColor]   = useState(shop.primary_color ?? '#0EA5E9')
+  const [saving, setSaving]                     = useState(false)
+  const [logoUrl, setLogoUrl]                   = useState<string | null>(shop.logo_url)
+  const [uploadingLogo, setUploadingLogo]       = useState(false)
+  const [primaryColor, setPrimaryColor]         = useState(shop.primary_color ?? '#0EA5E9')
+  const [acceptOnlinePayment, setAcceptOnline]  = useState(shop.accept_online_payment ?? true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,6 +58,7 @@ export function SettingsForm({ shop }: Props) {
       address:           (fd.get('address') as string).trim() || undefined,
       description:       (fd.get('description') as string).trim() || undefined,
       primary_color:     primaryColor,
+      accept_online_payment: acceptOnlinePayment,
       payout_wave_number: (fd.get('payout_wave_number') as string).trim() || null,
       payout_om_number:  (fd.get('payout_om_number') as string).trim() || null,
     })
@@ -222,32 +224,56 @@ export function SettingsForm({ shop }: Props) {
         />
       </div>
 
-      {/* Reversements mobile money */}
+      {/* Paiements mobile money */}
       <div className="rounded-xl border border-gray-200 p-4 space-y-3">
-        <div>
-          <p className="text-sm font-medium text-gray-900">Reversements Mobile Money</p>
-          <p className="text-xs text-gray-500 mt-0.5">Numéros pour recevoir tes fonds collectés via TekkiShop</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Paiement Mobile Money</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {acceptOnlinePayment
+                ? 'Tes clients peuvent payer en ligne (Wave, OM, Maxit).'
+                : 'Seul le paiement à la livraison / sur place est proposé.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAcceptOnline(v => !v)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${acceptOnlinePayment ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
+            style={acceptOnlinePayment ? { backgroundColor: primaryColor } : {}}
+            role="switch"
+            aria-checked={acceptOnlinePayment}
+          >
+            <span
+              className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${acceptOnlinePayment ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
-          <input
-            name="payout_wave_number"
-            type="tel"
-            defaultValue={shop.payout_wave_number ?? ''}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-            placeholder="+221 77 000 00 00"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Orange Money</label>
-          <input
-            name="payout_om_number"
-            type="tel"
-            defaultValue={shop.payout_om_number ?? ''}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-            placeholder="+221 77 000 00 00"
-          />
-        </div>
+
+        {acceptOnlinePayment && (
+          <div className="space-y-3 pt-1 border-t border-gray-100">
+            <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
+              <input
+                name="payout_wave_number"
+                type="tel"
+                defaultValue={shop.payout_wave_number ?? ''}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+                placeholder="+221 77 000 00 00"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Orange Money</label>
+              <input
+                name="payout_om_number"
+                type="tel"
+                defaultValue={shop.payout_om_number ?? ''}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+                placeholder="+221 77 000 00 00"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <button

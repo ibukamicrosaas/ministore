@@ -40,6 +40,7 @@ export type Database = {
           specialty_custom: string | null
           onboarding_completed: boolean
           onboarding_completed_at: string | null
+          accept_online_payment: boolean
           payout_wave_number: string | null
           payout_om_number: string | null
           created_at: string
@@ -71,6 +72,7 @@ export type Database = {
           specialty_custom?: string | null
           onboarding_completed?: boolean
           onboarding_completed_at?: string | null
+          accept_online_payment?: boolean
           payout_wave_number?: string | null
           payout_om_number?: string | null
           created_at?: string
@@ -102,6 +104,7 @@ export type Database = {
           specialty_custom?: string | null
           onboarding_completed?: boolean
           onboarding_completed_at?: string | null
+          accept_online_payment?: boolean
           payout_wave_number?: string | null
           payout_om_number?: string | null
           created_at?: string

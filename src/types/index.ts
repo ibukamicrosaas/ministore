@@ -97,6 +97,7 @@ export interface UpdateShopInput {
   deposit_percentage?: number
   primary_color?: string
   logo_url?: string | null
+  accept_online_payment?: boolean
   payout_wave_number?: string | null
   payout_om_number?: string | null
 }

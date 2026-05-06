@@ -1,0 +1,1 @@
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS accept_online_payment BOOLEAN DEFAULT true;

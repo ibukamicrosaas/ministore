@@ -33,12 +33,13 @@ interface Props {
   deliveryDates: { value: string; label: string }[]
   deliveryOptions: { home_delivery: boolean; store_pickup: boolean }
   shopDepositPct: number
+  acceptOnlinePayment: boolean
   preselectedProductId: string | null
 }
 
 export function OrderForm({
   shopId, shopSlug, shopName, shopLogoUrl, shopCity, primaryColor, products,
-  deliveryDates, deliveryOptions, shopDepositPct, preselectedProductId,
+  deliveryDates, deliveryOptions, shopDepositPct, acceptOnlinePayment, preselectedProductId,
 }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
@@ -60,7 +61,9 @@ export function OrderForm({
   )
   const [address, setAddress]           = useState('')
   const [notes, setNotes]               = useState('')
-  const [paymentType, setPaymentType]   = useState<'online' | 'on_delivery'>('on_delivery')
+  const [paymentType, setPaymentType]   = useState<'online' | 'on_delivery'>(
+    acceptOnlinePayment ? 'on_delivery' : 'on_delivery'
+  )
 
   function getProduct(id: string) { return products.find(p => p.id === id) }
 
@@ -454,24 +457,26 @@ export function OrderForm({
         <section>
           <SectionLabel n={6} label="Mode de paiement" />
           <div className="space-y-2">
-            <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
-              <RadioCard checked={paymentType === 'online'}>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
-                  <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
-                  {paymentType === 'online' && hasDeposit && (
-                    <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
-                      Acompte : {deposit.toLocaleString('fr-FR')} FCFA
-                    </p>
-                  )}
-                  {paymentType === 'online' && !hasDeposit && total > 0 && (
-                    <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
-                      Total : {total.toLocaleString('fr-FR')} FCFA
-                    </p>
-                  )}
-                </div>
-              </RadioCard>
-            </label>
+            {acceptOnlinePayment && (
+              <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
+                <RadioCard checked={paymentType === 'online'}>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
+                    <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
+                    {paymentType === 'online' && hasDeposit && (
+                      <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                        Acompte : {deposit.toLocaleString('fr-FR')} FCFA
+                      </p>
+                    )}
+                    {paymentType === 'online' && !hasDeposit && total > 0 && (
+                      <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                        Total : {total.toLocaleString('fr-FR')} FCFA
+                      </p>
+                    )}
+                  </div>
+                </RadioCard>
+              </label>
+            )}
 
             <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
               <RadioCard checked={paymentType === 'on_delivery'}>
