@@ -18,7 +18,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, city, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment')
+    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
@@ -26,7 +26,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
   if (!shopData) notFound()
 
   const shop = shopData as Pick<Shop,
-    'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'phone_whatsapp' |
+    'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
     'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment'
   >
 
@@ -95,6 +95,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         deliveryDates={dates}
         deliveryOptions={deliveryOptions}
         shopDepositPct={shop.deposit_percentage ?? 0}
+        shopCountry={shop.country ?? 'SN'}
         acceptOnlinePayment={shop.accept_online_payment ?? true}
         preselectedProductId={preselectedProductId ?? null}
       />

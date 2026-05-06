@@ -1,10 +1,11 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ShoppingBag, Package } from 'lucide-react'
+import { ChevronLeft, ShoppingBag } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import type { Metadata } from 'next'
 import { getVideoEmbedUrl } from '@/lib/utils/video'
+import { ProductGallery } from '@/components/pwa/ProductGallery'
 
 type Props = { params: Promise<{ 'shop-slug': string; id: string }> }
 
@@ -50,55 +51,25 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-lg mx-auto">
-      {/* Hero photo — full bleed */}
+      {/* Galerie — photos + modal vidéo */}
       <div className="relative">
-        {embedUrl ? (
-          <div className="relative w-full overflow-hidden bg-black" style={{ paddingBottom: '100%' }}>
-            <iframe
-              src={embedUrl}
-              className="absolute inset-0 h-full w-full"
-              allowFullScreen
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
-              title={`Vidéo — ${product.name}`}
-            />
-          </div>
-        ) : primaryPhoto ? (
-          <img
-            src={primaryPhoto}
-            alt={product.name}
-            className={`w-full object-cover ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}
-            style={{ maxHeight: 480 }}
-          />
-        ) : (
-          <div className="flex w-full aspect-square items-center justify-center bg-gray-100">
-            <Package className="h-20 w-20 text-gray-300" />
-          </div>
-        )}
+        <ProductGallery
+          photos={photos}
+          videoEmbedUrl={embedUrl}
+          productName={product.name}
+          primaryColor={color}
+          isPortrait={isPortrait}
+        />
 
         {/* Floating back button */}
         <Link
           href={`/${slug}`}
-          className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors"
+          className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors z-10"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           {shop.name}
         </Link>
       </div>
-
-      {/* Thumbnail strip */}
-      {photos.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide bg-white">
-          {photos.map((photo, i) => (
-            <img
-              key={i}
-              src={photo.url}
-              alt={`${product.name} ${i + 1}`}
-              className="h-16 w-16 shrink-0 rounded-xl object-cover border-2"
-              style={{ borderColor: photo.is_primary ? color : 'transparent' }}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Info card */}
       <div className="bg-white px-5 pt-5 pb-36">
