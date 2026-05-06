@@ -14,7 +14,7 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <div className="inline-flex mb-4">
             <Image
-              src="/favicon.png"
+              src="/icone-tekkishop.svg"
               alt={APP_NAME}
               width={56}
               height={56}
