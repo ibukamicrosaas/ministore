@@ -60,6 +60,16 @@ export default async function ShopLayout({
       style={{ '--color-primary': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
     >
       {children}
+      <footer className="max-w-lg mx-auto px-4 py-6 text-center">
+        <a
+          href="/"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Toi aussi, ouvre ta boutique en 5 min avec{' '}
+          <span className="font-semibold text-gray-500">TekkiShop</span>{' '}
+          <span aria-hidden>→</span>
+        </a>
+      </footer>
     </div>
   )
 }

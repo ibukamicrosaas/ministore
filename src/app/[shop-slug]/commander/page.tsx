@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
-import type { Shop, Product, ProductVariant } from '@/types'
+import type { Shop, Product, ProductVariant, ProductPhoto } from '@/types'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -18,7 +18,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, primary_color, phone_whatsapp, available_days, delivery_options, deposit_percentage')
+    .select('id, name, logo_url, primary_color, city, phone_whatsapp, available_days, delivery_options, deposit_percentage')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
@@ -26,7 +26,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
   if (!shopData) notFound()
 
   const shop = shopData as Pick<Shop,
-    'id' | 'name' | 'primary_color' | 'phone_whatsapp' |
+    'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'phone_whatsapp' |
     'available_days' | 'delivery_options' | 'deposit_percentage'
   >
 
@@ -43,7 +43,6 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   // Générer les dates disponibles sur 14 jours
   const availableDays = Array.isArray(shop.available_days) ? shop.available_days as string[] : []
-  const DAY_MAP: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }
 
   const dates: { value: string; label: string }[] = []
   const today = new Date()
@@ -68,22 +67,28 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     store_pickup: boolean
   }
 
+  function getThumb(p: typeof products[0]): string | null {
+    if (Array.isArray(p.photos) && (p.photos as unknown as ProductPhoto[]).length > 0) {
+      const photos = p.photos as unknown as ProductPhoto[]
+      return photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? null
+    }
+    return p.photo_url
+  }
+
   return (
     <div className="max-w-lg mx-auto">
-      <div className="px-4 pt-6 pb-2">
-        <h1 className="text-xl font-bold text-gray-900">Passer commande</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Chez {shop.name}</p>
-      </div>
-
       <OrderForm
         shopId={shop.id}
         shopSlug={slug}
         shopName={shop.name}
+        shopLogoUrl={shop.logo_url}
+        shopCity={shop.city ?? null}
         primaryColor={shop.primary_color ?? '#0EA5E9'}
         products={products.map(p => ({
           id: p.id,
           name: p.name,
           price: p.price,
+          photo: getThumb(p),
           variants: (p.variants as ProductVariant[] | null) ?? null,
           deposit_percentage: p.deposit_percentage,
         }))}

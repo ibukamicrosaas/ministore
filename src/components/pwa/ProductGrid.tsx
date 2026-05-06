@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { LayoutList, LayoutGrid, MessageCircle, Package, Tag } from 'lucide-react'
+import { LayoutList, LayoutGrid, Search, Package, Star, Tag, X } from 'lucide-react'
 import type { Product, ProductPhoto, ProductVariant } from '@/types'
 
 interface ProductGridProps {
@@ -31,6 +31,34 @@ function getPrice(product: Product): string {
   return `${product.price.toLocaleString('fr-FR')} FCFA`
 }
 
+function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
+  const photo = getPrimaryPhoto(product)
+  const price = getPrice(product)
+  const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
+
+  return (
+    <Link href={`/${shopSlug}/produit/${product.id}`} className="shrink-0 w-44 group">
+      <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
+        {photo ? (
+          <img
+            src={photo}
+            alt={product.name}
+            className={`w-full object-cover ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}
+          />
+        ) : (
+          <div className={`flex items-center justify-center bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
+            <Package className="h-8 w-8 text-gray-300" />
+          </div>
+        )}
+        <div className="p-2.5">
+          <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
+          <p className="mt-0.5 text-xs font-bold truncate" style={{ color: primaryColor }}>{price}</p>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 function ProductCardList({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product)
@@ -38,19 +66,19 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
   return (
     <Link
       href={`/${shopSlug}/produit/${product.id}`}
-      className="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm hover:shadow-md transition-shadow active:scale-[0.99]"
+      className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm active:scale-[0.99] transition-transform"
     >
       {photo ? (
-        <img src={photo} alt={product.name} className="h-20 w-20 rounded-xl object-cover shrink-0" />
+        <img src={photo} alt={product.name} className="h-18 w-18 rounded-xl object-cover shrink-0" style={{ height: 72, width: 72 }} />
       ) : (
-        <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-gray-100 shrink-0">
-          <Package className="h-7 w-7 text-gray-300" />
+        <div className="flex items-center justify-center rounded-xl bg-gray-100 shrink-0" style={{ height: 72, width: 72 }}>
+          <Package className="h-6 w-6 text-gray-300" />
         </div>
       )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
         {product.description && (
-          <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{product.description}</p>
+          <p className="mt-0.5 text-xs text-gray-500 line-clamp-2 leading-relaxed">{product.description}</p>
         )}
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: primaryColor }}>{price}</span>
@@ -58,7 +86,7 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
             className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
             style={{ backgroundColor: primaryColor }}
           >
-            Commander
+            Voir →
           </span>
         </div>
       </div>
@@ -74,15 +102,17 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className="group">
-      <div className="rounded-2xl bg-white overflow-hidden shadow-sm">
-        {photo ? (
-          <img src={photo} alt={product.name} className={`${aspectClass} w-full object-cover`} />
-        ) : (
-          <div className={`${aspectClass} flex items-center justify-center bg-gray-100`}>
-            <Package className="h-10 w-10 text-gray-300" />
-          </div>
-        )}
-        <div className="p-3">
+      <div className="rounded-2xl bg-white overflow-hidden shadow-sm active:scale-[0.98] transition-transform">
+        <div className="relative">
+          {photo ? (
+            <img src={photo} alt={product.name} className={`${aspectClass} w-full object-cover`} />
+          ) : (
+            <div className={`${aspectClass} flex items-center justify-center bg-gray-100`}>
+              <Package className="h-10 w-10 text-gray-300" />
+            </div>
+          )}
+        </div>
+        <div className="p-2.5">
           <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
           <p className="mt-0.5 text-xs font-bold truncate" style={{ color: primaryColor }}>{price}</p>
         </div>
@@ -93,50 +123,156 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
 
 export function ProductGrid({ products, shopSlug, primaryColor }: ProductGridProps) {
   const [view, setView] = useState<'list' | 'grid'>('list')
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
-  const byCategory = products.reduce<Record<string, Product[]>>((acc, p) => {
-    const cat = p.category ?? ''
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(p)
-    return acc
-  }, {})
+  const featured = useMemo(
+    () => products.filter(p => (p as Product & { is_featured?: boolean | null }).is_featured),
+    [products]
+  )
 
-  const categories = Object.keys(byCategory)
-  const hasCategories = categories.length > 1 || (categories.length === 1 && categories[0] !== '')
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(products.map(p => p.category ?? '').filter(Boolean)))
+    return cats
+  }, [products])
+
+  const filtered = useMemo(() => {
+    let result = products
+    if (activeCategory) result = result.filter(p => p.category === activeCategory)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q) ||
+        (p.category ?? '').toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [products, activeCategory, search])
+
+  const byCategory = useMemo(() => {
+    return filtered.reduce<Record<string, Product[]>>((acc, p) => {
+      const cat = p.category ?? ''
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(p)
+      return acc
+    }, {})
+  }, [filtered])
+
+  const catKeys = Object.keys(byCategory)
+  const hasCategories = catKeys.length > 1 || (catKeys.length === 1 && catKeys[0] !== '')
+
+  const isFiltered = search.trim() !== '' || activeCategory !== null
 
   return (
     <div>
-      {/* Toggle liste/grille */}
-      <div className="flex items-center justify-end px-4 py-2 gap-2">
-        <button
-          onClick={() => setView('list')}
-          className={`rounded-lg p-2 transition-colors ${view === 'list' ? 'text-[var(--color-primary)]' : 'text-gray-400 hover:text-gray-600'}`}
-          style={view === 'list' ? { color: primaryColor } : {}}
-          title="Vue liste"
-        >
-          <LayoutList className="h-5 w-5" />
-        </button>
-        <button
-          onClick={() => setView('grid')}
-          className={`rounded-lg p-2 transition-colors ${view === 'grid' ? 'text-[var(--color-primary)]' : 'text-gray-400 hover:text-gray-600'}`}
-          style={view === 'grid' ? { color: primaryColor } : {}}
-          title="Vue grille"
-        >
-          <LayoutGrid className="h-5 w-5" />
-        </button>
+      {/* Produits en vedette */}
+      {featured.length > 0 && !isFiltered && (
+        <div className="px-4 pt-4 pb-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="h-3.5 w-3.5 shrink-0" style={{ color: primaryColor }} />
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-600">Coups de cœur</p>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+            {featured.map(p => (
+              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barre de recherche */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher un produit..."
+            className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm outline-none focus:border-gray-300 placeholder:text-gray-400"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Filtres catégories + toggle vue */}
+      <div className="flex items-center gap-2 px-4 py-2">
+        {categories.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto flex-1 scrollbar-hide pb-0.5">
+            <button
+              onClick={() => setActiveCategory(null)}
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                activeCategory === null
+                  ? 'text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              style={activeCategory === null ? { backgroundColor: primaryColor } : {}}
+            >
+              Tout
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  activeCategory === cat
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={activeCategory === cat ? { backgroundColor: primaryColor } : {}}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
+          <button
+            onClick={() => setView('list')}
+            className={`rounded-lg p-1.5 transition-colors ${view === 'list' ? '' : 'text-gray-400 hover:text-gray-600'}`}
+            style={view === 'list' ? { color: primaryColor } : {}}
+            title="Vue liste"
+          >
+            <LayoutList className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setView('grid')}
+            className={`rounded-lg p-1.5 transition-colors ${view === 'grid' ? '' : 'text-gray-400 hover:text-gray-600'}`}
+            style={view === 'grid' ? { color: primaryColor } : {}}
+            title="Vue grille"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Résultats */}
       <div className="px-4 pb-6 space-y-6">
-        {categories.map(category => (
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Search className="h-8 w-8 text-gray-300 mb-2" />
+            <p className="text-sm text-gray-500">Aucun produit trouvé</p>
+            {search && (
+              <button onClick={() => setSearch('')} className="mt-2 text-xs font-medium" style={{ color: primaryColor }}>
+                Effacer la recherche
+              </button>
+            )}
+          </div>
+        ) : catKeys.map(category => (
           <div key={category}>
             {hasCategories && category && (
               <div className="flex items-center gap-2 mb-3">
-                <Tag className="h-3.5 w-3.5 text-gray-400" />
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{category}</p>
+                <Tag className="h-3 w-3 text-gray-400" />
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{category}</p>
               </div>
             )}
             {view === 'list' ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {byCategory[category].map(p => (
                   <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} />
                 ))}
