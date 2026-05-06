@@ -1,7 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
-import { ShoppingBag } from 'lucide-react'
 
 export const metadata = {
   title: `Connexion — ${APP_NAME}`,
@@ -12,8 +12,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-primary)] mb-4">
-            <ShoppingBag className="h-6 w-6 text-white" />
+          <div className="inline-flex mb-4">
+            <Image
+              src="/favicon.png"
+              alt={APP_NAME}
+              width={56}
+              height={56}
+              className="rounded-2xl"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{APP_NAME}</h1>
           <p className="mt-1 text-sm text-gray-500">Ton site marchand en quelques minutes</p>
