@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
 
@@ -13,13 +12,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="inline-flex mb-4">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/icone-tekkishop.svg"
               alt={APP_NAME}
               width={56}
               height={56}
               className="rounded-2xl"
-              unoptimized
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{APP_NAME}</h1>
