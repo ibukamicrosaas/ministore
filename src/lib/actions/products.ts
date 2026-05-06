@@ -8,20 +8,25 @@ import type { CreateProductInput, UpdateProductInput, ProductPhoto } from '@/typ
 async function getOwnerShopId() {
   const supabase = await createServerClient()
   const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return { error: 'Non authentifié.', shopId: null, supabase: null }
+  if (error || !user) return { error: 'Non authentifié.', shopId: null, shopSlug: null, supabase: null }
   const { data: profile } = await supabase
     .from('profiles')
     .select('shop_id, role')
     .eq('id', user.id)
     .single()
   if (!profile?.shop_id || profile.role !== 'owner') {
-    return { error: 'Accès non autorisé.', shopId: null, supabase: null }
+    return { error: 'Accès non autorisé.', shopId: null, shopSlug: null, supabase: null }
   }
-  return { error: null, shopId: profile.shop_id as string, supabase }
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('slug')
+    .eq('id', profile.shop_id)
+    .single()
+  return { error: null, shopId: profile.shop_id as string, shopSlug: shop?.slug as string | null, supabase }
 }
 
 export async function createProduct(input: CreateProductInput) {
-  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   if (!input.name?.trim()) return { error: 'Le nom est obligatoire.' }
@@ -59,11 +64,12 @@ export async function createProduct(input: CreateProductInput) {
   }
 
   revalidatePath('/dashboard/products')
+  if (shopSlug) revalidatePath(`/${shopSlug}`)
   return { success: true, id: data?.id }
 }
 
 export async function updateProduct(id: string, input: UpdateProductInput) {
-  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -97,11 +103,15 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
 
   revalidatePath('/dashboard/products')
   revalidatePath(`/dashboard/products/${id}`)
+  if (shopSlug) {
+    revalidatePath(`/${shopSlug}`)
+    revalidatePath(`/${shopSlug}/produit/${id}`)
+  }
   return { success: true }
 }
 
 export async function toggleProductActive(id: string, isActive: boolean) {
-  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   const { error } = await supabase
@@ -113,11 +123,12 @@ export async function toggleProductActive(id: string, isActive: boolean) {
   if (error) return { error: 'Impossible de modifier le statut.' }
 
   revalidatePath('/dashboard/products')
+  if (shopSlug) revalidatePath(`/${shopSlug}`)
   return { success: true }
 }
 
 export async function deleteProduct(id: string) {
-  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   const { error } = await supabase
@@ -132,6 +143,7 @@ export async function deleteProduct(id: string) {
   }
 
   revalidatePath('/dashboard/products')
+  if (shopSlug) revalidatePath(`/${shopSlug}`)
   return { success: true }
 }
 
@@ -172,7 +184,7 @@ export async function uploadProductPhoto(formData: FormData): Promise<{ error?: 
 }
 
 export async function reorderProducts(ids: string[]) {
-  const { error: authError, shopId, supabase } = await getOwnerShopId()
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   await Promise.all(
@@ -186,5 +198,6 @@ export async function reorderProducts(ids: string[]) {
   )
 
   revalidatePath('/dashboard/products')
+  if (shopSlug) revalidatePath(`/${shopSlug}`)
   return { success: true }
 }

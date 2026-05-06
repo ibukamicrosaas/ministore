@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ShoppingBag } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
+
+export const revalidate = 60
 import type { Metadata } from 'next'
 import { getVideoEmbedUrl } from '@/lib/utils/video'
 import { ProductGallery } from '@/components/pwa/ProductGallery'

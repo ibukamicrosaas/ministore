@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { MessageCircle, MapPin, ShoppingBag } from 'lucide-react'
 import { ProductGrid } from '@/components/pwa/ProductGrid'
 import type { Shop, Product } from '@/types'
+
+export const revalidate = 60
 import type { Metadata } from 'next'
 
 type Props = { params: Promise<{ 'shop-slug': string }> }

@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Shop } from '@/types'
 
+export const revalidate = 60
+
 export default async function ShopLayout({
   children,
   params,
