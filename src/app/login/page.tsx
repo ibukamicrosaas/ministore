@@ -19,6 +19,7 @@ export default function LoginPage() {
               width={56}
               height={56}
               className="rounded-2xl"
+              unoptimized
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{APP_NAME}</h1>
