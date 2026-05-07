@@ -43,6 +43,7 @@ export type Database = {
           accept_online_payment: boolean
           payout_wave_number: string | null
           payout_om_number: string | null
+          delivery_zones: Json
           created_at: string
           updated_at: string
         }
@@ -75,6 +76,7 @@ export type Database = {
           accept_online_payment?: boolean
           payout_wave_number?: string | null
           payout_om_number?: string | null
+          delivery_zones?: Json
           created_at?: string
           updated_at?: string
         }
@@ -107,6 +109,7 @@ export type Database = {
           accept_online_payment?: boolean
           payout_wave_number?: string | null
           payout_om_number?: string | null
+          delivery_zones?: Json
           created_at?: string
           updated_at?: string
         }
@@ -289,6 +292,8 @@ export type Database = {
           internal_notes: string | null
           cancellation_reason: string | null
           cancelled_by: 'shop' | 'client' | null
+          delivery_zone_name: string | null
+          delivery_price: number
           client_token: string
           reminder_sent_at: string | null
           created_at: string
@@ -311,6 +316,8 @@ export type Database = {
           internal_notes?: string | null
           cancellation_reason?: string | null
           cancelled_by?: 'shop' | 'client' | null
+          delivery_zone_name?: string | null
+          delivery_price?: number
           client_token?: string
           reminder_sent_at?: string | null
           created_at?: string
@@ -333,6 +340,8 @@ export type Database = {
           internal_notes?: string | null
           cancellation_reason?: string | null
           cancelled_by?: 'shop' | 'client' | null
+          delivery_zone_name?: string | null
+          delivery_price?: number
           client_token?: string
           reminder_sent_at?: string | null
           created_at?: string

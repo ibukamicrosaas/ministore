@@ -3,8 +3,8 @@
 import { useState, useRef } from 'react'
 import { updateShop, uploadShopLogo } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X } from 'lucide-react'
-import type { Shop } from '@/types'
+import { Camera, X, Plus, Trash2 } from 'lucide-react'
+import type { Shop, DeliveryZone } from '@/types'
 
 interface Props {
   shop: Shop
@@ -27,7 +27,22 @@ export function SettingsForm({ shop }: Props) {
   const [uploadingLogo, setUploadingLogo]       = useState(false)
   const [primaryColor, setPrimaryColor]         = useState(shop.primary_color ?? '#0EA5E9')
   const [acceptOnlinePayment, setAcceptOnline]  = useState(shop.accept_online_payment ?? true)
+  const [deliveryZones, setDeliveryZones]       = useState<DeliveryZone[]>(
+    Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function addZone() {
+    setDeliveryZones(prev => [...prev, { id: crypto.randomUUID(), name: '', price: 0 }])
+  }
+
+  function updateZone(id: string, patch: Partial<DeliveryZone>) {
+    setDeliveryZones(prev => prev.map(z => z.id === id ? { ...z, ...patch } : z))
+  }
+
+  function removeZone(id: string) {
+    setDeliveryZones(prev => prev.filter(z => z.id !== id))
+  }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -61,6 +76,7 @@ export function SettingsForm({ shop }: Props) {
       accept_online_payment: acceptOnlinePayment,
       payout_wave_number: (fd.get('payout_wave_number') as string).trim() || null,
       payout_om_number:  (fd.get('payout_om_number') as string).trim() || null,
+      delivery_zones:    deliveryZones.filter(z => z.name.trim()),
     })
     if ('error' in result) {
       toast.error(result.error ?? 'Erreur')
@@ -274,6 +290,62 @@ export function SettingsForm({ shop }: Props) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Zones de livraison */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Zones de livraison</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Définissez vos zones et le coût associé. Laissez vide pour ne pas proposer de zones.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addZone}
+            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Ajouter
+          </button>
+        </div>
+
+        {deliveryZones.length === 0 && (
+          <p className="text-xs text-gray-400 italic">Aucune zone définie — le coût de livraison ne sera pas affiché au checkout.</p>
+        )}
+
+        <div className="space-y-2">
+          {deliveryZones.map((zone) => (
+            <div key={zone.id} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={zone.name}
+                onChange={(e) => updateZone(zone.id, { name: e.target.value })}
+                placeholder="Ex : Dakar centre"
+                className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+              />
+              <div className="relative w-32 shrink-0">
+                <input
+                  type="number"
+                  min={0}
+                  value={zone.price}
+                  onChange={(e) => updateZone(zone.id, { price: Number(e.target.value) })}
+                  placeholder="0"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 pr-14 text-sm outline-none focus:border-gray-300"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeZone(zone.id)}
+                className="text-red-400 hover:text-red-600 p-1"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <button

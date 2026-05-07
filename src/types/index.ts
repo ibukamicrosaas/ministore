@@ -36,6 +36,12 @@ export interface DeliveryOptions {
   store_pickup: boolean
 }
 
+export interface DeliveryZone {
+  id: string
+  name: string
+  price: number
+}
+
 export interface OrderFormItem {
   product_id: string
   product_name: string
@@ -100,6 +106,7 @@ export interface UpdateShopInput {
   accept_online_payment?: boolean
   payout_wave_number?: string | null
   payout_om_number?: string | null
+  delivery_zones?: DeliveryZone[]
 }
 
 // Réponses standard des Server Actions

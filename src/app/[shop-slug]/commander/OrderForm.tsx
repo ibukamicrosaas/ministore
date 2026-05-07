@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { ProductVariant } from '@/types'
+import type { ProductVariant, DeliveryZone } from '@/types'
 
 const COUNTRIES = [
   { code: 'SN', flag: '🇸🇳', dial: '+221', name: 'Sénégal' },
@@ -139,6 +139,7 @@ interface Props {
   deliveryOptions: { home_delivery: boolean; store_pickup: boolean }
   shopDepositPct: number
   acceptOnlinePayment: boolean
+  deliveryZones: DeliveryZone[]
   preselectedProductId: string | null
 }
 
@@ -155,6 +156,7 @@ export function OrderForm({
   deliveryOptions,
   shopDepositPct,
   acceptOnlinePayment,
+  deliveryZones,
   preselectedProductId,
 }: Props) {
   const router = useRouter()
@@ -179,6 +181,7 @@ export function OrderForm({
   const [deliveryType, setDeliveryType] = useState<'home_delivery' | 'store_pickup'>(
     deliveryOptions.home_delivery ? 'home_delivery' : 'store_pickup',
   )
+  const [selectedZoneId, setSelectedZoneId] = useState<string>(deliveryZones[0]?.id ?? '')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>('on_delivery')
@@ -211,8 +214,13 @@ export function OrderForm({
     setItems((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const selectedZone = deliveryZones.find(z => z.id === selectedZoneId) ?? null
+  const deliveryPrice = (deliveryType === 'home_delivery' && deliveryZones.length > 0 && selectedZone)
+    ? selectedZone.price
+    : 0
+
   function computeTotal() {
-    return items.reduce((sum, it) => {
+    const itemsTotal = items.reduce((sum, it) => {
       const p = getProduct(it.product_id)
       if (!p) return sum
       let price = p.price
@@ -222,6 +230,7 @@ export function OrderForm({
       }
       return sum + price * it.quantity
     }, 0)
+    return itemsTotal + deliveryPrice
   }
 
   function computeDeposit() {
@@ -285,6 +294,8 @@ export function OrderForm({
       client_phone: fullPhone,
       client_whatsapp: fullWhatsapp,
       notes: notes.trim() || null,
+      delivery_zone_name: (deliveryType === 'home_delivery' && selectedZone) ? selectedZone.name : null,
+      delivery_price: deliveryPrice,
       payment_type:
         paymentType === 'online'
           ? hasDeposit
@@ -571,7 +582,23 @@ export function OrderForm({
                 )}
               </div>
               {deliveryType === 'home_delivery' && (
-                <div className="mt-3">
+                <div className="mt-3 space-y-2">
+                  {deliveryZones.length > 0 && (
+                    <div className="relative">
+                      <select
+                        value={selectedZoneId}
+                        onChange={(e) => setSelectedZoneId(e.target.value)}
+                        className={`${inputCls} appearance-none pr-10`}
+                      >
+                        {deliveryZones.map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.name}{z.price > 0 ? ` — ${z.price.toLocaleString('fr-FR')} FCFA` : ' — Gratuit'}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  )}
                   <textarea
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -641,9 +668,17 @@ export function OrderForm({
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto space-y-2 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent px-4 pb-8 pt-3">
         {total > 0 && (
-          <div className="flex items-center justify-between px-1 text-sm font-bold text-gray-900">
-            <span>Total commande</span>
-            <span>{total.toLocaleString('fr-FR')} FCFA</span>
+          <div className="space-y-0.5 px-1">
+            {deliveryPrice > 0 && (
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>Livraison ({selectedZone?.name})</span>
+                <span>+{deliveryPrice.toLocaleString('fr-FR')} FCFA</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+              <span>Total commande</span>
+              <span>{total.toLocaleString('fr-FR')} FCFA</span>
+            </div>
           </div>
         )}
         <button

@@ -21,6 +21,8 @@ interface CreateOrderBody {
   delivery_date: string | null
   delivery_type: 'home_delivery' | 'store_pickup'
   delivery_address: string | null
+  delivery_zone_name: string | null
+  delivery_price: number
   client_first_name: string
   client_phone: string
   client_whatsapp: string
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json() as CreateOrderBody
 
   const { shopId, items, delivery_date, delivery_type, delivery_address,
+    delivery_zone_name, delivery_price,
     client_first_name, client_phone, client_whatsapp, notes, payment_type } = body
 
   // Validation minimale
@@ -54,7 +57,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Calculer les totaux
-  const total_price = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
+  const itemsTotal = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
+  const total_price = itemsTotal + (delivery_price ?? 0)
 
   // Calculer l'acompte si paiement en ligne
   let deposit_amount = 0
@@ -93,15 +97,17 @@ export async function POST(req: NextRequest) {
     .insert({
       shop_id:          shopId,
       client_id:        clientId ?? null,
-      status:           'pending',
+      status:             'pending',
       delivery_type,
-      delivery_address: delivery_address ?? null,
-      delivery_date:    delivery_date ?? null,
+      delivery_address:   delivery_address ?? null,
+      delivery_date:      delivery_date ?? null,
+      delivery_zone_name: delivery_zone_name ?? null,
+      delivery_price:     delivery_price ?? 0,
       payment_type,
       deposit_amount,
-      deposit_paid:     false,
+      deposit_paid:       false,
       total_price,
-      notes:            notes ?? null,
+      notes:              notes ?? null,
     })
     .select('id, client_token')
     .single()
