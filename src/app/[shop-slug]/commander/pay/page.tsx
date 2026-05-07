@@ -56,11 +56,11 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, slug, primary_color')
+    .select('name, slug, primary_color, logo_url')
     .eq('id', order.shop_id)
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'slug' | 'primary_color'> | null
+  const shop = shopData as Pick<Shop, 'name' | 'slug' | 'primary_color' | 'logo_url'> | null
   if (!shop) notFound()
 
   const isDeposit = order.payment_type === 'online_deposit' && order.deposit_amount > 0
@@ -69,14 +69,36 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-lg mx-auto min-h-screen px-4 pt-10 pb-10">
+      {/* Bouton retour */}
+      <div className="mb-6">
+        <a
+          href={`/${slug}/commander`}
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Retour à la boutique
+        </a>
+      </div>
+
       {/* En-tête */}
       <div className="text-center mb-8">
-        <div
-          className="inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white text-xl font-bold mb-4 shadow-md"
-          style={{ backgroundColor: color }}
-        >
-          {shop.name[0]?.toUpperCase()}
-        </div>
+        {shop.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={shop.logo_url}
+            alt={shop.name}
+            className="h-14 w-14 rounded-2xl object-cover shadow-md mx-auto mb-4"
+          />
+        ) : (
+          <div
+            className="inline-flex h-14 w-14 items-center justify-center rounded-2xl text-white text-xl font-bold mb-4 shadow-md"
+            style={{ backgroundColor: color }}
+          >
+            {shop.name[0]?.toUpperCase()}
+          </div>
+        )}
         <h1 className="text-xl font-bold text-gray-900">Choisir un mode de paiement</h1>
         <p className="text-sm text-gray-500 mt-1">
           {isDeposit ? 'Acompte pour confirmer votre commande' : 'Paiement de votre commande'} chez{' '}
