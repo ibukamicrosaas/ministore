@@ -27,13 +27,13 @@ export default async function ShopPage({ params }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, phone_whatsapp, available_days, delivery_options')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
   if (!shopData) notFound()
-  const shop = shopData as Pick<Shop, 'id' | 'name' | 'description' | 'logo_url' | 'primary_color' | 'city' | 'phone_whatsapp' | 'available_days' | 'delivery_options'>
+  const shop = shopData as Pick<Shop, 'id' | 'name' | 'description' | 'logo_url' | 'primary_color' | 'city' | 'address' | 'phone_whatsapp' | 'available_days' | 'delivery_options'>
   const color = shop.primary_color ?? '#0EA5E9'
 
   const { data: productsData } = await supabase
@@ -76,10 +76,10 @@ export default async function ShopPage({ params }: Props) {
             </div>
             <div className="flex-1 min-w-0 pb-1">
               <h1 className="text-xl font-bold text-white leading-tight truncate">{shop.name}</h1>
-              {shop.city && (
+              {(shop.address || shop.city) && (
                 <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
                   <MapPin className="h-3 w-3 shrink-0" />
-                  {shop.city}
+                  {shop.address?.trim() || shop.city}
                 </p>
               )}
             </div>
