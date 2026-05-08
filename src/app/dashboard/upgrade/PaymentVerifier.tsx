@@ -1,54 +1,91 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
-import { verifySubscriptionPayment } from './actions'
+import { verifySubscriptionPayment, pollShopActivation } from './actions'
 
 interface PaymentVerifierProps {
   activatedPlan: string
+  shopIsActive: boolean
 }
 
-export function PaymentVerifier({ activatedPlan }: PaymentVerifierProps) {
+export function PaymentVerifier({ activatedPlan, shopIsActive }: PaymentVerifierProps) {
   const router = useRouter()
-  const [status, setStatus] = useState<'verifying' | 'activated' | 'pending' | 'error' | null>(null)
+  const [status, setStatus] = useState<'verifying' | 'activated' | 'pending' | 'error' | null>(
+    shopIsActive ? 'activated' : null
+  )
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const attemptsRef = useRef(0)
+  const MAX_ATTEMPTS = 20 // 20 × 3s = 60s max
+
+  function stopPolling() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+
+  function onActivated() {
+    stopPolling()
+    sessionStorage.removeItem('pending_sub_txn')
+    sessionStorage.removeItem('pending_sub_plan')
+    setStatus('activated')
+    setTimeout(() => router.refresh(), 2000)
+  }
 
   useEffect(() => {
+    // Déjà activé côté serveur (webhook a tiré avant le redirect)
+    if (shopIsActive) {
+      sessionStorage.removeItem('pending_sub_txn')
+      sessionStorage.removeItem('pending_sub_plan')
+      setTimeout(() => router.refresh(), 2000)
+      return
+    }
+
     const txn  = sessionStorage.getItem('pending_sub_txn')
     const plan = sessionStorage.getItem('pending_sub_plan')
 
-    if (!txn || plan !== activatedPlan) return
-
     setStatus('verifying')
 
-    verifySubscriptionPayment(txn, activatedPlan).then(result => {
-      sessionStorage.removeItem('pending_sub_txn')
-      sessionStorage.removeItem('pending_sub_plan')
+    // Chemin rapide : txn en sessionStorage → vérification directe Bictorys
+    if (txn && plan === activatedPlan) {
+      verifySubscriptionPayment(txn, activatedPlan).then(result => {
+        if (result.success) {
+          onActivated()
+          return
+        }
+        // Txn existe mais paiement pas encore confirmé → basculer en polling
+        startPolling()
+      })
+      return
+    }
 
-      if (result.success) {
-        setStatus('activated')
-        // Recharger la page après 2s pour que le plan affiché soit à jour
-        setTimeout(() => router.refresh(), 2000)
-      } else if (result.error === 'Paiement non encore confirmé') {
-        setStatus('pending')
-      } else {
-        setStatus('error')
-        setErrorMsg(result.error ?? 'Erreur inconnue')
+    // Pas de txn (redirect depuis app mobile, onglet différent, etc.) → polling direct
+    startPolling()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function startPolling() {
+    attemptsRef.current = 0
+    pollRef.current = setInterval(async () => {
+      attemptsRef.current += 1
+      const { isActive } = await pollShopActivation()
+      if (isActive) {
+        onActivated()
+        return
       }
-    })
-  }, [activatedPlan, router])
-
-  if (status === 'verifying') {
-    return (
-      <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 flex items-center gap-3">
-        <Loader2 className="h-5 w-5 text-sky-500 shrink-0 animate-spin" />
-        <p className="text-sm font-medium text-sky-700">Vérification du paiement en cours…</p>
-      </div>
-    )
+      if (attemptsRef.current >= MAX_ATTEMPTS) {
+        stopPolling()
+        setStatus('pending')
+      }
+    }, 3000)
   }
 
-  if (status === 'activated') {
+  useEffect(() => () => stopPolling(), [])
+
+  if (status === 'activated' || shopIsActive) {
     return (
       <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
@@ -60,14 +97,23 @@ export function PaymentVerifier({ activatedPlan }: PaymentVerifierProps) {
     )
   }
 
+  if (status === 'verifying') {
+    return (
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 flex items-center gap-3">
+        <Loader2 className="h-5 w-5 text-sky-500 shrink-0 animate-spin" />
+        <p className="text-sm font-medium text-sky-700">Vérification du paiement en cours…</p>
+      </div>
+    )
+  }
+
   if (status === 'pending') {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
         <Loader2 className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 animate-spin" />
         <div>
-          <p className="text-sm font-semibold text-amber-700">Paiement en attente de confirmation</p>
+          <p className="text-sm font-semibold text-amber-700">Activation en cours de traitement</p>
           <p className="text-xs text-amber-600 mt-0.5">
-            Le paiement est en cours de traitement. Ton site sera activé automatiquement dans quelques minutes.
+            Ton paiement a été reçu. Ton site sera activé dans les prochaines secondes. Actualise la page si ça tarde.
           </p>
         </div>
       </div>

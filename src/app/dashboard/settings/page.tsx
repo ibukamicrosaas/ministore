@@ -5,6 +5,7 @@ import { SettingsForm } from './SettingsForm'
 import { ChangePinForm } from './ChangePinForm'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { PWAPreviewPanel } from '@/components/dashboard/PWAPreviewPanel'
+import { ActivationChecker } from './ActivationChecker'
 import { CheckCircle2, AlertCircle, MessageSquare, ChevronRight, Zap, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
@@ -69,12 +70,15 @@ export default async function SettingsPage() {
                   : 'Active ton site pour recevoir tes premières commandes.'}
               </p>
               {!isActivePlan && (
-                <Link
-                  href="/dashboard/upgrade"
-                  className="inline-flex items-center gap-1 mt-2 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors"
-                >
-                  <Zap className="h-3 w-3" /> Activer mon site
-                </Link>
+                <div className="flex flex-col gap-0.5">
+                  <Link
+                    href="/dashboard/upgrade"
+                    className="inline-flex items-center gap-1 mt-2 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors w-fit"
+                  >
+                    <Zap className="h-3 w-3" /> Activer mon site
+                  </Link>
+                  <ActivationChecker />
+                </div>
               )}
             </div>
           </div>

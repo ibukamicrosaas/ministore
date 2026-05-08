@@ -65,3 +65,37 @@ export async function verifySubscriptionPayment(
     return { success: false, error: 'Erreur de vérification Bictorys' }
   }
 }
+
+/**
+ * Vérifie si le webhook Bictorys a déjà activé la boutique.
+ * Appelé en polling côté client quand le redirect Bictorys
+ * ne ramène pas l'utilisateur avec le txn en sessionStorage.
+ */
+export async function pollShopActivation(): Promise<{ isActive: boolean; plan: string | null }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { isActive: false, plan: null }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('shop_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id) return { isActive: false, plan: null }
+
+  const { data: shop } = await admin
+    .from('shops')
+    .select('is_active, plan')
+    .eq('id', profile.shop_id)
+    .single()
+
+  if (shop?.is_active) {
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/upgrade')
+    revalidatePath('/dashboard/settings')
+  }
+
+  return { isActive: shop?.is_active ?? false, plan: shop?.plan ?? null }
+}

@@ -80,11 +80,11 @@ export default async function UpgradePage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, plan')
+    .select('name, plan, is_active')
     .eq('id', profile.shop_id)
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'plan'> | null
+  const shop = shopData as Pick<Shop, 'name' | 'plan' | 'is_active'> | null
   if (!shop) redirect('/dashboard')
 
   const { success, plan: activatedPlan, error } = await searchParams
@@ -98,7 +98,7 @@ export default async function UpgradePage({
 
       {/* Vérification + activation au retour du paiement */}
       {success && activatedPlan && (
-        <PaymentVerifier activatedPlan={activatedPlan} />
+        <PaymentVerifier activatedPlan={activatedPlan} shopIsActive={shop.is_active ?? false} />
       )}
 
       {/* Erreur de paiement */}
