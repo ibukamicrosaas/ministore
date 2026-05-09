@@ -135,6 +135,56 @@ export async function createShop(formData: FormData) {
   redirect('/onboarding/setup')
 }
 
+export async function updateShopSlug(newSlug: string): Promise<{ error?: string; slug?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  // Sanitiser le slug
+  const sanitized = newSlug
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50)
+
+  if (!sanitized || sanitized.length < 2) return { error: "L'URL doit contenir au moins 2 caractères." }
+
+  // Récupérer l'ancien slug pour revalider
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  const oldSlug = shopMeta?.slug
+
+  if (sanitized === oldSlug) return { slug: sanitized }
+
+  // Vérifier l'unicité
+  const { data: existing } = await supabase.from('shops').select('id').eq('slug', sanitized).single()
+  if (existing) return { error: 'Cette URL est déjà utilisée. Choisis-en une autre.' }
+
+  const { error } = await supabase
+    .from('shops')
+    .update({ slug: sanitized, updated_at: new Date().toISOString() })
+    .eq('id', profile.shop_id)
+
+  if (error) {
+    console.error('[updateShopSlug]', error.message)
+    return { error: "Impossible de modifier l'URL." }
+  }
+
+  revalidatePath('/dashboard/settings')
+  if (oldSlug) revalidatePath(`/${oldSlug}`)
+  revalidatePath(`/${sanitized}`)
+  return { slug: sanitized }
+}
+
 export async function updateShop(data: UpdateShopInput) {
   const supabase = await createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()

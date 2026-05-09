@@ -32,10 +32,32 @@ export async function signIn(formData: FormData) {
     return { error: 'Le code PIN doit contenir exactement 6 chiffres.' }
   }
 
-  const supabase = await createServerClient()
+  const admin = createAdminClient()
   const email = phoneToEmail(phone)
 
+  // Rate limiting : max 10 tentatives échouées sur 15 minutes
+  const windowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { count: failedCount } = await admin
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', email)
+    .eq('attempt_type', 'login')
+    .eq('success', false)
+    .gte('attempted_at', windowStart)
+
+  if ((failedCount ?? 0) >= 10) {
+    return { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+  }
+
+  const supabase = await createServerClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password: pin })
+
+  // Enregistrer la tentative (succès ou échec)
+  await admin.from('login_attempts').insert({
+    identifier: email,
+    attempt_type: 'login',
+    success: !error,
+  })
 
   if (error) {
     console.error('[signIn]', error.message)
@@ -148,14 +170,29 @@ export async function requestPinReset(phone: string) {
 
   const admin = createAdminClient()
 
-  // Vérifier que le compte existe
+  // Rate limiting : max 3 demandes par heure — vérifier AVANT de confirmer l'existence du compte
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: recentCount } = await admin
+    .from('pin_resets')
+    .select('*', { count: 'exact', head: true })
+    .eq('phone_email', phoneEmail)
+    .gte('created_at', oneHourAgo)
+
+  if ((recentCount ?? 0) >= 3) {
+    return { error: 'Trop de tentatives. Réessayez dans 1 heure.' }
+  }
+
+  // Vérifier que le compte existe — réponse identique si non (évite de révéler l'existence du compte)
   const { data: { users }, error: listError } = await admin.auth.admin.listUsers()
   if (listError) return { error: 'Erreur serveur.' }
 
   const existingUser = users.find(u => u.email === phoneEmail)
-  if (!existingUser) return { error: 'Aucun compte trouvé avec ce numéro.' }
+  if (!existingUser) {
+    // Réponse générique : ne pas révéler que le compte n'existe pas
+    return { success: true }
+  }
 
-  // Générer un code à 6 chiffres
+  // Générer un code à 6 chiffres (usage manuel — compensé par le rate limiting strict)
   const token = String(Math.floor(100000 + Math.random() * 900000))
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 

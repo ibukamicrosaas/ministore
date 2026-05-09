@@ -2,7 +2,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { MessageCircle, MapPin, ShoppingBag } from 'lucide-react'
 import { ProductGrid } from '@/components/pwa/ProductGrid'
+import { ShareButton } from '@/components/pwa/ShareButton'
 import type { Shop, Product } from '@/types'
+import { APP_URL } from '@/constants'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -59,6 +61,16 @@ export default async function ShopPage({ params }: Props) {
         <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full opacity-10 bg-white" />
 
         <div className="relative px-5 pt-10 pb-6">
+          {/* Share button — top right */}
+          <div className="absolute top-4 right-4 z-10">
+            <ShareButton
+              url={`${APP_URL}/${slug}`}
+              title={shop.name}
+              text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
+              primaryColor={color}
+            />
+          </div>
+
           <div className="flex items-end gap-4">
             {/* Logo */}
             <div className="shrink-0">

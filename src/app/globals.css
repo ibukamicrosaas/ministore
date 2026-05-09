@@ -79,6 +79,13 @@
   outline-offset: 2px;
 }
 
+/* Les inputs gèrent leur propre état de focus via la bordure — pas d'outline natif */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
 /* Suppression des outlines natifs sur les inputs */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {

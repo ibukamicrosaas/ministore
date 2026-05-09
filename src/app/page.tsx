@@ -113,14 +113,15 @@ export default async function LandingPage() {
               </Link>
             ) : (
               <>
-                <Link href="/login" className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 transition-colors">
+                <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-2 sm:px-3 py-2 transition-colors">
                   Connexion
                 </Link>
                 <Link
                   href="/onboarding"
-                  className="flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-sm"
+                  className="flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-3 sm:px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-sm"
                 >
-                  Créer mon site
+                  <span className="sm:hidden">Commencer</span>
+                  <span className="hidden sm:inline">Créer mon site</span>
                 </Link>
               </>
             )}

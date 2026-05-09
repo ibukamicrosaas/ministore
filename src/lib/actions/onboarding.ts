@@ -186,12 +186,19 @@ export async function saveOnboardingProduct(input: {
   if (!input.name.trim()) return { error: 'Le nom du produit est obligatoire.' }
   if (input.price < 0) return { error: 'Le prix doit être positif.' }
 
+  // Quand une photo est fournie, on la place dans photos[] ET photo_url
+  // (le dashboard lit photos[], le mini-site lit les deux)
+  const photoEntry = input.photo_url
+    ? [{ url: input.photo_url, is_primary: true }]
+    : []
+
   const { error } = await supabase.from('products').insert({
     shop_id: shopId,
     name: input.name.trim(),
     price: input.price,
     description: input.description?.trim() || null,
     photo_url: input.photo_url ?? null,
+    photos: photoEntry,
     is_active: true,
   })
 

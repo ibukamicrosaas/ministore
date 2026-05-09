@@ -57,8 +57,16 @@ export async function verifySubscriptionPayment(
       return { success: false, error: 'Erreur activation boutique' }
     }
 
+    const { data: shopMeta } = await admin
+      .from('shops')
+      .select('slug')
+      .eq('id', profile.shop_id)
+      .single()
+
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/upgrade')
+    revalidatePath('/dashboard/settings')
+    if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
     return { success: true }
   } catch (e) {
     console.error('[verifySubscriptionPayment]', e)

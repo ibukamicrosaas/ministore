@@ -35,24 +35,32 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
+  const soldOut = product.stock_count === 0
 
   return (
-    <Link href={`/${shopSlug}/produit/${product.id}`} className="shrink-0 w-44 group">
+    <Link href={`/${shopSlug}/produit/${product.id}`} className={`shrink-0 w-44 group ${soldOut ? 'opacity-60' : ''}`}>
       <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
-        {photo ? (
-          <img
-            src={photo}
-            alt={product.name}
-            className={`w-full object-cover ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}
-          />
-        ) : (
-          <div className={`flex items-center justify-center bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
-            <Package className="h-8 w-8 text-gray-300" />
-          </div>
-        )}
+        <div className="relative">
+          {photo ? (
+            <img
+              src={photo}
+              alt={product.name}
+              className={`w-full object-cover ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}
+            />
+          ) : (
+            <div className={`flex items-center justify-center bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
+              <Package className="h-8 w-8 text-gray-300" />
+            </div>
+          )}
+          {soldOut && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
+            </div>
+          )}
+        </div>
         <div className="p-2.5">
           <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
-          <p className="mt-0.5 text-xs font-bold truncate" style={{ color: primaryColor }}>{price}</p>
+          <p className={`mt-0.5 text-xs font-bold truncate ${soldOut ? 'text-gray-400' : ''}`} style={soldOut ? {} : { color: primaryColor }}>{soldOut ? 'Rupture de stock' : price}</p>
         </div>
       </div>
     </Link>
@@ -62,32 +70,52 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
 function ProductCardList({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product)
+  const soldOut = product.stock_count === 0
+  const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
 
   return (
     <Link
       href={`/${shopSlug}/produit/${product.id}`}
-      className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm active:scale-[0.99] transition-transform"
+      className={`flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm active:scale-[0.99] transition-transform ${soldOut ? 'opacity-60' : ''}`}
     >
-      {photo ? (
-        <img src={photo} alt={product.name} className="h-18 w-18 rounded-xl object-cover shrink-0" style={{ height: 72, width: 72 }} />
-      ) : (
-        <div className="flex items-center justify-center rounded-xl bg-gray-100 shrink-0" style={{ height: 72, width: 72 }}>
-          <Package className="h-6 w-6 text-gray-300" />
-        </div>
-      )}
+      <div className="relative shrink-0">
+        {photo ? (
+          <img src={photo} alt={product.name} className="h-18 w-18 rounded-xl object-cover" style={{ height: 72, width: 72 }} />
+        ) : (
+          <div className="flex items-center justify-center rounded-xl bg-gray-100" style={{ height: 72, width: 72 }}>
+            <Package className="h-6 w-6 text-gray-300" />
+          </div>
+        )}
+        {soldOut && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+            <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
         {product.description && (
           <p className="mt-0.5 text-xs text-gray-500 line-clamp-2 leading-relaxed">{product.description}</p>
         )}
         <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="text-sm font-bold" style={{ color: primaryColor }}>{price}</span>
-          <span
-            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
-            style={{ backgroundColor: primaryColor }}
-          >
-            Voir →
-          </span>
+          <div className="min-w-0">
+            <span className={`text-sm font-bold ${soldOut ? 'text-gray-400' : ''}`} style={soldOut ? {} : { color: primaryColor }}>{price}</span>
+            {lowStock && (
+              <p className="text-[10px] text-amber-500 font-medium">Plus que {product.stock_count} dispo</p>
+            )}
+          </div>
+          {soldOut ? (
+            <span className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-400">
+              Rupture
+            </span>
+          ) : (
+            <span
+              className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
+              style={{ backgroundColor: primaryColor }}
+            >
+              Voir →
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -99,9 +127,11 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
   const price = getPrice(product)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
+  const soldOut = product.stock_count === 0
+  const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
 
   return (
-    <Link href={`/${shopSlug}/produit/${product.id}`} className="group">
+    <Link href={`/${shopSlug}/produit/${product.id}`} className={`group ${soldOut ? 'opacity-60' : ''}`}>
       <div className="rounded-2xl bg-white overflow-hidden shadow-sm active:scale-[0.98] transition-transform">
         <div className="relative">
           {photo ? (
@@ -111,10 +141,18 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
               <Package className="h-10 w-10 text-gray-300" />
             </div>
           )}
+          {soldOut && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
+            </div>
+          )}
         </div>
         <div className="p-2.5">
           <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
-          <p className="mt-0.5 text-xs font-bold truncate" style={{ color: primaryColor }}>{price}</p>
+          <p className={`mt-0.5 text-xs font-bold truncate ${soldOut ? 'text-gray-400' : ''}`} style={soldOut ? {} : { color: primaryColor }}>{soldOut ? 'Rupture de stock' : price}</p>
+          {lowStock && (
+            <p className="text-[10px] text-amber-500 font-medium">Plus que {product.stock_count} dispo</p>
+          )}
         </div>
       </div>
     </Link>

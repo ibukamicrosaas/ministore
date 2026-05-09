@@ -32,13 +32,13 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: productsData } = await supabase
     .from('products')
-    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category')
+    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
 
   const products = (productsData ?? []) as (Pick<Product,
-    'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category'
+    'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category' | 'stock_count'
   >)[]
 
   // Générer les dates disponibles sur 14 jours
@@ -91,6 +91,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
           photo: getThumb(p),
           variants: (p.variants as ProductVariant[] | null) ?? null,
           deposit_percentage: p.deposit_percentage,
+          stock_count: p.stock_count ?? null,
         }))}
         deliveryDates={dates}
         deliveryOptions={deliveryOptions}

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
@@ -56,25 +56,71 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Boutique introuvable.' }, { status: 404 })
   }
 
-  // Calculer les totaux
-  const itemsTotal = items.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
-  const total_price = itemsTotal + (delivery_price ?? 0)
+  // Vérifier le stock et récupérer les prix réels depuis la DB (ignorer les prix du client)
+  const productIds = items.map(i => i.product_id).filter(Boolean)
+  if (!productIds.length) {
+    return NextResponse.json({ error: 'Données manquantes.' }, { status: 400 })
+  }
+
+  const { data: dbProducts } = await supabase
+    .from('products')
+    .select('id, name, price, variants, deposit_percentage, stock_count')
+    .in('id', productIds)
+    .eq('shop_id', shopId)
+
+  if (!dbProducts || dbProducts.length === 0) {
+    return NextResponse.json({ error: 'Produits introuvables.' }, { status: 400 })
+  }
+
+  type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null }
+  const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
+
+  // Stock check + calcul des prix serveur
+  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number }
+  const serverItems: ServerItem[] = []
+
+  for (const it of items) {
+    const p = productMap.get(it.product_id)
+    if (!p) {
+      return NextResponse.json({ error: 'Produit introuvable.' }, { status: 400 })
+    }
+    if (p.stock_count !== null) {
+      if (p.stock_count === 0) {
+        return NextResponse.json({ error: `${p.name} est en rupture de stock.` }, { status: 400 })
+      }
+      if (it.quantity > p.stock_count) {
+        return NextResponse.json({ error: `Stock insuffisant pour ${p.name} (${p.stock_count} disponible(s)).` }, { status: 400 })
+      }
+    }
+    // Prix réel depuis la DB — ignorer it.unit_price envoyé par le client
+    let unit_price = p.price
+    if (it.variant_label && Array.isArray(p.variants)) {
+      const variant = (p.variants as { label: string; price: number }[]).find(v => v.label === it.variant_label)
+      if (variant) unit_price = variant.price
+    }
+    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity })
+  }
+
+  // Prix de livraison depuis la DB — ignorer delivery_price envoyé par le client
+  let serverDeliveryPrice = 0
+  if (delivery_type === 'home_delivery' && delivery_zone_name) {
+    const zones = Array.isArray(shop.delivery_zones)
+      ? (shop.delivery_zones as { id: string; name: string; price: number }[])
+      : []
+    const zone = zones.find(z => z.name === delivery_zone_name)
+    serverDeliveryPrice = zone?.price ?? 0
+  }
+
+  // Calculer les totaux côté serveur
+  const itemsTotal = serverItems.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
+  const total_price = itemsTotal + serverDeliveryPrice
 
   // Calculer l'acompte si paiement en ligne
   let deposit_amount = 0
   if (payment_type === 'online_deposit') {
-    // Récupérer les acomptes produit
-    const productIds = items.map(i => i.product_id).filter(Boolean)
-    const { data: products } = await supabase
-      .from('products')
-      .select('id, deposit_percentage')
-      .in('id', productIds)
-      .eq('shop_id', shopId)
-
-    const productMap = new Map((products ?? []).map(p => [p.id, p.deposit_percentage]))
-
-    deposit_amount = items.reduce((sum, it) => {
-      const pct = productMap.get(it.product_id) ?? shop.deposit_percentage ?? 0
+    deposit_amount = serverItems.reduce((sum, it) => {
+      const p = productMap.get(it.product_id)
+      const pct = p?.deposit_percentage ?? shop.deposit_percentage ?? 0
       return sum + Math.floor(it.unit_price * it.quantity * pct / 100)
     }, 0)
   } else if (payment_type === 'online_full') {
@@ -102,7 +148,7 @@ export async function POST(req: NextRequest) {
       delivery_address:   delivery_address ?? null,
       delivery_date:      delivery_date ?? null,
       delivery_zone_name: delivery_zone_name ?? null,
-      delivery_price:     delivery_price ?? 0,
+      delivery_price:     serverDeliveryPrice,
       payment_type,
       deposit_amount,
       deposit_paid:       false,
@@ -117,16 +163,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
 
-  // Créer les lignes
+  // Créer les lignes (avec les prix serveur — jamais les prix client)
   const { error: itemsError } = await supabase.from('order_items').insert(
-    items.map(it => ({
-      order_id:     order.id,
-      product_id:   it.product_id || null,
-      product_name: it.product_name,
+    serverItems.map(it => ({
+      order_id:      order.id,
+      product_id:    it.product_id || null,
+      product_name:  it.product_name,
       variant_label: it.variant_label,
-      unit_price:   it.unit_price,
-      quantity:     it.quantity,
-      line_total:   it.unit_price * it.quantity,
+      unit_price:    it.unit_price,
+      quantity:      it.quantity,
+      line_total:    it.unit_price * it.quantity,
     }))
   )
 
@@ -134,14 +180,27 @@ export async function POST(req: NextRequest) {
     console.error('[api/orders items]', itemsError.message)
   }
 
+  // Décrémenter le stock de façon atomique pour chaque article
+  for (const it of serverItems) {
+    if (!it.product_id) continue
+    const { data: decremented } = await supabase.rpc('decrement_product_stock', {
+      p_product_id: it.product_id,
+      p_shop_id: shopId,
+      p_quantity: it.quantity,
+    })
+    if (!decremented) {
+      console.warn(`[api/orders] Stock insuffisant lors du décrément pour produit ${it.product_id} (commande ${order.id})`)
+    }
+  }
+
   // Si paiement en ligne → renvoyer vers la page de paiement
   if (payment_type === 'online_full' || payment_type === 'online_deposit') {
-    return NextResponse.json({ orderId: order.id, redirect: 'pay' })
+    return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'pay' })
   }
 
   // Paiement à la réception → envoyer les notifications WhatsApp
   const orderUrl     = `${APP_URL}/${shop.slug}/commander/success?order_id=${order.id}&token=${order.client_token}`
-  const itemsSummary = items
+  const itemsSummary = serverItems
     .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${(i.unit_price * i.quantity).toLocaleString('fr-FR')} FCFA`)
     .join('\n')
 
@@ -192,5 +251,5 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({ orderId: order.id, redirect: 'success' })
+  return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'success' })
 }

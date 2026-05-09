@@ -13,6 +13,7 @@ import {
   X,
   Wallet,
   AlertCircle,
+  MessageCircle,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -115,8 +116,8 @@ export function Sidebar({ shop, profile, open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        {/* Footer profil + déconnexion */}
-        <div className="border-t border-gray-100 px-3 py-3">
+        {/* Footer profil + support + déconnexion */}
+        <div className="border-t border-gray-100 px-3 py-3 space-y-1">
           <Link
             href="/dashboard/settings"
             onClick={onClose}
@@ -134,10 +135,22 @@ export function Sidebar({ shop, profile, open, onClose }: SidebarProps) {
               <p className="text-xs text-gray-500">Propriétaire</p>
             </div>
           </Link>
+
+          {/* Support WhatsApp */}
+          <a
+            href="https://wa.me/221781362728"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#25D366] hover:bg-[#25D366]/8 transition-colors"
+          >
+            <MessageCircle className="h-4 w-4 shrink-0" />
+            Support WhatsApp
+          </a>
+
           <form action={signOut}>
             <button
               type="submit"
-              className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
             >
               <LogOut className="h-4 w-4 text-gray-400" />
               Déconnexion
@@ -162,8 +175,19 @@ function PlanBadge({ plan }: { plan: string }) {
     )
   }
   const label = plan === 'starter' ? 'Starter'
+    : plan === 'decouverte' ? 'Découverte'
     : plan === 'business' ? 'Business'
     : plan === 'pro' ? 'Pro'
     : plan
-  return <p className="text-xs text-emerald-600 font-medium capitalize">Plan {label}</p>
+  return (
+    <Link
+      href="/dashboard/upgrade"
+      className="flex items-center gap-1 text-xs text-emerald-600 font-medium hover:text-emerald-700 transition-colors"
+      title="Changer de plan"
+    >
+      Plan {label}
+      <span className="text-gray-400">·</span>
+      <span className="text-gray-400 hover:text-gray-600 text-[10px]">changer</span>
+    </Link>
+  )
 }

@@ -15,9 +15,9 @@ export const metadata = { title: 'Commande confirmée ✓' }
 
 export default async function SuccessPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
-  const { order_id } = await searchParams
+  const { order_id, token } = await searchParams
 
-  if (!order_id) notFound()
+  if (!order_id || !token) notFound()
 
   const supabase = createAdminClient()
 
@@ -31,6 +31,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       shops(name, slug, primary_color, phone_whatsapp)
     `)
     .eq('id', order_id)
+    .eq('client_token', token)
     .single()
 
   if (!orderData) notFound()

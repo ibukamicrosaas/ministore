@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsApp, buildTrialExpiredMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  if (!verifyCronRequest(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const supabase = createAdminClient()
 
   const { data, error } = await supabase

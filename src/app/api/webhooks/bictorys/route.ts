@@ -7,6 +7,7 @@ import {
   buildNewOrderAlertMessage,
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
+import { revalidatePath } from 'next/cache'
 
 const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -14,18 +15,23 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export async function POST(req: NextRequest) {
   const rawBody      = await req.text()
   const headerSecret = req.headers.get('x-secret-key') ?? ''
-  const envSecret    = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
+  const platformSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
 
-  // Fail closed : si le secret n'est pas configuré, refuser toutes les requêtes
-  if (!envSecret) {
+  // Fail closed : si le secret plateforme n'est pas configuré, refuser
+  if (!platformSecret) {
     console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré — webhook rejeté')
     return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
   }
-  if (!verifyBictorysSignature(headerSecret, envSecret)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-  }
 
-  const payload = JSON.parse(rawBody) as BictorysWebhookPayload
+  // Lire le payload pour déterminer quel secret utiliser
+  // (les abonnements utilisent toujours le secret plateforme ; les commandes de
+  // boutiques Pro avec leur propre compte Bictorys utilisent leur propre secret)
+  let payload: BictorysWebhookPayload
+  try {
+    payload = JSON.parse(rawBody) as BictorysWebhookPayload
+  } catch {
+    return NextResponse.json({ error: 'Payload JSON invalide' }, { status: 400 })
+  }
 
   const merchantReference = payload.merchantReference
   if (!merchantReference) {
@@ -33,6 +39,35 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient()
+
+  // Déterminer le secret effectif à utiliser pour la vérification
+  let effectiveSecret = platformSecret
+
+  // Pour les paiements de commande (pas d'abonnement) : vérifier si la boutique
+  // a sa propre clé Bictorys (plan Pro)
+  if (!merchantReference.startsWith('sub-') && UUID_REGEX.test(merchantReference)) {
+    const { data: order } = await supabase
+      .from('orders')
+      .select('shop_id')
+      .eq('id', merchantReference)
+      .single()
+
+    if (order?.shop_id) {
+      const { data: shopSecrets } = await supabase
+        .from('shops')
+        .select('plan, bictorys_webhook_secret')
+        .eq('id', order.shop_id)
+        .single()
+
+      if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
+        effectiveSecret = shopSecrets.bictorys_webhook_secret
+      }
+    }
+  }
+
+  if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+  }
 
   // ── Paiement d'abonnement ─────────────────────────────────────────────
   // Format: "sub-{36-char-uuid}-{planKey}"
@@ -54,10 +89,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
     }
 
-    await supabase
+    const { data: activatedShop } = await supabase
       .from('shops')
       .update({ plan: planKey, is_active: true, updated_at: new Date().toISOString() })
       .eq('id', shopId)
+      .select('slug')
+      .single()
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/upgrade')
+    revalidatePath('/dashboard/settings')
+    if (activatedShop?.slug) revalidatePath(`/${activatedShop.slug}`)
 
     console.log(`[webhook] Plan ${planKey} activé pour shop ${shopId}`)
     return NextResponse.json({ ok: true })

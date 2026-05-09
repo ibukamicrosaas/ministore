@@ -13,10 +13,7 @@ interface RequestBody {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.BICTORYS_SECRET_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })
-  }
+  const platformApiKey = process.env.BICTORYS_SECRET_KEY
 
   const body = (await req.json()) as RequestBody
   const { orderId, shopSlug, customerFirstName, customerLastName, customerPhone, paymentType } = body
@@ -29,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
-    .select('id, deposit_amount, total_price, shop_id, status, payment_type')
+    .select('id, deposit_amount, total_price, shop_id, status, payment_type, client_token')
     .eq('id', orderId)
     .single()
 
@@ -44,6 +41,21 @@ export async function POST(req: NextRequest) {
     shop_id: string
     status: string
     payment_type: string
+    client_token: string
+  }
+
+  // Utiliser la clé Bictorys propre de la boutique (plan Pro) si disponible
+  const { data: shopData } = await supabase
+    .from('shops')
+    .select('plan, bictorys_secret_key')
+    .eq('id', order.shop_id)
+    .single()
+
+  const shopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
+  const apiKey = shopKey ?? platformApiKey
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })
   }
 
   if (order.status !== 'pending') {
@@ -67,7 +79,7 @@ export async function POST(req: NextRequest) {
         currency: 'XOF',
         paymentReference: `tekkishop-${orderId.slice(0, 8)}`,
         merchantReference: orderId,
-        successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}`,
+        successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
         errorRedirectUrl: `${APP_URL}/${shopSlug}/commander/pay?cancelled=1&order_id=${orderId}`,
         orderDetails: [{ name: 'Commande TekkiShop', price: amountToCharge, quantity: 1, taxRate: 0 }],
         customerObject: {

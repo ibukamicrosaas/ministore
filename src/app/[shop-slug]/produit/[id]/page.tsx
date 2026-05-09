@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ShoppingBag } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
+import { ShareButton } from '@/components/pwa/ShareButton'
+import { APP_URL } from '@/constants'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -33,6 +35,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const shop    = shopRes.data as Pick<Shop, 'id' | 'name' | 'primary_color'>
   const product = productRes.data as Product
+  const soldOut = product.stock_count === 0
   const color   = shop.primary_color ?? '#0EA5E9'
 
   const photos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
@@ -71,6 +74,16 @@ export default async function ProductDetailPage({ params }: Props) {
           <ChevronLeft className="h-3.5 w-3.5" />
           {shop.name}
         </Link>
+
+        {/* Share button */}
+        <div className="absolute top-4 right-4 z-10">
+          <ShareButton
+            url={`${APP_URL}/${slug}/produit/${product.id}`}
+            title={product.name}
+            text={product.description ?? `${product.name} — ${displayPrice}`}
+            primaryColor={color}
+          />
+        </div>
       </div>
 
       {/* Info card */}
@@ -116,14 +129,20 @@ export default async function ProductDetailPage({ params }: Props) {
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
-        <Link
-          href={`/${slug}/commander?product=${product.id}`}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
-          style={{ backgroundColor: color }}
-        >
-          <ShoppingBag className="h-5 w-5" />
-          Commander ce produit
-        </Link>
+        {soldOut ? (
+          <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
+            Rupture de stock
+          </div>
+        ) : (
+          <Link
+            href={`/${slug}/commander?product=${product.id}`}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
+            style={{ backgroundColor: color }}
+          >
+            <ShoppingBag className="h-5 w-5" />
+            Commander ce produit
+          </Link>
+        )}
       </div>
     </div>
   )

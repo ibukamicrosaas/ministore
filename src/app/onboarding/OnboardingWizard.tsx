@@ -57,16 +57,17 @@ interface WizardProps {
   initialStep: 1 | 2 | 3 | 4 | 5
   userPhone: string | null
   salon: { name: string; slug: string; business_type: string | null; specialty: string | null } | null
+  initialName?: string
 }
 
-export function OnboardingWizard({ initialStep, userPhone, salon }: WizardProps) {
+export function OnboardingWizard({ initialStep, userPhone, salon, initialName }: WizardProps) {
   const router = useRouter()
 
   const [step, setStep]     = useState<1 | 2 | 3 | 4 | 5>(initialStep)
   const [saving, setSaving] = useState(false)
 
-  // Step 1
-  const [shopName, setShopName] = useState(salon?.name ?? '')
+  // Step 1 — pré-rempli depuis la landing page si aucun salon existant
+  const [shopName, setShopName] = useState(salon?.name ?? initialName ?? '')
 
   // Step 2
   const [businessType, setBusinessType] = useState<BusinessType>(

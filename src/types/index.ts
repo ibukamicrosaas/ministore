@@ -107,6 +107,8 @@ export interface UpdateShopInput {
   payout_wave_number?: string | null
   payout_om_number?: string | null
   delivery_zones?: DeliveryZone[]
+  bictorys_secret_key?: string | null
+  bictorys_webhook_secret?: string | null
 }
 
 // Réponses standard des Server Actions

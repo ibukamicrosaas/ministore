@@ -118,6 +118,7 @@ interface ProductOption {
   photo: string | null
   variants: ProductVariant[] | null
   deposit_percentage: number | null
+  stock_count: number | null
 }
 
 interface OrderItem {
@@ -270,6 +271,18 @@ export function OrderForm({
       return
     }
 
+    for (const it of items) {
+      const p = getProduct(it.product_id)
+      if (p?.stock_count === 0) {
+        toast.error(`${p.name} est en rupture de stock.`)
+        return
+      }
+      if (p?.stock_count != null && it.quantity > p.stock_count) {
+        toast.error(`Stock insuffisant pour ${p.name} (max ${p.stock_count}).`)
+        return
+      }
+    }
+
     const body = {
       shopId,
       items: items.map((it) => {
@@ -313,7 +326,7 @@ export function OrderForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const data = (await res.json()) as { orderId?: string; redirect?: string; error?: string }
+      const data = (await res.json()) as { orderId?: string; clientToken?: string; redirect?: string; error?: string }
 
       if (!res.ok || data.error) {
         toast.error(data.error ?? 'Une erreur est survenue.')
@@ -323,7 +336,7 @@ export function OrderForm({
       if (data.redirect === 'pay' && data.orderId) {
         router.push(`/${shopSlug}/commander/pay?order_id=${data.orderId}`)
       } else {
-        router.push(`/${shopSlug}/commander/success?order_id=${data.orderId}`)
+        router.push(`/${shopSlug}/commander/success?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
       }
     } catch {
       toast.error('Erreur réseau. Réessaie.')
@@ -406,14 +419,17 @@ export function OrderForm({
                         className={`${inputCls} appearance-none py-2.5 pr-10`}
                       >
                         {products.map((prod) => (
-                          <option key={prod.id} value={prod.id}>
-                            {prod.name}
+                          <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
+                            {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
                           </option>
                         ))}
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     </div>
                   </div>
+                  {p?.stock_count === 0 && (
+                    <p className="text-xs font-semibold text-red-500">Ce produit est en rupture de stock.</p>
+                  )}
 
                   {p?.variants && p.variants.length > 0 && (
                     <div className="relative">
@@ -448,7 +464,10 @@ export function OrderForm({
                       </span>
                       <button
                         type="button"
-                        onClick={() => updateItem(i, { quantity: Math.min(5, item.quantity + 1) })}
+                        onClick={() => {
+                          const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 5) : 5
+                          updateItem(i, { quantity: Math.min(maxQty, item.quantity + 1) })
+                        }}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100"
                       >
                         +

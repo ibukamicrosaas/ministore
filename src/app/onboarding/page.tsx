@@ -7,7 +7,10 @@ export const metadata = {
   title: `Créer ton site — ${APP_NAME}`,
 }
 
-export default async function OnboardingPage() {
+type Props = { searchParams: Promise<{ name?: string; slug?: string }> }
+
+export default async function OnboardingPage({ searchParams }: Props) {
+  const { name: initialName } = await searchParams
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -52,6 +55,7 @@ export default async function OnboardingPage() {
           initialStep={currentStep}
           userPhone={profile?.phone ?? null}
           salon={shopData}
+          initialName={shopData ? undefined : (initialName ?? undefined)}
         />
       </div>
     </div>

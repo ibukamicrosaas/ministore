@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  if (!verifyCronRequest(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const supabase = createAdminClient()
 
   // Paiements de remboursement en attente

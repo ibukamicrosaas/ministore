@@ -44,6 +44,8 @@ export type Database = {
           payout_wave_number: string | null
           payout_om_number: string | null
           delivery_zones: Json
+          bictorys_secret_key: string | null
+          bictorys_webhook_secret: string | null
           created_at: string
           updated_at: string
         }
@@ -77,6 +79,8 @@ export type Database = {
           payout_wave_number?: string | null
           payout_om_number?: string | null
           delivery_zones?: Json
+          bictorys_secret_key?: string | null
+          bictorys_webhook_secret?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -110,6 +114,8 @@ export type Database = {
           payout_wave_number?: string | null
           payout_om_number?: string | null
           delivery_zones?: Json
+          bictorys_secret_key?: string | null
+          bictorys_webhook_secret?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -544,6 +550,30 @@ export type Database = {
         }
       Relationships: []
       }
+      login_attempts: {
+        Row: {
+          id: string
+          identifier: string
+          attempt_type: string
+          success: boolean
+          attempted_at: string
+        }
+        Insert: {
+          id?: string
+          identifier: string
+          attempt_type: string
+          success?: boolean
+          attempted_at?: string
+        }
+        Update: {
+          id?: string
+          identifier?: string
+          attempt_type?: string
+          success?: boolean
+          attempted_at?: string
+        }
+      Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -573,6 +603,14 @@ export type Database = {
       cleanup_pin_resets: {
         Args: Record<string, never>
         Returns: undefined
+      }
+      decrement_product_stock: {
+        Args: {
+          p_product_id: string
+          p_shop_id: string
+          p_quantity: number
+        }
+        Returns: boolean
       }
     }
     Enums: { [_ in never]: never }
