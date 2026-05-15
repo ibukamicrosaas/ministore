@@ -30,19 +30,62 @@ interface CreateOrderBody {
   payment_type: 'online_full' | 'online_deposit' | 'on_delivery' | 'on_site'
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function POST(req: NextRequest) {
+  // ── Rate limiting par IP : max 20 commandes / heure ──────────────────
+  const ip = (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? req.headers.get('x-real-ip')
+    ?? 'unknown').slice(0, 64)
+
+  const supabase = createAdminClient()
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: recentOrders } = await supabase
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', `order:${ip}`)
+    .eq('attempt_type', 'order')
+    .gte('attempted_at', oneHourAgo)
+
+  if ((recentOrders ?? 0) >= 20) {
+    return NextResponse.json({ error: 'Trop de commandes. Réessayez dans 1 heure.' }, { status: 429 })
+  }
+
   const body = await req.json() as CreateOrderBody
 
   const { shopId, items, delivery_date, delivery_type, delivery_address,
-    delivery_zone_name, delivery_price,
+    delivery_zone_name,
     client_first_name, client_phone, client_whatsapp, notes, payment_type } = body
 
-  // Validation minimale
-  if (!shopId || !items?.length || !client_first_name || !client_phone) {
-    return NextResponse.json({ error: 'Données manquantes.' }, { status: 400 })
+  // ── Validation des entrées ────────────────────────────────────────────
+  if (!shopId || !UUID_RE.test(shopId)) {
+    return NextResponse.json({ error: 'Boutique invalide.' }, { status: 400 })
+  }
+  if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+    return NextResponse.json({ error: 'Nombre de produits invalide (max 50).' }, { status: 400 })
+  }
+  if (!client_first_name || typeof client_first_name !== 'string' || client_first_name.length > 100) {
+    return NextResponse.json({ error: 'Prénom invalide.' }, { status: 400 })
+  }
+  if (!client_phone || typeof client_phone !== 'string' || client_phone.length > 30) {
+    return NextResponse.json({ error: 'Numéro de téléphone invalide.' }, { status: 400 })
+  }
+  if (notes && (typeof notes !== 'string' || notes.length > 1000)) {
+    return NextResponse.json({ error: 'Notes trop longues (max 1000 caractères).' }, { status: 400 })
+  }
+  if (delivery_address && (typeof delivery_address !== 'string' || delivery_address.length > 500)) {
+    return NextResponse.json({ error: 'Adresse trop longue (max 500 caractères).' }, { status: 400 })
   }
 
-  const supabase = createAdminClient()
+  // Validation de chaque article
+  for (const item of items) {
+    if (!item.product_id || typeof item.product_id !== 'string' || !UUID_RE.test(item.product_id)) {
+      return NextResponse.json({ error: 'Identifiant produit invalide.' }, { status: 400 })
+    }
+    if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
+      return NextResponse.json({ error: 'Quantité invalide (entre 1 et 100).' }, { status: 400 })
+    }
+  }
 
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
@@ -162,6 +205,13 @@ export async function POST(req: NextRequest) {
     console.error('[api/orders]', orderError?.message)
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
+
+  // Enregistrer la commande pour le rate limiting
+  void supabase.from('login_attempts').insert({
+    identifier:   `order:${ip}`,
+    attempt_type: 'order',
+    success:      true,
+  })
 
   // Créer les lignes (avec les prix serveur — jamais les prix client)
   const { error: itemsError } = await supabase.from('order_items').insert(

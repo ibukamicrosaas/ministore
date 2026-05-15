@@ -334,7 +334,7 @@ export function OrderForm({
       }
 
       if (data.redirect === 'pay' && data.orderId) {
-        router.push(`/${shopSlug}/commander/pay?order_id=${data.orderId}`)
+        router.push(`/${shopSlug}/commander/pay?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
       } else {
         router.push(`/${shopSlug}/commander/success?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
       }

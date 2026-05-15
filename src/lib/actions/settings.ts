@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { TRIAL_DAYS } from '@/constants'
+import { encryptApiKey } from '@/lib/crypto/encrypt'
 import type { UpdateShopInput } from '@/types'
 
 export async function uploadShopLogo(formData: FormData) {
@@ -206,10 +207,19 @@ export async function updateShop(data: UpdateShopInput) {
   // Récupérer le slug pour revalider la page publique
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
 
+  // Chiffrer les clés Bictorys avant de les écrire en DB
+  const payload: Record<string, unknown> = { ...data as Record<string, unknown> }
+  if (typeof payload.bictorys_secret_key === 'string' && payload.bictorys_secret_key) {
+    payload.bictorys_secret_key = encryptApiKey(payload.bictorys_secret_key)
+  }
+  if (typeof payload.bictorys_webhook_secret === 'string' && payload.bictorys_webhook_secret) {
+    payload.bictorys_webhook_secret = encryptApiKey(payload.bictorys_webhook_secret)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase
     .from('shops')
-    .update({ ...data as any, updated_at: new Date().toISOString() })
+    .update({ ...(payload as any), updated_at: new Date().toISOString() })
     .eq('id', profile.shop_id)
 
   if (error) {

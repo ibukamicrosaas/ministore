@@ -1,5 +1,6 @@
 'use server'
 
+import crypto from 'crypto'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsApp } from '@/lib/notifications/whatsapp'
@@ -80,8 +81,23 @@ export async function signUp(formData: FormData) {
     return { error: 'Le code PIN doit contenir exactement 6 chiffres.' }
   }
 
-  const supabase = await createServerClient()
+  const admin = createAdminClient()
   const email = phoneToEmail(phone)
+
+  // Rate limiting : max 3 créations de compte par numéro par heure
+  const windowStart = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: signupCount } = await admin
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', email)
+    .eq('attempt_type', 'signup')
+    .gte('attempted_at', windowStart)
+
+  if ((signupCount ?? 0) >= 3) {
+    return { error: 'Trop de tentatives. Réessayez dans 1 heure.' }
+  }
+
+  const supabase = await createServerClient()
   const normalizedPhone = normalizePhone(phone)
 
   const trialEndsAt = new Date()
@@ -93,6 +109,13 @@ export async function signUp(formData: FormData) {
     options: {
       data: { phone: normalizedPhone },
     },
+  })
+
+  // Enregistrer la tentative d'inscription (rate limiting)
+  void admin.from('login_attempts').insert({
+    identifier:   email,
+    attempt_type: 'signup',
+    success:      !error,
   })
 
   if (error) {
@@ -182,12 +205,15 @@ export async function requestPinReset(phone: string) {
     return { error: 'Trop de tentatives. Réessayez dans 1 heure.' }
   }
 
-  // Vérifier que le compte existe — réponse identique si non (évite de révéler l'existence du compte)
-  const { data: { users }, error: listError } = await admin.auth.admin.listUsers()
-  if (listError) return { error: 'Erreur serveur.' }
+  // Vérifier l'existence du compte via la table profiles (indexée sur phone)
+  // — évite de charger tous les users en mémoire (listUsers sans pagination)
+  const { data: profileRecord } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('phone', normalizedPhone)
+    .single()
 
-  const existingUser = users.find(u => u.email === phoneEmail)
-  if (!existingUser) {
+  if (!profileRecord) {
     // Réponse générique : ne pas révéler que le compte n'existe pas
     return { success: true }
   }
@@ -232,29 +258,41 @@ export async function confirmPinReset(phone: string, token: string, newPin: stri
   const phoneEmail = phoneToEmail(trimmed)
   const admin = createAdminClient()
 
-  // Vérifier le token
+  // Récupérer le token par numéro seulement, puis comparer en timing-safe
   const { data: resetData, error: fetchError } = await admin
     .from('pin_resets')
     .select('*')
     .eq('phone_email', phoneEmail)
-    .eq('token', token)
     .eq('used', false)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
 
-  if (fetchError || !resetData) {
+  // Comparaison en temps constant pour éviter les timing attacks
+  const tokenValid = resetData && (() => {
+    try {
+      const a = Buffer.from(token.padEnd(8, '\0').slice(0, 8))
+      const b = Buffer.from(resetData.token.padEnd(8, '\0').slice(0, 8))
+      return crypto.timingSafeEqual(a, b) && token === resetData.token
+    } catch { return false }
+  })()
+
+  if (fetchError || !resetData || !tokenValid) {
     return { error: 'Code invalide ou expiré.' }
   }
 
-  // Trouver l'utilisateur Supabase
-  const { data: { users } } = await admin.auth.admin.listUsers()
-  const existingUser = users.find(u => u.email === phoneEmail)
-  if (!existingUser) return { error: 'Compte introuvable.' }
+  // Trouver l'utilisateur via profiles (indexé) puis mettre à jour via son id
+  const { data: profileToReset } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('phone', normalizePhone(phone))
+    .single()
+
+  if (!profileToReset) return { error: 'Compte introuvable.' }
 
   // Mettre à jour le mot de passe (PIN)
-  const { error: updateError } = await admin.auth.admin.updateUserById(existingUser.id, {
+  const { error: updateError } = await admin.auth.admin.updateUserById(profileToReset.id, {
     password: newPin,
   })
 

@@ -8,13 +8,26 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 import { revalidatePath } from 'next/cache'
+import { decryptApiKey } from '@/lib/crypto/encrypt'
+
+const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
 const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function POST(req: NextRequest) {
-  const rawBody      = await req.text()
-  const headerSecret = req.headers.get('x-secret-key') ?? ''
+  // Limiter la taille du body avant de lire quoi que ce soit
+  const contentLength = parseInt(req.headers.get('content-length') ?? '0', 10)
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload trop large' }, { status: 413 })
+  }
+
+  const rawBody        = await req.text()
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload trop large' }, { status: 413 })
+  }
+
+  const headerSecret   = req.headers.get('x-secret-key') ?? ''
   const platformSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
 
   // Fail closed : si le secret plateforme n'est pas configuré, refuser
@@ -23,9 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
   }
 
-  // Lire le payload pour déterminer quel secret utiliser
-  // (les abonnements utilisent toujours le secret plateforme ; les commandes de
-  // boutiques Pro avec leur propre compte Bictorys utilisent leur propre secret)
+  // Stratégie en deux temps :
+  // 1. Tenter la vérification avec le secret plateforme (cas le plus fréquent)
+  // 2. Si échec ET la référence est un UUID de commande → chercher le secret du shop Pro
+  // Cela évite les requêtes DB avant toute vérification pour les appels normaux.
+  const platformVerified = verifyBictorysSignature(headerSecret, platformSecret)
+
   let payload: BictorysWebhookPayload
   try {
     payload = JSON.parse(rawBody) as BictorysWebhookPayload
@@ -39,34 +55,33 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient()
-
-  // Déterminer le secret effectif à utiliser pour la vérification
   let effectiveSecret = platformSecret
 
-  // Pour les paiements de commande (pas d'abonnement) : vérifier si la boutique
-  // a sa propre clé Bictorys (plan Pro)
-  if (!merchantReference.startsWith('sub-') && UUID_REGEX.test(merchantReference)) {
-    const { data: order } = await supabase
-      .from('orders')
-      .select('shop_id')
-      .eq('id', merchantReference)
-      .single()
-
-    if (order?.shop_id) {
-      const { data: shopSecrets } = await supabase
-        .from('shops')
-        .select('plan, bictorys_webhook_secret')
-        .eq('id', order.shop_id)
+  if (!platformVerified) {
+    // Tentative avec le secret du shop Pro (uniquement pour les commandes, pas les abonnements)
+    if (!merchantReference.startsWith('sub-') && UUID_REGEX.test(merchantReference)) {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('shop_id')
+        .eq('id', merchantReference)
         .single()
 
-      if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
-        effectiveSecret = shopSecrets.bictorys_webhook_secret
+      if (order?.shop_id) {
+        const { data: shopSecrets } = await supabase
+          .from('shops')
+          .select('plan, bictorys_webhook_secret')
+          .eq('id', order.shop_id)
+          .single()
+
+        if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
+          effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
+        }
       }
     }
-  }
 
-  if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
   }
 
   // ── Paiement d'abonnement ─────────────────────────────────────────────

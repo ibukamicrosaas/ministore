@@ -47,5 +47,6 @@ export const config = {
     '/dashboard/:path*',
     '/admin/:path*',
     '/api/admin/:path*',
+    '/api/payouts/:path*',
   ],
 }

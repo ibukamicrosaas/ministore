@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysCharge, type BictorysPaymentType } from '@/lib/payments/bictorys'
+import { decryptApiKey } from '@/lib/crypto/encrypt'
 import { APP_URL } from '@/constants'
 
 interface RequestBody {
@@ -51,7 +52,8 @@ export async function POST(req: NextRequest) {
     .eq('id', order.shop_id)
     .single()
 
-  const shopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
+  const rawShopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
+  const shopKey = rawShopKey ? decryptApiKey(rawShopKey) : null
   const apiKey = shopKey ?? platformApiKey
 
   if (!apiKey) {

@@ -5,18 +5,18 @@ import type { Shop } from '@/types'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
-  searchParams: Promise<{ order_id?: string; cancelled?: string }>
+  searchParams: Promise<{ order_id?: string; token?: string; cancelled?: string }>
 }
 
 export const metadata = { title: 'Choisir un mode de paiement' }
 
 export default async function PayPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
-  const { order_id, cancelled } = await searchParams
+  const { order_id, token, cancelled } = await searchParams
 
   const supabase = createAdminClient()
 
-  if (!order_id) notFound()
+  if (!order_id || !token) notFound()
 
   if (cancelled === '1') {
     return (
@@ -36,10 +36,12 @@ export default async function PayPage({ params, searchParams }: Props) {
     )
   }
 
+  // Valider le client_token ET la correspondance shop-slug pour éviter l'IDOR
   const { data: orderData } = await supabase
     .from('orders')
-    .select('id, shop_id, total_price, deposit_amount, payment_type, status, clients(first_name, phone)')
+    .select('id, shop_id, total_price, deposit_amount, payment_type, status, client_token, clients(first_name, phone)')
     .eq('id', order_id)
+    .eq('client_token', token)
     .single()
 
   if (!orderData || orderData.status !== 'pending') notFound()
@@ -51,6 +53,7 @@ export default async function PayPage({ params, searchParams }: Props) {
     deposit_amount: number
     payment_type: string
     status: string
+    client_token: string
     clients: { first_name: string; phone: string } | null
   }
 
@@ -58,6 +61,7 @@ export default async function PayPage({ params, searchParams }: Props) {
     .from('shops')
     .select('name, slug, primary_color, logo_url')
     .eq('id', order.shop_id)
+    .eq('slug', slug)  // Vérifie que la commande appartient bien à cette boutique
     .single()
 
   const shop = shopData as Pick<Shop, 'name' | 'slug' | 'primary_color' | 'logo_url'> | null

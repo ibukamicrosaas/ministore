@@ -19,7 +19,11 @@ export async function POST(
   const admin = createAdminClient()
   const { error } = await admin
     .from('payouts')
-    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .update({
+      status:       'completed',
+      completed_at: new Date().toISOString(),
+      notes:        `Validé par admin ${user.id} le ${new Date().toISOString()}`,
+    })
     .eq('id', id)
     .eq('status', 'pending')
 
@@ -28,5 +32,6 @@ export async function POST(
     return NextResponse.json({ error: 'Impossible de mettre à jour' }, { status: 500 })
   }
 
+  console.log(`[admin/payouts/complete] Payout ${id} validé par ${user.id}`)
   return NextResponse.json({ success: true })
 }

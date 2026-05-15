@@ -35,6 +35,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
   }
 
+  // ── Validation du solde disponible ───────────────────────────────────
+  // Revenus collectés : acomptes en ligne payés + commandes livrées (paiement à la réception)
+  const { data: ordersData } = await supabase
+    .from('orders')
+    .select('total_price, deposit_amount, deposit_paid, payment_type, status')
+    .eq('shop_id', profile.shop_id)
+    .in('status', ['confirmed', 'preparing', 'ready', 'delivered'])
+
+  const totalRevenue = (ordersData ?? []).reduce((sum, o) => {
+    if (o.payment_type === 'online_full' || o.payment_type === 'online_deposit') {
+      return sum + (o.deposit_paid ? (o.deposit_amount ?? 0) : 0)
+    }
+    if (o.status === 'delivered') {
+      return sum + (o.total_price ?? 0)
+    }
+    return sum
+  }, 0)
+
+  // Payouts déjà effectués ou en cours
+  const { data: existingPayouts } = await supabase
+    .from('payouts')
+    .select('gross_amount')
+    .eq('shop_id', profile.shop_id)
+    .in('status', ['pending', 'processing', 'completed'])
+
+  const totalPayouts = (existingPayouts ?? []).reduce((sum, p) => sum + (p.gross_amount ?? 0), 0)
+  const availableBalance = Math.max(0, totalRevenue - totalPayouts)
+
+  if (amount > availableBalance) {
+    return NextResponse.json({
+      error: `Solde insuffisant. Disponible : ${availableBalance.toLocaleString('fr-FR')} FCFA.`,
+    }, { status: 400 })
+  }
+
   const grossAmount      = amount
   const commissionAmount = Math.floor(grossAmount * (TEKKISHOP_COMMISSION_RATE / 100))
   const netAmount        = grossAmount - commissionAmount
