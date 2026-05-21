@@ -215,6 +215,40 @@ Pour le réactiver, choisissez un plan :
 Paiement par Wave ou Orange Money. Répondez à ce message pour toute question.`
 }
 
+export function buildSubscriptionReminderMessage(params: {
+  shopName: string
+  planLabel: string
+  daysLeft: number
+  renewUrl: string
+}): string {
+  return `⏳ *Abonnement TEKKIShop — Renouvellement dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}*
+
+Bonjour ${params.shopName} 👋
+
+Ton abonnement *Plan ${params.planLabel}* expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}. Pour continuer à recevoir des commandes en ligne, renouvelle-le avant la date d'expiration.
+
+👉 ${params.renewUrl}
+
+Paiement simple par Wave ou Orange Money. Des questions ? Réponds à ce message !`
+}
+
+export function buildSubscriptionExpiredMessage(params: {
+  shopName: string
+  planLabel: string
+  renewUrl: string
+}): string {
+  return `🔴 *Abonnement TEKKIShop expiré*
+
+Bonjour ${params.shopName},
+
+Ton abonnement *Plan ${params.planLabel}* est expiré. Ton mini-site est temporairement suspendu et tes clients ne peuvent plus passer de commandes.
+
+Pour le réactiver, renouvelle ton abonnement :
+👉 ${params.renewUrl}
+
+Paiement par Wave ou Orange Money. Réponds à ce message pour toute question.`
+}
+
 export function buildCancellationMessage(params: {
   salonName: string
   serviceName: string

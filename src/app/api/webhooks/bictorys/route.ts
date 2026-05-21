@@ -7,8 +7,8 @@ import {
   buildNewOrderAlertMessage,
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
-import { revalidatePath } from 'next/cache'
 import { decryptApiKey } from '@/lib/crypto/encrypt'
+import { activatePlan } from '@/lib/billing/activate-plan'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
@@ -104,19 +104,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
     }
 
-    const { data: activatedShop } = await supabase
-      .from('shops')
-      .update({ plan: planKey, is_active: true, updated_at: new Date().toISOString() })
-      .eq('id', shopId)
-      .select('slug')
-      .single()
+    const { error: activationError } = await activatePlan(shopId, planKey)
+    if (activationError) {
+      console.error('[webhook] activatePlan error:', activationError)
+      return NextResponse.json({ error: activationError }, { status: 500 })
+    }
 
-    revalidatePath('/dashboard')
-    revalidatePath('/dashboard/upgrade')
-    revalidatePath('/dashboard/settings')
-    if (activatedShop?.slug) revalidatePath(`/${activatedShop.slug}`)
-
-    console.log(`[webhook] Plan ${planKey} activé pour shop ${shopId}`)
+    console.log(`[webhook] Plan ${planKey} activé pour shop ${shopId} — subscription_ends_at +31j`)
     return NextResponse.json({ ok: true })
   }
 

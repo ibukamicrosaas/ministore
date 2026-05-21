@@ -39,15 +39,30 @@ export default async function DashboardLayout({
   if (shopResult.error || !shop) redirect('/onboarding')
 
   const isTrial    = shop.plan === 'trial'
-  const trialEnd   = shop.trial_ends_at ? new Date(shop.trial_ends_at) : null
-  const daysLeft   = trialEnd
+  const isPaid     = !isTrial
+
+  // Banners essai gratuit
+  const trialEnd     = shop.trial_ends_at ? new Date(shop.trial_ends_at) : null
+  const trialLeft    = trialEnd
     ? Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
-  const trialExpired = isTrial && daysLeft !== null && daysLeft <= 0
-  const trialWarning = isTrial && daysLeft !== null && daysLeft > 0 && daysLeft <= 7
+  const trialExpired = isTrial && trialLeft !== null && trialLeft <= 0
+  const trialWarning = isTrial && trialLeft !== null && trialLeft > 0 && trialLeft <= 7
+
+  // Banners abonnement payant
+  const subEnd      = (shop as Shop & { subscription_ends_at?: string | null }).subscription_ends_at
+    ? new Date((shop as Shop & { subscription_ends_at?: string | null }).subscription_ends_at!)
+    : null
+  const subLeft     = subEnd
+    ? Math.ceil((subEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
+  const subExpired  = isPaid && subLeft !== null && subLeft <= 0
+  const subWarning7 = isPaid && subLeft !== null && subLeft > 3  && subLeft <= 7
+  const subWarning3 = isPaid && subLeft !== null && subLeft > 0  && subLeft <= 3
 
   return (
     <>
+      {/* ── Essai gratuit ─────────────────────────────────────── */}
       {isTrial && trialExpired && (
         <div className="bg-red-600 text-white text-center px-4 py-2.5 text-sm font-medium">
           ⛔ Votre essai gratuit est terminé — votre boutique est suspendue.{' '}
@@ -58,9 +73,35 @@ export default async function DashboardLayout({
       )}
       {isTrial && trialWarning && (
         <div className="bg-amber-500 text-white text-center px-4 py-2.5 text-sm font-medium">
-          ⚠️ Votre essai expire dans {daysLeft} jour{daysLeft! > 1 ? 's' : ''}.{' '}
+          ⚠️ Votre essai expire dans {trialLeft} jour{trialLeft! > 1 ? 's' : ''}.{' '}
           <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
             Choisir un plan →
+          </Link>
+        </div>
+      )}
+
+      {/* ── Abonnement payant ─────────────────────────────────── */}
+      {subExpired && (
+        <div className="bg-red-600 text-white text-center px-4 py-2.5 text-sm font-medium">
+          ⛔ Votre abonnement est expiré — votre boutique est suspendue.{' '}
+          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
+            Renouveler →
+          </Link>
+        </div>
+      )}
+      {subWarning3 && (
+        <div className="bg-red-500 text-white text-center px-4 py-2.5 text-sm font-medium">
+          🔴 Votre abonnement expire dans {subLeft} jour{subLeft! > 1 ? 's' : ''} !{' '}
+          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
+            Renouveler maintenant →
+          </Link>
+        </div>
+      )}
+      {subWarning7 && (
+        <div className="bg-amber-500 text-white text-center px-4 py-2.5 text-sm font-medium">
+          ⚠️ Votre abonnement expire dans {subLeft} jours.{' '}
+          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
+            Renouveler →
           </Link>
         </div>
       )}
