@@ -140,6 +140,7 @@ interface Props {
   deliveryOptions: { home_delivery: boolean; store_pickup: boolean }
   shopDepositPct: number
   acceptOnlinePayment: boolean
+  acceptCashOnDelivery: boolean
   deliveryZones: DeliveryZone[]
   preselectedProductId: string | null
 }
@@ -157,6 +158,7 @@ export function OrderForm({
   deliveryOptions,
   shopDepositPct,
   acceptOnlinePayment,
+  acceptCashOnDelivery,
   deliveryZones,
   preselectedProductId,
 }: Props) {
@@ -185,7 +187,10 @@ export function OrderForm({
   const [selectedZoneId, setSelectedZoneId] = useState<string>(deliveryZones[0]?.id ?? '')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
-  const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>('on_delivery')
+  // Si le cash à la livraison est désactivé, forcer le paiement en ligne
+  const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>(
+    acceptCashOnDelivery ? 'on_delivery' : 'online'
+  )
 
   function getProduct(id: string) {
     return products.find((p) => p.id === id)
@@ -670,16 +675,18 @@ export function OrderForm({
                 </RadioCard>
               </label>
             )}
-            <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
-              <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
-                  </p>
-                  <p className="text-xs text-gray-500">Vous payez à la réception</p>
-                </div>
-              </RadioCard>
-            </label>
+            {acceptCashOnDelivery && (
+              <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
+                <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
+                    </p>
+                    <p className="text-xs text-gray-500">Vous payez à la réception</p>
+                  </div>
+                </RadioCard>
+              </label>
+            )}
           </div>
         </section>
       </div>

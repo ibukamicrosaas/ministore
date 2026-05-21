@@ -46,6 +46,7 @@ export type Database = {
           delivery_zones: Json
           bictorys_secret_key: string | null
           bictorys_webhook_secret: string | null
+          accept_cash_on_delivery: boolean
           created_at: string
           updated_at: string
         }
@@ -81,6 +82,7 @@ export type Database = {
           delivery_zones?: Json
           bictorys_secret_key?: string | null
           bictorys_webhook_secret?: string | null
+          accept_cash_on_delivery?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -116,6 +118,7 @@ export type Database = {
           delivery_zones?: Json
           bictorys_secret_key?: string | null
           bictorys_webhook_secret?: string | null
+          accept_cash_on_delivery?: boolean
           created_at?: string
           updated_at?: string
         }

@@ -109,6 +109,7 @@ export interface UpdateShopInput {
   delivery_zones?: DeliveryZone[]
   bictorys_secret_key?: string | null
   bictorys_webhook_secret?: string | null
+  accept_cash_on_delivery?: boolean
 }
 
 // Réponses standard des Server Actions

@@ -18,7 +18,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
+    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, accept_cash_on_delivery, delivery_zones')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
@@ -27,7 +27,8 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const shop = shopData as Pick<Shop,
     'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
-    'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment' | 'delivery_zones'
+    'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment' |
+    'accept_cash_on_delivery' | 'delivery_zones'
   >
 
   const { data: productsData } = await supabase
@@ -98,6 +99,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         shopDepositPct={shop.deposit_percentage ?? 0}
         shopCountry={shop.country ?? 'SN'}
         acceptOnlinePayment={shop.accept_online_payment ?? true}
+        acceptCashOnDelivery={shop.accept_cash_on_delivery ?? true}
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}
         preselectedProductId={preselectedProductId ?? null}
       />

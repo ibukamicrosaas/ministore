@@ -36,6 +36,23 @@ export async function verifySubscriptionPayment(
   const apiKey = process.env.BICTORYS_SECRET_KEY
   if (!apiKey) return { success: false, error: 'Bictorys non configuré' }
 
+  // Vérifier d'abord si le webhook a déjà activé la boutique (cas fréquent)
+  const { data: currentShop } = await admin
+    .from('shops')
+    .select('is_active, plan, slug')
+    .eq('id', profile.shop_id)
+    .single()
+
+  if (currentShop?.is_active && currentShop.plan === planKey) {
+    // Webhook déjà passé — activer côté client
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/upgrade')
+    revalidatePath('/dashboard/settings')
+    if (currentShop.slug) revalidatePath(`/${currentShop.slug}`)
+    return { success: true }
+  }
+
+  // Vérification directe via l'API Bictorys
   try {
     const charge = await getBictorysCharge(apiKey, txn)
     const expectedRef = `sub-${profile.shop_id}-${planKey}`
@@ -43,7 +60,9 @@ export async function verifySubscriptionPayment(
     if (charge.status !== 'succeed') {
       return { success: false, error: 'Paiement non encore confirmé' }
     }
-    if (charge.merchantReference !== expectedRef) {
+    // merchantReference peut être absent selon la version de l'API Bictorys
+    if (charge.merchantReference && charge.merchantReference !== expectedRef) {
+      console.warn('[verifySubscriptionPayment] merchantReference mismatch:', charge.merchantReference, 'expected:', expectedRef)
       return { success: false, error: 'Référence invalide' }
     }
 
@@ -69,8 +88,9 @@ export async function verifySubscriptionPayment(
     if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
     return { success: true }
   } catch (e) {
-    console.error('[verifySubscriptionPayment]', e)
-    return { success: false, error: 'Erreur de vérification Bictorys' }
+    console.error('[verifySubscriptionPayment] Bictorys API error:', e)
+    // Ne pas bloquer — le polling continuera à vérifier via la DB
+    return { success: false, error: 'Vérification Bictorys échouée — activation via webhook en attente' }
   }
 }
 

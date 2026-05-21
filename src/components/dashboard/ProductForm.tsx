@@ -90,6 +90,21 @@ export function ProductForm({ product }: ProductFormProps) {
     setPhotos(prev => prev.map((p, i) => ({ ...p, is_primary: i === index })))
   }
 
+  const VARIANT_PRESETS = [
+    { icon: '⚖️', label: 'Poids',       values: ['250g', '500g', '1 kg', '2 kg', '5 kg'] },
+    { icon: '👕', label: 'Taille',      values: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+    { icon: '📏', label: 'Longueur',    values: ['30 cm', '50 cm', '1 m', '1,5 m', '2 m'] },
+    { icon: '📦', label: 'Format',      values: ['Unité', 'Sachet', 'Boîte de 6', 'Boîte de 12', 'Carton'] },
+    { icon: '🍽️', label: 'Portion',    values: ['Petite', 'Normale', 'Grande', 'Familiale'] },
+    { icon: '🎨', label: 'Couleur',     values: ['Blanc', 'Noir', 'Rouge', 'Bleu', 'Vert', 'Jaune'] },
+    { icon: '💎', label: 'Qualité',     values: ['Standard', 'Premium', 'Deluxe'] },
+  ]
+
+  function applyPreset(values: string[]) {
+    setVariants(values.map(v => ({ label: v, price: 0 })))
+    setUseVariants(true)
+  }
+
   function addVariant() {
     setVariants(prev => [...prev, { label: '', price: 0 }])
   }
@@ -336,37 +351,61 @@ export function ProductForm({ product }: ProductFormProps) {
           </div>
 
           {useVariants && (
-            <div className="space-y-2">
-              {variants.map((v, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
-                  <input
-                    value={v.label}
-                    onChange={e => updateVariant(i, 'label', e.target.value)}
-                    placeholder="Label (ex : Format entier)"
-                    className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={v.price || ''}
-                    onChange={e => updateVariant(i, 'price', parseInt(e.target.value, 10) || 0)}
-                    placeholder="Prix"
-                    className="w-24 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
-                  />
-                  <button type="button" onClick={() => removeVariant(i)} className="p-1 text-gray-400 hover:text-red-500">
-                    <X className="h-4 w-4" />
-                  </button>
+            <div className="space-y-3">
+              {/* Presets rapides */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-2">Modèles rapides :</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {VARIANT_PRESETS.map(preset => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => applyPreset(preset.values)}
+                      className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-sky-50 transition-colors"
+                    >
+                      <span>{preset.icon}</span>
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addVariant}
-                className="flex items-center gap-1.5 text-xs text-[var(--color-primary)] font-medium hover:opacity-75"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Ajouter une variante
-              </button>
+              </div>
+
+              {/* Variantes personnalisées */}
+              <div className="space-y-2">
+                {variants.map((v, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
+                    <input
+                      value={v.label}
+                      onChange={e => updateVariant(i, 'label', e.target.value)}
+                      placeholder="Ex : 1 kg, Taille L, Rouge…"
+                      className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <div className="relative w-28 shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        value={v.price || ''}
+                        onChange={e => updateVariant(i, 'price', parseInt(e.target.value, 10) || 0)}
+                        placeholder="Prix"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:border-[var(--color-primary)]"
+                      />
+                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">F</span>
+                    </div>
+                    <button type="button" onClick={() => removeVariant(i)} className="p-1 text-gray-400 hover:text-red-500">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="flex items-center gap-1.5 text-xs text-[var(--color-primary)] font-medium hover:opacity-75"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Ajouter une variante
+                </button>
+              </div>
             </div>
           )}
 

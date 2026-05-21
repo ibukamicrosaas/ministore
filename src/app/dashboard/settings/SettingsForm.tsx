@@ -28,6 +28,7 @@ export function SettingsForm({ shop }: Props) {
   const [uploadingLogo, setUploadingLogo]       = useState(false)
   const [primaryColor, setPrimaryColor]         = useState(shop.primary_color ?? '#0EA5E9')
   const [acceptOnlinePayment, setAcceptOnline]  = useState(shop.accept_online_payment ?? true)
+  const [acceptCashOnDelivery, setAcceptCash]  = useState(shop.accept_cash_on_delivery ?? true)
   const [deliveryZones, setDeliveryZones]       = useState<DeliveryZone[]>(
     Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []
   )
@@ -107,7 +108,8 @@ export function SettingsForm({ shop }: Props) {
       address:           (fd.get('address') as string).trim() || undefined,
       description:       (fd.get('description') as string).trim() || undefined,
       primary_color:     primaryColor,
-      accept_online_payment: acceptOnlinePayment,
+      accept_online_payment:    acceptOnlinePayment,
+      accept_cash_on_delivery:  acceptCashOnDelivery,
       payout_wave_number: (fd.get('payout_wave_number') as string).trim() || null,
       payout_om_number:  (fd.get('payout_om_number') as string).trim() || null,
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
@@ -281,13 +283,14 @@ export function SettingsForm({ shop }: Props) {
 
       {/* Paiements mobile money */}
       <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        {/* Toggle Mobile Money */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-gray-900">Paiement Mobile Money</p>
             <p className="text-xs text-gray-500 mt-0.5">
               {acceptOnlinePayment
                 ? 'Tes clients peuvent payer en ligne (Wave, OM, Maxit).'
-                : 'Seul le paiement à la livraison / sur place est proposé.'}
+                : 'Le paiement en ligne est désactivé.'}
             </p>
           </div>
           <button
@@ -298,9 +301,29 @@ export function SettingsForm({ shop }: Props) {
             role="switch"
             aria-checked={acceptOnlinePayment}
           >
-            <span
-              className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${acceptOnlinePayment ? 'translate-x-5' : 'translate-x-0'}`}
-            />
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${acceptOnlinePayment ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
+        {/* Toggle Paiement à la livraison */}
+        <div className="flex items-start justify-between gap-4 pt-3 border-t border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Paiement à la livraison</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {acceptCashOnDelivery
+                ? 'Tes clients peuvent payer en cash à la réception.'
+                : 'Seul le paiement en ligne est accepté.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAcceptCash(v => !v)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${acceptCashOnDelivery ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
+            style={acceptCashOnDelivery ? { backgroundColor: primaryColor } : {}}
+            role="switch"
+            aria-checked={acceptCashOnDelivery}
+          >
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${acceptCashOnDelivery ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
         </div>
 
@@ -356,29 +379,29 @@ export function SettingsForm({ shop }: Props) {
 
         <div className="space-y-2">
           {deliveryZones.map((zone) => (
-            <div key={zone.id} className="flex items-center gap-2">
+            <div key={zone.id} className="flex items-center gap-2 min-w-0">
               <input
                 type="text"
                 value={zone.name}
                 onChange={(e) => updateZone(zone.id, { name: e.target.value })}
-                placeholder="Ex : Dakar centre"
-                className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+                placeholder="Ex : Dakar"
+                className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
               />
-              <div className="relative w-32 shrink-0">
+              <div className="relative w-24 shrink-0">
                 <input
                   type="number"
                   min={0}
                   value={zone.price}
                   onChange={(e) => updateZone(zone.id, { price: Number(e.target.value) })}
                   placeholder="0"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 pr-14 text-sm outline-none focus:border-gray-300"
+                  className="w-full rounded-lg border border-gray-200 px-2 py-2 pr-10 text-sm outline-none focus:border-gray-300"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">F</span>
               </div>
               <button
                 type="button"
                 onClick={() => removeZone(zone.id)}
-                className="text-red-400 hover:text-red-600 p-1"
+                className="shrink-0 text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
