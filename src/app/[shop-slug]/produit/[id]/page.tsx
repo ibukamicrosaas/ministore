@@ -140,7 +140,7 @@ export default async function ProductDetailPage({ params }: Props) {
             style={{ backgroundColor: color }}
           >
             <ShoppingBag className="h-5 w-5" />
-            Commander ce produit
+            Je le prends
           </Link>
         )}
       </div>

@@ -18,17 +18,28 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, accept_cash_on_delivery, delivery_zones')
+    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
   if (!shopData) notFound()
 
+  // accept_cash_on_delivery may not exist yet in older DB instances — default true if missing
+  let acceptCashOnDelivery = true
+  const { data: cashData } = await supabase
+    .from('shops')
+    .select('accept_cash_on_delivery')
+    .eq('id', shopData.id)
+    .single()
+  if (cashData && typeof (cashData as Record<string, unknown>).accept_cash_on_delivery === 'boolean') {
+    acceptCashOnDelivery = (cashData as Record<string, unknown>).accept_cash_on_delivery as boolean
+  }
+
   const shop = shopData as Pick<Shop,
     'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
     'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment' |
-    'accept_cash_on_delivery' | 'delivery_zones'
+    'delivery_zones'
   >
 
   const { data: productsData } = await supabase
@@ -99,7 +110,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         shopDepositPct={shop.deposit_percentage ?? 0}
         shopCountry={shop.country ?? 'SN'}
         acceptOnlinePayment={shop.accept_online_payment ?? true}
-        acceptCashOnDelivery={shop.accept_cash_on_delivery ?? true}
+        acceptCashOnDelivery={acceptCashOnDelivery}
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}
         preselectedProductId={preselectedProductId ?? null}
       />
