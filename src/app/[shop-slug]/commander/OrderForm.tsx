@@ -164,6 +164,11 @@ export function OrderForm({
 }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [errors, setErrors] = useState<{
+    firstName?: string
+    phone?: string
+    address?: string
+  }>({})
 
   const defaultDial = COUNTRIES.find((c) => c.code === shopCountry)?.dial ?? '+221'
 
@@ -263,18 +268,18 @@ export function OrderForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!firstName.trim()) {
-      toast.error('Votre nom est obligatoire.')
+
+    const newErrors: typeof errors = {}
+    if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
+    if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
+    if (deliveryType === 'home_delivery' && !address.trim())
+      newErrors.address = "L'adresse de livraison est obligatoire."
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
-    if (!phoneNum.trim()) {
-      toast.error('Votre téléphone est obligatoire.')
-      return
-    }
-    if (deliveryType === 'home_delivery' && !address.trim()) {
-      toast.error("L'adresse de livraison est obligatoire.")
-      return
-    }
+    setErrors({})
 
     for (const it of items) {
       const p = getProduct(it.product_id)
@@ -528,22 +533,25 @@ export function OrderForm({
         <section>
           <SectionLabel n={3} label="Vos coordonnées" primaryColor={primaryColor} />
           <div className="space-y-3">
-            <input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Nom complet *"
-              required
-              className={inputCls}
-            />
+            <div>
+              <input
+                value={firstName}
+                onChange={(e) => { setFirstName(e.target.value); if (errors.firstName) setErrors(p => ({ ...p, firstName: undefined })) }}
+                placeholder="Nom complet *"
+                className={`${inputCls} ${errors.firstName ? 'border-red-400 focus:border-red-400' : ''}`}
+              />
+              {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
+            </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-gray-500">Téléphone *</label>
               <PhoneInput
                 value={phoneNum}
-                onChange={setPhoneNum}
+                onChange={(v) => { setPhoneNum(v); if (errors.phone) setErrors(p => ({ ...p, phone: undefined })) }}
                 dialCode={phoneDial}
                 onDialChange={setPhoneDial}
                 placeholder="77 000 00 00"
               />
+              {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
             </div>
             <label className="flex cursor-pointer items-center gap-2">
               <input
@@ -624,13 +632,16 @@ export function OrderForm({
                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     </div>
                   )}
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    rows={2}
-                    placeholder="Adresse de livraison * (quartier, rue, repère...)"
-                    className={`${inputCls} resize-none`}
-                  />
+                  <div>
+                    <textarea
+                      value={address}
+                      onChange={(e) => { setAddress(e.target.value); if (errors.address) setErrors(p => ({ ...p, address: undefined })) }}
+                      rows={2}
+                      placeholder="Adresse de livraison * (quartier, rue, repère...)"
+                      className={`${inputCls} resize-none ${errors.address ? 'border-red-400 focus:border-red-400' : ''}`}
+                    />
+                    {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
+                  </div>
                 </div>
               )}
             </section>

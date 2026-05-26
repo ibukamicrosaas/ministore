@@ -2,19 +2,26 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { UserCircle } from 'lucide-react'
+import { UserCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import Link from 'next/link'
 import type { Profile, Client } from '@/types'
 
 export const metadata = { title: 'Clients — TekkiShop' }
 
+const PAGE_SIZE = 50
+
 interface Props {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; page?: string }>
 }
 
 export default async function ClientsPage({ searchParams }: Props) {
-  const { q } = await searchParams
+  const { q, page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10))
+  const from = (page - 1) * PAGE_SIZE
+  const to   = from + PAGE_SIZE - 1
+
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -30,7 +37,7 @@ export default async function ClientsPage({ searchParams }: Props) {
 
   let query = supabase
     .from('clients')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('shop_id', profile.shop_id)
     .order('last_order_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -39,14 +46,26 @@ export default async function ClientsPage({ searchParams }: Props) {
     query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%`)
   }
 
-  const { data: clientsData } = await query.limit(100)
-  const clients = (clientsData ?? []) as Client[]
+  const { data: clientsData, count } = await query.range(from, to)
+  const clients   = (clientsData ?? []) as Client[]
+  const total     = count ?? 0
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return `/dashboard/clients${qs ? `?${qs}` : ''}`
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Clients</h1>
-        <span className="text-sm text-gray-500">{clients.length} cliente{clients.length > 1 ? 's' : ''}</span>
+        <span className="text-sm text-gray-500">
+          {total} client{total > 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Recherche */}
@@ -64,8 +83,8 @@ export default async function ClientsPage({ searchParams }: Props) {
           <div className="p-4">
             <EmptyState
               icon={UserCircle}
-              title={q ? 'Aucun résultat' : 'Aucune cliente'}
-              description={q ? `Aucune cliente ne correspond à « ${q} ».` : 'Les clientes apparaîtront ici après leurs premières réservations.'}
+              title={q ? 'Aucun résultat' : 'Aucun client'}
+              description={q ? `Aucun client ne correspond à « ${q} ».` : 'Les clients apparaîtront ici après leurs premières commandes.'}
             />
           </div>
         ) : (
@@ -96,6 +115,31 @@ export default async function ClientsPage({ searchParams }: Props) {
           </div>
         )}
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <Link
+            href={pageUrl(page - 1)}
+            aria-disabled={page <= 1}
+            className={`flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors ${page <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Précédent
+          </Link>
+          <span className="text-xs text-gray-500">
+            Page {page} / {totalPages}
+          </span>
+          <Link
+            href={pageUrl(page + 1)}
+            aria-disabled={page >= totalPages}
+            className={`flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors ${page >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

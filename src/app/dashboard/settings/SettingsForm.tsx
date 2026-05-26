@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { updateShop, updateShopSlug, uploadShopLogo } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -34,9 +34,31 @@ export function SettingsForm({ shop }: Props) {
   )
   const [slug, setSlug]                         = useState(shop.slug)
   const [savingSlug, setSavingSlug]             = useState(false)
+  const [slugStatus, setSlugStatus]             = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle')
+  const slugTimerRef                            = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showSecretKey, setShowSecretKey]       = useState(false)
   const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Debounced slug availability check
+  useEffect(() => {
+    if (slug === shop.slug) { setSlugStatus('idle'); return }
+    if (slug.length < 2)   { setSlugStatus('idle'); return }
+
+    setSlugStatus('checking')
+    if (slugTimerRef.current) clearTimeout(slugTimerRef.current)
+    slugTimerRef.current = setTimeout(async () => {
+      try {
+        const res  = await fetch(`/api/shops/check-slug?slug=${encodeURIComponent(slug)}`)
+        const data = await res.json() as { available?: boolean; error?: string }
+        setSlugStatus(data.available ? 'available' : 'taken')
+      } catch {
+        setSlugStatus('error')
+      }
+    }, 500)
+
+    return () => { if (slugTimerRef.current) clearTimeout(slugTimerRef.current) }
+  }, [slug, shop.slug])
 
   function sanitizeSlugInput(v: string) {
     return v
@@ -498,7 +520,11 @@ export function SettingsForm({ shop }: Props) {
       <p className="text-xs text-gray-500">
         La partie après <span className="font-mono">tekki.shop/</span>. Attention, changer l'URL rend l'ancien lien inaccessible.
       </p>
-      <div className="flex items-center rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-gray-300 transition-colors">
+      <div className={`flex items-center rounded-xl border bg-white overflow-hidden transition-colors ${
+        slugStatus === 'available' ? 'border-green-400' :
+        slugStatus === 'taken'    ? 'border-red-400'   :
+        'border-gray-200 focus-within:border-gray-300'
+      }`}>
         <span className="shrink-0 pl-3 text-xs font-medium text-gray-400 select-none whitespace-nowrap">
           {APP_URL.replace('https://', '').replace('http://', '')}/
         </span>
@@ -512,11 +538,22 @@ export function SettingsForm({ shop }: Props) {
           autoCapitalize="off"
           spellCheck={false}
         />
+        <div className="pr-3 shrink-0">
+          {slugStatus === 'checking'  && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+          {slugStatus === 'available' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+          {slugStatus === 'taken'     && <XCircle className="h-4 w-4 text-red-500" />}
+        </div>
       </div>
+      {slugStatus === 'available' && (
+        <p className="text-xs text-green-600">Cette URL est disponible ✓</p>
+      )}
+      {slugStatus === 'taken' && (
+        <p className="text-xs text-red-500">Cette URL est déjà utilisée.</p>
+      )}
       <button
         type="button"
         onClick={handleSlugSave}
-        disabled={savingSlug || slug === shop.slug}
+        disabled={savingSlug || slug === shop.slug || slugStatus === 'taken' || slugStatus === 'checking'}
         className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
       >
         {savingSlug ? 'Enregistrement...' : 'Modifier l\'URL'}
