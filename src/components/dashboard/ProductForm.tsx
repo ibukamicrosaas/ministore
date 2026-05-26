@@ -20,9 +20,10 @@ interface ProductFormProps {
 
 export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter()
-  const [loading, setLoading]     = useState(false)
-  const [deleting, setDeleting]   = useState(false)
-  const fileInputRef              = useRef<HTMLInputElement>(null)
+  const [loading, setLoading]           = useState(false)
+  const [deleting, setDeleting]         = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const fileInputRef                    = useRef<HTMLInputElement>(null)
 
   // Photos
   const initialPhotos = Array.isArray(product?.photos)
@@ -162,12 +163,12 @@ export function ProductForm({ product }: ProductFormProps) {
 
   async function handleDelete() {
     if (!product) return
-    if (!confirm('Supprimer ce produit ? Cette action est irréversible.')) return
     setDeleting(true)
     const result = await deleteProduct(product.id)
     if (result.error) {
       toast.error(result.error)
       setDeleting(false)
+      setConfirmDelete(false)
     } else {
       toast.success('Produit supprimé.')
       router.push('/dashboard/products')
@@ -463,16 +464,42 @@ export function ProductForm({ product }: ProductFormProps) {
           {loading ? 'Enregistrement...' : product ? 'Enregistrer les modifications' : 'Créer le produit'}
         </Button>
 
-        {product && (
+        {product && !confirmDelete && (
           <button
             type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+            onClick={() => setConfirmDelete(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
-            {deleting ? 'Suppression...' : 'Supprimer ce produit'}
+            Supprimer ce produit
           </button>
+        )}
+
+        {product && confirmDelete && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+            <p className="text-sm font-semibold text-red-700 text-center">
+              Supprimer définitivement ce produit ?
+            </p>
+            <p className="text-xs text-red-500 text-center">Cette action est irréversible.</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? 'Suppression...' : 'Oui, supprimer'}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </form>

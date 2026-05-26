@@ -473,7 +473,8 @@ export function OrderForm({
                           const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 5) : 5
                           updateItem(i, { quantity: Math.min(maxQty, item.quantity + 1) })
                         }}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100"
+                        disabled={p?.stock_count != null && item.quantity >= Math.min(p.stock_count, 5)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +
                       </button>

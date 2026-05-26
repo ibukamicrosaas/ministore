@@ -19,19 +19,33 @@ export default async function PayPage({ params, searchParams }: Props) {
   if (!order_id || !token) notFound()
 
   if (cancelled === '1') {
+    const retryUrl = order_id && token
+      ? `/${slug}/commander/pay?order_id=${order_id}&token=${token}`
+      : null
+
     return (
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-screen px-6 text-center">
         <div className="text-4xl mb-4">😕</div>
         <h1 className="text-lg font-bold text-gray-900 mb-2">Paiement annulé</h1>
         <p className="text-sm text-gray-500 mb-6">
-          Votre commande est en attente. Vous pouvez réessayer ou choisir de payer à la réception.
+          Votre commande est toujours en attente. Vous pouvez réessayer le paiement ou revenir à la boutique.
         </p>
-        <a
-          href={`/${slug}/commander`}
-          className="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white"
-        >
-          Retour à la boutique
-        </a>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          {retryUrl && (
+            <a
+              href={retryUrl}
+              className="rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white text-center"
+            >
+              Réessayer le paiement
+            </a>
+          )}
+          <a
+            href={`/${slug}`}
+            className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 text-center"
+          >
+            Retour à la boutique
+          </a>
+        </div>
       </div>
     )
   }

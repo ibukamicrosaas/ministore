@@ -43,6 +43,7 @@ export default async function ShopPage({ params }: Props) {
     .select('*')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
+    .or('stock_count.is.null,stock_count.gt.0')
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true })
 

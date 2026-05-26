@@ -38,14 +38,27 @@ export async function createBictorysCharge(
     ? `${BICTORYS_BASE_URL}/charges?payment_type=${paymentType}`
     : `${BICTORYS_BASE_URL}/charges`
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
-    },
-    body: JSON.stringify(payload),
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10_000)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timeout)
+    if ((err as Error).name === 'AbortError') throw new Error('Bictorys: délai dépassé (10s)')
+    throw err
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!res.ok) {
     const text = await res.text()
@@ -69,10 +82,24 @@ export async function getBictorysCharge(
   apiKey: string,
   chargeId: string,
 ): Promise<BictorysWebhookPayload> {
-  const res = await fetch(`${BICTORYS_BASE_URL}/charges/${encodeURIComponent(chargeId)}`, {
-    headers: { 'X-Api-Key': apiKey },
-    cache: 'no-store',
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10_000)
+
+  let res: Response
+  try {
+    res = await fetch(`${BICTORYS_BASE_URL}/charges/${encodeURIComponent(chargeId)}`, {
+      headers: { 'X-Api-Key': apiKey },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timeout)
+    if ((err as Error).name === 'AbortError') throw new Error('Bictorys: délai dépassé (10s)')
+    throw err
+  } finally {
+    clearTimeout(timeout)
+  }
+
   if (!res.ok) throw new Error(`Bictorys error ${res.status}`)
   return res.json() as Promise<BictorysWebhookPayload>
 }

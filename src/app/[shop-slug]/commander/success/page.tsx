@@ -75,13 +75,19 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
         {isOnline && isPaid ? 'Paiement reçu ✓' : 'Commande confirmée !'}
       </h1>
-      <p className="text-sm text-gray-500 mb-8">
+      <p className="text-sm text-gray-500 mb-3">
         {isOnline && isPaid
           ? 'Votre paiement a été reçu. La boutique prépare votre commande.'
           : order.payment_type === 'on_delivery'
           ? 'Vous payerez à la livraison. La boutique a été notifiée.'
           : 'Vous payerez en boutique. La boutique a été notifiée.'}
       </p>
+      <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 mb-6">
+        <span className="text-xs text-gray-500">Référence</span>
+        <span className="text-xs font-bold font-mono text-gray-800 tracking-widest">
+          #{order.id.slice(0, 8).toUpperCase()}
+        </span>
+      </div>
 
       {/* Récap */}
       <div className="rounded-2xl border border-gray-200 bg-white text-left divide-y divide-gray-100 mb-6">
