@@ -14,6 +14,8 @@ import {
   Wallet,
   AlertCircle,
   MessageCircle,
+  BarChart2,
+  Gift,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -26,12 +28,14 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',          label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/dashboard/orders',   label: 'Commandes',       icon: ShoppingBag },
-  { href: '/dashboard/products', label: 'Produits',        icon: Package },
-  { href: '/dashboard/clients',  label: 'Clients',         icon: UserCircle },
-  { href: '/dashboard/revenues', label: 'Revenus',         icon: Wallet },
-  { href: '/dashboard/settings', label: 'Paramètres',      icon: Settings },
+  { href: '/dashboard',               label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/dashboard/orders',        label: 'Commandes',       icon: ShoppingBag },
+  { href: '/dashboard/products',      label: 'Produits',        icon: Package },
+  { href: '/dashboard/clients',       label: 'Clients',         icon: UserCircle },
+  { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet },
+  { href: '/dashboard/rapports',      label: 'Rapports',        icon: BarChart2 },
+  { href: '/dashboard/affiliation',   label: 'Affiliation',     icon: Gift },
+  { href: '/dashboard/settings',      label: 'Paramètres',      icon: Settings },
 ]
 
 interface SidebarProps {

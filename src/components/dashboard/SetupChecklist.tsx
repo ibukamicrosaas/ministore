@@ -113,7 +113,14 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
   const doneCount = steps.filter(s => s.done).length
   const allDone   = doneCount === steps.length
 
-  if (allDone && collapsed) return null
+  // Auto-dismiss définitivement quand tout est fait
+  useEffect(() => {
+    if (allDone) {
+      localStorage.setItem(collapseKey, '1')
+    }
+  }, [allDone, collapseKey])
+
+  if (allDone) return null
 
   if (collapsed) {
     return (

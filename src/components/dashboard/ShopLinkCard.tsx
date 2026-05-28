@@ -10,7 +10,7 @@ interface Props {
 
 export function ShopLinkCard({ shopSlug, appUrl }: Props) {
   const [copied, setCopied] = useState(false)
-  const url = `${appUrl}/${shopSlug}`
+  const url = `${appUrl.replace(/^http:\/\//, 'https://')}/${shopSlug}`
 
   async function handleCopy() {
     await navigator.clipboard.writeText(url)
@@ -67,7 +67,7 @@ export function ShopLinkCard({ shopSlug, appUrl }: Props) {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          Voir ton site
+          Voir mon site
         </a>
       </div>
     </div>

@@ -111,8 +111,8 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Checklist démarrage (vendeurs sans commandes) */}
-      {shop && (productCount ?? 0) < 3 && (
+      {/* Checklist démarrage — disparaît côté client quand les 4 étapes sont cochées */}
+      {shop && (
         <SetupChecklist
           shopSlug={shop.slug}
           shopName={shop.name}
