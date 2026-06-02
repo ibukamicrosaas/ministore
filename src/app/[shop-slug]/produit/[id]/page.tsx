@@ -14,12 +14,46 @@ import { ProductGallery } from '@/components/pwa/ProductGallery'
 type Props = { params: Promise<{ 'shop-slug': string; id: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+  const { 'shop-slug': slug, id } = await params
   const supabase = await createServerClient()
-  const { data } = await supabase.from('products').select('name, description').eq('id', id).single()
-  if (!data) return {}
-  const p = data as Pick<Product, 'name' | 'description'>
-  return { title: p.name, description: p.description ?? undefined }
+
+  const [productRes, shopRes] = await Promise.all([
+    supabase.from('products').select('name, description, photo_url, photos').eq('id', id).single(),
+    supabase.from('shops').select('name').eq('slug', slug).single(),
+  ])
+
+  if (!productRes.data) return {}
+  const p        = productRes.data as Pick<Product, 'name' | 'description' | 'photo_url' | 'photos'>
+  const shopName = (shopRes.data as { name: string } | null)?.name ?? ''
+
+  const photos      = Array.isArray(p.photos) ? (p.photos as unknown as ProductPhoto[]) : []
+  const primaryPhoto = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? p.photo_url ?? null
+
+  const url  = `${APP_URL}/${slug}/produit/${id}`
+  const desc = p.description ?? `${p.name}${shopName ? ` — ${shopName}` : ''}`
+  const ogImage = primaryPhoto
+    ? { url: primaryPhoto, width: 800, height: 800, alt: p.name }
+    : { url: `${APP_URL}/og-ministore.png`, width: 1200, height: 630, alt: p.name }
+
+  return {
+    title: p.name,
+    description: desc,
+    openGraph: {
+      title: p.name,
+      description: desc,
+      url,
+      siteName: shopName,
+      images: [ogImage],
+      locale: 'fr_FR',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: p.name,
+      description: desc,
+      images: [ogImage.url],
+    },
+  }
 }
 
 export default async function ProductDetailPage({ params }: Props) {

@@ -14,12 +14,39 @@ type Props = { params: Promise<{ 'shop-slug': string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { 'shop-slug': slug } = await params
   const supabase = await createServerClient()
-  const { data } = await supabase.from('shops').select('name, description').eq('slug', slug).single()
+  const { data } = await supabase
+    .from('shops')
+    .select('name, description, logo_url')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single()
   if (!data) return {}
-  const shop = data as Pick<Shop, 'name' | 'description'>
+
+  const shop = data as Pick<Shop, 'name' | 'description' | 'logo_url'>
+  const url  = `${APP_URL}/${slug}`
+  const desc = shop.description ?? `Boutique ${shop.name} — commandez en ligne`
+  const ogImage = shop.logo_url
+    ? { url: shop.logo_url, width: 400, height: 400, alt: shop.name }
+    : { url: `${APP_URL}/og-ministore.png`, width: 1200, height: 630, alt: shop.name }
+
   return {
     title: shop.name,
-    description: shop.description ?? `Boutique ${shop.name} — commandez en ligne`,
+    description: desc,
+    openGraph: {
+      title: shop.name,
+      description: desc,
+      url,
+      siteName: shop.name,
+      images: [ogImage],
+      locale: 'fr_FR',
+      type: 'website',
+    },
+    twitter: {
+      card: shop.logo_url ? 'summary' : 'summary_large_image',
+      title: shop.name,
+      description: desc,
+      images: [ogImage.url],
+    },
   }
 }
 
