@@ -8,6 +8,86 @@ import { TRIAL_DAYS } from '@/constants'
 import { encryptApiKey } from '@/lib/crypto/encrypt'
 import type { UpdateShopInput } from '@/types'
 
+async function getProShopId(): Promise<{ shopId: string } | { error: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles').select('shop_id, role').eq('id', user.id).single()
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  const admin = createAdminClient()
+  const { data: shop } = await admin
+    .from('shops').select('plan').eq('id', profile.shop_id).single()
+  if (shop?.plan !== 'pro') return { error: 'Cette fonctionnalité est réservée au plan Pro.' }
+
+  return { shopId: profile.shop_id }
+}
+
+export async function updateHideBranding(
+  hide: boolean,
+): Promise<{ error?: string }> {
+  const result = await getProShopId()
+  if ('error' in result) return { error: result.error }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('shops')
+    .update({ hide_branding: hide, updated_at: new Date().toISOString() })
+    .eq('id', result.shopId)
+
+  if (error) return { error: 'Impossible de mettre à jour le paramètre.' }
+
+  const supabase = await createServerClient()
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', result.shopId).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}
+
+export async function updateCustomDomain(
+  domain: string | null,
+): Promise<{ error?: string }> {
+  const result = await getProShopId()
+  if ('error' in result) return { error: result.error }
+
+  // Valider le format du domaine
+  if (domain !== null) {
+    const cleaned = domain.trim().toLowerCase()
+    if (!cleaned) { domain = null }
+    else {
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/.test(cleaned)) {
+        return { error: 'Format de domaine invalide. Exemple : boutique.mondomaine.com' }
+      }
+      domain = cleaned
+    }
+  }
+
+  const admin = createAdminClient()
+
+  // Vérifier l'unicité
+  if (domain) {
+    const { data: existing } = await admin
+      .from('shops')
+      .select('id')
+      .eq('custom_domain', domain)
+      .neq('id', result.shopId)
+      .single()
+    if (existing) return { error: 'Ce domaine est déjà utilisé par une autre boutique.' }
+  }
+
+  const { error } = await admin
+    .from('shops')
+    .update({ custom_domain: domain, updated_at: new Date().toISOString() })
+    .eq('id', result.shopId)
+
+  if (error) return { error: 'Impossible de mettre à jour le domaine.' }
+
+  revalidatePath('/dashboard/settings')
+  return {}
+}
+
 export async function uploadShopLogo(formData: FormData) {
   const supabase = await createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()

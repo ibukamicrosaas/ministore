@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { updateShop, updateShopSlug, uploadShopLogo } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -36,6 +36,14 @@ export function SettingsForm({ shop }: Props) {
   const [savingSlug, setSavingSlug]             = useState(false)
   const [slugStatus, setSlugStatus]             = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle')
   const slugTimerRef                            = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Plan Pro
+  const isPro                                   = shop.plan === 'pro'
+  const [hideBranding, setHideBranding]         = useState(shop.hide_branding ?? false)
+  const [savingBranding, setSavingBranding]     = useState(false)
+  const [customDomain, setCustomDomain]         = useState(shop.custom_domain ?? '')
+  const [savingDomain, setSavingDomain]         = useState(false)
+  const [domainStatus, setDomainStatus]         = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle')
   const [showSecretKey, setShowSecretKey]       = useState(false)
   const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -66,6 +74,35 @@ export function SettingsForm({ shop }: Props) {
       .replace(/[^a-z0-9-]/g, '-')
       .replace(/^-+/, '')
       .slice(0, 50)
+  }
+
+  async function handleHideBrandingToggle(value: boolean) {
+    setSavingBranding(true)
+    const result = await updateHideBranding(value)
+    if (result.error) toast.error(result.error)
+    else { setHideBranding(value); toast.success(value ? 'Mention TekkiShop masquée ✓' : 'Mention TekkiShop réactivée ✓') }
+    setSavingBranding(false)
+  }
+
+  async function handleDomainSave() {
+    const cleaned = customDomain.trim().toLowerCase()
+    setSavingDomain(true)
+    const result = await updateCustomDomain(cleaned || null)
+    if (result.error) toast.error(result.error)
+    else toast.success(cleaned ? 'Domaine enregistré ✓' : 'Domaine supprimé ✓')
+    setSavingDomain(false)
+  }
+
+  async function handleDomainVerify() {
+    if (!customDomain.trim()) return
+    setDomainStatus('checking')
+    try {
+      const res  = await fetch(`/api/shops/verify-domain?domain=${encodeURIComponent(customDomain.trim())}`)
+      const data = await res.json() as { verified: boolean; cname?: string; error?: string }
+      setDomainStatus(data.verified ? 'verified' : 'failed')
+    } catch {
+      setDomainStatus('failed')
+    }
   }
 
   async function handleSlugSave() {
@@ -559,6 +596,131 @@ export function SettingsForm({ shop }: Props) {
         {savingSlug ? 'Enregistrement...' : 'Modifier l\'URL'}
       </button>
     </div>
+
+    {/* ── Sections Plan Pro ──────────────────────────────────────────────── */}
+    {isPro ? (
+      <>
+        {/* Domaine personnalisé */}
+        <div className="mt-5 rounded-xl border border-purple-100 bg-purple-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-purple-500 shrink-0" />
+            <p className="text-sm font-medium text-gray-900">Domaine personnalisé</p>
+            <span className="ml-auto text-[10px] font-bold text-purple-600 bg-purple-100 rounded-full px-2 py-0.5">Pro</span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Remplace <span className="font-mono">tekki.shop/{shop.slug}</span> par ton propre domaine.
+          </p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customDomain}
+              onChange={e => { setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, '')); setDomainStatus('idle') }}
+              placeholder="boutique.mondomaine.com"
+              className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-mono outline-none focus:border-purple-300 transition-colors"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              onClick={handleDomainSave}
+              disabled={savingDomain}
+              className="shrink-0 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            >
+              {savingDomain ? 'Sauvegarde...' : 'Enregistrer'}
+            </button>
+          </div>
+
+          {/* Instructions DNS */}
+          <div className="rounded-xl border border-purple-200 bg-white p-3 space-y-2">
+            <p className="text-xs font-semibold text-gray-700">Configuration DNS requise</p>
+            <p className="text-xs text-gray-500">
+              Ajoute ce CNAME chez ton registrar (OVH, Namecheap, Cloudflare…) :
+            </p>
+            <div className="grid grid-cols-2 gap-1 text-xs font-mono">
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Type</span>
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">CNAME</span>
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Nom</span>
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-800">
+                {customDomain ? customDomain.split('.')[0] : 'boutique'}
+              </span>
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Valeur</span>
+              <span className="bg-gray-100 rounded px-2 py-1 text-gray-800 break-all">cname.vercel-dns.com</span>
+            </div>
+            <p className="text-[11px] text-gray-400">
+              La propagation DNS peut prendre jusqu'à 48h. Enregistre d'abord le domaine, puis vérifie.
+            </p>
+          </div>
+
+          {/* Vérification CNAME */}
+          {shop.custom_domain && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDomainVerify}
+                disabled={domainStatus === 'checking'}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {domainStatus === 'checking' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {domainStatus === 'verified' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
+                {domainStatus === 'failed'   && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+                {domainStatus === 'idle'     && <Globe className="h-3.5 w-3.5 text-gray-400" />}
+                Vérifier le CNAME
+              </button>
+              {domainStatus === 'verified' && <p className="text-xs text-green-600 font-medium">CNAME configuré correctement ✓</p>}
+              {domainStatus === 'failed'   && <p className="text-xs text-red-500">CNAME introuvable — vérifie chez ton registrar.</p>}
+            </div>
+          )}
+
+          {/* Rappel Vercel */}
+          <p className="text-[11px] text-purple-500">
+            Dernière étape : contacte le support pour que le domaine soit activé sur l'infrastructure TekkiShop.
+          </p>
+        </div>
+
+        {/* Masquer la mention TekkiShop */}
+        <div className="mt-5 rounded-xl border border-purple-100 bg-purple-50 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <EyeOffIcon className="h-4 w-4 text-purple-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900">Masquer la mention TekkiShop</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Retire le lien «&nbsp;Toi aussi, ouvre ta boutique…&nbsp;» en bas de ton site.
+                </p>
+              </div>
+              <span className="shrink-0 text-[10px] font-bold text-purple-600 bg-purple-100 rounded-full px-2 py-0.5">Pro</span>
+            </div>
+            <button
+              type="button"
+              disabled={savingBranding}
+              onClick={() => handleHideBrandingToggle(!hideBranding)}
+              className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${hideBranding ? 'bg-purple-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${hideBranding ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        </div>
+      </>
+    ) : (
+      /* Teaser pour les plans inférieurs */
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Crown className="h-4 w-4 text-amber-500 shrink-0" />
+          <p className="text-sm font-semibold text-gray-700">Fonctionnalités Pro</p>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Le plan Pro te permet d'utiliser ton propre domaine et de retirer la mention TekkiShop de ton site.
+        </p>
+        <a
+          href="/dashboard/upgrade"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+        >
+          <Crown className="h-3 w-3" /> Passer au plan Pro
+        </a>
+      </div>
+    )}
     </>
   )
 }

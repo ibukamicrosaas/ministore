@@ -39,12 +39,77 @@ function maybeCleanup() {
   }
 }
 
+// ── Custom domain routing ─────────────────────────────────────────────────────
+const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tekki.shop')
+  .replace(/https?:\/\//, '')
+  .replace(/\/$/, '')
+
+async function handleCustomDomain(request: NextRequest): Promise<NextResponse | null> {
+  const hostname = request.headers.get('host') ?? ''
+  const pathname = request.nextUrl.pathname
+
+  // Ignorer le domaine principal, localhost et Vercel previews
+  if (
+    hostname === APP_DOMAIN ||
+    hostname === `www.${APP_DOMAIN}` ||
+    hostname.includes('localhost') ||
+    hostname.includes('.vercel.app')
+  ) return null
+
+  // Ne pas toucher les assets statiques ni les API internes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/favicon') ||
+    pathname.startsWith('/manifest') ||
+    pathname.match(/\.(png|jpg|jpeg|svg|ico|webp|gif|css|js|woff2?)$/)
+  ) return null
+
+  // Lookup du slug via l'API REST Supabase (pas de cookies requis)
+  const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  let slug: string | null = null
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/shops?custom_domain=eq.${encodeURIComponent(hostname)}&is_active=eq.true&select=slug&limit=1`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    )
+    if (res.ok) {
+      const shops = await res.json() as { slug: string }[]
+      slug = shops[0]?.slug ?? null
+    }
+  } catch {
+    // En cas d'erreur DB, on laisse passer (dégradé gracieux)
+    return null
+  }
+
+  if (!slug) {
+    // Domaine inconnu → redirection vers le site principal
+    return NextResponse.redirect(new URL('/', `https://${APP_DOMAIN}`))
+  }
+
+  // Si le chemin commence déjà par /{slug} (liens internes de la boutique), ne pas re-préfixer
+  if (pathname.startsWith(`/${slug}`)) {
+    return NextResponse.next({ request })
+  }
+
+  // Réécriture interne : custom-domain.com/{path} → /{slug}/{path}
+  const url = request.nextUrl.clone()
+  url.pathname = `/${slug}${pathname === '/' ? '' : pathname}`
+  return NextResponse.rewrite(url)
+}
+
 // ── Middleware principal ──────────────────────────────────────────────────────
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   let response = NextResponse.next({ request })
 
   maybeCleanup()
+
+  // ── Routing domaines personnalisés (Plan Pro) ─────────────────────────────
+  const customDomainResponse = await handleCustomDomain(request)
+  if (customDomainResponse) return customDomainResponse
 
   // ── Rate limiting sur les endpoints publics ───────────────────────────────
   if (pathname.startsWith('/api/orders') || pathname.startsWith('/api/payments')) {
@@ -164,13 +229,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/api/admin/:path*',
-    '/api/cron/:path*',
-    '/api/orders/:path*',
-    '/api/orders',
-    '/api/payments/:path*',
-    '/login',
-    '/onboarding',
+    /*
+     * Exclure les assets statiques Next.js et les fichiers publics courants.
+     * Le middleware tourne sur toutes les autres routes pour :
+     * - intercepter les requêtes de domaines personnalisés (Plan Pro)
+     * - protéger /dashboard, /api/admin, /api/cron, /api/orders, /api/payments
+     * - gérer les redirections /login et /onboarding
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|og-ministore\\.png|sw\\.js).*)',
   ],
 }

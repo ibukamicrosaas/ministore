@@ -105,7 +105,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Vue d'ensemble</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Vue d&apos;ensemble</h1>
         <p className="text-sm text-gray-500 mt-1 capitalize">{format(now, 'EEEE d MMMM yyyy', { locale: fr })}</p>
       </div>
 

@@ -9,11 +9,11 @@ export const metadata = { title: 'Analytics (démo) — TekkiShop Admin' }
 // ─── Données fictives ────────────────────────────────────────────────────────
 
 const MOCK = {
-  totalShops:   238,
-  activeShops:  197,
+  totalShops:   244,
+  activeShops:  199,
 
   plans: {
-    trial:      33,
+    trial:      39,
     decouverte: 64,
     business:   92,
     pro:         8,
@@ -75,13 +75,13 @@ const ordersGrowth = Math.round(
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AdminAnalyticsPage() {
-  const now = new Date('2026-06-03')
+  const now = new Date('2026-06-04')
 
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vue d'ensemble</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Vue d&apos;ensemble</h1>
           <p className="text-sm text-gray-500 mt-1 capitalize">
             {format(now, 'EEEE d MMMM yyyy', { locale: fr })}
           </p>
