@@ -10,7 +10,7 @@ import { signOut } from '@/lib/actions/auth'
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
 const navLinks = [
-  { href: '/admin/analytics',          label: 'Vue d&apos;ensemble', icon: LayoutDashboard },
+  { href: '/admin/analytics',          label: 'Vue d\'ensemble', icon: LayoutDashboard },
   { href: '/admin/shops',   label: 'Boutiques',         icon: Building2 },
   { href: '/admin/payouts',  label: 'Reversements',     icon: Wallet },
 ]
