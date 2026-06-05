@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { SUBSCRIPTION_DAYS } from '@/constants'
+import { SUBSCRIPTION_DAYS, APP_URL, PLAN_LABELS } from '@/constants'
+import { sendWhatsApp, buildPlanActivatedMessage } from '@/lib/notifications/whatsapp'
 
 /**
  * Active ou renouvelle un plan payant pour une boutique.
@@ -27,7 +28,7 @@ export async function activatePlan(
       updated_at:           new Date().toISOString(),
     })
     .eq('id', shopId)
-    .select('slug')
+    .select('slug, name, phone_whatsapp')
     .single()
 
   if (error) {
@@ -39,6 +40,20 @@ export async function activatePlan(
   revalidatePath('/dashboard/upgrade')
   revalidatePath('/dashboard/settings')
   if (data?.slug) revalidatePath(`/${data.slug}`)
+
+  // Notifier le marchand par WhatsApp — permet de confirmer l'activation même si
+  // le navigateur est resté sur la page de succès de Bictorys
+  if (data?.phone_whatsapp) {
+    const planLabel = PLAN_LABELS[planKey] ?? planKey
+    const msg = buildPlanActivatedMessage({
+      shopName:     data.name,
+      planLabel,
+      dashboardUrl: `${APP_URL}/dashboard`,
+    })
+    sendWhatsApp(data.phone_whatsapp, msg).catch(err =>
+      console.error('[activatePlan] WhatsApp notification failed:', err)
+    )
+  }
 
   return {}
 }

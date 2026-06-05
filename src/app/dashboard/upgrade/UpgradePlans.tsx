@@ -58,10 +58,15 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
         return
       }
 
-      // Stocker le txn pour vérification au retour de Bictorys
+      // Stocker le txn pour vérification au retour de Bictorys.
+      // Cookie en plus de sessionStorage : survit aux redirections mobile (Wave ouvre parfois
+      // un nouveau contexte navigateur, ce qui vide sessionStorage).
       if (data.transactionId) {
-        sessionStorage.setItem('pending_sub_txn', data.transactionId)
+        sessionStorage.setItem('pending_sub_txn',  data.transactionId)
         sessionStorage.setItem('pending_sub_plan', selectedPlan.key)
+        const maxAge = 60 * 60 // 1h
+        document.cookie = `pending_sub_txn=${encodeURIComponent(data.transactionId)}; path=/dashboard/upgrade; max-age=${maxAge}; samesite=lax`
+        document.cookie = `pending_sub_plan=${encodeURIComponent(selectedPlan.key)}; path=/dashboard/upgrade; max-age=${maxAge}; samesite=lax`
       }
 
       window.location.href = data.checkoutUrl

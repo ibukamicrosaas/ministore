@@ -7,9 +7,10 @@ import { verifySubscriptionPayment, pollShopActivation } from './actions'
 interface PaymentVerifierProps {
   activatedPlan: string
   shopIsActive: boolean
+  serverTxn: string | null   // txn lu depuis le cookie côté serveur (fallback mobile)
 }
 
-export function PaymentVerifier({ activatedPlan, shopIsActive }: PaymentVerifierProps) {
+export function PaymentVerifier({ activatedPlan, shopIsActive, serverTxn }: PaymentVerifierProps) {
   const [status, setStatus] = useState<'verifying' | 'activated' | 'pending' | 'error' | null>(
     shopIsActive ? 'activated' : null
   )
@@ -29,6 +30,9 @@ export function PaymentVerifier({ activatedPlan, shopIsActive }: PaymentVerifier
     stopPolling()
     sessionStorage.removeItem('pending_sub_txn')
     sessionStorage.removeItem('pending_sub_plan')
+    // Expirer les cookies immédiatement
+    document.cookie = 'pending_sub_txn=; path=/dashboard/upgrade; max-age=0'
+    document.cookie = 'pending_sub_plan=; path=/dashboard/upgrade; max-age=0'
     setStatus('activated')
     // Rechargement complet pour garantir que tous les caches serveur sont invalidés
     setTimeout(() => window.location.replace('/dashboard'), 2000)
@@ -58,8 +62,9 @@ export function PaymentVerifier({ activatedPlan, shopIsActive }: PaymentVerifier
       return
     }
 
-    const txn  = sessionStorage.getItem('pending_sub_txn')
-    const plan = sessionStorage.getItem('pending_sub_plan')
+    // Priorité : sessionStorage → cookie (serverTxn) → polling pur
+    const txn  = sessionStorage.getItem('pending_sub_txn') || serverTxn || null
+    const plan = sessionStorage.getItem('pending_sub_plan') || activatedPlan
 
     setStatus('verifying')
 
@@ -85,7 +90,7 @@ export function PaymentVerifier({ activatedPlan, shopIsActive }: PaymentVerifier
     const txn  = sessionStorage.getItem('pending_sub_txn')
     const plan = sessionStorage.getItem('pending_sub_plan') ?? activatedPlan
 
-    // Essai via l'API Bictorys si on a le txn, sinon polling DB direct
+    // Essai via l'API Bictorys si on a le txn (sessionStorage ou cookie), sinon polling DB direct
     if (txn && plan === activatedPlan) {
       const result = await verifySubscriptionPayment(txn, activatedPlan)
       if (result.success) {

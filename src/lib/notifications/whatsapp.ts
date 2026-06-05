@@ -232,6 +232,23 @@ Ton abonnement *Plan ${params.planLabel}* expire dans ${params.daysLeft} jour${p
 Paiement simple par Wave ou Orange Money. Des questions ? Réponds à ce message !`
 }
 
+export function buildPlanActivatedMessage(params: {
+  shopName: string
+  planLabel: string
+  dashboardUrl: string
+}): string {
+  return `✅ *Ton plan TekkiShop est activé !*
+
+Bonjour ${params.shopName},
+
+Ton paiement a bien été reçu et ton plan *${params.planLabel}* est maintenant actif. Ton mini-site est en ligne et tes clients peuvent passer des commandes.
+
+👉 Accède à ton tableau de bord :
+${params.dashboardUrl}
+
+Merci de ta confiance ! Réponds à ce message si tu as besoin d'aide.`
+}
+
 export function buildSubscriptionExpiredMessage(params: {
   shopName: string
   planLabel: string

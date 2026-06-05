@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { verifyBictorysSignature, type BictorysWebhookPayload } from '@/lib/payments/bictorys'
+import { verifyBictorysSignature, getBictorysCharge, type BictorysWebhookPayload } from '@/lib/payments/bictorys'
 import {
   sendWhatsApp,
   buildOrderConfirmationMessage,
@@ -58,29 +58,56 @@ export async function POST(req: NextRequest) {
   let effectiveSecret = platformSecret
 
   if (!platformVerified) {
-    // Tentative avec le secret du shop Pro (uniquement pour les commandes, pas les abonnements)
-    if (!merchantReference.startsWith('sub-') && UUID_REGEX.test(merchantReference)) {
-      const { data: order } = await supabase
-        .from('orders')
-        .select('shop_id')
-        .eq('id', merchantReference)
-        .single()
-
-      if (order?.shop_id) {
-        const { data: shopSecrets } = await supabase
-          .from('shops')
-          .select('plan, bictorys_webhook_secret')
-          .eq('id', order.shop_id)
+    if (merchantReference.startsWith('sub-')) {
+      // Webhook d'abonnement avec signature invalide.
+      // Fallback : vérifier directement via l'API Bictorys (plus fiable que le secret).
+      const platformApiKey = process.env.BICTORYS_SECRET_KEY
+      if (!platformApiKey || !payload.id) {
+        console.error('[webhook] Signature invalide et clé API / charge ID absents')
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+      try {
+        const charge = await getBictorysCharge(platformApiKey, payload.id)
+        // Vérification croisée : statut + référence
+        if (charge.status !== 'succeed') {
+          // Paiement non finalisé — ignorer silencieusement
+          return NextResponse.json({ ok: true })
+        }
+        if (charge.merchantReference && charge.merchantReference !== merchantReference) {
+          console.error('[webhook] merchantReference mismatch (API fallback):', charge.merchantReference, '≠', merchantReference)
+          return NextResponse.json({ error: 'Référence invalide' }, { status: 401 })
+        }
+        console.log('[webhook] Abonnement vérifié via API Bictorys (signature non correspondante)')
+        // Vérification OK via API — continuer vers l'activation
+      } catch (err) {
+        console.error('[webhook] Fallback API échoué:', err)
+        return NextResponse.json({ error: 'Invalid signature, fallback API failed' }, { status: 401 })
+      }
+    } else {
+      // Tentative avec le secret du shop Pro (commandes uniquement)
+      if (UUID_REGEX.test(merchantReference)) {
+        const { data: order } = await supabase
+          .from('orders')
+          .select('shop_id')
+          .eq('id', merchantReference)
           .single()
 
-        if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
-          effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
+        if (order?.shop_id) {
+          const { data: shopSecrets } = await supabase
+            .from('shops')
+            .select('plan, bictorys_webhook_secret')
+            .eq('id', order.shop_id)
+            .single()
+
+          if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
+            effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
+          }
         }
       }
-    }
 
-    if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import type { Profile, Shop } from '@/types'
 import { UpgradePlans, type Plan } from './UpgradePlans'
 import { PaymentVerifier } from './PaymentVerifier'
@@ -89,6 +90,12 @@ export default async function UpgradePage({
 
   const { success, plan: activatedPlan, error } = await searchParams
 
+  // Lire le txn depuis le cookie (fallback si sessionStorage perdu après redirection mobile)
+  const cookieStore = await cookies()
+  const cookieTxn   = cookieStore.get('pending_sub_txn')?.value ?? null
+  const cookiePlan  = cookieStore.get('pending_sub_plan')?.value ?? null
+  const serverTxn   = (success && activatedPlan && cookiePlan === activatedPlan) ? cookieTxn : null
+
   return (
     <div className="space-y-6 pb-8">
       <div>
@@ -98,7 +105,11 @@ export default async function UpgradePage({
 
       {/* Vérification + activation au retour du paiement */}
       {success && activatedPlan && (
-        <PaymentVerifier activatedPlan={activatedPlan} shopIsActive={shop.is_active ?? false} />
+        <PaymentVerifier
+          activatedPlan={activatedPlan}
+          shopIsActive={shop.is_active ?? false}
+          serverTxn={serverTxn}
+        />
       )}
 
       {/* Erreur de paiement */}
