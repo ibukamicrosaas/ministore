@@ -7,9 +7,8 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 
-// Délais de rappel (en jours avant expiration)
+// Un seul rappel à J-3 pour limiter la consommation SMS Twilio (J-7 supprimé)
 const REMINDER_WINDOWS = [
-  { days: 7, type: 'sub_reminder_7d' },
   { days: 3, type: 'sub_reminder_3d' },
 ] as const
 

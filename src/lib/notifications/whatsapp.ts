@@ -1,109 +1,49 @@
+// Notifications SMS via Twilio (anciennement WhatsApp).
+// Messages volontairement courts : 1 segment SMS = 160 chars GSM-7 (sans emoji).
+// sendWhatsApp est conservé comme alias pour la compatibilité avec les appelants existants.
+
 import twilio from 'twilio'
 
 function getClient() {
-  const sid = process.env.TWILIO_ACCOUNT_SID
+  const sid   = process.env.TWILIO_ACCOUNT_SID
   const token = process.env.TWILIO_AUTH_TOKEN
   if (!sid || !token) throw new Error('Twilio credentials not configured')
   return twilio(sid, token)
 }
 
-const FROM = `whatsapp:${process.env.TWILIO_WHATSAPP_FROM ?? ''}`
+// Numéro SMS Twilio (format E.164, ex: +14155551234)
+const FROM_SMS = process.env.TWILIO_PHONE_NUMBER ?? ''
 
-function toWhatsApp(phone: string): string {
+function normalizePhone(phone: string): string {
   const cleaned = phone.replace(/\s+/g, '')
-  const normalized = cleaned.startsWith('+') ? cleaned : `+${cleaned}`
-  return `whatsapp:${normalized}`
+  return cleaned.startsWith('+') ? cleaned : `+${cleaned}`
 }
 
-export async function sendWhatsApp(
+export async function sendSMS(
   to: string,
   message: string,
 ): Promise<{ success: boolean; sid?: string; error?: string }> {
   try {
     const client = getClient()
     const msg = await client.messages.create({
-      from: FROM,
-      to: toWhatsApp(to),
+      from: FROM_SMS,
+      to:   normalizePhone(to),
       body: message,
     })
     return { success: true, sid: msg.sid }
   } catch (err) {
     const error = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[whatsapp]', error)
+    console.error('[sms]', error)
     return { success: false, error }
   }
 }
 
-export function buildBookingConfirmationMessage(params: {
-  salonName: string
-  serviceName: string
-  date: string
-  time: string
-  depositAmount: number
-  remainingAmount: number
-  bookingUrl: string
-}): string {
-  return `✅ *Votre réservation chez ${params.salonName} est confirmée !*
+// Alias de compatibilité — tous les appelants existants continuent de fonctionner
+export const sendWhatsApp = sendSMS
 
-📋 Service : ${params.serviceName}
-📅 Date : ${params.date} à ${params.time}
-💳 Acompte payé : ${params.depositAmount.toLocaleString('fr-FR')} FCFA
-💰 Solde à régler sur place : ${params.remainingAmount.toLocaleString('fr-FR')} FCFA
-
-Gérer votre réservation : ${params.bookingUrl}`
-}
-
-export function buildNewBookingAlertMessage(params: {
-  clientName: string
-  serviceName: string
-  date: string
-  time: string
-  depositAmount: number
-}): string {
-  return `🔔 *Nouvelle réservation !*
-
-👤 Cliente : ${params.clientName}
-📋 Service : ${params.serviceName}
-📅 Date : ${params.date} à ${params.time}
-💳 Acompte reçu : ${params.depositAmount.toLocaleString('fr-FR')} FCFA ✓`
-}
-
-export function buildReminderMessage(params: {
-  salonName: string
-  serviceName: string
-  date: string
-  time: string
-  bookingUrl: string
-}): string {
-  return `⏰ *Rappel de rendez-vous*
-
-Vous avez RDV demain chez *${params.salonName}*
-📋 Service : ${params.serviceName}
-📅 ${params.date} à ${params.time}
-
-Besoin de modifier ? ${params.bookingUrl}`
-}
-
-export function buildClientCancelledAlertMessage(params: {
-  clientName: string
-  serviceName: string
-  date: string
-  time: string
-  refundAmount: number
-}): string {
-  const refundText =
-    params.refundAmount > 0
-      ? `Remboursement de ${params.refundAmount.toLocaleString('fr-FR')} FCFA à traiter.`
-      : `Aucun remboursement (hors délai ou pas d'acompte).`
-
-  return `🚫 *Annulation cliente*
-
-👤 ${params.clientName}
-📋 ${params.serviceName}
-📅 ${params.date} à ${params.time}
-
-${refundText}`
-}
+// ─── Builders de messages ──────────────────────────────────────────────────
+// Objectif : <= 160 chars par message (1 segment SMS, pas d'emoji).
+// Les URL courtes sont conservées car nécessaires pour le suivi.
 
 export function buildOrderConfirmationMessage(params: {
   shopName: string
@@ -115,28 +55,9 @@ export function buildOrderConfirmationMessage(params: {
   paymentType: string
   orderUrl: string
 }): string {
-  const deliveryText = params.deliveryType === 'home_delivery'
-    ? `📦 Livraison à domicile${params.deliveryDate ? ` le ${params.deliveryDate}` : ''}`
-    : `🏪 Retrait en boutique${params.deliveryDate ? ` le ${params.deliveryDate}` : ''}`
-
-  const paymentText = params.paymentType === 'on_delivery'
-    ? '💵 Paiement à la réception'
-    : params.paymentType === 'on_site'
-    ? '🏪 Paiement en boutique'
-    : '✅ Paiement en ligne confirmé'
-
-  return `✅ *Commande confirmée chez ${params.shopName} !*
-
-Bonjour ${params.clientName} 👋
-
-🛒 Articles :
-${params.items}
-
-💰 Total : ${params.totalPrice.toLocaleString('fr-FR')} FCFA
-${deliveryText}
-${paymentText}
-
-Voir votre commande : ${params.orderUrl}`
+  const delivery = params.deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait boutique'
+  const date     = params.deliveryDate ? ` le ${params.deliveryDate}` : ''
+  return `Commande confirmee chez ${params.shopName}!\n${params.items}\nTotal: ${params.totalPrice.toLocaleString('fr-FR')} FCFA | ${delivery}${date}\n${params.orderUrl}`
 }
 
 export function buildNewOrderAlertMessage(params: {
@@ -148,18 +69,10 @@ export function buildNewOrderAlertMessage(params: {
   deliveryDate?: string
   paymentType: string
 }): string {
-  const deliveryText = params.deliveryType === 'home_delivery' ? 'Livraison à domicile' : 'Retrait en boutique'
-  const paymentText = params.paymentType === 'on_delivery' ? 'À la réception' : params.paymentType === 'on_site' ? 'En boutique' : 'Payé en ligne'
-
-  return `🔔 *Nouvelle commande !*
-
-👤 Client : ${params.clientName} · ${params.clientPhone}
-🛒 Articles :
-${params.items}
-💰 Total : ${params.totalPrice.toLocaleString('fr-FR')} FCFA
-${params.deliveryDate ? `📅 Date : ${params.deliveryDate}` : ''}
-📦 Livraison : ${deliveryText}
-💳 Paiement : ${paymentText}`
+  const delivery = params.deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait'
+  const payment  = params.paymentType === 'on_delivery' ? 'A la reception' : params.paymentType === 'on_site' ? 'En boutique' : 'Paye en ligne'
+  const date     = params.deliveryDate ? ` | ${params.deliveryDate}` : ''
+  return `Nouvelle commande - ${params.clientName} (${params.clientPhone})\n${params.items}\n${params.totalPrice.toLocaleString('fr-FR')} FCFA | ${delivery}${date} | ${payment}`
 }
 
 export function buildOrderReminderMessage(params: {
@@ -169,18 +82,8 @@ export function buildOrderReminderMessage(params: {
   deliveryType: 'home_delivery' | 'store_pickup'
   orderUrl: string
 }): string {
-  const deliveryText = params.deliveryType === 'home_delivery'
-    ? `📦 Livraison prévue demain (${params.deliveryDate})`
-    : `🏪 Retrait en boutique demain (${params.deliveryDate})`
-
-  return `⏰ *Rappel de commande*
-
-Bonjour ${params.clientName} 👋
-
-Votre commande chez *${params.shopName}* est prévue pour demain.
-${deliveryText}
-
-Voir les détails : ${params.orderUrl}`
+  const delivery = params.deliveryType === 'home_delivery' ? 'livraison' : 'retrait en boutique'
+  return `Rappel ${params.shopName}: votre ${delivery} est prevu demain (${params.deliveryDate}).\n${params.orderUrl}`
 }
 
 export function buildTrialReminderMessage(params: {
@@ -188,31 +91,14 @@ export function buildTrialReminderMessage(params: {
   daysLeft: number
   upgradeUrl: string
 }): string {
-  return `⏳ *Votre essai TekkiShop expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''} !*
-
-Bonjour ${params.shopName} 👋
-
-Votre période d'essai gratuite se termine bientôt. Pour continuer à recevoir des commandes en ligne, choisissez un plan avant la date d'expiration.
-
-👉 ${params.upgradeUrl}
-
-Paiement simple par Wave ou Orange Money. Des questions ? Répondez à ce message !`
+  return `TekkiShop - ${params.shopName}: votre essai gratuit expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}. Activez votre boutique: ${params.upgradeUrl}`
 }
 
 export function buildTrialExpiredMessage(params: {
   shopName: string
   upgradeUrl: string
 }): string {
-  return `🔴 *Votre essai TekkiShop est terminé*
-
-Bonjour ${params.shopName},
-
-Votre période d'essai gratuite est expirée. Votre mini site est temporairement suspendu.
-
-Pour le réactiver, choisissez un plan :
-👉 ${params.upgradeUrl}
-
-Paiement par Wave ou Orange Money. Répondez à ce message pour toute question.`
+  return `TekkiShop - ${params.shopName}: votre essai est termine. Votre boutique est suspendue. Choisissez un plan pour la reactiver: ${params.upgradeUrl}`
 }
 
 export function buildSubscriptionReminderMessage(params: {
@@ -221,15 +107,7 @@ export function buildSubscriptionReminderMessage(params: {
   daysLeft: number
   renewUrl: string
 }): string {
-  return `⏳ *Abonnement TEKKIShop — Renouvellement dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}*
-
-Bonjour ${params.shopName} 👋
-
-Ton abonnement *Plan ${params.planLabel}* expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}. Pour continuer à recevoir des commandes en ligne, renouvelle-le avant la date d'expiration.
-
-👉 ${params.renewUrl}
-
-Paiement simple par Wave ou Orange Money. Des questions ? Réponds à ce message !`
+  return `TekkiShop - ${params.shopName}: abonnement ${params.planLabel} expire dans ${params.daysLeft} jour${params.daysLeft > 1 ? 's' : ''}. Renouvelez: ${params.renewUrl}`
 }
 
 export function buildPlanActivatedMessage(params: {
@@ -237,16 +115,7 @@ export function buildPlanActivatedMessage(params: {
   planLabel: string
   dashboardUrl: string
 }): string {
-  return `✅ *Ton plan TekkiShop est activé !*
-
-Bonjour ${params.shopName},
-
-Ton paiement a bien été reçu et ton plan *${params.planLabel}* est maintenant actif. Ton mini-site est en ligne et tes clients peuvent passer des commandes.
-
-👉 Accède à ton tableau de bord :
-${params.dashboardUrl}
-
-Merci de ta confiance ! Réponds à ce message si tu as besoin d'aide.`
+  return `TekkiShop - ${params.shopName}: plan ${params.planLabel} active! Votre boutique est en ligne. Dashboard: ${params.dashboardUrl}`
 }
 
 export function buildSubscriptionExpiredMessage(params: {
@@ -254,34 +123,40 @@ export function buildSubscriptionExpiredMessage(params: {
   planLabel: string
   renewUrl: string
 }): string {
-  return `🔴 *Abonnement TEKKIShop expiré*
+  return `TekkiShop - ${params.shopName}: abonnement ${params.planLabel} expire. Boutique suspendue. Renouvelez: ${params.renewUrl}`
+}
 
-Bonjour ${params.shopName},
+// ─── Builders non utilisés dans MiniStore (hérités BeautyDesk) ─────────────
 
-Ton abonnement *Plan ${params.planLabel}* est expiré. Ton mini-site est temporairement suspendu et tes clients ne peuvent plus passer de commandes.
+export function buildBookingConfirmationMessage(params: {
+  salonName: string; serviceName: string; date: string; time: string
+  depositAmount: number; remainingAmount: number; bookingUrl: string
+}): string {
+  return `Reservation confirmee chez ${params.salonName} - ${params.serviceName} le ${params.date} a ${params.time}. Acompte: ${params.depositAmount.toLocaleString('fr-FR')} FCFA. Solde: ${params.remainingAmount.toLocaleString('fr-FR')} FCFA.\n${params.bookingUrl}`
+}
 
-Pour le réactiver, renouvelle ton abonnement :
-👉 ${params.renewUrl}
+export function buildNewBookingAlertMessage(params: {
+  clientName: string; serviceName: string; date: string; time: string; depositAmount: number
+}): string {
+  return `Nouvelle reservation - ${params.clientName} | ${params.serviceName} le ${params.date} a ${params.time} | Acompte: ${params.depositAmount.toLocaleString('fr-FR')} FCFA`
+}
 
-Paiement par Wave ou Orange Money. Réponds à ce message pour toute question.`
+export function buildReminderMessage(params: {
+  salonName: string; serviceName: string; date: string; time: string; bookingUrl: string
+}): string {
+  return `Rappel RDV demain chez ${params.salonName} - ${params.serviceName} le ${params.date} a ${params.time}.\n${params.bookingUrl}`
+}
+
+export function buildClientCancelledAlertMessage(params: {
+  clientName: string; serviceName: string; date: string; time: string; refundAmount: number
+}): string {
+  const refund = params.refundAmount > 0 ? `Remboursement: ${params.refundAmount.toLocaleString('fr-FR')} FCFA.` : 'Aucun remboursement.'
+  return `Annulation - ${params.clientName} | ${params.serviceName} le ${params.date} a ${params.time}. ${refund}`
 }
 
 export function buildCancellationMessage(params: {
-  salonName: string
-  serviceName: string
-  date: string
-  refundAmount: number
+  salonName: string; serviceName: string; date: string; refundAmount: number
 }): string {
-  const refundText =
-    params.refundAmount > 0
-      ? `Remboursement de ${params.refundAmount.toLocaleString('fr-FR')} FCFA en cours.`
-      : `L'acompte a été retenu selon la politique du salon.`
-
-  return `❌ *Réservation annulée*
-
-Votre réservation chez ${params.salonName}
-📋 Service : ${params.serviceName}
-📅 Date : ${params.date}
-
-${refundText}`
+  const refund = params.refundAmount > 0 ? `Remboursement: ${params.refundAmount.toLocaleString('fr-FR')} FCFA en cours.` : 'Acompte retenu.'
+  return `Reservation annulee chez ${params.salonName} - ${params.serviceName} le ${params.date}. ${refund}`
 }

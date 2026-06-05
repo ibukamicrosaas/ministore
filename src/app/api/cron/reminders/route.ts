@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendWhatsApp, buildOrderReminderMessage } from '@/lib/notifications/whatsapp'
-import { APP_URL } from '@/constants'
+// Rappels SMS clients désactivés pour limiter la consommation Twilio.
+// Le cron tourne toujours (pour ne pas casser vercel.json) mais n'envoie plus de SMS.
 import { format, addDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -45,45 +45,15 @@ export async function GET(req: NextRequest) {
     shops: { name: string; slug: string; phone_whatsapp: string | null } | null
   }>
 
-  let sent = 0
-
-  for (const order of orders) {
-    if (!order.clients || !order.shops) continue
-
-    const clientPhone   = order.clients.whatsapp ?? order.clients.phone
-    const dateFormatted = format(new Date(order.delivery_date + 'T12:00:00'), 'EEEE d MMMM', { locale: fr })
-    const orderUrl      = `${APP_URL}/${order.shops.slug}/commande/${order.id}?token=${order.client_token}`
-
-    const msg = buildOrderReminderMessage({
-      shopName:     order.shops.name,
-      clientName:   order.clients.first_name,
-      deliveryDate: dateFormatted,
-      deliveryType: order.delivery_type as 'home_delivery' | 'store_pickup',
-      orderUrl,
-    })
-
-    const result = await sendWhatsApp(clientPhone, msg)
-
-    if (result.success) {
-      await supabase
-        .from('orders')
-        .update({ reminder_sent_at: new Date().toISOString() })
-        .eq('id', order.id)
-
-      await supabase.from('notification_logs').insert({
-        shop_id:           order.shop_id,
-        order_id:          order.id,
-        recipient_phone:   clientPhone,
-        notification_type: 'order_reminder',
-        channel:           'whatsapp',
-        message:           msg,
-        status:            'sent',
-        error_message:     null,
-      })
-
-      sent++
-    }
+  // SMS désactivés — on marque seulement reminder_sent_at pour ne pas retraiter
+  // les mêmes commandes si les SMS sont réactivés plus tard.
+  const ids = orders.map(o => o.id)
+  if (ids.length > 0) {
+    await supabase
+      .from('orders')
+      .update({ reminder_sent_at: new Date().toISOString() })
+      .in('id', ids)
   }
 
-  return NextResponse.json({ processed: orders.length, sent })
+  return NextResponse.json({ processed: orders.length, sent: 0, note: 'SMS desactives' })
 }
