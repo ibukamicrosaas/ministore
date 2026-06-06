@@ -14,7 +14,7 @@ interface RequestBody {
 }
 
 export async function POST(req: NextRequest) {
-  const platformApiKey = process.env.BICTORYS_SECRET_KEY
+  const platformApiKey = process.env.BICTORYS_API_KEY
 
   const body = (await req.json()) as RequestBody
   const { orderId, shopSlug, customerFirstName, customerLastName, customerPhone, paymentType } = body

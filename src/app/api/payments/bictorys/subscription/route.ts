@@ -17,7 +17,7 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.BICTORYS_SECRET_KEY
+  const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })
   }
