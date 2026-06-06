@@ -31,7 +31,7 @@ export async function processPayout(
     .single()
   if (profile?.role !== 'admin' && profile?.role !== 'owner') return { error: 'Accès refusé.' }
 
-  const apiKey = process.env.BICTORYS_SECRET_KEY
+  const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey) return { error: 'Bictorys non configuré.' }
 
   const admin = createAdminClient()

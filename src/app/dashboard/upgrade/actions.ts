@@ -42,7 +42,7 @@ export async function verifySubscriptionPayment(
     return { success: false, error: 'Accès refusé' }
   }
 
-  const apiKey = process.env.BICTORYS_SECRET_KEY
+  const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey) {
     console.error('[verifySubscriptionPayment] Clé API Bictorys manquante')
     return { success: false, error: 'Bictorys non configuré' }

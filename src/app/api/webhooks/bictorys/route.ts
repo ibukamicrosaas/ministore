@@ -138,7 +138,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
 
   // ✅ Stratégie clé : vérifier via l'API Bictorys directement
   // Cela élimine la dépendance aux webhooks secrets mal configurés
-  const apiKey = process.env.BICTORYS_SECRET_KEY
+  const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey || !payload.id) {
     console.error('[handleSubscriptionWebhook] Clé API ou charge ID manquant')
     return NextResponse.json({ error: 'Configuration manquante' }, { status: 500 })
