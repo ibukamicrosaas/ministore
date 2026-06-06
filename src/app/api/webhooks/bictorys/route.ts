@@ -16,6 +16,14 @@ const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function POST(req: NextRequest) {
+  // LOG ULTRA PRÉCOCE : vérifier que la route est atteinte
+  console.log('[webhook/bictorys] 🔔 WEBHOOK REÇU - méthode:', req.method, 'URL:', req.nextUrl.pathname)
+  console.log('[webhook/bictorys] Headers:', {
+    contentType: req.headers.get('content-type'),
+    contentLength: req.headers.get('content-length'),
+    xSecretKey: req.headers.get('x-secret-key')?.slice(0, 16) + '...',
+  })
+
   // Limiter la taille du body avant de lire quoi que ce soit
   const contentLength = parseInt(req.headers.get('content-length') ?? '0', 10)
   if (contentLength > MAX_BODY_BYTES) {

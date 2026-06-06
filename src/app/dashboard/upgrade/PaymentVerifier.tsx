@@ -56,6 +56,7 @@ export function PaymentVerifier({ activatedPlan, shopIsActive, serverTxn }: Paym
 
   useEffect(() => {
     if (shopIsActive) {
+      console.log('[PaymentVerifier] ✅ Shop déjà actif — redirection')
       sessionStorage.removeItem('pending_sub_txn')
       sessionStorage.removeItem('pending_sub_plan')
       setTimeout(() => window.location.replace('/dashboard'), 2000)
@@ -65,6 +66,14 @@ export function PaymentVerifier({ activatedPlan, shopIsActive, serverTxn }: Paym
     // Priorité : sessionStorage → cookie (serverTxn) → polling pur
     const txn  = sessionStorage.getItem('pending_sub_txn') || serverTxn || null
     const plan = sessionStorage.getItem('pending_sub_plan') || activatedPlan
+
+    console.log('[PaymentVerifier] Début de la vérification', {
+      hasTxn: !!txn,
+      txnSlice: txn?.slice(0, 8) + '...',
+      hasServerTxn: !!serverTxn,
+      plan,
+      activatedPlan,
+    })
 
     setStatus('verifying')
 
