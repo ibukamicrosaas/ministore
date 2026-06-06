@@ -29,6 +29,7 @@ interface CreateOrderBody {
   client_whatsapp: string
   notes: string | null
   payment_type: 'online_full' | 'online_deposit' | 'on_delivery' | 'on_site'
+  promo_code?: string | null
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest) {
 
   const { shopId, items, delivery_date, delivery_type, delivery_address,
     delivery_zone_name,
-    client_first_name, client_phone, client_whatsapp, notes, payment_type } = body
+    client_first_name, client_phone, client_whatsapp, notes, payment_type,
+    promo_code } = body
 
   // ── Validation des entrées ────────────────────────────────────────────
   if (!shopId || !UUID_RE.test(shopId)) {
@@ -155,9 +157,33 @@ export async function POST(req: NextRequest) {
     serverDeliveryPrice = zone?.price ?? 0
   }
 
+  // Valider le code promo côté serveur (jamais faire confiance au client)
+  let promoId:      string | null = null
+  let discountPct:  number        = 0
+  if (promo_code) {
+    const promoCode = promo_code.trim().toUpperCase()
+    const { data: promo } = await supabase
+      .from('promo_codes')
+      .select('id, discount_pct, max_uses, used_count, expires_at')
+      .eq('shop_id', shopId)
+      .eq('is_active', true)
+      .ilike('code', promoCode)
+      .single()
+
+    if (promo) {
+      const expired    = promo.expires_at ? new Date(promo.expires_at) < new Date() : false
+      const exhausted  = promo.max_uses !== null && promo.used_count >= promo.max_uses
+      if (!expired && !exhausted) {
+        promoId     = promo.id
+        discountPct = promo.discount_pct
+      }
+    }
+  }
+
   // Calculer les totaux côté serveur
-  const itemsTotal = serverItems.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
-  const total_price = itemsTotal + serverDeliveryPrice
+  const itemsTotal    = serverItems.reduce((sum, it) => sum + it.unit_price * it.quantity, 0)
+  const discountAmount = discountPct > 0 ? Math.floor(itemsTotal * discountPct / 100) : 0
+  const total_price   = itemsTotal - discountAmount + serverDeliveryPrice
 
   // Calculer l'acompte si paiement en ligne
   let deposit_amount = 0
@@ -255,6 +281,11 @@ export async function POST(req: NextRequest) {
     attempt_type: 'order',
     success:      true,
   })
+
+  // Incrémenter l'utilisation du code promo de façon fire-and-forget
+  if (promoId) {
+    void supabase.rpc('increment_promo_used_count', { p_promo_id: promoId })
+  }
 
   // Créer les lignes (avec les prix serveur — jamais les prix client)
   const { error: itemsError } = await supabase.from('order_items').insert(

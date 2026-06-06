@@ -171,6 +171,7 @@ export function OrderForm({
   }>({})
 
   const defaultDial = COUNTRIES.find((c) => c.code === shopCountry)?.dial ?? '+221'
+  const CART_KEY    = `tekki_cart_${shopId}`
 
   const makeItem = (productId?: string): OrderItem => ({
     product_id: productId ?? products[0]?.id ?? '',
@@ -178,11 +179,40 @@ export function OrderForm({
     quantity: 1,
   })
 
-  const [items, setItems] = useState<OrderItem[]>([makeItem(preselectedProductId ?? undefined)])
+  type SavedCart = { items?: OrderItem[]; firstName?: string; phoneNum?: string; phoneDial?: string; address?: string; _ts?: number }
+
+  // Fonctions panier — appelées dans des handlers (événements), jamais pendant le render
+  function saveCart(patch: Partial<SavedCart>) {
+    try {
+      const raw  = localStorage.getItem(CART_KEY)
+      const prev = raw ? (JSON.parse(raw) as SavedCart) : {}
+      localStorage.setItem(CART_KEY, JSON.stringify({ ...prev, ...patch, _ts: Date.now() }))
+    } catch {}
+  }
+
+  function clearCart() {
+    try { localStorage.removeItem(CART_KEY) } catch {}
+  }
+
+  // Lazy initializer : s'exécute une seule fois à l'init, jamais pendant un re-render
+  const [saved] = useState<SavedCart>(() => {
+    try {
+      const raw = localStorage.getItem(CART_KEY)
+      if (!raw) return {}
+      const data = JSON.parse(raw) as SavedCart
+      const ts   = typeof data._ts === 'number' ? data._ts : 0
+      if (Date.now() - ts > 24 * 60 * 60 * 1000) { localStorage.removeItem(CART_KEY); return {} }
+      return data
+    } catch { return {} }
+  })
+
+  const [items, setItems] = useState<OrderItem[]>(
+    saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined)]
+  )
   const [deliveryDate, setDeliveryDate] = useState(deliveryDates[0]?.value ?? '')
-  const [firstName, setFirstName] = useState('')
-  const [phoneDial, setPhoneDial] = useState(defaultDial)
-  const [phoneNum, setPhoneNum] = useState('')
+  const [firstName, setFirstName] = useState(saved.firstName ?? '')
+  const [phoneDial, setPhoneDial] = useState(saved.phoneDial ?? defaultDial)
+  const [phoneNum, setPhoneNum] = useState(saved.phoneNum ?? '')
   const [sameWa, setSameWa] = useState(true)
   const [waDial, setWaDial] = useState(defaultDial)
   const [waNum, setWaNum] = useState('')
@@ -190,26 +220,55 @@ export function OrderForm({
     deliveryOptions.home_delivery ? 'home_delivery' : 'store_pickup',
   )
   const [selectedZoneId, setSelectedZoneId] = useState<string>(deliveryZones[0]?.id ?? '')
-  const [address, setAddress] = useState('')
+  const [address, setAddress] = useState(saved.address ?? '')
   const [notes, setNotes] = useState('')
   // Si le cash à la livraison est désactivé, forcer le paiement en ligne
   const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>(
     acceptCashOnDelivery ? 'on_delivery' : 'online'
   )
+  // Code promo
+  const [promoCode, setPromoCode]         = useState('')
+  const [promoDiscount, setPromoDiscount] = useState(0)
+  const [promoStatus, setPromoStatus]     = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
+  const [promoError, setPromoError]       = useState('')
+
+  async function applyPromoCode() {
+    const trimmed = promoCode.trim().toUpperCase()
+    if (!trimmed) return
+    setPromoStatus('checking')
+    try {
+      const res  = await fetch(`/api/shops/check-promo?shopId=${shopId}&code=${encodeURIComponent(trimmed)}`)
+      const data = await res.json() as { valid: boolean; discount_pct?: number; error?: string }
+      if (data.valid && data.discount_pct) {
+        setPromoDiscount(data.discount_pct)
+        setPromoStatus('valid')
+        setPromoError('')
+      } else {
+        setPromoDiscount(0)
+        setPromoStatus('invalid')
+        setPromoError(data.error ?? 'Code invalide')
+      }
+    } catch {
+      setPromoStatus('invalid')
+      setPromoError('Erreur réseau')
+    }
+  }
 
   function getProduct(id: string) {
     return products.find((p) => p.id === id)
   }
 
   function updateItem(index: number, patch: Partial<OrderItem>) {
-    setItems((prev) =>
-      prev.map((it, i) => {
+    setItems((prev) => {
+      const next = prev.map((it, i) => {
         if (i !== index) return it
         const updated = { ...it, ...patch }
         if (patch.product_id) updated.variant_label = null
         return updated
-      }),
-    )
+      })
+      saveCart({ items: next })
+      return next
+    })
   }
 
   function addItem() {
@@ -259,7 +318,9 @@ export function OrderForm({
     }, 0)
   }
 
-  const total = computeTotal()
+  const subtotal       = computeTotal()
+  const promoAmount    = promoDiscount > 0 ? Math.floor(subtotal * promoDiscount / 100) : 0
+  const total          = subtotal - promoAmount
   const deposit = paymentType === 'online' ? computeDeposit() : 0
   const hasDeposit = deposit > 0 && deposit < total
 
@@ -319,6 +380,7 @@ export function OrderForm({
       notes: notes.trim() || null,
       delivery_zone_name: (deliveryType === 'home_delivery' && selectedZone) ? selectedZone.name : null,
       delivery_price: deliveryPrice,
+      promo_code: promoStatus === 'valid' ? promoCode.trim().toUpperCase() : null,
       payment_type:
         paymentType === 'online'
           ? hasDeposit
@@ -342,6 +404,9 @@ export function OrderForm({
         toast.error(data.error ?? 'Une erreur est survenue.')
         return
       }
+
+      // Commande créée avec succès → effacer le panier sauvegardé
+      clearCart()
 
       if (data.redirect === 'pay' && data.orderId) {
         router.push(`/${shopSlug}/commander/pay?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
@@ -536,7 +601,11 @@ export function OrderForm({
             <div>
               <input
                 value={firstName}
-                onChange={(e) => { setFirstName(e.target.value); if (errors.firstName) setErrors(p => ({ ...p, firstName: undefined })) }}
+                onChange={(e) => {
+                  setFirstName(e.target.value)
+                  if (errors.firstName) setErrors(p => ({ ...p, firstName: undefined }))
+                  saveCart({ firstName: e.target.value })
+                }}
                 placeholder="Nom complet *"
                 className={`${inputCls} ${errors.firstName ? 'border-red-400 focus:border-red-400' : ''}`}
               />
@@ -546,9 +615,13 @@ export function OrderForm({
               <label className="mb-1.5 block text-xs font-medium text-gray-500">Téléphone *</label>
               <PhoneInput
                 value={phoneNum}
-                onChange={(v) => { setPhoneNum(v); if (errors.phone) setErrors(p => ({ ...p, phone: undefined })) }}
+                onChange={(v) => {
+                  setPhoneNum(v)
+                  if (errors.phone) setErrors(p => ({ ...p, phone: undefined }))
+                  saveCart({ phoneNum: v })
+                }}
                 dialCode={phoneDial}
-                onDialChange={setPhoneDial}
+                onDialChange={(d) => { setPhoneDial(d); saveCart({ phoneDial: d }) }}
                 placeholder="77 000 00 00"
               />
               {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
@@ -635,7 +708,11 @@ export function OrderForm({
                   <div>
                     <textarea
                       value={address}
-                      onChange={(e) => { setAddress(e.target.value); if (errors.address) setErrors(p => ({ ...p, address: undefined })) }}
+                      onChange={(e) => {
+                        setAddress(e.target.value)
+                        if (errors.address) setErrors(p => ({ ...p, address: undefined }))
+                        saveCart({ address: e.target.value })
+                      }}
                       rows={2}
                       placeholder="Adresse de livraison * (quartier, rue, repère...)"
                       className={`${inputCls} resize-none ${errors.address ? 'border-red-400 focus:border-red-400' : ''}`}
@@ -663,9 +740,50 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 6 — Paiement */}
+        {/* 6 — Code promo */}
         <section>
-          <SectionLabel n={6} label="Mode de paiement" primaryColor={primaryColor} />
+          <SectionLabel n={6} label="Code promo (optionnel)" primaryColor={primaryColor} />
+          <div className="flex gap-2">
+            <input
+              value={promoCode}
+              onChange={e => {
+                setPromoCode(e.target.value.toUpperCase())
+                if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoDiscount(0) }
+              }}
+              onKeyDown={e => e.key === 'Enter' && applyPromoCode()}
+              placeholder="Ex : SOLDES15"
+              maxLength={30}
+              className={`${inputCls} flex-1 font-mono uppercase ${
+                promoStatus === 'valid'   ? 'border-green-400' :
+                promoStatus === 'invalid' ? 'border-red-400'   : ''
+              }`}
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              onClick={applyPromoCode}
+              disabled={!promoCode.trim() || promoStatus === 'checking'}
+              className="shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            >
+              {promoStatus === 'checking' ? '...' : 'Appliquer'}
+            </button>
+          </div>
+          {promoStatus === 'valid' && (
+            <p className="mt-1 text-xs text-green-600 font-medium">
+              ✓ Code valide — {promoDiscount}% de réduction ({promoAmount.toLocaleString('fr-FR')} FCFA)
+            </p>
+          )}
+          {promoStatus === 'invalid' && (
+            <p className="mt-1 text-xs text-red-500">{promoError}</p>
+          )}
+        </section>
+
+        <div className="border-t border-gray-100" />
+
+        {/* 7 — Paiement */}
+        <section>
+          <SectionLabel n={7} label="Mode de paiement" primaryColor={primaryColor} />
           <div className="space-y-2">
             {acceptOnlinePayment && (
               <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
@@ -711,6 +829,12 @@ export function OrderForm({
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>Livraison ({selectedZone?.name})</span>
                 <span>+{deliveryPrice.toLocaleString('fr-FR')} FCFA</span>
+              </div>
+            )}
+            {promoAmount > 0 && (
+              <div className="flex items-center justify-between text-xs text-green-600 font-medium">
+                <span>Réduction ({promoDiscount}%)</span>
+                <span>-{promoAmount.toLocaleString('fr-FR')} FCFA</span>
               </div>
             )}
             <div className="flex items-center justify-between text-sm font-bold text-gray-900">

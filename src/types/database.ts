@@ -586,6 +586,42 @@ export type Database = {
         }
       Relationships: []
       }
+      promo_codes: {
+        Row: {
+          id: string
+          shop_id: string
+          code: string
+          discount_pct: number
+          max_uses: number | null
+          used_count: number
+          expires_at: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          shop_id: string
+          code: string
+          discount_pct: number
+          max_uses?: number | null
+          used_count?: number
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          shop_id?: string
+          code?: string
+          discount_pct?: number
+          max_uses?: number | null
+          used_count?: number
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+      Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -630,6 +666,10 @@ export type Database = {
           p_shop_id: string
           p_quantity: number
         }
+        Returns: undefined
+      }
+      increment_promo_used_count: {
+        Args: { p_promo_id: string }
         Returns: undefined
       }
     }

@@ -95,7 +95,7 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ---
 
-### HP-07 — Codes promo ⬜
+### HP-07 — Codes promo ✅
 **Contexte :** Outil marketing essentiel. Un marchand qui peut créer `SOLDES15` (-15% pendant 3 jours) va générer plus de commandes et fidéliser ses clients.
 **Solution :**
 - Table `promo_codes` : `code`, `shop_id`, `discount_pct`, `max_uses`, `used_count`, `expires_at`, `is_active`
@@ -108,7 +108,7 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ## 🟡 PRIORITÉ MOYENNE
 
-### MP-01 — Panier persistant entre sessions ⬜
+### MP-01 — Panier persistant entre sessions ✅
 **Contexte :** Si un client ferme l'onglet en plein milieu du formulaire, tout est perdu.
 **Solution :** Sauvegarder le contenu du formulaire (articles, coordonnées partielles) dans `localStorage` avec TTL de 24h. Restaurer au rechargement avec une bannière "Vous avez un panier en attente".
 **Fichiers :** `src/app/[shop-slug]/commander/OrderForm.tsx`

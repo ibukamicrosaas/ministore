@@ -16,6 +16,7 @@ import {
   MessageCircle,
   BarChart2,
   Gift,
+  Tag,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet },
   { href: '/dashboard/rapports',      label: 'Rapports',        icon: BarChart2 },
   { href: '/dashboard/affiliation',   label: 'Affiliation',     icon: Gift },
+  { href: '/dashboard/promo-codes',   label: 'Codes promo',     icon: Tag },
   { href: '/dashboard/settings',      label: 'Paramètres',      icon: Settings },
 ]
 
