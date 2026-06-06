@@ -54,11 +54,12 @@ export default async function ShopPage({ params }: Props) {
   const { 'shop-slug': slug } = await params
   const supabase = await createServerClient()
 
+  // Pas de filtre is_active : le layout [shop-slug]/layout.tsx est le gardien
+  // des boutiques inactives (retourne la page de suspension avant le rendu de children)
   const { data: shopData } = await supabase
     .from('shops')
     .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options')
     .eq('slug', slug)
-    .eq('is_active', true)
     .single()
 
   if (!shopData) notFound()

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown } from 'lucide-react'
@@ -23,6 +24,7 @@ const COLOR_PRESETS = [
 ]
 
 export function SettingsForm({ shop }: Props) {
+  const router                                  = useRouter()
   const [saving, setSaving]                     = useState(false)
   const [logoUrl, setLogoUrl]                   = useState<string | null>(shop.logo_url)
   const [uploadingLogo, setUploadingLogo]       = useState(false)
@@ -119,6 +121,8 @@ export function SettingsForm({ shop }: Props) {
     } else {
       toast.success('URL mise à jour ✓')
       if (result.slug) setSlug(result.slug)
+      // Rafraîchir les composants serveur (ShopLinkCard) pour afficher le nouveau lien
+      router.refresh()
     }
     setSavingSlug(false)
   }

@@ -252,7 +252,11 @@ export async function updateShopSlug(newSlug: string): Promise<{ error?: string;
 
   const { error } = await supabase
     .from('shops')
-    .update({ slug: sanitized, updated_at: new Date().toISOString() })
+    .update({
+      slug:          sanitized,
+      previous_slug: oldSlug ?? null,   // conservé pour redirection 301 dans le layout
+      updated_at:    new Date().toISOString(),
+    })
     .eq('id', profile.shop_id)
 
   if (error) {
@@ -260,6 +264,7 @@ export async function updateShopSlug(newSlug: string): Promise<{ error?: string;
     return { error: "Impossible de modifier l'URL." }
   }
 
+  revalidatePath('/dashboard')
   revalidatePath('/dashboard/settings')
   if (oldSlug) revalidatePath(`/${oldSlug}`)
   revalidatePath(`/${sanitized}`)

@@ -15,7 +15,7 @@
 
 ## 🔴 BUGS CRITIQUES (à implémenter en priorité absolue)
 
-### BUG-01 — Page "Boutique désactivée" au lieu d'une 404 ⬜
+### BUG-01 — Page "Boutique désactivée" au lieu d'une 404 ✅
 **Contexte :** Quand une boutique passe à `is_active = false` (essai expiré ou abonnement non renouvelé), le layout `[shop-slug]/layout.tsx` redirige vers `notFound()` → le visiteur voit une page 404 générique.
 **Comportement attendu :** Une page propre indiquant que la boutique est temporairement désactivée, avec :
 - Le nom et logo de la boutique
@@ -26,7 +26,7 @@
 
 ---
 
-### BUG-02 — Changement d'URL (slug) non pris en compte en temps réel ⬜
+### BUG-02 — Changement d'URL (slug) non pris en compte en temps réel ✅
 **Contexte :** Quand un marchand modifie l'URL de son site dans les Paramètres, la mise à jour est sauvegardée en DB mais la navigation ne reflète pas le nouveau slug immédiatement. Les anciennes URLs restent actives et les caches ISR ne sont pas invalidés pour le nouveau slug.
 **Comportement attendu :**
 - Après la sauvegarde, l'ancien slug redirige (301) vers le nouveau

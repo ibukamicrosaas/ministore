@@ -50,6 +50,7 @@ export type Database = {
           subscription_ends_at: string | null
           hide_branding: boolean
           custom_domain: string | null
+          previous_slug: string | null
           created_at: string
           updated_at: string
         }
@@ -126,6 +127,7 @@ export type Database = {
           subscription_ends_at?: string | null
           hide_branding?: boolean
           custom_domain?: string | null
+          previous_slug?: string | null
           created_at?: string
           updated_at?: string
         }

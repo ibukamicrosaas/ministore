@@ -16,11 +16,11 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const supabase = await createServerClient()
 
+  // Pas de filtre is_active : le layout est le gardien des boutiques inactives
   const { data: shopData } = await supabase
     .from('shops')
     .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
     .eq('slug', slug)
-    .eq('is_active', true)
     .single()
 
   if (!shopData) notFound()

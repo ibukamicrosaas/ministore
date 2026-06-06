@@ -61,7 +61,8 @@ export default async function ProductDetailPage({ params }: Props) {
   const supabase = await createServerClient()
 
   const [shopRes, productRes] = await Promise.all([
-    supabase.from('shops').select('id, name, primary_color').eq('slug', slug).eq('is_active', true).single(),
+    // Pas de filtre is_active sur shop : le layout est le gardien des boutiques inactives
+    supabase.from('shops').select('id, name, primary_color').eq('slug', slug).single(),
     supabase.from('products').select('*').eq('id', id).eq('is_active', true).single(),
   ])
 
