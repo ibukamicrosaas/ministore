@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         merchantReference,
         successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
         errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
+        webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
         orderDetails: [{
           name:     `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
           price:    amount,

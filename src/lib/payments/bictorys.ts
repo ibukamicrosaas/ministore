@@ -11,6 +11,7 @@ export interface BictorysChargePayload {
   paymentReference: string
   successRedirectUrl: string
   errorRedirectUrl: string
+  webhookUrl?: string
   merchantReference?: string
   orderDetails?: { name: string; price: number; quantity: number; taxRate: number }[]
   customerObject?: {

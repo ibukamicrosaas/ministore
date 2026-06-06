@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
         merchantReference: orderId,
         successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
         errorRedirectUrl: `${APP_URL}/${shopSlug}/commander/pay?cancelled=1&order_id=${orderId}`,
+        webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
         orderDetails: [{ name: 'Commande TekkiShop', price: amountToCharge, quantity: 1, taxRate: 0 }],
         customerObject: {
           name: customerName || undefined,
