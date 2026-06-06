@@ -4,6 +4,7 @@ import {
   sendWhatsApp,
   buildOrderConfirmationMessage,
   buildNewOrderAlertMessage,
+  buildLowStockAlertMessage,
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 
@@ -270,6 +271,31 @@ export async function POST(req: NextRequest) {
 
   if (itemsError) {
     console.error('[api/orders items]', itemsError.message)
+  }
+
+  // ── Alertes stock faible (fire-and-forget, seuil = 3 unités) ──────────────
+  if (shop.phone_whatsapp && decrementedItems.length > 0) {
+    void (async () => {
+      const decrementedIds = decrementedItems.map(d => d.product_id)
+      const { data: stockCheck } = await supabase
+        .from('products')
+        .select('id, name, stock_count')
+        .in('id', decrementedIds)
+        .eq('shop_id', shopId)
+        .lte('stock_count', 3)  // seuil d'alerte
+        .gt('stock_count', 0)   // ne pas alerter sur 0 (rupture déjà gérée)
+
+      for (const p of stockCheck ?? []) {
+        const msg = buildLowStockAlertMessage({
+          shopName:    shop.name,
+          productName: p.name,
+          stockCount:  p.stock_count ?? 0,
+        })
+        sendWhatsApp(shop.phone_whatsapp!, msg).catch(err =>
+          console.error('[orders] low stock SMS failed:', err)
+        )
+      }
+    })()
   }
 
   // Si paiement en ligne → renvoyer vers la page de paiement

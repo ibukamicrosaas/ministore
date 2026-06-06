@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
-import { ShoppingBag, MapPin, Home, CreditCard, Clock } from 'lucide-react'
+import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
@@ -54,6 +54,10 @@ export default async function OrdersPage({
   const profile = profileData as Pick<Profile, 'shop_id'> | null
   if (!profile?.shop_id) redirect('/onboarding')
 
+  const { data: shopData } = await supabase
+    .from('shops').select('plan').eq('id', profile.shop_id).single()
+  const isPro = (shopData as { plan: string } | null)?.plan === 'pro'
+
   let query = supabase
     .from('orders')
     .select(`
@@ -89,9 +93,21 @@ export default async function OrdersPage({
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Commandes</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{counts['all'] ?? 0} commande{(counts['all'] ?? 0) > 1 ? 's' : ''} au total</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Commandes</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{counts['all'] ?? 0} commande{(counts['all'] ?? 0) > 1 ? 's' : ''} au total</p>
+        </div>
+        {isPro && (
+          <a
+            href={`/api/export/orders?from=${new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)}&to=${new Date().toISOString().slice(0, 10)}`}
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shrink-0"
+            title="Exporter les commandes du mois en CSV"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Exporter CSV
+          </a>
+        )}
       </div>
 
       {/* Filtres statut */}

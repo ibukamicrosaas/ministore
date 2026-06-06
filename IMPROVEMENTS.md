@@ -78,14 +78,14 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ---
 
-### HP-05 — Export CSV des commandes (Plan Pro) ⬜
+### HP-05 — Export CSV des commandes (Plan Pro) ✅
 **Contexte :** Feature affichée dans la page upgrade mais non implémentée. Les marchands Pro l'attendent.
 **Solution :** Route `GET /api/export/orders?from=YYYY-MM-DD&to=YYYY-MM-DD` qui génère un CSV (UTF-8 avec BOM pour Excel) avec les colonnes : Date, Client, Téléphone, Produits, Total, Statut, Paiement, Livraison.
 **Fichiers :** `src/app/api/export/orders/route.ts` (nouveau) · `src/app/dashboard/orders/page.tsx` (bouton "Exporter CSV")
 
 ---
 
-### HP-06 — Alertes stock faible ⬜
+### HP-06 — Alertes stock faible ✅
 **Contexte :** Le marchand découvre une rupture de stock quand un client se plaint. Aucune alerte proactive.
 **Solution :**
 - Colonne `stock_alert_threshold INT DEFAULT 3` sur `products`

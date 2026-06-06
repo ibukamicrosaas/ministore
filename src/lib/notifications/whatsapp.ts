@@ -45,6 +45,14 @@ export const sendWhatsApp = sendSMS
 // Objectif : <= 160 chars par message (1 segment SMS, pas d'emoji).
 // Les URL courtes sont conservées car nécessaires pour le suivi.
 
+export function buildLowStockAlertMessage(params: {
+  shopName: string
+  productName: string
+  stockCount: number
+}): string {
+  return `TekkiShop - ${params.shopName}: stock faible pour "${params.productName}" — plus que ${params.stockCount} unite${params.stockCount > 1 ? 's' : ''} disponible${params.stockCount > 1 ? 's' : ''}. Pensez a reapprovisionner.`
+}
+
 export function buildOrderStatusMessage(params: {
   shopName: string
   clientName: string
