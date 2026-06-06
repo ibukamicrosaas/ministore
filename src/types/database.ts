@@ -624,6 +624,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_product_stock: {
+        Args: {
+          p_product_id: string
+          p_shop_id: string
+          p_quantity: number
+        }
+        Returns: undefined
+      }
     }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }

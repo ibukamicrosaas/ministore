@@ -45,12 +45,15 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
+        // Wildcard pour tous les projets Supabase (prod, staging, local tunnel)
         protocol: 'https',
-        hostname: 'fvzykidqzgpvsilexkgu.supabase.co',
+        hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
     ],
     formats: ['image/avif', 'image/webp'],
+    // Durée de cache CDN Next.js pour les images optimisées (7 jours)
+    minimumCacheTTL: 60 * 60 * 24 * 7,
   },
   experimental: {
     serverActions: {

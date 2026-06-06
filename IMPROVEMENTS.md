@@ -38,7 +38,7 @@
 
 ## 🟠 HAUTE PRIORITÉ
 
-### HP-01 — Stock atomique via trigger PostgreSQL ⬜
+### HP-01 — Stock atomique via trigger PostgreSQL ✅
 **Contexte :** Décrémentation du stock en deux étapes (INSERT commande → UPDATE stock). Race condition possible si deux clients commandent simultanément le dernier article.
 **Solution :** Trigger `BEFORE INSERT` ou RPC `decrement_if_available(product_id, qty)` qui vérifie et décrémente dans la même transaction.
 **Migration :** `supabase/migrations/020_atomic_stock.sql`
@@ -46,7 +46,7 @@
 
 ---
 
-### HP-02 — Optimisation images avec next/image ⬜
+### HP-02 — Optimisation images avec next/image ✅
 **Contexte :** Toutes les photos produits et logos utilisent des balises `<img>` brutes. Sur un réseau 3G (marché principal), une image de 2 Mo ruine le LCP et le taux de conversion.
 **Solution :** Remplacer `<img>` par `<Image>` de `next/image` dans :
 - `src/components/pwa/ProductGrid.tsx` (toutes les cards produit)

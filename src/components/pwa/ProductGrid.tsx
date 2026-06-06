@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { LayoutList, LayoutGrid, Search, Package, Star, Tag, X } from 'lucide-react'
 import type { Product, ProductPhoto, ProductVariant } from '@/types'
 
@@ -42,11 +43,15 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
       <div className="rounded-2xl overflow-hidden shadow-sm bg-white">
         <div className="relative">
           {photo ? (
-            <img
-              src={photo}
-              alt={product.name}
-              className={`w-full object-cover ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}
-            />
+            <div className={`relative w-full ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
+              <Image
+                src={photo}
+                alt={product.name}
+                fill
+                sizes="176px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className={`flex items-center justify-center bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
               <Package className="h-8 w-8 text-gray-300" />
@@ -80,7 +85,15 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
     >
       <div className="relative shrink-0">
         {photo ? (
-          <img src={photo} alt={product.name} className="h-18 w-18 rounded-xl object-cover" style={{ height: 72, width: 72 }} />
+          <div className="relative rounded-xl overflow-hidden" style={{ height: 72, width: 72 }}>
+            <Image
+              src={photo}
+              alt={product.name}
+              fill
+              sizes="72px"
+              className="object-cover"
+            />
+          </div>
         ) : (
           <div className="flex items-center justify-center rounded-xl bg-gray-100" style={{ height: 72, width: 72 }}>
             <Package className="h-6 w-6 text-gray-300" />
@@ -133,11 +146,17 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className={`group ${soldOut ? 'opacity-60' : ''}`}>
       <div className="rounded-2xl bg-white overflow-hidden shadow-sm active:scale-[0.98] transition-transform">
-        <div className="relative">
+        <div className={`relative ${aspectClass}`}>
           {photo ? (
-            <img src={photo} alt={product.name} className={`${aspectClass} w-full object-cover`} />
+            <Image
+              src={photo}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 45vw, 200px"
+              className="object-cover"
+            />
           ) : (
-            <div className={`${aspectClass} flex items-center justify-center bg-gray-100`}>
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <Package className="h-10 w-10 text-gray-300" />
             </div>
           )}

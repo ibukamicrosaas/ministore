@@ -170,7 +170,41 @@ export async function POST(req: NextRequest) {
     deposit_amount = total_price
   }
 
-  // Upsert client
+  // ── Phase 1 : Réservation atomique du stock AVANT création de la commande ─
+  // Chaque décrément est atomique en DB (UPDATE … WHERE stock_count >= qty).
+  // Si l'un échoue, on restore les précédents → zéro survente possible.
+  type DecrementedItem = { product_id: string; quantity: number }
+  const decrementedItems: DecrementedItem[] = []
+
+  for (const it of serverItems) {
+    if (!it.product_id) continue
+    const p = productMap.get(it.product_id)
+    if (p?.stock_count === null) continue  // stock illimité, rien à décrémenter
+
+    const { data: ok } = await supabase.rpc('decrement_product_stock', {
+      p_product_id: it.product_id,
+      p_shop_id:    shopId,
+      p_quantity:   it.quantity,
+    })
+
+    if (!ok) {
+      // Décrément échoué (course entre deux requêtes simultanées) : on rollback
+      for (const prev of decrementedItems) {
+        await supabase.rpc('increment_product_stock', {
+          p_product_id: prev.product_id,
+          p_shop_id:    shopId,
+          p_quantity:   prev.quantity,
+        })
+      }
+      return NextResponse.json(
+        { error: `Stock insuffisant pour ${p?.name ?? it.product_id}. Veuillez actualiser et réessayer.` },
+        { status: 409 }
+      )
+    }
+    decrementedItems.push({ product_id: it.product_id, quantity: it.quantity })
+  }
+
+  // ── Phase 2 : Upsert client ──────────────────────────────────────────────
   const { data: clientId } = await supabase.rpc('upsert_client_from_order', {
     p_shop_id:    shopId,
     p_first_name: client_first_name,
@@ -180,7 +214,7 @@ export async function POST(req: NextRequest) {
     p_email:      '',
   })
 
-  // Créer la commande
+  // ── Phase 3 : Créer la commande (stock déjà réservé) ────────────────────
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -203,6 +237,14 @@ export async function POST(req: NextRequest) {
 
   if (orderError || !order) {
     console.error('[api/orders]', orderError?.message)
+    // Création échouée → restaurer le stock réservé
+    for (const item of decrementedItems) {
+      await supabase.rpc('increment_product_stock', {
+        p_product_id: item.product_id,
+        p_shop_id:    shopId,
+        p_quantity:   item.quantity,
+      })
+    }
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
 
@@ -228,19 +270,6 @@ export async function POST(req: NextRequest) {
 
   if (itemsError) {
     console.error('[api/orders items]', itemsError.message)
-  }
-
-  // Décrémenter le stock de façon atomique pour chaque article
-  for (const it of serverItems) {
-    if (!it.product_id) continue
-    const { data: decremented } = await supabase.rpc('decrement_product_stock', {
-      p_product_id: it.product_id,
-      p_shop_id: shopId,
-      p_quantity: it.quantity,
-    })
-    if (!decremented) {
-      console.warn(`[api/orders] Stock insuffisant lors du décrément pour produit ${it.product_id} (commande ${order.id})`)
-    }
   }
 
   // Si paiement en ligne → renvoyer vers la page de paiement
