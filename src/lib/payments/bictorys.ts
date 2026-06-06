@@ -44,6 +44,7 @@ export async function createBictorysCharge(
 
   let res: Response
   try {
+    console.log('[createBictorysCharge] 📤 Envoi à Bictorys:', { url, webhookUrl: payload.webhookUrl, merchantReference: payload.merchantReference })
     res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -68,6 +69,8 @@ export async function createBictorysCharge(
 
   const json = await res.json() as Record<string, unknown>
 
+  console.log('[createBictorysCharge] 📥 Réponse Bictorys:', JSON.stringify(json, null, 2))
+
   // L'API Bictorys retourne 'link' (CheckoutLinkObject), 'url', ou 'confirmationLink'
   const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink) as string | undefined
   const transactionId = (json.chargeId ?? json.id ?? json.transactionId) as string | undefined
@@ -76,6 +79,7 @@ export async function createBictorysCharge(
     throw new Error(`Bictorys: pas d'URL dans la réponse: ${JSON.stringify(json)}`)
   }
 
+  console.log('[createBictorysCharge] ✅ Succès:', { checkoutUrl: checkoutUrl?.slice(0, 50) + '...', transactionId })
   return { checkoutUrl, transactionId: transactionId ?? '' }
 }
 
