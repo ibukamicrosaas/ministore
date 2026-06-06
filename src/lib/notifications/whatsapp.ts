@@ -45,6 +45,39 @@ export const sendWhatsApp = sendSMS
 // Objectif : <= 160 chars par message (1 segment SMS, pas d'emoji).
 // Les URL courtes sont conservées car nécessaires pour le suivi.
 
+export function buildOrderStatusMessage(params: {
+  shopName: string
+  clientName: string
+  newStatus: 'confirmed' | 'preparing' | 'ready' | 'delivered'
+  deliveryType: 'home_delivery' | 'store_pickup'
+  deliveryDate?: string
+  orderRef: string
+}): string | null {
+  const ref = `Ref #${params.orderRef.slice(0, 8).toUpperCase()}`
+  switch (params.newStatus) {
+    case 'confirmed':
+      return `${params.shopName}: votre commande ${ref} est confirmee! Nous preparons votre ${params.deliveryType === 'home_delivery' ? 'livraison' : 'colis'}.`
+    case 'preparing':
+      return `${params.shopName}: votre commande ${ref} est en preparation.`
+    case 'ready':
+      return params.deliveryType === 'home_delivery'
+        ? `${params.shopName}: votre commande ${ref} est prete et sera livree${params.deliveryDate ? ` le ${params.deliveryDate}` : ' bientot'}.`
+        : `${params.shopName}: votre commande ${ref} est prete a retirer en boutique!`
+    default:
+      return null
+  }
+}
+
+export function buildOrderCancelledMessage(params: {
+  shopName: string
+  orderRef: string
+  reason?: string
+}): string {
+  const ref    = `Ref #${params.orderRef.slice(0, 8).toUpperCase()}`
+  const reason = params.reason ? ` Motif: ${params.reason}` : ''
+  return `${params.shopName}: votre commande ${ref} a ete annulee.${reason} Contactez-nous pour plus d'infos.`
+}
+
 export function buildOrderConfirmationMessage(params: {
   shopName: string
   clientName: string

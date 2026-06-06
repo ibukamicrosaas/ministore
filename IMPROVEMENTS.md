@@ -57,7 +57,7 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ---
 
-### HP-03 — Suivi commande client par SMS ⬜
+### HP-03 — Suivi commande client par SMS ✅
 **Contexte :** Le client reçoit un SMS à la création mais rien lors des changements de statut. Il contacte le marchand sur WhatsApp pour savoir où en est sa commande.
 **Solution :** Envoyer un SMS au client à chaque transition de statut :
 - `pending → confirmed` : "Votre commande chez {shop} est confirmée !"
@@ -68,7 +68,7 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ---
 
-### HP-04 — Annulation commande par le marchand ⬜
+### HP-04 — Annulation commande par le marchand ✅
 **Contexte :** Une commande confirmée ne peut pas être annulée dans l'interface. Le marchand doit contacter le support ou modifier directement en DB.
 **Solution :** Bouton "Annuler la commande" accessible jusqu'au statut `preparing`, avec :
 - Saisie obligatoire d'un motif

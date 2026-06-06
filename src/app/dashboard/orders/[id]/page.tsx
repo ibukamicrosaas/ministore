@@ -8,7 +8,8 @@ import {
   ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock,
 } from 'lucide-react'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
-import { advanceOrderStatus, cancelOrder } from '@/lib/actions/orders'
+import { advanceOrderStatus } from '@/lib/actions/orders'
+import { CancelOrderButton } from './CancelOrderButton'
 import type { Profile, OrderItem } from '@/types'
 
 export const metadata = { title: 'Commande — TekkiShop' }
@@ -158,16 +159,7 @@ export default async function OrderDetailPage({
               </button>
             </form>
           )}
-          {canCancel && (
-            <form action={async () => { 'use server'; await cancelOrder(id) }}>
-              <button
-                type="submit"
-                className="rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
-              >
-                Annuler
-              </button>
-            </form>
-          )}
+          {canCancel && <CancelOrderButton orderId={id} />}
         </div>
       )}
 
