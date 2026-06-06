@@ -8,11 +8,12 @@ CREATE TABLE IF NOT EXISTS promo_codes (
   used_count   INTEGER     NOT NULL DEFAULT 0,
   expires_at   TIMESTAMPTZ NULL,         -- NULL = pas d'expiration
   is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- Un code est unique par boutique (insensible à la casse)
-  UNIQUE (shop_id, LOWER(code))
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Unicité insensible à la casse par boutique (LOWER() interdit dans UNIQUE inline)
+CREATE UNIQUE INDEX IF NOT EXISTS promo_codes_shop_code_unique_idx
+  ON promo_codes (shop_id, LOWER(code));
 
 -- Index pour les lookups rapides à la validation commande
 CREATE INDEX IF NOT EXISTS promo_codes_shop_code_idx
