@@ -122,19 +122,30 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     return NextResponse.json({ ok: true })
   }
 
-  // Parser la référence : "sub-{shopId}-{planKey}"
-  const shopId  = merchantReference.slice(4, 40)
-  const planKey = merchantReference.slice(41)
+  // Parser la référence : "sub-{8-char-prefix}-{planKey}"
+  const shopIdPrefix = merchantReference.slice(4, 12)
+  const planKey = merchantReference.slice(13)
 
-  // Validation stricte
-  if (!UUID_REGEX.test(shopId)) {
-    console.error('[handleSubscriptionWebhook] shopId invalide:', shopId)
-    return NextResponse.json({ error: 'merchantReference invalide' }, { status: 400 })
-  }
+  // Valider le planKey
   if (!VALID_PLAN_KEYS.has(planKey)) {
     console.error('[handleSubscriptionWebhook] planKey non autorisé:', planKey)
     return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
   }
+
+  // Retrouver le shopId complet par le préfixe
+  const supabase = createAdminClient()
+  const { data: shops } = await supabase
+    .from('shops')
+    .select('id')
+    .ilike('id', shopIdPrefix + '%')
+
+  const shop = shops?.[0]
+  if (!shop) {
+    console.error('[handleSubscriptionWebhook] Aucun shop trouvé avec le préfixe:', shopIdPrefix)
+    return NextResponse.json({ error: 'Shop non trouvé' }, { status: 404 })
+  }
+
+  const shopId = shop.id
 
   // ✅ Stratégie clé : vérifier via l'API Bictorys directement
   // Cela élimine la dépendance aux webhooks secrets mal configurés

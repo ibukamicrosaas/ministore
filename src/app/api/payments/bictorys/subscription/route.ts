@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
 
   const shopId = profile.shop_id as string
   const amount = PLAN_PRICES[planKey]
-  // merchantReference format: "sub-{36-char-uuid}-{planKey}"
-  const merchantReference = `sub-${shopId}-${planKey}`
+  // merchantReference format: "sub-{8-char-uuid-prefix}-{planKey}" (court pour compatibilité Bictorys)
+  const merchantReference = `sub-${shopId.slice(0, 8)}-${planKey}`
 
   try {
     const { checkoutUrl, transactionId } = await createBictorysCharge(
