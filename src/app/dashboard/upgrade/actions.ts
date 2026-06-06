@@ -12,16 +12,23 @@ export async function verifySubscriptionPayment(
   txn: string,
   planKey: string,
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('[verifySubscriptionPayment] Vérification du paiement — txn:', txn?.slice(0, 8) + '...', 'plan:', planKey)
+
   if (!txn || typeof txn !== 'string' || txn.length > 200) {
+    console.warn('[verifySubscriptionPayment] Paramètre txn invalide')
     return { success: false, error: 'Paramètre invalide' }
   }
   if (!VALID_PLAN_KEYS.has(planKey)) {
+    console.warn('[verifySubscriptionPayment] Plan invalide:', planKey)
     return { success: false, error: 'Plan invalide' }
   }
 
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Non authentifié' }
+  if (!user) {
+    console.warn('[verifySubscriptionPayment] Utilisateur non authentifié')
+    return { success: false, error: 'Non authentifié' }
+  }
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -31,13 +38,18 @@ export async function verifySubscriptionPayment(
     .single()
 
   if (!profile?.shop_id || profile.role !== 'owner') {
+    console.warn('[verifySubscriptionPayment] Profil invalide ou accès refusé')
     return { success: false, error: 'Accès refusé' }
   }
 
   const apiKey = process.env.BICTORYS_SECRET_KEY
-  if (!apiKey) return { success: false, error: 'Bictorys non configuré' }
+  if (!apiKey) {
+    console.error('[verifySubscriptionPayment] Clé API Bictorys manquante')
+    return { success: false, error: 'Bictorys non configuré' }
+  }
 
   // 1. Vérifier d'abord si le webhook a déjà activé la boutique
+  console.log('[verifySubscriptionPayment] Vérification de l\'état de la boutique...')
   const { data: currentShop } = await admin
     .from('shops')
     .select('is_active, plan')
@@ -45,35 +57,55 @@ export async function verifySubscriptionPayment(
     .single()
 
   if (currentShop?.is_active && currentShop.plan === planKey) {
+    console.log('[verifySubscriptionPayment] ✅ Boutique déjà activée — webhook a fonctionné')
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/upgrade')
     revalidatePath('/dashboard/settings')
     return { success: true }
   }
 
+  console.log('[verifySubscriptionPayment] Boutique non activée — vérification via API Bictorys...')
+
   // 2. Vérification directe via l'API Bictorys
   try {
     const charge = await getBictorysCharge(apiKey, txn)
+    console.log('[verifySubscriptionPayment] Réponse API Bictorys:', {
+      id: charge.id,
+      status: charge.status,
+      merchantRef: charge.merchantReference?.slice(0, 20) + '...',
+    })
+
     const expectedRef = `sub-${profile.shop_id}-${planKey}`
 
     if (charge.status !== 'succeed') {
+      console.warn('[verifySubscriptionPayment] Paiement non encore confirmé — status:', charge.status)
       return { success: false, error: 'Paiement non encore confirmé' }
     }
+
     if (charge.merchantReference && charge.merchantReference !== expectedRef) {
-      console.warn('[verifySubscriptionPayment] merchantReference mismatch:', charge.merchantReference)
+      console.error('[verifySubscriptionPayment] merchantReference mismatch:', {
+        expected: expectedRef,
+        actual: charge.merchantReference,
+      })
       return { success: false, error: 'Référence invalide' }
     }
 
-    // Activer via la fonction centralisée (pose subscription_ends_at)
+    // ✅ Activer le plan
+    console.log('[verifySubscriptionPayment] Activation du plan:', { shopId: profile.shop_id, planKey })
     const { error: activationError } = await activatePlan(profile.shop_id, planKey)
     if (activationError) {
+      console.error('[verifySubscriptionPayment] Erreur lors de l\'activation:', activationError)
       return { success: false, error: activationError }
     }
 
+    console.log('[verifySubscriptionPayment] ✅ Plan activé avec succès')
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/upgrade')
+    revalidatePath('/dashboard/settings')
     return { success: true }
   } catch (e) {
-    console.error('[verifySubscriptionPayment] Bictorys API error:', e)
-    return { success: false, error: 'Vérification Bictorys échouée — activation via webhook en attente' }
+    console.error('[verifySubscriptionPayment] Erreur API Bictorys:', e instanceof Error ? e.message : e)
+    return { success: false, error: 'Vérification Bictorys échouée — le webhook devrait activer très bientôt' }
   }
 }
 

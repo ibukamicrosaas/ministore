@@ -19,132 +19,173 @@ export async function POST(req: NextRequest) {
   // Limiter la taille du body avant de lire quoi que ce soit
   const contentLength = parseInt(req.headers.get('content-length') ?? '0', 10)
   if (contentLength > MAX_BODY_BYTES) {
+    console.warn('[webhook] Payload trop large:', contentLength)
     return NextResponse.json({ error: 'Payload trop large' }, { status: 413 })
   }
 
   const rawBody        = await req.text()
   if (rawBody.length > MAX_BODY_BYTES) {
+    console.warn('[webhook] rawBody trop long:', rawBody.length)
     return NextResponse.json({ error: 'Payload trop large' }, { status: 413 })
   }
-
-  const headerSecret   = req.headers.get('x-secret-key') ?? ''
-  const platformSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
-
-  // Fail closed : si le secret plateforme n'est pas configuré, refuser
-  if (!platformSecret) {
-    console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré — webhook rejeté')
-    return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
-  }
-
-  // Stratégie en deux temps :
-  // 1. Tenter la vérification avec le secret plateforme (cas le plus fréquent)
-  // 2. Si échec ET la référence est un UUID de commande → chercher le secret du shop Pro
-  // Cela évite les requêtes DB avant toute vérification pour les appels normaux.
-  const platformVerified = verifyBictorysSignature(headerSecret, platformSecret)
 
   let payload: BictorysWebhookPayload
   try {
     payload = JSON.parse(rawBody) as BictorysWebhookPayload
-  } catch {
+  } catch (err) {
+    console.error('[webhook] Payload JSON invalide:', err)
     return NextResponse.json({ error: 'Payload JSON invalide' }, { status: 400 })
   }
 
   const merchantReference = payload.merchantReference
   if (!merchantReference) {
+    console.error('[webhook] merchantReference manquant dans payload:', payload)
     return NextResponse.json({ error: 'merchantReference manquant' }, { status: 400 })
   }
 
+  console.log('[webhook] Webhook reçu — merchRef:', merchantReference, 'status:', payload.status, 'id:', payload.id)
+
+  // ── PAIEMENT D'ABONNEMENT ─────────────────────────────────────────────
+  // Format: "sub-{36-char-uuid}-{planKey}"
+  // Stratégie : TOUJOURS vérifier l'API Bictorys directement pour les abonnements
+  // (élimine la dépendance aux clés secrètes, qui peuvent être mal configurées)
+  if (merchantReference.startsWith('sub-')) {
+    return handleSubscriptionWebhook(merchantReference, payload)
+  }
+
+  // ── PAIEMENT DE COMMANDE ──────────────────────────────────────────────
+  // Pour les commandes : vérifier la signature (plus critique car plus de surface d'attaque)
+  const headerSecret   = req.headers.get('x-secret-key') ?? ''
+  const platformSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
+
+  if (!platformSecret) {
+    console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré — webhook de commande rejeté')
+    return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
+  }
+
+  const platformVerified = verifyBictorysSignature(headerSecret, platformSecret)
   const supabase = createAdminClient()
   let effectiveSecret = platformSecret
 
   if (!platformVerified) {
-    if (merchantReference.startsWith('sub-')) {
-      // Webhook d'abonnement avec signature invalide.
-      // Fallback : vérifier directement via l'API Bictorys (plus fiable que le secret).
-      const platformApiKey = process.env.BICTORYS_SECRET_KEY
-      if (!platformApiKey || !payload.id) {
-        console.error('[webhook] Signature invalide et clé API / charge ID absents')
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
-      try {
-        const charge = await getBictorysCharge(platformApiKey, payload.id)
-        // Vérification croisée : statut + référence
-        if (charge.status !== 'succeed') {
-          // Paiement non finalisé — ignorer silencieusement
-          return NextResponse.json({ ok: true })
-        }
-        if (charge.merchantReference && charge.merchantReference !== merchantReference) {
-          console.error('[webhook] merchantReference mismatch (API fallback):', charge.merchantReference, '≠', merchantReference)
-          return NextResponse.json({ error: 'Référence invalide' }, { status: 401 })
-        }
-        console.log('[webhook] Abonnement vérifié via API Bictorys (signature non correspondante)')
-        // Vérification OK via API — continuer vers l'activation
-      } catch (err) {
-        console.error('[webhook] Fallback API échoué:', err)
-        return NextResponse.json({ error: 'Invalid signature, fallback API failed' }, { status: 401 })
-      }
-    } else {
-      // Tentative avec le secret du shop Pro (commandes uniquement)
-      if (UUID_REGEX.test(merchantReference)) {
-        const { data: order } = await supabase
-          .from('orders')
-          .select('shop_id')
-          .eq('id', merchantReference)
+    // Tentative avec le secret du shop Pro (commandes uniquement)
+    if (UUID_REGEX.test(merchantReference)) {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('shop_id')
+        .eq('id', merchantReference)
+        .single()
+
+      if (order?.shop_id) {
+        const { data: shopSecrets } = await supabase
+          .from('shops')
+          .select('plan, bictorys_webhook_secret')
+          .eq('id', order.shop_id)
           .single()
 
-        if (order?.shop_id) {
-          const { data: shopSecrets } = await supabase
-            .from('shops')
-            .select('plan, bictorys_webhook_secret')
-            .eq('id', order.shop_id)
-            .single()
-
-          if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
-            effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
-          }
+        if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
+          effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
+          console.log('[webhook] Tentative vérif avec secret shop Pro')
         }
       }
+    }
 
-      if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
+    if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
+      console.error('[webhook] Signature invalide — webhook de commande rejeté', merchantReference)
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
   }
 
-  // ── Paiement d'abonnement ─────────────────────────────────────────────
-  // Format: "sub-{36-char-uuid}-{planKey}"
-  if (merchantReference.startsWith('sub-')) {
-    if (payload.status !== 'succeed') {
-      return NextResponse.json({ ok: true })
-    }
-    // shopId = chars 4..39 (UUID = 36 chars), planKey = chars 41+
-    const shopId  = merchantReference.slice(4, 40)
-    const planKey = merchantReference.slice(41)
+  return handleOrderWebhook(merchantReference, payload, supabase)
 
-    // Validation stricte : UUID format + plan connu
-    if (!UUID_REGEX.test(shopId)) {
-      console.error('[webhook] shopId invalide:', shopId)
-      return NextResponse.json({ error: 'merchantReference invalide' }, { status: 400 })
-    }
-    if (!VALID_PLAN_KEYS.has(planKey)) {
-      console.error('[webhook] planKey non autorisé:', planKey)
-      return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
-    }
+}
 
-    const { error: activationError } = await activatePlan(shopId, planKey)
-    if (activationError) {
-      console.error('[webhook] activatePlan error:', activationError)
-      return NextResponse.json({ error: activationError }, { status: 500 })
-    }
+/**
+ * Traite les webhooks d'abonnement Bictorys.
+ * Stratégie : vérifier TOUJOURS l'API Bictorys directement
+ * (élimine la dépendance aux clés secrètes mal configurées)
+ */
+async function handleSubscriptionWebhook(merchantReference: string, payload: BictorysWebhookPayload) {
+  console.log('[handleSubscriptionWebhook] Début — merchRef:', merchantReference)
 
-    console.log(`[webhook] Plan ${planKey} activé pour shop ${shopId} — subscription_ends_at +31j`)
+  // Ignorer les paiements non réussis
+  if (payload.status !== 'succeed') {
+    console.log('[handleSubscriptionWebhook] Paiement non réussi — status:', payload.status)
     return NextResponse.json({ ok: true })
   }
 
-  // ── Paiement de commande ──────────────────────────────────────────────
-  const orderId = merchantReference
+  // Parser la référence : "sub-{shopId}-{planKey}"
+  const shopId  = merchantReference.slice(4, 40)
+  const planKey = merchantReference.slice(41)
 
-  // Idempotence
+  // Validation stricte
+  if (!UUID_REGEX.test(shopId)) {
+    console.error('[handleSubscriptionWebhook] shopId invalide:', shopId)
+    return NextResponse.json({ error: 'merchantReference invalide' }, { status: 400 })
+  }
+  if (!VALID_PLAN_KEYS.has(planKey)) {
+    console.error('[handleSubscriptionWebhook] planKey non autorisé:', planKey)
+    return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
+  }
+
+  // ✅ Stratégie clé : vérifier via l'API Bictorys directement
+  // Cela élimine la dépendance aux webhooks secrets mal configurés
+  const apiKey = process.env.BICTORYS_SECRET_KEY
+  if (!apiKey || !payload.id) {
+    console.error('[handleSubscriptionWebhook] Clé API ou charge ID manquant')
+    return NextResponse.json({ error: 'Configuration manquante' }, { status: 500 })
+  }
+
+  try {
+    const charge = await getBictorysCharge(apiKey, payload.id)
+    console.log('[handleSubscriptionWebhook] Charge Bictorys:', { id: payload.id, status: charge.status, merchantRef: charge.merchantReference })
+
+    // Vérifier le statut
+    if (charge.status !== 'succeed') {
+      console.log('[handleSubscriptionWebhook] Charge non finalisée — ignorée')
+      return NextResponse.json({ ok: true })
+    }
+
+    // Vérifier la référence croisée
+    const expectedRef = `sub-${shopId}-${planKey}`
+    if (charge.merchantReference && charge.merchantReference !== expectedRef) {
+      console.error('[handleSubscriptionWebhook] Mismatch merchantReference:', {
+        expected: expectedRef,
+        actual: charge.merchantReference,
+      })
+      return NextResponse.json({ error: 'Référence invalide' }, { status: 400 })
+    }
+
+    // ✅ Activer le plan
+    console.log('[handleSubscriptionWebhook] Activation du plan:', { shopId, planKey })
+    const { error: activationError } = await activatePlan(shopId, planKey)
+    if (activationError) {
+      console.error('[handleSubscriptionWebhook] activatePlan échoué:', activationError)
+      // Note: enregistrement des erreurs dans subscription_transactions
+      // sera implémenté après la migration Supabase
+      return NextResponse.json({ error: activationError }, { status: 500 })
+    }
+
+    console.log('[handleSubscriptionWebhook] ✅ Plan activé avec succès:', { shopId, planKey })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[handleSubscriptionWebhook] Erreur lors de la vérification API:', err)
+    return NextResponse.json({ error: 'Vérification API échouée' }, { status: 500 })
+  }
+}
+
+/**
+ * Traite les webhooks de commande Bictorys.
+ */
+async function handleOrderWebhook(
+  merchantReference: string,
+  payload: BictorysWebhookPayload,
+  supabase: ReturnType<typeof createAdminClient>,
+) {
+  const orderId = merchantReference
+  console.log('[handleOrderWebhook] Début — orderId:', orderId, 'status:', payload.status)
+
+  // Idempotence : vérifier si le paiement a déjà été traité
   const { data: existingPayment } = await supabase
     .from('payments')
     .select('status')
@@ -152,10 +193,13 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (existingPayment?.status === 'completed') {
+    console.log('[handleOrderWebhook] Paiement déjà traité (idempotence)')
     return NextResponse.json({ ok: true, skipped: true })
   }
 
+  // Ignorer les paiements non réussis
   if (payload.status !== 'succeed') {
+    console.log('[handleOrderWebhook] Paiement échoué — status:', payload.status)
     await supabase
       .from('payments')
       .update({ status: 'failed' })
@@ -164,6 +208,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // Marquer le paiement comme complété
+  console.log('[handleOrderWebhook] Marquage du paiement comme complété')
   await supabase
     .from('payments')
     .update({ status: 'completed', paid_at: new Date().toISOString() })
@@ -187,7 +233,10 @@ export async function POST(req: NextRequest) {
     `)
     .single()
 
-  if (!orderData) return NextResponse.json({ ok: true })
+  if (!orderData) {
+    console.log('[handleOrderWebhook] Commande non trouvée ou déjà traitée')
+    return NextResponse.json({ ok: true })
+  }
 
   const o = orderData as unknown as {
     id: string
@@ -203,7 +252,12 @@ export async function POST(req: NextRequest) {
     shops: { name: string; phone_whatsapp: string | null; slug: string } | null
   }
 
-  if (!o.clients || !o.shops) return NextResponse.json({ ok: true })
+  if (!o.clients || !o.shops) {
+    console.log('[handleOrderWebhook] Données client ou shop manquantes')
+    return NextResponse.json({ ok: true })
+  }
+
+  console.log('[handleOrderWebhook] Envoi des notifications — orderId:', o.id)
 
   const clientWhatsapp = o.clients.whatsapp ?? o.clients.phone
   const clientName     = [o.clients.first_name, o.clients.last_name].filter(Boolean).join(' ')
@@ -262,5 +316,6 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  console.log('[handleOrderWebhook] ✅ Commande confirmée — notifications envoyées')
   return NextResponse.json({ ok: true })
 }

@@ -70,6 +70,16 @@ export async function POST(req: NextRequest) {
       paymentType ?? undefined,
     )
 
+    // Note: enregistrement de tentatives de paiement pour cron fallback
+    // sera implémenté après la migration Supabase (table subscription_transactions)
+
+    console.log('[subscription/create] Charge créée avec succès:', {
+      shopId,
+      planKey,
+      transactionId: transactionId?.slice(0, 8) + '...',
+      merchantReference,
+    })
+
     // Retourner transactionId pour que le client puisse le stocker et le vérifier au retour
     return NextResponse.json({ checkoutUrl, transactionId })
   } catch (err) {
