@@ -94,14 +94,17 @@ export default async function LandingPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Récupérer les boutiques actives (priorité: Pro > Business > Trial actifs)
-  const { data: shops } = await supabase
+  // Récupérer les boutiques actives avec Pro & Business en priorité
+  const { data: allShops } = await supabase
     .from('shops')
-    .select('id, name, slug, plan, is_active, created_at')
+    .select('id, name, slug, plan, city, logo_url, is_active, created_at')
     .eq('is_active', true)
+    .in('plan', ['pro', 'business'])
     .order('plan', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(8)
+
+  const shops = allShops || []
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
@@ -275,30 +278,33 @@ export default async function LandingPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {shops.map((shop) => {
-              const planEmojis: Record<string, string> = {
-                pro: '👑',
-                business: '💼',
-                decouverte: '🚀',
-                trial: '⭐',
-              }
-              const emoji = planEmojis[shop.plan] || '🏪'
-
-              return (
-                <Link
-                  key={shop.id}
-                  href={`/${shop.slug}`}
-                  target="_blank"
-                  className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-200 hover:bg-sky-50/50 transition-all group"
-                >
-                  <div className="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">{emoji}</div>
-                  <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
-                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">
-                    Plan {shop.plan === 'decouverte' ? 'Découverte' : shop.plan === 'business' ? 'Business' : shop.plan === 'pro' ? 'Pro' : 'Essai'}
-                  </p>
-                </Link>
-              )
-            })}
+            {shops.map((shop) => (
+              <Link
+                key={shop.id}
+                href={`/${shop.slug}`}
+                target="_blank"
+                className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-200 hover:bg-sky-50/50 transition-all group"
+              >
+                {/* Logo ou emoji fallback */}
+                <div className="flex items-center justify-center h-12 sm:h-14 mb-2 group-hover:scale-110 transition-transform">
+                  {shop.logo_url ? (
+                    <Image
+                      src={shop.logo_url}
+                      alt={shop.name}
+                      width={56}
+                      height={56}
+                      className="h-12 sm:h-14 w-auto max-w-[90%] object-contain rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-2xl sm:text-3xl">🏪</div>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
+                <p className="text-[10px] text-gray-400 mt-1 capitalize">
+                  {shop.city || 'Localité inconnue'}
+                </p>
+              </Link>
+            ))}
           </div>
 
           {shops.length > 0 && (
