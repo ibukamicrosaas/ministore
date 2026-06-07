@@ -122,32 +122,62 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     return NextResponse.json({ ok: true })
   }
 
-  // TODO: Retrouver la transaction par charge_id
-  // Temporairement commenté due au problème de typage Supabase
-  // const supabase = createAdminClient()
-  // const { data: transaction, error: txnError } = await supabase
-  //   .from('subscription_transactions')
-  //   .select('shop_id, plan_key, merchant_reference')
-  //   .eq('charge_id', payload.id)
-  //   .single()
-  //
-  // if (txnError || !transaction) {
-  //   console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError)
-  //   return NextResponse.json({ ok: true })
-  // }
-  //
-  // const { shop_id: shopId, plan_key: planKey } = transaction
+  // Retrouver la transaction par charge_id
+  const supabase = createAdminClient()
+  const { data: transaction, error: txnError } = await supabase
+    .from('subscription_transactions' as never)
+    .select('shop_id, plan_key, merchant_reference')
+    .eq('charge_id', payload.id)
+    .single() as any
 
-  // TEMPORARY: Return early pour déboguer
-  console.log('[handleSubscriptionWebhook] Webhook reçu mais subscription_transactions est commenté temporairement')
+  if (txnError || !transaction) {
+    console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError)
+    return NextResponse.json({ ok: true })
+  }
+
+  const { shop_id: shopId, plan_key: planKey } = transaction as any
+
+  // Vérifier montants, activer plan, mettre à jour transaction
+  const expectedAmount = { decouverte: 2900, business: 4900, pro: 9900 }[planKey as any] ?? 0
+
+  if (payload.amountInSmallestUnit !== expectedAmount * 100) {
+    console.error('[handleSubscriptionWebhook] Montant mismatch:', {
+      expected: expectedAmount * 100,
+      actual: payload.amountInSmallestUnit,
+    })
+    return NextResponse.json({ ok: true })
+  }
+
+  console.log('[handleSubscriptionWebhook] ✅ Montant correct — activation du plan', { shopId, planKey })
+
+  // Activer le plan
+  const { error: activationError } = await activatePlan(shopId, planKey)
+  if (activationError) {
+    console.error('[handleSubscriptionWebhook] Erreur activation:', activationError)
+    await supabase
+      .from('subscription_transactions' as never)
+      .update({
+        status: 'error',
+        error_message: activationError,
+        updated_at: new Date().toISOString(),
+      } as never)
+      .eq('charge_id', payload.id)
+    return NextResponse.json({ ok: true })
+  }
+
+  // Marquer comme activé
+  await supabase
+    .from('subscription_transactions' as never)
+    .update({
+      status: 'activated',
+      verified_at: new Date().toISOString(),
+      activated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as never)
+    .eq('charge_id', payload.id)
+
+  console.log('[handleSubscriptionWebhook] ✅ Plan activé avec succès')
   return NextResponse.json({ ok: true })
-
-  // TODO: Vérifier montants, activer plan, mettre à jour transaction
-  // Tout commenté temporairement car subscription_transactions n'est pas typée
-  // const expectedAmount = { decouverte: 2900, business: 4900, pro: 9900 }[planKey] ?? 0
-  // ... reste du code ...
-  //
-  // return NextResponse.json({ ok: true })
 }
 
 /**
