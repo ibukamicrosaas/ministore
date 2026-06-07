@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createBictorysCharge, type BictorysPaymentType } from '@/lib/payments/bictorys'
+import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys, type BictorysPaymentType } from '@/lib/payments/bictorys'
 import { decryptApiKey } from '@/lib/crypto/encrypt'
 import { APP_URL } from '@/constants'
 
@@ -76,6 +76,17 @@ export async function POST(req: NextRequest) {
   }
 
   const customerName = [customerFirstName, customerLastName].filter(Boolean).join(' ')
+  const normalizedPhone = customerPhone ? normalizePhoneForBictorys(customerPhone) : ''
+
+  // Détecter le pays depuis le téléphone du client (source de vérité)
+  // Si le client n'a pas de téléphone, fallback sur shop.country
+  let paymentCountry = shopData.country
+  if (normalizedPhone) {
+    const detectedCountry = detectCountryFromPhone(normalizedPhone)
+    if (detectedCountry) {
+      paymentCountry = detectedCountry
+    }
+  }
 
   try {
     const { checkoutUrl, transactionId } = await createBictorysCharge(
@@ -83,7 +94,7 @@ export async function POST(req: NextRequest) {
       {
         amount: amountToCharge,
         currency: 'XOF',
-        country: shopData.country,
+        country: paymentCountry,
         paymentReference: `tekkishop-${orderId.slice(0, 8)}`,
         merchantReference: orderId,
         successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
@@ -92,9 +103,9 @@ export async function POST(req: NextRequest) {
         orderDetails: [{ name: 'Commande TekkiShop', price: amountToCharge, quantity: 1, taxRate: 0 }],
         customerObject: {
           name: customerName || undefined,
-          phone: customerPhone,
+          phone: normalizedPhone || undefined,
           locale: 'fr-FR',
-          country: shopData.country,
+          country: paymentCountry,
         },
       },
       paymentType,

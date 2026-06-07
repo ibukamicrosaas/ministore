@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createBictorysCharge, type BictorysPaymentType } from '@/lib/payments/bictorys'
+import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys, type BictorysPaymentType } from '@/lib/payments/bictorys'
 import { APP_URL } from '@/constants'
 
 const PLAN_PRICES: Record<string, number> = {
@@ -58,6 +58,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
   }
 
+  // Détecter le pays depuis le téléphone de la boutique si disponible (sinon fallback sur shop.country)
+  let paymentCountry = shop.country
+  if (shop.phone_whatsapp) {
+    const detectedCountry = detectCountryFromPhone(shop.phone_whatsapp)
+    if (detectedCountry) {
+      paymentCountry = detectedCountry
+    }
+  }
+
   const amount = PLAN_PRICES[planKey]
   const paymentReference = `ts-sub-${shopId.slice(0, 8)}`
 
@@ -67,7 +76,7 @@ export async function POST(req: NextRequest) {
       {
         amount,
         currency: 'XOF',
-        country: shop.country,
+        country: paymentCountry,
         paymentReference,
         successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
         errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,

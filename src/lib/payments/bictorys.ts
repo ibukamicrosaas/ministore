@@ -4,6 +4,27 @@ const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.
 
 export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit'
 export type BictorysMethod = BictorysPaymentType
+export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
+
+export function normalizePhoneForBictorys(phone: string): string {
+  if (!phone) return ''
+  const cleaned = phone.replace(/[\s().\-]/g, '')
+  if (cleaned.startsWith('+')) return cleaned
+  if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`
+  return cleaned.startsWith('+') ? cleaned : `+${cleaned}`
+}
+
+export function detectCountryFromPhone(phone: string): BictorysCountry | null {
+  if (!phone) return null
+  const normalized = normalizePhoneForBictorys(phone)
+  if (normalized.startsWith('+221')) return 'SN'
+  if (normalized.startsWith('+225')) return 'CI'
+  if (normalized.startsWith('+226')) return 'BK'
+  if (normalized.startsWith('+223')) return 'ML'
+  if (normalized.startsWith('+228')) return 'TG'
+  if (normalized.startsWith('+229')) return 'BJ'
+  return null
+}
 
 export interface BictorysChargePayload {
   amount: number
