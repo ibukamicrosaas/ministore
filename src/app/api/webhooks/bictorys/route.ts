@@ -134,7 +134,8 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   let { data: transaction, error: txnError } = await supabase
     .from('subscription_transactions' as never)
     .select('shop_id, plan_key, merchant_reference, charge_id, status')
-    .eq('charge_id', payload.id) as any
+    .eq('charge_id', payload.id)
+    .single() as any
 
   // Si .single() échoue, essayer sans .single() pour diagnostiquer
   if (txnError) {
@@ -165,7 +166,8 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     const { data: txnByRef, error: refError } = await supabase
       .from('subscription_transactions' as never)
       .select('shop_id, plan_key, merchant_reference, charge_id, status')
-      .eq('merchant_reference', merchantReference) as any
+      .eq('merchant_reference', merchantReference)
+      .single() as any
 
     if (refError) {
       console.error('[handleSubscriptionWebhook] Erreur requête paymentReference:', {

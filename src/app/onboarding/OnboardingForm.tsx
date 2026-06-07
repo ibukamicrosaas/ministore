@@ -69,6 +69,7 @@ export function OnboardingForm() {
           <Select
             name="country"
             label="Pays"
+            placeholder="Sélectionne ton pays"
             options={COUNTRY_OPTIONS}
             required
             error={errors.country}
