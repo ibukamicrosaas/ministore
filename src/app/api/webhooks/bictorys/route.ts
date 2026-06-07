@@ -129,25 +129,64 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   const supabase = createAdminClient()
 
   console.log('[handleSubscriptionWebhook] Recherche transaction avec charge_id:', payload.id)
+
+  // Essayer d'abord avec charge_id
   let { data: transaction, error: txnError } = await supabase
     .from('subscription_transactions' as never)
     .select('shop_id, plan_key, merchant_reference, charge_id, status')
-    .eq('charge_id', payload.id)
-    .single() as any
+    .eq('charge_id', payload.id) as any
 
-  if (txnError || !transaction) {
-    console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError?.message)
+  // Si .single() échoue, essayer sans .single() pour diagnostiquer
+  if (txnError) {
+    console.error('[handleSubscriptionWebhook] Erreur requête charge_id:', {
+      chargeId: payload.id,
+      error: txnError.message,
+      code: (txnError as any).code,
+    })
+
+    // Chercher tous les enregistrements avec ce charge_id pour voir ce qu'il y a
+    const { data: allMatching, error: diagError } = await supabase
+      .from('subscription_transactions' as never)
+      .select('*')
+      .eq('charge_id', payload.id) as any
+
+    console.log('[handleSubscriptionWebhook] Diagnostic - tous les matching par charge_id:', {
+      count: allMatching?.length ?? 0,
+      data: allMatching,
+      error: diagError?.message,
+    })
+  }
+
+  if (!transaction || txnError) {
+    console.warn('[handleSubscriptionWebhook] ⚠️ Aucune transaction trouvée pour chargeId:', payload.id)
 
     // Fallback: chercher par paymentReference au lieu de charge_id
-    console.log('[handleSubscriptionWebhook] Tentative fallback avec paymentReference:', merchantReference)
+    console.log('[handleSubscriptionWebhook] Fallback - Recherche par paymentReference:', merchantReference)
     const { data: txnByRef, error: refError } = await supabase
       .from('subscription_transactions' as never)
       .select('shop_id, plan_key, merchant_reference, charge_id, status')
-      .eq('merchant_reference', merchantReference)
-      .single() as any
+      .eq('merchant_reference', merchantReference) as any
 
-    if (refError || !txnByRef) {
-      console.error('[handleSubscriptionWebhook] Transaction non trouvée non plus par paymentReference:', merchantReference, 'erreur:', refError?.message)
+    if (refError) {
+      console.error('[handleSubscriptionWebhook] Erreur requête paymentReference:', {
+        paymentReference: merchantReference,
+        error: refError.message,
+      })
+    }
+
+    // Diagnostic
+    if (!txnByRef || refError) {
+      const { data: allByRef } = await supabase
+        .from('subscription_transactions' as never)
+        .select('*')
+        .eq('merchant_reference', merchantReference) as any
+
+      console.log('[handleSubscriptionWebhook] Diagnostic - tous les matching par paymentReference:', {
+        count: allByRef?.length ?? 0,
+        data: allByRef,
+      })
+
+      console.error('[handleSubscriptionWebhook] ❌ Transaction introuvable par les deux méthodes')
       return NextResponse.json({ ok: true })
     }
 
