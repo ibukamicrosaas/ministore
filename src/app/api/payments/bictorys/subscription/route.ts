@@ -70,8 +70,9 @@ export async function POST(req: NextRequest) {
   const amount = PLAN_PRICES[planKey]
   const paymentReference = `ts-sub-${shopId.slice(0, 8)}`
 
+  let chargeResult
   try {
-    const { checkoutUrl, transactionId } = await createBictorysCharge(
+    chargeResult = await createBictorysCharge(
       apiKey,
       {
         amount,
@@ -90,42 +91,76 @@ export async function POST(req: NextRequest) {
       },
       paymentType ?? undefined,
     )
-
-    // Enregistrer la tentative de paiement pour le webhook
-    if (!transactionId) {
-      console.warn('[subscription/create] ⚠️  transactionId vide! Bictorys a peut-être retourné une réponse invalide')
-      return NextResponse.json({ error: 'Transaction ID manquant dans la réponse Bictorys' }, { status: 500 })
-    }
-
-    const { error: insertError, data: txnData } = await admin
-      .from('subscription_transactions' as never)
-      .insert({
-        shop_id: shopId,
-        plan_key: planKey,
-        charge_id: transactionId,
-        merchant_reference: paymentReference,
-        status: 'pending',
-      } as never)
-      .select()
-      .single() as any
-
-    if (insertError) {
-      console.error('[subscription/create] ❌ Erreur insertion subscription_transactions:', insertError)
-      return NextResponse.json({ error: 'Erreur lors de l\'enregistrement de la transaction' }, { status: 500 })
-    }
-
-    console.log('[subscription/create] ✅ Charge créée avec succès:', {
-      txnId: txnData?.id,
-      shopId,
-      planKey,
-      chargeId: transactionId,
-      paymentReference,
-    })
-
-    return NextResponse.json({ checkoutUrl, transactionId })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
-    console.error('[subscription/create]', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('[subscription/create] Direct API échoué:', message, '| country:', paymentCountry, '| paymentType:', paymentType)
+
+    // FALLBACK pour Wave CI: si Direct API échoue et que c'est Wave en CI, rediriger vers page Bictorys générique
+    if (paymentCountry === 'CI' && paymentType === 'wave_money') {
+      console.log('[subscription/create] Fallback: Wave CI en Direct API a échoué, tentative avec page générique')
+      try {
+        chargeResult = await createBictorysCharge(
+          apiKey,
+          {
+            amount,
+            currency: 'XOF',
+            country: paymentCountry,
+            paymentReference,
+            successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
+            errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
+            webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
+            orderDetails: [{
+              name:     `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
+              price:    amount,
+              quantity: 1,
+              taxRate:  0,
+            }],
+          },
+          undefined, // Pas de payment_type = page générique
+        )
+        console.log('[subscription/create] ✅ Fallback réussi — page générique')
+      } catch (fallbackErr) {
+        const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Fallback échoué'
+        console.error('[subscription/create] Fallback aussi échoué:', fallbackMsg)
+        return NextResponse.json({ error: `Erreur paiement (${fallbackMsg})` }, { status: 500 })
+      }
+    } else {
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
   }
+
+  const { checkoutUrl, transactionId } = chargeResult
+
+  // Enregistrer la tentative de paiement pour le webhook
+  if (!transactionId) {
+    console.warn('[subscription/create] ⚠️  transactionId vide! Bictorys a peut-être retourné une réponse invalide')
+    return NextResponse.json({ error: 'Transaction ID manquant dans la réponse Bictorys' }, { status: 500 })
+  }
+
+  const { error: insertError, data: txnData } = await admin
+    .from('subscription_transactions' as never)
+    .insert({
+      shop_id: shopId,
+      plan_key: planKey,
+      charge_id: transactionId,
+      merchant_reference: paymentReference,
+      status: 'pending',
+    } as never)
+    .select()
+    .single() as any
+
+  if (insertError) {
+    console.error('[subscription/create] ❌ Erreur insertion subscription_transactions:', insertError)
+    return NextResponse.json({ error: 'Erreur lors de l\'enregistrement de la transaction' }, { status: 500 })
+  }
+
+  console.log('[subscription/create] ✅ Charge créée avec succès:', {
+    txnId: txnData?.id,
+    shopId,
+    planKey,
+    chargeId: transactionId,
+    paymentReference,
+  })
+
+  return NextResponse.json({ checkoutUrl, transactionId })
 }
