@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/verify-subscription-payments",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/reminders",
       "schedule": "0 8 * * *"
     },
