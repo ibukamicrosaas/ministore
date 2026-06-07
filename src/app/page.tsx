@@ -57,12 +57,6 @@ const FEATURES = [
   },
 ]
 
-const STATS = [
-  { value: '+50', label: 'sites actifs', icon: Users },
-  { value: '847', label: 'commandes traitées', icon: ShoppingBag },
-  { value: '4.9 ★', label: 'satisfaction', icon: Star },
-]
-
 const STEPS = [
   {
     step: '01',
@@ -94,7 +88,12 @@ export default async function LandingPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Récupérer les boutiques actives avec Pro & Business en priorité
+  // Récupérer le nombre total de boutiques créées
+  const { count: totalShopsCount } = await supabase
+    .from('shops')
+    .select('id', { count: 'exact', head: true })
+
+  // Récupérer les boutiques actives avec Pro & Business en priorité (pour l'affichage)
   const { data: allShops } = await supabase
     .from('shops')
     .select('id, name, slug, plan, city, logo_url, is_active, created_at')
@@ -105,6 +104,14 @@ export default async function LandingPage() {
     .limit(8)
 
   const shops = allShops || []
+  const shopsCount = totalShopsCount ?? 0
+
+  // Construire les stats dynamiquement
+  const STATS = [
+    { value: `+${shopsCount}`, label: 'sites actifs', icon: Users },
+    { value: '847', label: 'commandes traitées', icon: ShoppingBag },
+    { value: '4.9 ★', label: 'satisfaction', icon: Star },
+  ]
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
@@ -178,23 +185,9 @@ export default async function LandingPage() {
               <HeroInput />
             </div>
 
-            {/* Stats - Enhanced visibility on mobile */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 pt-6 pb-4 px-4 sm:px-0">
-              {STATS.slice(0, 1).map((s, i) => {
-                const Icon = s.icon
-                return (
-                  <div key={i} className="flex items-center gap-3 bg-emerald-50/60 rounded-2xl px-4 py-3 border border-emerald-100">
-                    <Icon className="h-5 w-5 lg:h-6 lg:w-6 shrink-0 text-emerald-600" />
-                    <div>
-                      <span className="text-xl lg:text-2xl font-black text-emerald-900 block">{s.value}</span>
-                      <span className="text-xs lg:text-sm text-emerald-700">{s.label} utilisent TekkiShop</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-2 flex-wrap">
-              {STATS.slice(1).map((s, i) => {
+            {/* Stats - All on same line with consistent style */}
+            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-8 pb-4 px-4 sm:px-0 flex-wrap">
+              {STATS.map((s, i) => {
                 const Icon = s.icon
                 return (
                   <div key={i} className="flex items-center gap-1 lg:gap-2.5">
@@ -310,7 +303,7 @@ export default async function LandingPage() {
           {shops.length > 0 && (
             <div className="mt-12 text-center">
               <p className="text-sm text-gray-600 mb-4">
-                <strong className="text-gray-900">{shops.length}+ boutiques</strong> vendent déjà avec TekkiShop
+                <strong className="text-gray-900">{shopsCount}+ boutiques</strong> vendent déjà avec TekkiShop
               </p>
               <Link
                 href="/onboarding"
