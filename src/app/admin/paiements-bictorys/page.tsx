@@ -14,7 +14,20 @@ export default async function PaymentsBictorysPage({
 }) {
   const supabase = createAdminClient()
 
-  let transactions = []
+  type Transaction = {
+    id: string
+    shop_id: string
+    plan_key: string
+    charge_id: string
+    status: string
+    created_at: string
+    activated_at: string | null
+    verified_at: string | null
+    error_message: string | null
+    shop?: { id: string; name: string; phone_whatsapp: string | null }
+  }
+
+  let transactions: Transaction[] = []
 
   // Si on a un phone, chercher les paiements associés à ce phone
   if (searchParams.phone) {
@@ -40,7 +53,7 @@ export default async function PaymentsBictorysPage({
       transactions = (txns ?? []).map(txn => ({
         ...txn,
         shop: shops?.find(s => s.id === txn.shop_id),
-      }))
+      })) as Transaction[]
     }
   }
 
