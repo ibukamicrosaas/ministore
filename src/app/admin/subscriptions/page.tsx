@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, Clock, AlertCircle, Zap } from 'lucide-react'
+import { CheckCircle2, Clock, AlertCircle, Zap, Search, TrendingUp } from 'lucide-react'
 
 export default function AdminSubscriptionsPage() {
   const supabase = createClient()
@@ -13,7 +13,7 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true)
   const [activating, setActivating] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'activated' | 'error'>('all')
-  const [searchPhone, setSearchPhone] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadData()
@@ -22,7 +22,6 @@ export default function AdminSubscriptionsPage() {
   async function loadData() {
     setLoading(true)
     try {
-      // Charger les transactions
       const { data: txnData } = await supabase
         .from('subscription_transactions' as never)
         .select('*')
@@ -31,7 +30,6 @@ export default function AdminSubscriptionsPage() {
 
       setTransactions(txnData ?? [])
 
-      // Charger les boutiques pour mapper les shop_id
       const shopIds = [...new Set((txnData ?? []).map((t: any) => t.shop_id))] as string[]
       if (shopIds.length > 0) {
         const { data: shopData } = await supabase
@@ -43,7 +41,7 @@ export default function AdminSubscriptionsPage() {
         setShops(shopMap)
       }
     } catch (err) {
-      console.error('Erreur chargement données:', err)
+      console.error('Erreur chargement:', err)
     } finally {
       setLoading(false)
     }
@@ -64,9 +62,8 @@ export default function AdminSubscriptionsPage() {
         return
       }
 
-      // Recharger les données
       await loadData()
-      alert('Plan activé avec succès!')
+      alert('✅ Plan activé avec succès!')
     } catch (err) {
       alert('Erreur: ' + (err instanceof Error ? err.message : 'Erreur inconnue'))
     } finally {
@@ -74,135 +71,202 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
-  const filtered = transactions.filter((t: any) => {
-    if (filter !== 'all' && t.status !== filter) return false
-    if (searchPhone) {
-      const shop = shops.get(t.shop_id)
-      const phone = shop?.phone_whatsapp || ''
-      return phone.includes(searchPhone.replace(/\D/g, ''))
-    }
-    return true
-  })
+  const normalizePhone = (phone: string) => phone.replace(/\D/g, '')
+
+  const filtered = useMemo(() => {
+    return transactions.filter((t: any) => {
+      if (filter !== 'all' && t.status !== filter) return false
+      if (searchQuery) {
+        const shop = shops.get(t.shop_id)
+        const shopPhone = normalizePhone(shop?.phone_whatsapp || '')
+        const searchNormalized = normalizePhone(searchQuery)
+        return (
+          (shop?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          shopPhone.includes(searchNormalized) ||
+          searchNormalized.includes(shopPhone)
+        )
+      }
+      return true
+    })
+  }, [transactions, filter, searchQuery, shops])
+
+  const stats = {
+    total: transactions.length,
+    pending: transactions.filter((t: any) => t.status === 'pending').length,
+    activated: transactions.filter((t: any) => t.status === 'activated').length,
+    revenue: transactions
+      .filter((t: any) => t.status === 'activated')
+      .reduce((sum: number, t: any) => {
+        const prices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
+        return sum + (prices[t.plan_key] || 0)
+      }, 0),
+  }
+
+  const prices: Record<string, { label: string; amount: number; color: string }> = {
+    decouverte: { label: 'Découverte', amount: 2900, color: 'emerald' },
+    business: { label: 'Business', amount: 4900, color: 'blue' },
+    pro: { label: 'Pro', amount: 9900, color: 'purple' },
+  }
+
+  const statusConfig = {
+    activated: { icon: CheckCircle2, label: 'Activée', badge: 'bg-emerald-100 text-emerald-700' },
+    pending: { icon: Clock, label: 'En attente', badge: 'bg-amber-100 text-amber-700' },
+    error: { icon: AlertCircle, label: 'Erreur', badge: 'bg-red-100 text-red-700' },
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Transactions d'abonnement</h1>
-        <p className="text-sm text-gray-500 mt-1">{transactions.length} total · {transactions.filter((t: any) => t.status === 'pending').length} en attente · {transactions.filter((t: any) => t.status === 'activated').length} activées</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ── Header ── */}
+        <div className="mb-8">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Transactions d'abonnement</h1>
+              <p className="text-gray-500 mt-2">Suivi des paiements et activations de plans</p>
+            </div>
+            <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
+          </div>
 
-      <div className="flex gap-3 flex-col sm:flex-row sm:items-end sm:justify-between">
-        <input
-          type="text"
-          placeholder="Chercher par téléphone..."
-          value={searchPhone}
-          onChange={(e) => setSearchPhone(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <div className="flex gap-2 flex-wrap">
-          {(['all', 'pending', 'activated', 'error'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                filter === status
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {status === 'all' ? 'Tous' : status === 'pending' ? 'En attente' : status === 'activated' ? 'Activées' : 'Erreurs'}
-            </button>
-          ))}
+          {/* Stats cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total', value: stats.total, icon: '📊', color: 'from-gray-500 to-gray-600' },
+              { label: 'En attente', value: stats.pending, icon: '⏳', color: 'from-amber-500 to-amber-600' },
+              { label: 'Activées', value: stats.activated, icon: '✅', color: 'from-emerald-500 to-emerald-600' },
+              { label: 'Revenus', value: `${(stats.revenue / 1000).toFixed(0)}k FCFA`, icon: '💰', color: 'from-blue-500 to-blue-600' },
+            ].map((stat) => (
+              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-lg p-4 text-white shadow-sm`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm opacity-90 font-medium">{stat.label}</p>
+                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                  </div>
+                  <span className="text-3xl opacity-30">{stat.icon}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">Chargement...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">Aucune transaction trouvée</div>
-      ) : (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Boutique</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Montant</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Créé le</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Téléphone</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((txn: any) => {
-                const shop = shops.get(txn.shop_id)
-                const prices: Record<string, string> = {
-                  decouverte: '2 900 FCFA',
-                  business: '4 900 FCFA',
-                  pro: '9 900 FCFA',
-                }
+        {/* ── Recherche et filtres ── */}
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Chercher par nom ou téléphone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+            />
+          </div>
 
-                return (
-                  <tr key={txn.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{shop?.name ?? 'Inconnue'}</p>
-                      <p className="text-xs text-gray-400">{txn.charge_id.slice(0, 8)}...</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        txn.plan_key === 'pro' ? 'bg-purple-100 text-purple-700' :
-                        txn.plan_key === 'business' ? 'bg-blue-100 text-blue-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
-                        {txn.plan_key === 'decouverte' ? 'Découverte' : txn.plan_key === 'business' ? 'Business' : 'Pro'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{prices[txn.plan_key]}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {txn.status === 'activated' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                        {txn.status === 'pending' && <Clock className="h-4 w-4 text-yellow-600" />}
-                        {txn.status === 'error' && <AlertCircle className="h-4 w-4 text-red-600" />}
-                        <span className={`text-xs font-medium ${
-                          txn.status === 'activated' ? 'text-green-600' :
-                          txn.status === 'pending' ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
-                          {txn.status === 'activated' ? 'Activée' : txn.status === 'pending' ? 'En attente' : 'Erreur'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs hidden lg:table-cell">
-                      {format(new Date(txn.created_at), 'd MMM yyyy HH:mm', { locale: fr })}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs hidden lg:table-cell">
-                      {shop?.phone_whatsapp ? (
-                        <a href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {shop.phone_whatsapp}
-                        </a>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {txn.status === 'pending' && (
-                        <button
-                          onClick={() => activateManually(txn.id, txn.shop_id, txn.plan_key)}
-                          disabled={activating === txn.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Zap className="h-3 w-3" />
-                          {activating === txn.id ? 'Activation...' : 'Activer'}
-                        </button>
-                      )}
-                    </td>
+          {/* Status filters */}
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'pending', 'activated', 'error'] as const).map((status) => {
+              const count =
+                status === 'all' ? stats.total :
+                status === 'pending' ? stats.pending :
+                status === 'activated' ? stats.activated :
+                transactions.filter((t: any) => t.status === 'error').length
+              return (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    filter === status
+                      ? 'bg-sky-500 text-white shadow-md'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <span>
+                    {status === 'all' ? '📋' : status === 'pending' ? '⏳' : status === 'activated' ? '✅' : '⚠️'}
+                  </span>
+                  {status === 'all' ? 'Tous' : statusConfig[status as keyof typeof statusConfig]?.label}
+                  <span className="text-xs opacity-70">({count})</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Tableau ── */}
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Chargement...</div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <p className="text-gray-500">Aucune transaction trouvée</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Boutique</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Plan</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden sm:table-cell">Montant</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Statut</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden md:table-cell">Créé</th>
+                    <th className="text-right px-6 py-4 font-semibold text-gray-700">Action</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.map((txn: any) => {
+                    const shop = shops.get(txn.shop_id)
+                    const priceInfo = prices[txn.plan_key]
+                    const status = statusConfig[txn.status as keyof typeof statusConfig]
+                    const StatusIcon = status.icon
+
+                    return (
+                      <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-gray-900">{shop?.name ?? 'Inconnue'}</p>
+                          <p className="text-xs text-gray-500 mt-1 font-mono">{txn.charge_id.slice(0, 12)}...</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-${priceInfo.color}-100 text-${priceInfo.color}-700`}>
+                            {priceInfo.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 hidden sm:table-cell">
+                          <span className="font-mono font-semibold text-gray-900">{priceInfo.amount.toLocaleString('fr-FR')} F</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${status.badge}`}>
+                            <StatusIcon className="h-3.5 w-3.5" />
+                            {status.label}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 text-xs hidden md:table-cell">
+                          {format(new Date(txn.created_at), 'd MMM HH:mm', { locale: fr })}
+                        </td>
+                        <td className="px-6 py-4">
+                          {txn.status === 'pending' ? (
+                            <button
+                              onClick={() => activateManually(txn.id, txn.shop_id, txn.plan_key)}
+                              disabled={activating === txn.id}
+                              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
+                            >
+                              <Zap className="h-3.5 w-3.5" />
+                              {activating === txn.id ? 'Activation...' : 'Activer'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
+              {filtered.length} transaction{filtered.length !== 1 ? 's' : ''} affichée{filtered.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

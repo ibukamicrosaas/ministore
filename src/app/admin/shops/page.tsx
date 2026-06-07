@@ -1,119 +1,200 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+'use client'
+
+import { useState, useMemo, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search, TrendingUp } from 'lucide-react'
 
-export const metadata = { title: 'Boutiques — Admin TekkiShop' }
+export default function AdminShopsPage() {
+  const supabase = createClient()
+  const [shops, setShops] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPlan, setFilterPlan] = useState<'all' | 'trial' | 'decouverte' | 'business' | 'pro'>('all')
 
-export default async function AdminSalonsPage() {
-  const supabase = createAdminClient()
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  const { data } = await supabase
-    .from('shops')
-    .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
-    .order('created_at', { ascending: false })
+  async function loadData() {
+    try {
+      const { data } = await supabase
+        .from('shops')
+        .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
+        .order('created_at', { ascending: false })
+      setShops(data ?? [])
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const shops = (data ?? []) as {
-    id: string; name: string; slug: string; plan: string
-    trial_ends_at: string | null; city: string | null; country: string
-    is_active: boolean; created_at: string; phone_whatsapp: string | null
-  }[]
+  const filtered = useMemo(() => {
+    return shops.filter(s => {
+      const matchesPlan = filterPlan === 'all' || s.plan === filterPlan
+      const normalizePhone = (phone: string) => phone?.replace(/\D/g, '') || ''
+      const matchesSearch = !searchQuery ||
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.city?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        normalizePhone(s.phone_whatsapp).includes(searchQuery.replace(/\D/g, ''))
+      return matchesPlan && matchesSearch
+    })
+  }, [shops, searchQuery, filterPlan])
 
-  const trialExpired = shops.filter(s => s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date())
-  const trialActive  = shops.filter(s => s.plan === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) >= new Date()))
-  const paid         = shops.filter(s => s.plan !== 'trial')
+  const stats = {
+    total: shops.length,
+    active: shops.filter(s => s.is_active).length,
+    paid: shops.filter(s => s.plan !== 'trial').length,
+    trial: shops.filter(s => s.plan === 'trial').length,
+  }
+
+  const planConfig = {
+    trial: { label: 'Essai', color: 'bg-gray-100 text-gray-700', icon: '📋' },
+    decouverte: { label: 'Découverte', color: 'bg-emerald-100 text-emerald-700', icon: '🚀' },
+    business: { label: 'Business', color: 'bg-blue-100 text-blue-700', icon: '💼' },
+    pro: { label: 'Pro', color: 'bg-purple-100 text-purple-700', icon: '👑' },
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Boutiques</h1>
-          <p className="text-sm text-gray-500 mt-1">{shops.length} inscrits · {paid.length} payants · {trialActive.length} en essai · {trialExpired.length} expirés</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ── Header ── */}
+        <div className="mb-8">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Boutiques</h1>
+              <p className="text-gray-500 mt-2">Gère les boutiques et leurs abonnements</p>
+            </div>
+            <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
+          </div>
+
+          {/* Stats cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total', value: stats.total, color: 'from-gray-500 to-gray-600' },
+              { label: 'Actives', value: stats.active, color: 'from-emerald-500 to-emerald-600' },
+              { label: 'Payantes', value: stats.paid, color: 'from-blue-500 to-blue-600' },
+              { label: 'Essai', value: stats.trial, color: 'from-amber-500 to-amber-600' },
+            ].map((stat) => (
+              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-lg p-4 text-white shadow-sm`}>
+                <p className="text-sm opacity-90 font-medium">{stat.label}</p>
+                <p className="text-3xl font-bold mt-1">{stat.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
+        {/* ── Recherche et filtres ── */}
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Chercher par nom, ville ou téléphone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+            />
+          </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Boutique</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Essai expire</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Inscrit le</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {shops.map(s => {
-              const trialExpiredRow = s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date()
-              return (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{s.name}</p>
-                    <p className="text-xs text-gray-400">{s.city ?? '—'}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      s.plan === 'pro'        ? 'bg-purple-100 text-purple-700' :
-                      s.plan === 'business'   ? 'bg-blue-100 text-blue-700' :
-                      s.plan === 'decouverte' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>{
-                      s.plan === 'decouverte' ? 'Découverte' :
-                      s.plan === 'business'   ? 'Business' :
-                      s.plan === 'pro'        ? 'Pro' :
-                      'Essai'
-                    }</span>
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    {s.plan === 'trial' && s.trial_ends_at ? (
-                      <span className={trialExpiredRow ? 'text-red-500 font-medium text-xs' : 'text-gray-500 text-xs'}>
-                        {trialExpiredRow ? '⛔ ' : ''}{format(new Date(s.trial_ends_at), 'd MMM yyyy', { locale: fr })}
-                      </span>
-                    ) : <span className="text-gray-300 text-xs">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                      {s.is_active ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs hidden lg:table-cell">
-                    {format(new Date(s.created_at), 'd MMM yyyy', { locale: fr })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/admin/shops/${s.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-primary)] px-2.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                        title="Gérer le plan"
-                      >
-                        <Settings className="h-3 w-3" />
-                        Gérer
-                      </Link>
-                      <Link href={`/${s.slug}`} target="_blank" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-gray-100" title="Voir le mini site">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                      {s.phone_whatsapp && (
-                        <a
-                          href={`https://wa.me/${s.phone_whatsapp.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100"
-                          title="Contacter sur WhatsApp"
-                        >
-                          <MessageCircle className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+          {/* Plan filters */}
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'trial', 'decouverte', 'business', 'pro'] as const).map((plan) => (
+              <button
+                key={plan}
+                onClick={() => setFilterPlan(plan)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  filterPlan === plan
+                    ? 'bg-sky-500 text-white shadow-md'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {plan === 'all' ? 'Tous les plans' : planConfig[plan as keyof typeof planConfig]?.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tableau ── */}
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Chargement...</div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Boutique</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Plan</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden md:table-cell">Téléphone</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Statut</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden lg:table-cell">Depuis</th>
+                    <th className="text-right px-6 py-4 font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.map((shop) => (
+                    <tr key={shop.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-gray-900">{shop.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{shop.city ?? '—'}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${planConfig[shop.plan as keyof typeof planConfig]?.color}`}>
+                          <span>{planConfig[shop.plan as keyof typeof planConfig]?.icon}</span>
+                          {planConfig[shop.plan as keyof typeof planConfig]?.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 hidden md:table-cell text-gray-600 text-xs">
+                        {shop.phone_whatsapp ? (
+                          <a href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline font-mono">
+                            {shop.phone_whatsapp}
+                          </a>
+                        ) : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${shop.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          {shop.is_active ? '✓ Actif' : '✗ Inactif'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 text-xs hidden lg:table-cell">
+                        {format(new Date(shop.created_at), 'd MMM yyyy', { locale: fr })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/admin/shops/${shop.id}`}
+                            className="p-2 rounded-lg hover:bg-sky-100 text-sky-600 transition-colors"
+                            title="Gérer"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Link>
+                          <Link href={`/${shop.slug}`} target="_blank" className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors">
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                          {shop.phone_whatsapp && (
+                            <a
+                              href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-lg hover:bg-green-100 text-green-600 transition-colors"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
+              {filtered.length} boutique{filtered.length !== 1 ? 's' : ''} affichée{filtered.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
