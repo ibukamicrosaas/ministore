@@ -94,26 +94,27 @@ export async function getMRRBreakdown() {
   const now = new Date()
   const thirtyDaysAgo = subDays(now, 30).toISOString()
 
-  const { data: activeShops } = await supabase
+  const { data: allActiveShops } = await supabase
     .from('shops')
     .select('id, plan')
     .eq('is_active', true)
-    .ne('plan', 'trial')
 
-  const totalMRR = activeShops?.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] ?? 0), 0) ?? 0
+  const activeShops = allActiveShops?.filter(s => s.plan !== 'trial') ?? []
 
-  const { data: newPayments } = await supabase
-    .from('subscription_transactions')
+  const totalMRR = activeShops.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] ?? 0), 0)
+
+  const { data: newPayments } = (await supabase
+    .from('subscription_transactions' as never)
     .select('plan_key, activated_at')
     .eq('status', 'activated')
-    .gte('activated_at', thirtyDaysAgo)
+    .gte('activated_at', thirtyDaysAgo)) as unknown as { data: Array<{ plan_key: string; activated_at: string }> | null }
 
   const newMRR = newPayments?.reduce((sum, p) => sum + (PLAN_PRICES[p.plan_key] ?? 0), 0) ?? 0
 
-  const planCounts = activeShops?.reduce((acc, s) => {
+  const planCounts = activeShops.reduce((acc, s) => {
     acc[s.plan] = (acc[s.plan] ?? 0) + 1
     return acc
-  }, {} as Record<string, number>) ?? {}
+  }, {} as Record<string, number>)
 
   return {
     totalMRR,
@@ -172,11 +173,11 @@ export async function getTrendsData() {
   const now = new Date()
   const thirtyDaysAgo = subDays(now, 30)
 
-  const { data: dailyTransactions } = await supabase
-    .from('subscription_transactions')
+  const { data: dailyTransactions } = (await supabase
+    .from('subscription_transactions' as never)
     .select('activated_at, plan_key')
     .eq('status', 'activated')
-    .gte('activated_at', thirtyDaysAgo.toISOString())
+    .gte('activated_at', thirtyDaysAgo.toISOString())) as unknown as { data: Array<{ activated_at: string; plan_key: string }> | null }
 
   const mrr_trend: Record<string, number> = {}
   const activation_trend: Record<string, number> = {}
