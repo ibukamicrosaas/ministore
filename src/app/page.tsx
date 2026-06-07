@@ -160,9 +160,23 @@ export default async function LandingPage() {
               <HeroInput />
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-2">
-              {STATS.map((s, i) => {
+            {/* Stats - Enhanced visibility on mobile */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 pt-6 pb-4 px-4 sm:px-0">
+              {STATS.slice(0, 1).map((s, i) => {
+                const Icon = s.icon
+                return (
+                  <div key={i} className="flex items-center gap-3 bg-emerald-50/60 rounded-2xl px-4 py-3 border border-emerald-100">
+                    <Icon className="h-5 w-5 lg:h-6 lg:w-6 shrink-0 text-emerald-600" />
+                    <div>
+                      <span className="text-xl lg:text-2xl font-black text-emerald-900 block">{s.value}</span>
+                      <span className="text-xs lg:text-sm text-emerald-700">{s.label} utilisent TekkiShop</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-2 flex-wrap">
+              {STATS.slice(1).map((s, i) => {
                 const Icon = s.icon
                 return (
                   <div key={i} className="flex items-center gap-1 lg:gap-2.5">
@@ -191,6 +205,29 @@ export default async function LandingPage() {
               {cat}
             </span>
           ))}
+        </div>
+
+        {/* Social Proof - Trusted by */}
+        <div className="mt-20 pt-16 border-t border-gray-100">
+          <p className="text-center text-xs text-gray-400 font-semibold mb-8">Ils font confiance à TekkiShop</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            {[
+              { emoji: '🍽️', name: 'Keur Cuisine Dakar', desc: 'Plats traditionnels' },
+              { emoji: '👗', name: 'Awa Couture', desc: 'Mode & accessoires' },
+              { emoji: '💄', name: 'Délices du Sahel', desc: 'Produits beauté' },
+              { emoji: '🎨', name: 'Artisan Dakar', desc: 'Objets artisanaux' },
+              { emoji: '🛍️', name: 'Tech Shop SN', desc: 'Électronique' },
+              { emoji: '🏡', name: 'Style Maison', desc: 'Décoration & meuble' },
+              { emoji: '📱', name: 'Mobile Dépot', desc: 'Accessoires téléphone' },
+              { emoji: '💼', name: 'Fashion Hub CI', desc: 'Vêtements premium' },
+            ].map((shop, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-gray-200 transition-all">
+                <div className="text-2xl sm:text-3xl mb-2">{shop.emoji}</div>
+                <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2">{shop.name}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{shop.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

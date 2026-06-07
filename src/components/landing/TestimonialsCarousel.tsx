@@ -50,25 +50,25 @@ const TESTIMONIALS = [
 function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
   return (
     <div
-      className="shrink-0 rounded-3xl border border-white/10 bg-white/5 p-5"
-      style={{ width: 280 }}
+      className="shrink-0 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 sm:p-6 hover:border-white/20 transition-colors"
+      style={{ width: 'clamp(260px, 100vw - 32px, 320px)' }}
     >
       <div className="flex gap-0.5 mb-3">
         {[...Array(5)].map((_, j) => (
           <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
         ))}
       </div>
-      <p className="text-sm text-white/70 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+      <p className="text-xs sm:text-sm text-white/70 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
       <div className="mt-4 flex items-center gap-3">
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-lg"
           style={{ backgroundColor: t.color }}
         >
           {t.initial}
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">{t.name}</p>
-          <p className="text-xs text-white/40">{t.role}</p>
+          <p className="text-sm font-semibold text-white line-clamp-1">{t.name}</p>
+          <p className="text-xs text-white/40 line-clamp-1">{t.role}</p>
         </div>
       </div>
     </div>
@@ -86,22 +86,28 @@ export function TestimonialsCarousel() {
           to { transform: translateX(-50%); }
         }
         .testimonials-inner {
-          animation: testimonials-scroll 40s linear infinite;
+          animation: testimonials-scroll 50s linear infinite;
           will-change: transform;
         }
         .testimonials-inner:hover {
           animation-play-state: paused;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .testimonials-inner {
+            animation: none;
+          }
+        }
       `}</style>
-      <div className="overflow-hidden px-4">
+      <div className="overflow-hidden px-4 sm:px-6">
         <div
-          className="testimonials-inner flex gap-4"
+          className="testimonials-inner flex gap-3 sm:gap-4"
           style={{ width: 'max-content' }}
         >
           {doubled.map((t, i) => (
             <TestimonialCard key={i} t={t} />
           ))}
         </div>
+        <p className="text-center text-xs text-white/40 mt-4">Glissez pour voir plus</p>
       </div>
     </>
   )

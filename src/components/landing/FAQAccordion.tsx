@@ -9,8 +9,12 @@ const FAQS = [
     a: "Non. Tes clients commandent directement depuis ton lien, dans leur navigateur. Aucune application à télécharger. C'est aussi simple que d'ouvrir un lien WhatsApp.",
   },
   {
+    q: "Quels sont exactement les frais ?",
+    a: "TekkiShop est transparent. Plan Découverte & Business : 3% de commission uniquement sur les paiements en ligne (Wave, Orange Money). Le paiement à la livraison est gratuit. Plan Pro : 0% de commission partout. Aucun frais caché, aucun frais de paiement, aucun frais d'annulation.",
+  },
+  {
     q: "Comment je reçois mon argent ?",
-    a: "Tes clients paient par Wave ou Orange Money et l'argent arrive directement sur ton numéro. Pour le paiement à la livraison, tu encaisses toi-même. TekkiShop prélève 3% uniquement sur les paiements en ligne — 0% si tu es sur le plan Pro.",
+    a: "Tes clients paient par Wave ou Orange Money et l'argent arrive directement sur ton numéro. Pour le paiement à la livraison, tu encaisses toi-même. Ton argent te revient après déduction de la commission (sauf plan Pro où il n'y a pas de commission).",
   },
   {
     q: "Est-ce que je dois être une entreprise enregistrée ?",
