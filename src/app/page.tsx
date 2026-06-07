@@ -67,19 +67,25 @@ const STEPS = [
   {
     step: '01',
     title: 'Crée ton site',
-    description: "Tu donnes le nom de ton business, tu ajoutes tes produits avec description, photo et prix. Tu mets le site en ligne. Ça prend 5 minutes. Vraiment.",
+    description: "Tu donnes le nom de ton business, tu ajoutes tes produits avec description, photo et prix. Tu mets le site en ligne. Ça prend 5 minutes.",
     color: 'bg-sky-500',
   },
   {
     step: '02',
-    title: 'Tu partages ton lien',
-    description: "Tu envoies ton lien à tes clients, et tu l'ajoutes sur WhatsApp, Instagram ou Facebook. Tes clients cliquent et commandent directement.",
+    title: 'Active ton site',
+    description: "Active ton site pour que tes clients puissent voir tous tes produits et passer commande. Ils reçoivent une confirmation automatique par WhatsApp.",
     color: 'bg-violet-500',
   },
   {
     step: '03',
-    title: 'Tu reçois tes paiements',
-    description: "Tes clients peuvent payer par Wave, Orange Money, etc. Ou à la livraison. C'est toi qui choisis.",
+    title: 'Partage ton lien',
+    description: "Tu envoies ton lien à tes clients, et tu l'ajoutes sur WhatsApp, Instagram ou Facebook. Tes clients cliquent et commandent directement.",
+    color: 'bg-amber-500',
+  },
+  {
+    step: '04',
+    title: 'Reçois tes paiements',
+    description: "Tes clients paient par Wave, Orange Money, ou à la livraison. L'argent arrive directement sur ton téléphone. C'est automatique.",
     color: 'bg-emerald-500',
   },
 ]
@@ -87,6 +93,15 @@ const STEPS = [
 export default async function LandingPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Récupérer les boutiques actives (priorité: Pro > Business > Trial actifs)
+  const { data: shops } = await supabase
+    .from('shops')
+    .select('id, name, slug, plan, is_active, created_at')
+    .eq('is_active', true)
+    .order('plan', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(8)
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
@@ -207,28 +222,6 @@ export default async function LandingPage() {
           ))}
         </div>
 
-        {/* Social Proof - Trusted by */}
-        <div className="mt-20 pt-16 border-t border-gray-100">
-          <p className="text-center text-xs text-gray-400 font-semibold mb-8">Ils font confiance à TekkiShop</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              { emoji: '🍽️', name: 'Keur Cuisine Dakar', desc: 'Plats traditionnels' },
-              { emoji: '👗', name: 'Awa Couture', desc: 'Mode & accessoires' },
-              { emoji: '💄', name: 'Délices du Sahel', desc: 'Produits beauté' },
-              { emoji: '🎨', name: 'Artisan Dakar', desc: 'Objets artisanaux' },
-              { emoji: '🛍️', name: 'Tech Shop SN', desc: 'Électronique' },
-              { emoji: '🏡', name: 'Style Maison', desc: 'Décoration & meuble' },
-              { emoji: '📱', name: 'Mobile Dépot', desc: 'Accessoires téléphone' },
-              { emoji: '💼', name: 'Fashion Hub CI', desc: 'Vêtements premium' },
-            ].map((shop, i) => (
-              <div key={i} className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-gray-200 transition-all">
-                <div className="text-2xl sm:text-3xl mb-2">{shop.emoji}</div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2">{shop.name}</p>
-                <p className="text-[10px] text-gray-400 mt-1">{shop.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* ── Paiements ─────────────────────────────────────────────────────── */}
@@ -247,13 +240,13 @@ export default async function LandingPage() {
             className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
             style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
           >
-            Ça marche en 3 étapes
+            Ça marche en 4 étapes
           </h2>
           <p className="text-gray-500 max-w-sm mx-auto text-sm">Pas besoin d'un développeur. Pas besoin d'un ordinateur.</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 relative">
-          <div className="hidden md:block absolute top-9 left-[calc(16.666%+2rem)] right-[calc(16.666%+2rem)] h-px bg-gradient-to-r from-sky-200 via-violet-200 to-emerald-200" />
+        <div className="grid md:grid-cols-4 gap-6 relative">
+          <div className="hidden md:block absolute top-9 left-[calc(12.5%+2rem)] right-[calc(12.5%+2rem)] h-px bg-gradient-to-r from-sky-200 via-violet-200 via-amber-200 to-emerald-200" />
 
           {STEPS.map((s, i) => (
             <div key={i} className="relative flex flex-col items-center md:items-start text-center md:text-left bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -266,6 +259,64 @@ export default async function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* ── Ils font confiance à TekkiShop (vraies boutiques) ─────────────────────── */}
+      {shops && shops.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-20">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Nos succès</p>
+            <h2
+              className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Ils font confiance à TekkiShop
+            </h2>
+            <p className="text-gray-500 max-w-sm mx-auto text-sm">Découvre les boutiques qui vendent avec succès via TekkiShop</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            {shops.map((shop) => {
+              const planEmojis: Record<string, string> = {
+                pro: '👑',
+                business: '💼',
+                decouverte: '🚀',
+                trial: '⭐',
+              }
+              const emoji = planEmojis[shop.plan] || '🏪'
+
+              return (
+                <Link
+                  key={shop.id}
+                  href={`/${shop.slug}`}
+                  target="_blank"
+                  className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-200 hover:bg-sky-50/50 transition-all group"
+                >
+                  <div className="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">{emoji}</div>
+                  <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">
+                    Plan {shop.plan === 'decouverte' ? 'Découverte' : shop.plan === 'business' ? 'Business' : shop.plan === 'pro' ? 'Pro' : 'Essai'}
+                  </p>
+                </Link>
+              )
+            })}
+          </div>
+
+          {shops.length > 0 && (
+            <div className="mt-12 text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                <strong className="text-gray-900">{shops.length}+ boutiques</strong> vendent déjà avec TekkiShop
+              </p>
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-white hover:opacity-90 transition-opacity shadow-md"
+              >
+                Rejoins-les maintenant
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Section "Le moment magique" ── Dark ──────────────────────────── */}
       <section className="bg-[#0F1729] py-20 px-4 relative overflow-hidden">
