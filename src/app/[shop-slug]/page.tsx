@@ -69,8 +69,8 @@ export default async function ShopPage({ params }: Props) {
   const shop = shopData as unknown as Shop
   const color = shop.primary_color ?? '#0EA5E9'
 
-  // Plan Business : utiliser le layout spécialisé
-  if (shop.plan === 'business') {
+  // Plan Pro : utiliser le layout spécialisé avec design personnalisé
+  if (shop.plan === 'pro') {
     const { data: productsData } = await supabase
       .from('products')
       .select('*')

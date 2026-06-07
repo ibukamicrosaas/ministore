@@ -361,7 +361,7 @@ export async function updateBusinessDesign(
     .eq('id', profile.shop_id)
     .single()
 
-  if (shop?.plan !== 'business') return { error: 'Cette fonctionnalité est réservée au plan Business.' }
+  if (shop?.plan !== 'pro') return { error: 'Cette fonctionnalité est réservée au plan Pro.' }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await admin
@@ -403,7 +403,7 @@ export async function uploadCoverImage(formData: FormData): Promise<{ error?: st
     .eq('id', profile.shop_id)
     .single()
 
-  if (shop?.plan !== 'business') return { error: 'Plan Business requis.' }
+  if (shop?.plan !== 'pro') return { error: 'Plan Pro requis.' }
 
   const file = formData.get('cover') as File | null
   if (!file || file.size === 0) return { error: 'Aucun fichier sélectionné.' }

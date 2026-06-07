@@ -50,9 +50,9 @@ export function SettingsForm({ shop }: Props) {
   const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Plan Business
-  // TypeScript peut râler ici si les migrations Business ne sont pas appliquées
-  const isBusiness                              = shop.plan === 'business'
+  // Plan Pro - Design personnalisé
+  // TypeScript peut râler ici si les migrations ne sont pas appliquées
+  const isProPlan                               = shop.plan === 'pro'
   const shopAny = shop as unknown as Record<string, unknown>
   const [coverImageUrl, setCoverImageUrl]       = useState<string | null>((shopAny.cover_image_url as string | null) ?? null)
   const [uploadingCover, setUploadingCover]     = useState(false)
@@ -622,14 +622,14 @@ export function SettingsForm({ shop }: Props) {
     </form>
 
     {/* ── Plan Business — Design Avancé ────────────────────────────────── */}
-    {isBusiness ? (
+    {isProPlan ? (
       <div className="mt-5 space-y-5">
         {/* Image de couverture */}
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
             <p className="text-sm font-medium text-gray-900">Image de couverture</p>
-            <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 rounded-full px-2 py-0.5">Business</span>
+            <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 rounded-full px-2 py-0.5">Pro</span>
           </div>
           <p className="text-xs text-gray-500">
             Bannière visible en haut de ton site (idéal : 1200x400px)
@@ -797,7 +797,7 @@ export function SettingsForm({ shop }: Props) {
           disabled={savingBusiness}
           className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
         >
-          {savingBusiness ? 'Enregistrement...' : 'Enregistrer le design Business'}
+          {savingBusiness ? 'Enregistrement...' : 'Enregistrer le design personnalisé'}
         </button>
       </div>
     ) : (
@@ -805,16 +805,16 @@ export function SettingsForm({ shop }: Props) {
       <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-          <p className="text-sm font-semibold text-gray-700">Fonctionnalités Business</p>
+          <p className="text-sm font-semibold text-gray-700">Fonctionnalités Pro</p>
         </div>
         <p className="text-xs text-gray-500 mb-3">
-          Le plan Business te permet de personnaliser ton shop avec une bannière, des badges, et tes liens sociaux.
+          Le plan Pro te permet de personnaliser ton shop avec une bannière, des badges, tes liens sociaux, et un domaine personnalisé.
         </p>
         <a
           href="/dashboard/upgrade"
           className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
         >
-          <Sparkles className="h-3 w-3" /> Passer au plan Business
+          <Sparkles className="h-3 w-3" /> Passer au plan Pro
         </a>
       </div>
     )}
