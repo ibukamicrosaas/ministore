@@ -28,6 +28,8 @@ export interface BictorysWebhookPayload {
   amount: number
   currency: string
   merchantReference?: string
+  paymentReference?: string
+  type?: string
 }
 
 export async function createBictorysCharge(

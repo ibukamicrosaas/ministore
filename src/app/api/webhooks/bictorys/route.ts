@@ -138,12 +138,13 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   const { shop_id: shopId, plan_key: planKey } = transaction as any
 
   // Vérifier montants, activer plan, mettre à jour transaction
-  const expectedAmount = { decouverte: 2900, business: 4900, pro: 9900 }[planKey as any] ?? 0
+  const planPrices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
+  const expectedAmount = planPrices[planKey] ?? 0
 
-  if (payload.amountInSmallestUnit !== expectedAmount * 100) {
+  if (payload.amount !== expectedAmount) {
     console.error('[handleSubscriptionWebhook] Montant mismatch:', {
-      expected: expectedAmount * 100,
-      actual: payload.amountInSmallestUnit,
+      expected: expectedAmount,
+      actual: payload.amount,
     })
     return NextResponse.json({ ok: true })
   }
