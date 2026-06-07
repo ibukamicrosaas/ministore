@@ -158,7 +158,7 @@ export async function createShop(formData: FormData) {
   const name = (formData.get('name') as string)?.trim()
   const city = (formData.get('city') as string)?.trim()
   const phoneWhatsapp = (formData.get('phone_whatsapp') as string)?.trim()
-  let country = (formData.get('country') as string)?.trim()
+  let country: string | null = (formData.get('country') as string)?.trim() || null
 
   if (!name || !city || !phoneWhatsapp) {
     return { error: 'Le nom de la boutique, la ville et le numéro WhatsApp sont obligatoires.' }
