@@ -327,3 +327,159 @@ export async function updateShop(data: UpdateShopInput) {
   if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
   return { success: true }
 }
+
+export async function updateBusinessDesign(
+  data: {
+    cover_image_url?: string | null
+    business_category?: string | null
+    badges?: string[]
+    social_links?: {
+      instagram?: string
+      tiktok?: string
+      facebook?: string
+      whatsapp?: string
+      website?: string
+    }
+  }
+): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  const admin = createAdminClient()
+  const { data: shop } = await admin
+    .from('shops')
+    .select('plan')
+    .eq('id', profile.shop_id)
+    .single()
+
+  if (shop?.plan !== 'business') return { error: 'Cette fonctionnalité est réservée au plan Business.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await admin
+    .from('shops')
+    .update({
+      cover_image_url: data.cover_image_url,
+      business_category: data.business_category,
+      badges: data.badges ?? [],
+      social_links: data.social_links ?? {},
+      updated_at: new Date().toISOString(),
+    } as any)
+    .eq('id', profile.shop_id)
+
+  if (error) return { error: 'Impossible de mettre à jour le design Business.' }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}
+
+export async function uploadCoverImage(formData: FormData): Promise<{ error?: string; url?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  const admin = createAdminClient()
+  const { data: shop } = await admin
+    .from('shops')
+    .select('plan')
+    .eq('id', profile.shop_id)
+    .single()
+
+  if (shop?.plan !== 'business') return { error: 'Plan Business requis.' }
+
+  const file = formData.get('cover') as File | null
+  if (!file || file.size === 0) return { error: 'Aucun fichier sélectionné.' }
+  if (file.size > 5 * 1024 * 1024) return { error: 'Le fichier doit faire moins de 5 Mo.' }
+  if (!file.type.startsWith('image/')) return { error: 'Le fichier doit être une image.' }
+
+  const ALLOWED_MIME: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  }
+  const ext = ALLOWED_MIME[file.type]
+  if (!ext) return { error: 'Format non autorisé. Utilise JPG, PNG ou WebP.' }
+
+  const path = `${profile.shop_id}/cover-${Date.now()}.${ext}`
+
+  const { error: uploadError } = await admin.storage
+    .from('shop-covers')
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (uploadError) {
+    console.error('[uploadCoverImage]', uploadError.message)
+    return { error: 'Impossible de télécharger l\'image de couverture.' }
+  }
+
+  const { data: { publicUrl } } = admin.storage.from('shop-covers').getPublicUrl(path)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await supabase
+    .from('shops')
+    .update({ cover_image_url: publicUrl, updated_at: new Date().toISOString() } as any)
+    .eq('id', profile.shop_id)
+
+  if (updateError) {
+    console.error('[uploadCoverImage update]', updateError.message)
+    return { error: 'Image téléchargée mais mise à jour échouée.' }
+  }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return { url: publicUrl }
+}
+
+export async function updateMetaPixelId(
+  pixelId: string | null,
+): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  // Valider le format du Pixel ID (généralement 15-18 chiffres)
+  const cleaned = pixelId ? pixelId.trim() : null
+  if (cleaned && !/^\d{15,18}$/.test(cleaned)) {
+    return { error: 'ID Pixel invalide. Doit contenir 15-18 chiffres.' }
+  }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await admin
+    .from('shops')
+    .update({ meta_pixel_id: cleaned, updated_at: new Date().toISOString() } as any)
+    .eq('id', profile.shop_id)
+
+  if (error) return { error: 'Impossible de mettre à jour le Pixel ID.' }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}

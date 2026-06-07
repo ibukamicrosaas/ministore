@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { MessageCircle, MapPin, ShoppingBag } from 'lucide-react'
 import { ProductGrid } from '@/components/pwa/ProductGrid'
 import { ShareButton } from '@/components/pwa/ShareButton'
+import { ShopBusinessLayout } from '@/components/pwa/ShopBusinessLayout'
 import type { Shop, Product } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -58,13 +59,30 @@ export default async function ShopPage({ params }: Props) {
   // des boutiques inactives (retourne la page de suspension avant le rendu de children)
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, cover_image_url, business_category, badges, social_links')
     .eq('slug', slug)
     .single()
 
   if (!shopData) notFound()
-  const shop = shopData as Pick<Shop, 'id' | 'name' | 'description' | 'logo_url' | 'primary_color' | 'city' | 'address' | 'phone_whatsapp' | 'available_days' | 'delivery_options'>
+  // TypeScript peut râler ici si les migrations Business ne sont pas appliquées sur Supabase
+  // C'est normal et disparaîtra après l'application des migrations
+  const shop = shopData as unknown as Shop
   const color = shop.primary_color ?? '#0EA5E9'
+
+  // Plan Business : utiliser le layout spécialisé
+  if (shop.plan === 'business') {
+    const { data: productsData } = await supabase
+      .from('products')
+      .select('*')
+      .eq('shop_id', shop.id)
+      .eq('is_active', true)
+      .or('stock_count.is.null,stock_count.gt.0')
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    const products = (productsData ?? []) as Product[]
+    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} />
+  }
 
   const { data: productsData } = await supabase
     .from('products')

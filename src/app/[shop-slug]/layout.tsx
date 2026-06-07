@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
+import { MetaPixelProvider } from '@/components/pwa/MetaPixelProvider'
 import type { Shop } from '@/types'
 
 export const revalidate = 60
@@ -16,11 +17,11 @@ export default async function ShopLayout({
 
   const { data } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, is_active, plan, trial_ends_at, hide_branding, phone_whatsapp, previous_slug')
+    .select('id, name, logo_url, primary_color, is_active, plan, trial_ends_at, hide_branding, phone_whatsapp, previous_slug, meta_pixel_id')
     .eq('slug', slug)
     .single()
 
-  let shop = data as Pick<Shop, 'id' | 'name' | 'logo_url' | 'primary_color' | 'is_active' | 'plan' | 'trial_ends_at' | 'hide_branding' | 'phone_whatsapp'> & { previous_slug?: string | null } | null
+  let shop = data as Pick<Shop, 'id' | 'name' | 'logo_url' | 'primary_color' | 'is_active' | 'plan' | 'trial_ends_at' | 'hide_branding' | 'phone_whatsapp'> & { previous_slug?: string | null; meta_pixel_id?: string | null } | null
 
   // Slug introuvable — vérifier si c'est un ancien slug renommé
   if (!shop) {
@@ -109,6 +110,7 @@ export default async function ShopLayout({
       className="min-h-screen bg-gray-50"
       style={{ '--color-primary': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
     >
+      {shop.meta_pixel_id && <MetaPixelProvider pixelId={shop.meta_pixel_id} />}
       {children}
       {!shop.hide_branding && (
         <footer className="max-w-lg mx-auto px-4 py-6 text-center">

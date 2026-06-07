@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, updateMetaPixelId } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, MapPin, Heart, Music } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -49,6 +49,29 @@ export function SettingsForm({ shop }: Props) {
   const [showSecretKey, setShowSecretKey]       = useState(false)
   const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Plan Business
+  // TypeScript peut râler ici si les migrations Business ne sont pas appliquées
+  const isBusiness                              = shop.plan === 'business'
+  const shopAny = shop as unknown as Record<string, unknown>
+  const [coverImageUrl, setCoverImageUrl]       = useState<string | null>((shopAny.cover_image_url as string | null) ?? null)
+  const [uploadingCover, setUploadingCover]     = useState(false)
+  const [businessCategory, setBusinessCategory] = useState((shopAny.business_category as string | null) ?? '')
+  const [badges, setBadges]                     = useState<string[]>(
+    Array.isArray(shopAny.badges) ? (shopAny.badges as unknown as string[]) : []
+  )
+  const [socialLinks, setSocialLinks]           = useState<Record<string, string>>(
+    shopAny.social_links && typeof shopAny.social_links === 'object' ? (shopAny.social_links as Record<string, string>) : {}
+  )
+  const [savingBusiness, setSavingBusiness]     = useState(false)
+  const coverInputRef                           = useRef<HTMLInputElement>(null)
+
+  // Meta Pixel
+  const metaPixelIdValue = (shop as unknown as Record<string, unknown>).meta_pixel_id
+  const [metaPixelId, setMetaPixelId]           = useState<string>(
+    typeof metaPixelIdValue === 'string' ? metaPixelIdValue : ''
+  )
+  const [savingPixel, setSavingPixel]           = useState(false)
 
   // Debounced slug availability check
   useEffect(() => {
@@ -105,6 +128,52 @@ export function SettingsForm({ shop }: Props) {
     } catch {
       setDomainStatus('failed')
     }
+  }
+
+  async function handleCoverImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCover(true)
+    const fd = new FormData()
+    fd.append('cover', file)
+    const result = await uploadCoverImage(fd)
+    if ('error' in result) {
+      toast.error(result.error ?? 'Erreur')
+    } else {
+      setCoverImageUrl(result.url ?? null)
+      toast.success('Image de couverture mise à jour ✓')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setUploadingCover(false)
+    if (coverInputRef.current) coverInputRef.current.value = ''
+  }
+
+  async function handleBusinessSave() {
+    setSavingBusiness(true)
+    const result = await updateBusinessDesign({
+      business_category: businessCategory.trim() || null,
+      badges: badges.filter(b => b.trim()),
+      social_links: Object.fromEntries(
+        Object.entries(socialLinks).filter(([_, v]) => v.trim())
+      ),
+    })
+    if ('error' in result) toast.error(result.error ?? 'Erreur')
+    else {
+      toast.success('Design Business mis à jour ✓')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setSavingBusiness(false)
+  }
+
+  async function handleMetaPixelSave() {
+    setSavingPixel(true)
+    const result = await updateMetaPixelId(metaPixelId.trim() || null)
+    if ('error' in result) toast.error(result.error ?? 'Erreur')
+    else {
+      toast.success(metaPixelId ? 'Meta Pixel ID enregistré ✓' : 'Meta Pixel ID supprimé ✓')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setSavingPixel(false)
   }
 
   async function handleSlugSave() {
@@ -552,6 +621,204 @@ export function SettingsForm({ shop }: Props) {
       </button>
     </form>
 
+    {/* ── Plan Business — Design Avancé ────────────────────────────────── */}
+    {isBusiness ? (
+      <div className="mt-5 space-y-5">
+        {/* Image de couverture */}
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-sm font-medium text-gray-900">Image de couverture</p>
+            <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 rounded-full px-2 py-0.5">Business</span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Bannière visible en haut de ton site (idéal : 1200x400px)
+          </p>
+
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video border border-amber-200">
+            {coverImageUrl ? (
+              <img
+                src={coverImageUrl}
+                alt="Cover"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <span className="text-sm text-gray-400">Aucune image</span>
+              </div>
+            )}
+            {uploadingCover && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            disabled={uploadingCover}
+            className="w-full flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          >
+            <Camera className="h-3.5 w-3.5" />
+            {uploadingCover ? 'Upload...' : 'Changer l\'image'}
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverImageChange}
+          />
+        </div>
+
+        {/* Catégorie métier */}
+        <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+          <label className="block text-sm font-medium text-gray-900">Domaine d'activité</label>
+          <input
+            type="text"
+            value={businessCategory}
+            onChange={e => setBusinessCategory(e.target.value)}
+            placeholder="Ex: Électroménager, Mode, Restaurant..."
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-amber-300 transition-colors"
+          />
+          <p className="text-xs text-gray-400">Décris ce que tu vends (visible sur la page de ton shop)</p>
+        </div>
+
+        {/* Badges / Certifications */}
+        <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-900">Badges & Certifications</label>
+            <button
+              type="button"
+              onClick={() => setBadges(prev => [...prev, ''])}
+              className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Ajouter
+            </button>
+          </div>
+          <div className="space-y-2">
+            {badges.map((badge, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={badge}
+                  onChange={e => setBadges(prev => {
+                    const next = [...prev]
+                    next[idx] = e.target.value
+                    return next
+                  })}
+                  placeholder="Ex: Livraison gratuite, Paiement sécurisé..."
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBadges(prev => prev.filter((_, i) => i !== idx))}
+                  className="shrink-0 text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {badges.length === 0 && (
+            <p className="text-xs text-gray-400 italic">Aucun badge — ajoute tes certifications ou avantages</p>
+          )}
+        </div>
+
+        {/* Liens sociaux */}
+        <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-sm font-medium text-gray-900">Liens sociaux</p>
+          <div className="space-y-2.5">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Instagram</label>
+              <div className="flex items-center rounded-lg border border-gray-200 px-3 py-2 bg-white gap-2">
+                <div className="h-4 w-4 text-pink-500 shrink-0 text-xs font-bold">📷</div>
+                <input
+                  type="url"
+                  value={socialLinks.instagram || ''}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                  placeholder="https://instagram.com/..."
+                  className="flex-1 text-sm bg-transparent outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">TikTok</label>
+              <div className="flex items-center rounded-lg border border-gray-200 px-3 py-2 bg-white gap-2">
+                <div className="h-4 w-4 text-gray-900 shrink-0 text-xs font-bold">♪</div>
+                <input
+                  type="url"
+                  value={socialLinks.tiktok || ''}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, tiktok: e.target.value }))}
+                  placeholder="https://tiktok.com/@..."
+                  className="flex-1 text-sm bg-transparent outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Facebook</label>
+              <div className="flex items-center rounded-lg border border-gray-200 px-3 py-2 bg-white gap-2">
+                <div className="h-4 w-4 text-blue-600 shrink-0 text-xs font-bold">f</div>
+                <input
+                  type="url"
+                  value={socialLinks.facebook || ''}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, facebook: e.target.value }))}
+                  placeholder="https://facebook.com/..."
+                  className="flex-1 text-sm bg-transparent outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Site web personnel</label>
+              <div className="flex items-center rounded-lg border border-gray-200 px-3 py-2 bg-white gap-2">
+                <Globe className="h-4 w-4 text-gray-600 shrink-0" />
+                <input
+                  type="url"
+                  value={socialLinks.website || ''}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, website: e.target.value }))}
+                  placeholder="https://..."
+                  className="flex-1 text-sm bg-transparent outline-none"
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">Laisse vide pour ne pas afficher le lien</p>
+        </div>
+
+        {/* Bouton sauvegarde */}
+        <button
+          type="button"
+          onClick={handleBusinessSave}
+          disabled={savingBusiness}
+          className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
+        >
+          {savingBusiness ? 'Enregistrement...' : 'Enregistrer le design Business'}
+        </button>
+      </div>
+    ) : (
+      /* Teaser pour les plans inférieurs */
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+          <p className="text-sm font-semibold text-gray-700">Fonctionnalités Business</p>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Le plan Business te permet de personnaliser ton shop avec une bannière, des badges, et tes liens sociaux.
+        </p>
+        <a
+          href="/dashboard/upgrade"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+        >
+          <Sparkles className="h-3 w-3" /> Passer au plan Business
+        </a>
+      </div>
+    )}
+
     {/* URL du site — section séparée (hors du form principal) */}
     <div className="mt-5 rounded-xl border border-gray-200 p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -638,23 +905,27 @@ export function SettingsForm({ shop }: Props) {
 
           {/* Instructions DNS */}
           <div className="rounded-xl border border-purple-200 bg-white p-3 space-y-2">
-            <p className="text-xs font-semibold text-gray-700">Configuration DNS requise</p>
-            <p className="text-xs text-gray-500">
-              Ajoute ce CNAME chez ton registrar (OVH, Namecheap, Cloudflare…) :
-            </p>
-            <div className="grid grid-cols-2 gap-1 text-xs font-mono">
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Type</span>
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">CNAME</span>
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Nom</span>
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-800">
+            <p className="text-xs font-semibold text-gray-700">📋 Configuration DNS requise</p>
+            <div className="space-y-2 text-xs text-gray-500">
+              <p>
+                <span className="font-semibold text-gray-700">1. Ajoute ce CNAME</span> chez ton registrar (OVH, Namecheap, Cloudflare…) :
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-xs font-mono bg-gray-50 rounded-lg p-2">
+              <span className="text-gray-600 font-semibold">Type</span>
+              <span className="text-gray-800 font-semibold">CNAME</span>
+              <span className="text-gray-600">Nom / Hôte</span>
+              <span className="text-gray-800 break-all font-semibold">
                 {customDomain ? customDomain.split('.')[0] : 'boutique'}
               </span>
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-600">Valeur</span>
-              <span className="bg-gray-100 rounded px-2 py-1 text-gray-800 break-all">cname.vercel-dns.com</span>
+              <span className="text-gray-600">Valeur / Cible</span>
+              <span className="text-gray-800 break-all font-semibold">cname.vercel-dns.com</span>
             </div>
-            <p className="text-[11px] text-gray-400">
-              La propagation DNS peut prendre jusqu'à 48h. Enregistre d'abord le domaine, puis vérifie.
-            </p>
+            <div className="space-y-1 text-xs text-gray-500 pt-1 border-t border-gray-200">
+              <p><span className="font-semibold text-gray-700">2. Attends la propagation DNS</span> (5 min à 48h selon le registrar)</p>
+              <p><span className="font-semibold text-gray-700">3. Clique sur "Vérifier le CNAME"</span> pour confirmer la connexion</p>
+              <p><span className="text-gray-400">💡 Besoin d'aide ? Contact support@tekki.shop ou WhatsApp 📞</span></p>
+            </div>
           </div>
 
           {/* Vérification CNAME */}
@@ -677,10 +948,30 @@ export function SettingsForm({ shop }: Props) {
             </div>
           )}
 
-          {/* Rappel Vercel */}
-          <p className="text-[11px] text-purple-500">
-            Dernière étape : contacte le support pour que le domaine soit activé sur l'infrastructure TekkiShop.
-          </p>
+          {/* Statut activation */}
+          {shop.custom_domain && (
+            <div className={`rounded-lg p-2.5 text-xs ${
+              domainStatus === 'verified'
+                ? 'bg-green-50 border border-green-200'
+                : domainStatus === 'failed'
+                  ? 'bg-orange-50 border border-orange-200'
+                  : 'bg-blue-50 border border-blue-200'
+            }`}>
+              <p className={`font-semibold ${
+                domainStatus === 'verified'
+                  ? 'text-green-700'
+                  : domainStatus === 'failed'
+                    ? 'text-orange-700'
+                    : 'text-blue-700'
+              }`}>
+                {domainStatus === 'verified'
+                  ? '✓ Domaine configuré correctement. TekkiShop reconnaît déjà les visites vers ton domaine.'
+                  : domainStatus === 'failed'
+                    ? '⏳ CNAME non trouvé. Vérifie ta configuration DNS ou réessaie dans quelques heures (propagation en cours).'
+                    : '📌 Enregistre le CNAME ci-dessus, puis clique sur "Vérifier le CNAME" pour valider.'}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Masquer la mention TekkiShop */}
@@ -725,6 +1016,67 @@ export function SettingsForm({ shop }: Props) {
         </a>
       </div>
     )}
+
+    {/* Meta Pixel (Facebook Pixel) */}
+    <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 text-blue-600 shrink-0 flex items-center justify-center text-xs font-bold">f</div>
+        <p className="text-sm font-medium text-gray-900">Meta Pixel (Facebook Pixel)</p>
+      </div>
+      <p className="text-xs text-gray-500">
+        Trackez les conversions, optimisez vos campagnes publicitaires et créez des audiences personnalisées.
+      </p>
+
+      <div className="space-y-3 pt-2 border-t border-blue-100">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">Meta Pixel ID</label>
+          <input
+            type="text"
+            value={metaPixelId}
+            onChange={e => setMetaPixelId(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ex: 123456789012345"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono outline-none focus:border-blue-300 transition-colors"
+            maxLength={18}
+          />
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            15-18 chiffres • Trouve-le dans ton Meta Business Suite (Events Manager)
+          </p>
+        </div>
+
+        <div className="rounded-lg bg-white p-3 space-y-2 text-xs text-gray-600">
+          <p className="font-semibold text-gray-700">Nous trackons automatiquement :</p>
+          <ul className="space-y-1 ml-2">
+            <li>✓ Page View — chaque visite</li>
+            <li>✓ View Content — consultation produit</li>
+            <li>✓ Add to Cart — ajout au panier</li>
+            <li>✓ Purchase — commande confirmée</li>
+          </ul>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleMetaPixelSave}
+          disabled={savingPixel}
+          className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+        >
+          {savingPixel ? 'Enregistrement...' : metaPixelId ? 'Mettre à jour Pixel' : 'Enregistrer Pixel'}
+        </button>
+
+        {metaPixelId && (
+          <button
+            type="button"
+            onClick={() => setMetaPixelId('')}
+            className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors"
+          >
+            Supprimer le Pixel
+          </button>
+        )}
+      </div>
+
+      <p className="text-[11px] text-blue-600">
+        💡 Besoin d'aide ? Consulte la <a href="https://developers.facebook.com/docs/facebook-pixel" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">documentation Meta Pixel</a>
+      </p>
+    </div>
     </>
   )
 }
