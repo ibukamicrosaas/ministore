@@ -119,8 +119,8 @@ export async function POST(req: NextRequest) {
 async function handleSubscriptionWebhook(merchantReference: string, payload: BictorysWebhookPayload) {
   console.log('[handleSubscriptionWebhook] Début — chargeId:', payload.id, 'status:', payload.status)
 
-  // Ignorer les paiements non réussis
-  if (payload.status !== 'succeed') {
+  // Ignorer les paiements non réussis (Bictorys retourne 'succeed' ou 'succeeded')
+  if (payload.status !== 'succeed' && payload.status !== 'succeeded') {
     console.log('[handleSubscriptionWebhook] Paiement non réussi — status:', payload.status)
     return NextResponse.json({ ok: true })
   }
@@ -207,8 +207,8 @@ async function handleOrderWebhook(
     return NextResponse.json({ ok: true, skipped: true })
   }
 
-  // Ignorer les paiements non réussis
-  if (payload.status !== 'succeed') {
+  // Ignorer les paiements non réussis (Bictorys retourne 'succeed' ou 'succeeded')
+  if (payload.status !== 'succeed' && payload.status !== 'succeeded') {
     console.log('[handleOrderWebhook] Paiement échoué — status:', payload.status)
     await supabase
       .from('payments')

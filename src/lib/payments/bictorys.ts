@@ -47,7 +47,7 @@ export interface BictorysChargePayload {
 
 export interface BictorysWebhookPayload {
   id: string
-  status: 'succeed' | 'failed' | 'pending'
+  status: 'succeed' | 'succeeded' | 'failed' | 'pending'
   amount: number
   currency: string
   merchantReference?: string
