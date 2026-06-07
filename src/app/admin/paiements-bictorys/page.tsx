@@ -47,13 +47,21 @@ export default async function PaymentsBictorysPage({
         .from('subscription_transactions' as never)
         .select('id, shop_id, plan_key, charge_id, status, created_at, activated_at, verified_at, error_message')
         .in('shop_id', shopIds)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }) as { data: any[] | null }
 
       // Enrichir avec les infos boutique
-      transactions = (txns ?? []).map(txn => ({
-        ...txn,
+      transactions = (txns ?? []).map((txn: any) => ({
+        id: txn.id,
+        shop_id: txn.shop_id,
+        plan_key: txn.plan_key,
+        charge_id: txn.charge_id,
+        status: txn.status,
+        created_at: txn.created_at,
+        activated_at: txn.activated_at,
+        verified_at: txn.verified_at,
+        error_message: txn.error_message,
         shop: shops?.find(s => s.id === txn.shop_id),
-      })) as Transaction[]
+      }))
     }
   }
 
