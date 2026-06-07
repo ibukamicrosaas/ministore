@@ -9,7 +9,12 @@ export default async function AdminPaymentsPage() {
   const admin = createAdminClient()
 
   // Récupérer toutes les transactions d'abonnement avec les shops
-  const { data: transactions, error: txnError } = await admin
+  // Note: payer_phone column will be added after migration is applied to Supabase
+  let transactions = null
+  let txnError = null
+
+  // Try to fetch with payer_phone column (for after migration)
+  const { data, error } = await admin
     .from('subscription_transactions' as never)
     .select(`
       id,
@@ -18,7 +23,6 @@ export default async function AdminPaymentsPage() {
       charge_id,
       merchant_reference,
       status,
-      payer_phone,
       created_at,
       verified_at,
       activated_at,
@@ -26,6 +30,9 @@ export default async function AdminPaymentsPage() {
       shops(id, name, slug, plan, is_active, phone_whatsapp, created_at)
     `)
     .order('created_at', { ascending: false }) as any
+
+  transactions = data
+  txnError = error
 
   if (txnError) {
     console.error('[admin/payments] Error:', txnError)
