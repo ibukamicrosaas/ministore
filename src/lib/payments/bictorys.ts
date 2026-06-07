@@ -98,10 +98,25 @@ export async function createBictorysCharge(
 
   // L'API Bictorys retourne 'link' (CheckoutLinkObject), 'url', ou 'confirmationLink'
   const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink) as string | undefined
-  const transactionId = (json.chargeId ?? json.id ?? json.transactionId) as string | undefined
+
+  // Essayer plusieurs variantes pour le transaction ID (Bictorys peut utiliser différentes clés)
+  const transactionId = (
+    json.chargeId ??
+    json.charge_id ??
+    json.id ??
+    json.transactionId ??
+    json.transaction_id ??
+    json.paymentId ??
+    json.payment_id
+  ) as string | undefined
 
   if (!checkoutUrl) {
     throw new Error(`Bictorys: pas d'URL dans la réponse: ${JSON.stringify(json)}`)
+  }
+
+  if (!transactionId) {
+    console.warn('[createBictorysCharge] ⚠️ Pas d\'ID de transaction dans la réponse Bictorys!')
+    console.warn('[createBictorysCharge] Réponse complète:', json)
   }
 
   console.log('[createBictorysCharge] ✅ Succès:', { checkoutUrl: checkoutUrl?.slice(0, 50) + '...', transactionId })

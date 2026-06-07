@@ -132,10 +132,25 @@ export async function POST(req: NextRequest) {
   const { checkoutUrl, transactionId } = chargeResult
 
   // Enregistrer la tentative de paiement pour le webhook
-  if (!transactionId) {
-    console.warn('[subscription/create] ⚠️  transactionId vide! Bictorys a peut-être retourné une réponse invalide')
-    return NextResponse.json({ error: 'Transaction ID manquant dans la réponse Bictorys' }, { status: 500 })
+  if (!transactionId || transactionId.trim() === '') {
+    console.error('[subscription/create] ❌ transactionId vide ou invalide!', {
+      transactionId,
+      chargeResult,
+    })
+    console.error('[subscription/create] Response Bictorys n\'a pas retourné de charge ID valide')
+    return NextResponse.json({
+      error: 'Erreur: Bictorys n\'a pas fourni d\'ID de transaction. Veuillez réessayer.'
+    }, { status: 500 })
   }
+
+  console.log('[subscription/create] ✅ Transaction ID valide:', transactionId)
+
+  console.log('[subscription/create] 📝 Insertion dans subscription_transactions:', {
+    shop_id: shopId,
+    plan_key: planKey,
+    charge_id: transactionId,
+    merchant_reference: paymentReference,
+  })
 
   const { error: insertError, data: txnData } = await admin
     .from('subscription_transactions' as never)
@@ -151,8 +166,17 @@ export async function POST(req: NextRequest) {
 
   if (insertError) {
     console.error('[subscription/create] ❌ Erreur insertion subscription_transactions:', insertError)
-    return NextResponse.json({ error: 'Erreur lors de l\'enregistrement de la transaction' }, { status: 500 })
+    console.error('[subscription/create] Détails insertion:', {
+      shop_id: shopId,
+      plan_key: planKey,
+      charge_id: transactionId,
+      merchant_reference: paymentReference,
+      insertError: insertError.message,
+    })
+    return NextResponse.json({ error: `Erreur lors de l\'enregistrement: ${insertError.message}` }, { status: 500 })
   }
+
+  console.log('[subscription/create] ✅ Transaction enregistrée:', txnData?.id)
 
   console.log('[subscription/create] ✅ Charge créée avec succès:', {
     txnId: txnData?.id,
