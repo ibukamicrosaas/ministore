@@ -46,6 +46,18 @@ export async function POST(req: NextRequest) {
   }
 
   const shopId = profile.shop_id as string
+
+  // Récupérer le pays de la boutique (requis par Bictorys)
+  const { data: shop } = await admin
+    .from('shops')
+    .select('country, phone_whatsapp')
+    .eq('id', shopId)
+    .single()
+
+  if (!shop?.country) {
+    return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
+  }
+
   const amount = PLAN_PRICES[planKey]
   const paymentReference = `ts-sub-${shopId.slice(0, 8)}`
 
@@ -55,6 +67,7 @@ export async function POST(req: NextRequest) {
       {
         amount,
         currency: 'XOF',
+        country: shop.country,
         paymentReference,
         successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
         errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,

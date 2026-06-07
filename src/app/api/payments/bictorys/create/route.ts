@@ -48,9 +48,13 @@ export async function POST(req: NextRequest) {
   // Utiliser la clé Bictorys propre de la boutique (plan Pro) si disponible
   const { data: shopData } = await supabase
     .from('shops')
-    .select('plan, bictorys_secret_key')
+    .select('plan, bictorys_secret_key, country')
     .eq('id', order.shop_id)
     .single()
+
+  if (!shopData?.country) {
+    return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
+  }
 
   const rawShopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
   const shopKey = rawShopKey ? decryptApiKey(rawShopKey) : null
@@ -79,6 +83,7 @@ export async function POST(req: NextRequest) {
       {
         amount: amountToCharge,
         currency: 'XOF',
+        country: shopData.country,
         paymentReference: `tekkishop-${orderId.slice(0, 8)}`,
         merchantReference: orderId,
         successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
@@ -89,6 +94,7 @@ export async function POST(req: NextRequest) {
           name: customerName || undefined,
           phone: customerPhone,
           locale: 'fr-FR',
+          country: shopData.country,
         },
       },
       paymentType,

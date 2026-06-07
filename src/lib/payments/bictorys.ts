@@ -8,6 +8,7 @@ export type BictorysMethod = BictorysPaymentType
 export interface BictorysChargePayload {
   amount: number
   currency: string
+  country: string
   paymentReference: string
   successRedirectUrl: string
   errorRedirectUrl: string
@@ -19,6 +20,7 @@ export interface BictorysChargePayload {
     phone?: string
     email?: string
     locale?: string
+    country?: string
   }
 }
 
