@@ -70,7 +70,8 @@ export function OnboardingForm() {
             name="country"
             label="Pays"
             options={COUNTRY_OPTIONS}
-            defaultValue="SN"
+            required
+            error={errors.country}
           />
         </div>
 
