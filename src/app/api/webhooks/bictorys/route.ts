@@ -45,21 +45,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Payload JSON invalide' }, { status: 400 })
   }
 
-  const merchantReference = payload.merchantReference
-  if (!merchantReference) {
-    console.error('[webhook] merchantReference manquant dans payload:', payload)
-    return NextResponse.json({ error: 'merchantReference manquant' }, { status: 400 })
+  // Chercher la référence : paymentReference (abonnements + commandes) ou merchantReference (commandes)
+  const reference = payload.paymentReference ?? payload.merchantReference
+  if (!reference) {
+    console.error('[webhook] Aucune référence (paymentReference/merchantReference) dans payload:', payload)
+    return NextResponse.json({ error: 'Référence manquante' }, { status: 400 })
   }
 
-  console.log('[webhook] Webhook reçu — merchRef:', merchantReference, 'status:', payload.status, 'id:', payload.id)
+  console.log('[webhook] Webhook reçu — reference:', reference, 'status:', payload.status, 'id:', payload.id)
 
   // ── PAIEMENT D'ABONNEMENT ─────────────────────────────────────────────
-  // Format: "sub-{36-char-uuid}-{planKey}"
+  // Format: "ts-sub-{shop-id-start}" ou "sub-{36-char-uuid}-{planKey}"
   // Stratégie : TOUJOURS vérifier l'API Bictorys directement pour les abonnements
   // (élimine la dépendance aux clés secrètes, qui peuvent être mal configurées)
-  if (merchantReference.startsWith('sub-')) {
-    return handleSubscriptionWebhook(merchantReference, payload)
+  if (reference.startsWith('ts-sub-') || reference.startsWith('sub-')) {
+    return handleSubscriptionWebhook(reference, payload)
   }
+
+  const merchantReference = reference
 
   // ── PAIEMENT DE COMMANDE ──────────────────────────────────────────────
   // Pour les commandes : vérifier la signature (plus critique car plus de surface d'attaque)
