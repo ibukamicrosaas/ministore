@@ -10,11 +10,11 @@ import { signOut } from '@/lib/actions/auth'
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
 const navLinks = [
-  { href: '/admin',                label: 'Vue d\'ensemble',    icon: LayoutDashboard },
-  { href: '/admin/analytics',      label: 'Analytics',         icon: TrendingUp },
-  { href: '/admin/shops',          label: 'Boutiques',          icon: Building2 },
-  { href: '/admin/subscriptions',  label: 'Abonnements',        icon: CreditCard },
-  { href: '/admin/payouts',        label: 'Reversements',       icon: Wallet },
+  { href: '/admin',           label: 'Vue d\'ensemble',    icon: LayoutDashboard },
+  { href: '/admin/analytics', label: 'Analytics',         icon: TrendingUp },
+  { href: '/admin/shops',     label: 'Boutiques',          icon: Building2 },
+  { href: '/admin/payments',  label: 'Paiements Bictorys', icon: CreditCard },
+  { href: '/admin/payouts',   label: 'Reversements',       icon: Wallet },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
