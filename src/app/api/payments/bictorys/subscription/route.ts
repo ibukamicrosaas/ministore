@@ -47,8 +47,7 @@ export async function POST(req: NextRequest) {
 
   const shopId = profile.shop_id as string
   const amount = PLAN_PRICES[planKey]
-  // merchantReference format: "sub-{8-char-uuid-prefix}-{planKey}" (court pour compatibilité Bictorys)
-  const merchantReference = `sub-${shopId.slice(0, 8)}-${planKey}`
+  const paymentReference = `ts-sub-${shopId.slice(0, 8)}`
 
   try {
     const { checkoutUrl, transactionId } = await createBictorysCharge(
@@ -56,8 +55,7 @@ export async function POST(req: NextRequest) {
       {
         amount,
         currency: 'XOF',
-        paymentReference: `ts-sub-${shopId.slice(0, 8)}`,
-        merchantReference,
+        paymentReference,
         successRedirectUrl: `${APP_URL}/dashboard/upgrade?success=1&plan=${planKey}`,
         errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
         webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
@@ -71,17 +69,29 @@ export async function POST(req: NextRequest) {
       paymentType ?? undefined,
     )
 
-    // Note: enregistrement de tentatives de paiement pour cron fallback
-    // sera implémenté après la migration Supabase (table subscription_transactions)
+    // Enregistrer la tentative de paiement pour le webhook
+    const { error: insertError } = await admin
+      .from('subscription_transactions')
+      .insert({
+        shop_id: shopId,
+        plan_key: planKey,
+        charge_id: transactionId || '',
+        merchant_reference: paymentReference,
+        status: 'pending',
+      })
+
+    if (insertError) {
+      console.error('[subscription/create] Erreur insertion subscription_transactions:', insertError)
+      // Ne pas bloquer le paiement si l'enregistrement échoue
+    }
 
     console.log('[subscription/create] Charge créée avec succès:', {
       shopId,
       planKey,
       transactionId: transactionId?.slice(0, 8) + '...',
-      merchantReference,
+      paymentReference,
     })
 
-    // Retourner transactionId pour que le client puisse le stocker et le vérifier au retour
     return NextResponse.json({ checkoutUrl, transactionId })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'

@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
  * (élimine la dépendance aux clés secrètes mal configurées)
  */
 async function handleSubscriptionWebhook(merchantReference: string, payload: BictorysWebhookPayload) {
-  console.log('[handleSubscriptionWebhook] Début — merchRef:', merchantReference)
+  console.log('[handleSubscriptionWebhook] Début — chargeId:', payload.id, 'status:', payload.status)
 
   // Ignorer les paiements non réussis
   if (payload.status !== 'succeed') {
@@ -122,75 +122,61 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     return NextResponse.json({ ok: true })
   }
 
-  // Parser la référence : "sub-{8-char-prefix}-{planKey}"
-  const shopIdPrefix = merchantReference.slice(4, 12)
-  const planKey = merchantReference.slice(13)
-
-  // Valider le planKey
-  if (!VALID_PLAN_KEYS.has(planKey)) {
-    console.error('[handleSubscriptionWebhook] planKey non autorisé:', planKey)
-    return NextResponse.json({ error: 'plan invalide' }, { status: 400 })
-  }
-
-  // Retrouver le shopId complet par le préfixe
+  // Retrouver la transaction par charge_id
   const supabase = createAdminClient()
-  const { data: shops } = await supabase
-    .from('shops')
-    .select('id')
-    .ilike('id', shopIdPrefix + '%')
+  const { data: transaction, error: txnError } = await supabase
+    .from('subscription_transactions')
+    .select('shop_id, plan_key, merchant_reference')
+    .eq('charge_id', payload.id)
+    .single()
 
-  const shop = shops?.[0]
-  if (!shop) {
-    console.error('[handleSubscriptionWebhook] Aucun shop trouvé avec le préfixe:', shopIdPrefix)
-    return NextResponse.json({ error: 'Shop non trouvé' }, { status: 404 })
+  if (txnError || !transaction) {
+    console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError)
+    return NextResponse.json({ ok: true }) // 200 même si pas trouvée
   }
 
-  const shopId = shop.id
+  const { shop_id: shopId, plan_key: planKey } = transaction
 
-  // ✅ Stratégie clé : vérifier via l'API Bictorys directement
-  // Cela élimine la dépendance aux webhooks secrets mal configurés
-  const apiKey = process.env.BICTORYS_API_KEY
-  if (!apiKey || !payload.id) {
-    console.error('[handleSubscriptionWebhook] Clé API ou charge ID manquant')
-    return NextResponse.json({ error: 'Configuration manquante' }, { status: 500 })
-  }
-
-  try {
-    const charge = await getBictorysCharge(apiKey, payload.id)
-    console.log('[handleSubscriptionWebhook] Charge Bictorys:', { id: payload.id, status: charge.status, merchantRef: charge.merchantReference })
-
-    // Vérifier le statut
-    if (charge.status !== 'succeed') {
-      console.log('[handleSubscriptionWebhook] Charge non finalisée — ignorée')
-      return NextResponse.json({ ok: true })
-    }
-
-    // Vérifier la référence croisée
-    const expectedRef = `sub-${shopId}-${planKey}`
-    if (charge.merchantReference && charge.merchantReference !== expectedRef) {
-      console.error('[handleSubscriptionWebhook] Mismatch merchantReference:', {
-        expected: expectedRef,
-        actual: charge.merchantReference,
-      })
-      return NextResponse.json({ error: 'Référence invalide' }, { status: 400 })
-    }
-
-    // ✅ Activer le plan
-    console.log('[handleSubscriptionWebhook] Activation du plan:', { shopId, planKey })
-    const { error: activationError } = await activatePlan(shopId, planKey)
-    if (activationError) {
-      console.error('[handleSubscriptionWebhook] activatePlan échoué:', activationError)
-      // Note: enregistrement des erreurs dans subscription_transactions
-      // sera implémenté après la migration Supabase
-      return NextResponse.json({ error: activationError }, { status: 500 })
-    }
-
-    console.log('[handleSubscriptionWebhook] ✅ Plan activé avec succès:', { shopId, planKey })
+  // Vérifier les montants et devise (anti-fraude)
+  const expectedAmount = { decouverte: 2900, business: 4900, pro: 9900 }[planKey] ?? 0
+  if (payload.amount !== expectedAmount || payload.currency !== 'XOF') {
+    console.error('[handleSubscriptionWebhook] Montant/devise invalide:', {
+      expected: { amount: expectedAmount, currency: 'XOF' },
+      actual: { amount: payload.amount, currency: payload.currency },
+    })
+    // Marquer comme échec
+    await supabase
+      .from('subscription_transactions')
+      .update({ status: 'failed', error_message: 'Montant ou devise invalide' })
+      .eq('charge_id', payload.id)
     return NextResponse.json({ ok: true })
-  } catch (err) {
-    console.error('[handleSubscriptionWebhook] Erreur lors de la vérification API:', err)
-    return NextResponse.json({ error: 'Vérification API échouée' }, { status: 500 })
   }
+
+  // ✅ Activer le plan
+  console.log('[handleSubscriptionWebhook] Activation du plan:', { shopId, planKey })
+  const { error: activationError } = await activatePlan(shopId, planKey)
+  if (activationError) {
+    console.error('[handleSubscriptionWebhook] activatePlan échoué:', activationError)
+    await supabase
+      .from('subscription_transactions')
+      .update({ status: 'failed', error_message: activationError })
+      .eq('charge_id', payload.id)
+    return NextResponse.json({ ok: true }) // 200 même en cas d'erreur
+  }
+
+  // ✅ Marquer la transaction comme activée
+  console.log('[handleSubscriptionWebhook] ✅ Plan activé avec succès:', { shopId, planKey })
+  const { error: updateError } = await supabase
+    .from('subscription_transactions')
+    .update({ status: 'activated', activated_at: new Date().toISOString() })
+    .eq('charge_id', payload.id)
+
+  if (updateError) {
+    console.error('[handleSubscriptionWebhook] Erreur mise à jour statut:', updateError)
+    // Mais le plan est déjà activé, donc on retourne 200
+  }
+
+  return NextResponse.json({ ok: true })
 }
 
 /**
