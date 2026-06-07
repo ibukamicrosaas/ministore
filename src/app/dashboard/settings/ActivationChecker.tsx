@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, CheckCircle2 } from 'lucide-react'
-import { pollShopActivation } from '../upgrade/actions'
+import { pollShopActivation, verifySubscriptionPayment } from '../upgrade/actions'
 
 export function ActivationChecker() {
   const router = useRouter()
@@ -13,6 +13,27 @@ export function ActivationChecker() {
   async function handleCheck() {
     setChecking(true)
     setNotFound(false)
+
+    // Lire les cookies depuis le navigateur
+    const txnCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('pending_sub_txn='))
+      ?.split('=')[1]
+    const planCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('pending_sub_plan='))
+      ?.split('=')[1]
+
+    // Si les cookies existent, vérifier via l'API Bictorys
+    if (txnCookie && planCookie) {
+      const result = await verifySubscriptionPayment(txnCookie, planCookie)
+      if (result.success) {
+        router.refresh()
+        return
+      }
+    }
+
+    // Fallback : vérifier juste si la boutique est active
     const { isActive } = await pollShopActivation()
     if (isActive) {
       router.refresh()
