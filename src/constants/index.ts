@@ -16,7 +16,7 @@ export const TRIAL_DAYS            = 14
 export const SUBSCRIPTION_DAYS     = 31 // durée d'un abonnement mensuel (en jours)
 export const PLAN_LIMITS = {
   trial:      { maxProducts: 10  },
-  decouverte: { maxProducts: 30  },
+  decouverte: { maxProducts: 10  },
   business:   { maxProducts: 100 },
   pro:        { maxProducts: Infinity },
 } as const
