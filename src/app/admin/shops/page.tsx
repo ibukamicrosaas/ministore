@@ -26,6 +26,14 @@ export default function AdminShopsPage() {
         .from('shops')
         .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
         .order('created_at', { ascending: false })
+
+      if (data) {
+        // Diagnostic: voir les codes pays uniques dans la BD
+        const uniqueCountries = [...new Set(data.map(s => s.country).filter(Boolean))]
+        console.log('🌍 Codes pays dans la BD:', uniqueCountries)
+        console.log('Exemples de shops:', data.slice(0, 3).map(s => ({ name: s.name, country: s.country })))
+      }
+
       setShops(data ?? [])
     } finally {
       setLoading(false)
@@ -35,7 +43,7 @@ export default function AdminShopsPage() {
   const filtered = useMemo(() => {
     return shops.filter(s => {
       const matchesPlan = filterPlan === 'all' || s.plan === filterPlan
-      const matchesCountry = filterCountry === 'all' || s.country === filterCountry
+      const matchesCountry = filterCountry === 'all' || (s.country?.toUpperCase() === filterCountry?.toUpperCase())
       const normalizePhone = (phone: string) => phone?.replace(/\D/g, '') || ''
       const matchesSearch = !searchQuery ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
