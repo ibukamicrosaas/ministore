@@ -146,7 +146,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     })
     // Marquer comme échec
     await supabase
-      .from('subscription_transactions')
+      .from('subscription_transactions' as never)
       .update({ status: 'failed', error_message: 'Montant ou devise invalide' })
       .eq('charge_id', payload.id)
     return NextResponse.json({ ok: true })
@@ -158,7 +158,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   if (activationError) {
     console.error('[handleSubscriptionWebhook] activatePlan échoué:', activationError)
     await supabase
-      .from('subscription_transactions')
+      .from('subscription_transactions' as never)
       .update({ status: 'failed', error_message: activationError })
       .eq('charge_id', payload.id)
     return NextResponse.json({ ok: true }) // 200 même en cas d'erreur

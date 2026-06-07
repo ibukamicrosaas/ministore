@@ -22,7 +22,7 @@ export default async function AdminShopDetailPage({ params }: { params: Promise<
 
   // Récupérer l'historique des paiements
   const { data: transactions } = await supabase
-    .from('subscription_transactions')
+    .from('subscription_transactions' as never)
     .select('id, plan_key, charge_id, status, created_at, activated_at, error_message')
     .eq('shop_id', id)
     .order('created_at', { ascending: false })

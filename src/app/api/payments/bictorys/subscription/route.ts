@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // Enregistrer la tentative de paiement pour le webhook
     const { error: insertError } = await admin
-      .from('subscription_transactions')
+      .from('subscription_transactions' as never)
       .insert({
         shop_id: shopId,
         plan_key: planKey,

@@ -44,7 +44,7 @@ export default async function PaymentsBictorysPage({
     // Si on a des boutiques, chercher les transactions associées
     if (shopIds.length > 0) {
       const { data: txns } = await supabase
-        .from('subscription_transactions')
+        .from('subscription_transactions' as never)
         .select('id, shop_id, plan_key, charge_id, status, created_at, activated_at, verified_at, error_message')
         .in('shop_id', shopIds)
         .order('created_at', { ascending: false })
