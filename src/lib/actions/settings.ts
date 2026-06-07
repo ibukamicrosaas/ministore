@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { TRIAL_DAYS } from '@/constants'
 import { encryptApiKey } from '@/lib/crypto/encrypt'
 import { detectCountryFromPhone } from '@/lib/payments/bictorys'
+import { getCountryFromCityOrPhone } from '@/lib/locations/city-to-country'
 import type { UpdateShopInput } from '@/types'
 
 async function getProShopId(): Promise<{ shopId: string } | { error: string }> {
@@ -159,13 +160,17 @@ export async function createShop(formData: FormData) {
   const phoneWhatsapp = (formData.get('phone_whatsapp') as string)?.trim()
   let country = (formData.get('country') as string)?.trim()
 
-  if (!name || !city || !phoneWhatsapp || !country) {
-    return { error: 'Le nom de la boutique, la ville, le pays et le numéro WhatsApp sont obligatoires.' }
+  if (!name || !city || !phoneWhatsapp) {
+    return { error: 'Le nom de la boutique, la ville et le numéro WhatsApp sont obligatoires.' }
   }
 
-  // Si le pays est vide (ne devrait pas arriver ici avec le formulaire required), essayer détection
+  // Smart country detection: city first, then phone, then user selection
   if (!country) {
-    country = detectCountryFromPhone(phoneWhatsapp) || 'SN'
+    country = getCountryFromCityOrPhone(city, phoneWhatsapp, detectCountryFromPhone) || null
+  }
+
+  if (!country) {
+    return { error: 'Impossible de déterminer le pays. Veuillez sélectionner manuellement.' }
   }
 
   const baseSlug = name
