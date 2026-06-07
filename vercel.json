@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/subscription-expiry",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/process-pending-payouts",
+      "schedule": "0 6 * * *"
     }
   ]
 }
