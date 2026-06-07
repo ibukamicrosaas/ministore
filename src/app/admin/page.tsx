@@ -5,6 +5,7 @@ import { Building2, ShoppingBag, TrendingUp, Clock, AlertCircle, Zap, UserCheck,
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
 import CountryConversionWidget from '@/components/admin/CountryConversionWidget'
+import { FixShopCountriesButton } from '@/components/admin/FixShopCountriesButton'
 
 export const metadata = { title: 'Admin — TekkiShop' }
 
@@ -187,6 +188,11 @@ export default async function AdminOverviewPage() {
             </div>
           </div>
         )}
+
+        {/* Correction des pays */}
+        <div className="mb-8">
+          <FixShopCountriesButton />
+        </div>
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-8">

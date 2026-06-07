@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { createShop } from '@/lib/actions/settings'
 import { TRIAL_DAYS } from '@/constants'
+import { detectCountryFromPhone } from '@/lib/payments/bictorys'
+import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
 const COUNTRY_OPTIONS = [
@@ -26,6 +28,29 @@ const COUNTRY_OPTIONS = [
 export function OnboardingForm() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null)
+
+  // Récupérer et pré-détecter le country depuis le phone du profile utilisateur
+  useEffect(() => {
+    async function detectCountry() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.phone) {
+        const detected = detectCountryFromPhone(profile.phone)
+        setDetectedCountry(detected)
+      }
+    }
+
+    detectCountry()
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -70,6 +95,7 @@ export function OnboardingForm() {
             name="country"
             label="Pays"
             placeholder="Sélectionne ton pays"
+            defaultValue={detectedCountry ?? undefined}
             options={COUNTRY_OPTIONS}
             required
             error={errors.country}
