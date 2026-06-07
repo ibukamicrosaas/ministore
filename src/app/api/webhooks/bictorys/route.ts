@@ -125,17 +125,36 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     return NextResponse.json({ ok: true })
   }
 
-  // Retrouver la transaction par charge_id
+  // Retrouver la transaction par charge_id ou merchant_reference
   const supabase = createAdminClient()
-  const { data: transaction, error: txnError } = await supabase
+
+  console.log('[handleSubscriptionWebhook] Recherche transaction avec charge_id:', payload.id)
+  let { data: transaction, error: txnError } = await supabase
     .from('subscription_transactions' as never)
-    .select('shop_id, plan_key, merchant_reference')
+    .select('shop_id, plan_key, merchant_reference, charge_id, status')
     .eq('charge_id', payload.id)
     .single() as any
 
   if (txnError || !transaction) {
-    console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError)
-    return NextResponse.json({ ok: true })
+    console.error('[handleSubscriptionWebhook] Transaction non trouvée pour chargeId:', payload.id, 'erreur:', txnError?.message)
+
+    // Fallback: chercher par paymentReference au lieu de charge_id
+    console.log('[handleSubscriptionWebhook] Tentative fallback avec paymentReference:', merchantReference)
+    const { data: txnByRef, error: refError } = await supabase
+      .from('subscription_transactions' as never)
+      .select('shop_id, plan_key, merchant_reference, charge_id, status')
+      .eq('merchant_reference', merchantReference)
+      .single() as any
+
+    if (refError || !txnByRef) {
+      console.error('[handleSubscriptionWebhook] Transaction non trouvée non plus par paymentReference:', merchantReference, 'erreur:', refError?.message)
+      return NextResponse.json({ ok: true })
+    }
+
+    console.log('[handleSubscriptionWebhook] ✅ Transaction trouvée par paymentReference:', txnByRef)
+    transaction = txnByRef
+  } else {
+    console.log('[handleSubscriptionWebhook] ✅ Transaction trouvée par charge_id:', transaction)
   }
 
   const { shop_id: shopId, plan_key: planKey } = transaction as any

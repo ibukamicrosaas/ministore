@@ -92,24 +92,33 @@ export async function POST(req: NextRequest) {
     )
 
     // Enregistrer la tentative de paiement pour le webhook
-    const { error: insertError } = await admin
+    if (!transactionId) {
+      console.warn('[subscription/create] ⚠️  transactionId vide! Bictorys a peut-être retourné une réponse invalide')
+      return NextResponse.json({ error: 'Transaction ID manquant dans la réponse Bictorys' }, { status: 500 })
+    }
+
+    const { error: insertError, data: txnData } = await admin
       .from('subscription_transactions' as never)
       .insert({
         shop_id: shopId,
         plan_key: planKey,
-        charge_id: transactionId || '',
+        charge_id: transactionId,
         merchant_reference: paymentReference,
         status: 'pending',
       } as never)
+      .select()
+      .single() as any
 
     if (insertError) {
-      console.error('[subscription/create] Erreur insertion subscription_transactions:', insertError)
+      console.error('[subscription/create] ❌ Erreur insertion subscription_transactions:', insertError)
+      return NextResponse.json({ error: 'Erreur lors de l\'enregistrement de la transaction' }, { status: 500 })
     }
 
-    console.log('[subscription/create] Charge créée avec succès:', {
+    console.log('[subscription/create] ✅ Charge créée avec succès:', {
+      txnId: txnData?.id,
       shopId,
       planKey,
-      transactionId: transactionId?.slice(0, 8) + '...',
+      chargeId: transactionId,
       paymentReference,
     })
 
