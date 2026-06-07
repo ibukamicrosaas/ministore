@@ -18,11 +18,12 @@ export default async function AdminPaymentsPage() {
       charge_id,
       merchant_reference,
       status,
+      payer_phone,
       created_at,
       verified_at,
       activated_at,
       error_message,
-      shops(id, name, slug, plan, is_active, created_at)
+      shops(id, name, slug, plan, is_active, phone_whatsapp, created_at)
     `)
     .order('created_at', { ascending: false }) as any
 
@@ -42,6 +43,7 @@ export default async function AdminPaymentsPage() {
     charge_id: string
     merchant_reference: string
     status: 'pending' | 'activated' | 'error'
+    payer_phone: string | null
     created_at: string
     verified_at: string | null
     activated_at: string | null
@@ -52,6 +54,7 @@ export default async function AdminPaymentsPage() {
       slug: string
       plan: string
       is_active: boolean
+      phone_whatsapp: string | null
       created_at: string
     } | null
   }>
@@ -156,7 +159,7 @@ export default async function AdminPaymentsPage() {
                     <tr key={txn.id} className={`hover:bg-gray-50 transition-colors ${mismatch ? 'bg-red-50' : ''}`}>
                       <td className="px-6 py-4">
                         <p className="font-semibold text-gray-900">{txn.shops?.name ?? '—'}</p>
-                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{txn.shop_id.slice(0, 8)}...</p>
+                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{txn.payer_phone ?? txn.shops?.phone_whatsapp ?? '—'}</p>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
@@ -225,18 +228,35 @@ export default async function AdminPaymentsPage() {
         </div>
 
         {/* Légende */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">ℹ️ Explication</h3>
-          <div className="space-y-2 text-sm text-blue-800">
-            <p>
-              <strong>Statut Transaction</strong>: Statut du paiement Bictorys (Réussi/En attente/Erreur)
-            </p>
-            <p>
-              <strong>Plan Activé</strong>: Est-ce que le plan a été changé de 'trial' à payant ET la boutique est active?
-            </p>
-            <p>
-              <strong>Mismatch (Ligne rouge)</strong>: La transaction est réussie mais le plan n'a pas été activé automatiquement.
-              Cela nécessite une investigation du webhook ou du processus d'activation.
+        <div className="mt-8 space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="font-semibold text-blue-900 mb-3">ℹ️ Comprendre les colonnes</h3>
+            <div className="space-y-3 text-sm text-blue-800">
+              <div>
+                <strong>Statut Transaction</strong>
+                <p className="mt-1 ml-4 text-xs">État du paiement dans le système TekkiShop :</p>
+                <ul className="ml-4 mt-1 space-y-1 text-xs">
+                  <li>🟡 <strong>En attente</strong>: Paiement créé mais webhook non reçu de Bictorys</li>
+                  <li>✅ <strong>Réussi</strong>: Webhook reçu et plan activé avec succès</li>
+                  <li>❌ <strong>Erreur</strong>: Le webhook a détecté un problème (montant mismatch, plan non activé, etc.)</li>
+                </ul>
+              </div>
+              <div>
+                <strong>Plan Activé</strong>
+                <p className="mt-1 ml-4 text-xs">La boutique a-t-elle un plan payant (Pro/Business/Découverte) et est-elle active?</p>
+              </div>
+              <div>
+                <strong>Mismatch (Ligne rouge)</strong>
+                <p className="mt-1 ml-4 text-xs">La transaction est marquée Réussi (Statut) MAIS le plan de la boutique n'a pas changé. Cela indique un problème d'activation automatique.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <h3 className="font-semibold text-amber-900 mb-3">⚠️ En attente vs Réussi</h3>
+            <p className="text-sm text-amber-800">
+              Une transaction peut être "En attente" même si la boutique a un plan payant activé. Cela signifie que le webhook Bictorys n'a pas encore confirmé le paiement dans TekkiShop.
+              Vérifiez le paiement directement dans Bictorys avec le "Charge ID" pour confirmer que l'argent a bien été collecté.
             </p>
           </div>
         </div>

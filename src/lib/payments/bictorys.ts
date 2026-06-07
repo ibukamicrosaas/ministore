@@ -53,6 +53,11 @@ export interface BictorysWebhookPayload {
   merchantReference?: string
   paymentReference?: string
   type?: string
+  customerPhone?: string
+  payerPhone?: string
+  phone?: string
+  customer?: { phone?: string }
+  [key: string]: unknown
 }
 
 export async function createBictorysCharge(

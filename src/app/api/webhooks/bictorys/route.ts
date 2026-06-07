@@ -214,6 +214,14 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
 
   console.log('[handleSubscriptionWebhook] ✅ Montant correct — activation du plan', { shopId, planKey })
 
+  // Extraire le numéro de téléphone du paiement (Bictorys peut l'inclure)
+  const payerPhone =
+    (payload as any).customerPhone ||
+    (payload as any).payerPhone ||
+    (payload as any).phone ||
+    (payload as any).customer?.phone ||
+    null
+
   // Activer le plan
   const { error: activationError } = await activatePlan(shopId, planKey)
   if (activationError) {
@@ -224,6 +232,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
         status: 'error',
         error_message: activationError,
         updated_at: new Date().toISOString(),
+        payer_phone: payerPhone,
       } as never)
       .eq('charge_id', payload.id)
     return NextResponse.json({ ok: true })
@@ -237,6 +246,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
       verified_at: new Date().toISOString(),
       activated_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      payer_phone: payerPhone,
     } as never)
     .eq('charge_id', payload.id)
 
