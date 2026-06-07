@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { Settings, ExternalLink, MessageCircle, Search, TrendingUp } from 'lucide-react'
+import { COUNTRIES } from '@/constants/countries'
 
 export default function AdminShopsPage() {
   const supabase = createClient()
@@ -13,6 +14,7 @@ export default function AdminShopsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlan, setFilterPlan] = useState<'all' | 'trial' | 'decouverte' | 'business' | 'pro'>('all')
+  const [filterCountry, setFilterCountry] = useState<'all' | 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'>('all')
 
   useEffect(() => {
     loadData()
@@ -33,14 +35,15 @@ export default function AdminShopsPage() {
   const filtered = useMemo(() => {
     return shops.filter(s => {
       const matchesPlan = filterPlan === 'all' || s.plan === filterPlan
+      const matchesCountry = filterCountry === 'all' || s.country === filterCountry
       const normalizePhone = (phone: string) => phone?.replace(/\D/g, '') || ''
       const matchesSearch = !searchQuery ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.city?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         normalizePhone(s.phone_whatsapp).includes(searchQuery.replace(/\D/g, ''))
-      return matchesPlan && matchesSearch
+      return matchesPlan && matchesCountry && matchesSearch
     })
-  }, [shops, searchQuery, filterPlan])
+  }, [shops, searchQuery, filterPlan, filterCountry])
 
   const stats = {
     total: shops.length,
@@ -111,6 +114,23 @@ export default function AdminShopsPage() {
                 }`}
               >
                 {plan === 'all' ? 'Tous les plans' : planConfig[plan as keyof typeof planConfig]?.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Country filters */}
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const).map((country) => (
+              <button
+                key={country}
+                onClick={() => setFilterCountry(country)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  filterCountry === country
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {country === 'all' ? 'Tous les pays' : COUNTRIES.find(c => c.code === country)?.label}
               </button>
             ))}
           </div>

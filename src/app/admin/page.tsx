@@ -4,6 +4,7 @@ import { fr } from 'date-fns/locale'
 import { Building2, ShoppingBag, TrendingUp, Clock, AlertCircle, Zap, UserCheck, ArrowRight, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
+import CountryConversionWidget from '@/components/admin/CountryConversionWidget'
 
 export const metadata = { title: 'Admin — TekkiShop' }
 
@@ -203,8 +204,8 @@ export default async function AdminOverviewPage() {
           <KPI icon={TrendingUp} label="Revenus (mois)"      value={`${revenueThisMonth.toLocaleString('fr-FR')} F`} sub="paiements clients" color="text-sky-600" bg="bg-sky-50" />
         </div>
 
-        {/* Plans + revenus */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
+        {/* Plans + revenus + conversion par pays */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-bold text-gray-900 mb-6 uppercase tracking-wide">Répartition des plans</p>
             <div className="space-y-4">
@@ -246,6 +247,8 @@ export default async function AdminOverviewPage() {
               </div>
             </div>
           </div>
+
+          <CountryConversionWidget />
         </div>
 
         {/* Essais expirant bientôt */}
