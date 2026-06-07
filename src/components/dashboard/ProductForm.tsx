@@ -62,7 +62,28 @@ export function ProductForm({ product }: ProductFormProps) {
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (photos.length >= 5) { toast.error('Maximum 5 photos par produit.'); return }
+
+    // Validation côté client
+    if (photos.length >= 5) {
+      toast.error('Maximum 5 photos par produit.')
+      return
+    }
+
+    // Vérifier la taille du fichier (5 MB max)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`L'image est trop volumineuse (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum 5 MB.`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    // Vérifier le type de fichier
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Format non autorisé. Utilise JPG, PNG, WebP ou GIF.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
 
     setUploadingPhoto(true)
     const fd = new FormData()
