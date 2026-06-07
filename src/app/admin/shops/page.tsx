@@ -2,11 +2,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search } from 'lucide-react'
+import { ShopsSearchClient } from './ShopsSearchClient'
 
 export const metadata = { title: 'Boutiques — Admin TekkiShop' }
 
-export default async function AdminSalonsPage() {
+export default async function AdminSalonsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string }
+}) {
   const supabase = createAdminClient()
 
   const { data } = await supabase
@@ -20,24 +25,37 @@ export default async function AdminSalonsPage() {
     is_active: boolean; created_at: string; phone_whatsapp: string | null
   }[]
 
-  const trialExpired = shops.filter(s => s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date())
-  const trialActive  = shops.filter(s => s.plan === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) >= new Date()))
-  const paid         = shops.filter(s => s.plan !== 'trial')
+  // Filtrer par recherche (phone ou nom)
+  const query = (searchParams.q ?? '').toLowerCase().trim()
+  const filtered = query
+    ? shops.filter(s =>
+        s.phone_whatsapp?.toLowerCase().includes(query) ||
+        s.name.toLowerCase().includes(query)
+      )
+    : shops
+
+  const trialExpired = filtered.filter(s => s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date())
+  const trialActive  = filtered.filter(s => s.plan === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) >= new Date()))
+  const paid         = filtered.filter(s => s.plan !== 'trial')
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Boutiques</h1>
-          <p className="text-sm text-gray-500 mt-1">{shops.length} inscrits · {paid.length} payants · {trialActive.length} en essai · {trialExpired.length} expirés</p>
+          <p className="text-sm text-gray-500 mt-1">{filtered.length} résultats · {paid.length} payants · {trialActive.length} en essai · {trialExpired.length} expirés</p>
         </div>
       </div>
+
+      <ShopsSearchClient />
+
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Boutique</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Essai expire</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
@@ -46,13 +64,16 @@ export default async function AdminSalonsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {shops.map(s => {
+            {filtered.map(s => {
               const trialExpiredRow = s.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date()
               return (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{s.name}</p>
                     <p className="text-xs text-gray-400">{s.city ?? '—'}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-xs font-mono bg-gray-50 px-2 py-1 rounded w-fit">{s.phone_whatsapp ?? '—'}</p>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
