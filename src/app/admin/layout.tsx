@@ -4,16 +4,15 @@ import { createServerClient } from '@/lib/supabase/server'
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Building2, Wallet, LogOut, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Building2, Wallet, LogOut } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
 const navLinks = [
-  { href: '/admin',                     label: 'Vue d\'ensemble',        icon: LayoutDashboard },
-  { href: '/admin/shops',              label: 'Boutiques',              icon: Building2 },
-  { href: '/admin/paiements-bictorys', label: 'Paiements Bictorys',    icon: CreditCard },
-  { href: '/admin/payouts',            label: 'Reversements',           icon: Wallet },
+  { href: '/admin',          label: 'Vue d\'ensemble', icon: LayoutDashboard },
+  { href: '/admin/shops',   label: 'Boutiques',         icon: Building2 },
+  { href: '/admin/payouts',  label: 'Reversements',     icon: Wallet },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
