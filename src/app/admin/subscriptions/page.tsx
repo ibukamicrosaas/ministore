@@ -75,7 +75,17 @@ export default function AdminSubscriptionsPage() {
 
   const filtered = useMemo(() => {
     return transactions.filter((t: any) => {
-      if (filter !== 'all' && t.status !== filter) return false
+      // Pour le filtre 'pending', montrer aussi les paiements 'activated' récents (dernières 24h)
+      // car ce sont ceux qui viennent d'être traités avec succès
+      if (filter === 'pending') {
+        const isPending = t.status === 'pending'
+        const isRecentlyActivated = t.status === 'activated' &&
+          new Date(t.verified_at || t.activated_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
+        if (!isPending && !isRecentlyActivated) return false
+      } else if (filter !== 'all' && t.status !== filter) {
+        return false
+      }
+
       if (searchQuery) {
         const shop = shops.get(t.shop_id)
         const shopPhone = normalizePhone(shop?.phone_whatsapp || '')
