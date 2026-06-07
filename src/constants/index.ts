@@ -1,5 +1,5 @@
 export const APP_NAME = 'TekkiShop'
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tekki.shop'
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.tekki.shop'
 
 // Commandes
 export const PENDING_EXPIRY_MINUTES = 30
