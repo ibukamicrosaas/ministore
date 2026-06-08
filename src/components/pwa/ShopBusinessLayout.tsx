@@ -34,7 +34,7 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
   ]
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="max-w-lg mx-auto min-h-screen bg-white flex flex-col">
       {/* Hero Section */}
       <div className="relative">
         {/* Cover Image */}

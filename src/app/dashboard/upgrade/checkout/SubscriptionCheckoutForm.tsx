@@ -165,19 +165,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
             <div className="rounded-lg border border-gray-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-sky-100 transition-all">
-              <div className="flex items-stretch">
-                {/* Wave Logo */}
-                <div className="shrink-0 px-4 py-3 flex items-center">
-                  <Image
-                    src="/logo-payments/wave_1.svg"
-                    alt="Wave"
-                    width={28}
-                    height={28}
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-
+              <div className="flex">
                 {/* Country Selector */}
                 <select
                   value={selectedCountry}
@@ -185,7 +173,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                     setSelectedCountry(e.target.value as BictorysCountry)
                   }}
                   disabled={loading}
-                  className="shrink-0 px-4 py-3 border-l border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
+                  className="shrink-0 px-4 py-3 border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
                 >
                   {COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
