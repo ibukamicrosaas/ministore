@@ -201,3 +201,42 @@ export function verifyBictorysSignature(headerSecret: string, envSecret: string)
     return false
   }
 }
+
+export type PaymentMethodInfo = {
+  type: BictorysPaymentType
+  label: string
+  requiresOtp: boolean
+  description?: string
+}
+
+export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMethodInfo[] {
+  const methods: Record<BictorysCountry, PaymentMethodInfo[]> = {
+    SN: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +221 XXX XX XX' },
+      { type: 'orange_money', label: 'Orange Money', requiresOtp: false, description: 'Tapez #144*82# pour autoriser' },
+      { type: 'maxit', label: 'Maxit', requiresOtp: false, description: 'Accès direct depuis votre téléphone' },
+    ],
+    CI: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +225 XXX XXX XXX' },
+      { type: 'orange_money', label: 'Orange Money', requiresOtp: true, description: 'Tapez #144*82#, puis entrez le code OTP' },
+    ],
+    BK: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +226 XXXX XXXX' },
+      { type: 'orange_money', label: 'Orange Money', requiresOtp: true, description: 'Tapez #144*82#, puis entrez le code OTP' },
+    ],
+    ML: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +223 XXXX XXXX' },
+    ],
+    TG: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +228 XXXX XXXX' },
+    ],
+    BJ: [
+      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +229 XXXX XXXX' },
+    ],
+  }
+  return methods[country] ?? []
+}
+
+export function needsOtpForPayment(country: BictorysCountry, paymentType: BictorysPaymentType): boolean {
+  return paymentType === 'orange_money' && (country === 'CI' || country === 'BK')
+}
