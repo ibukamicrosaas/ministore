@@ -1,9 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { notFound, redirect } from 'next/navigation'
-import { WaveCheckout } from './WaveCheckout'
-import { OrangeMoneyCheckout } from './OrangeMoneyCheckout'
+import { notFound } from 'next/navigation'
 import { BictorysCheckout } from './BictorysCheckout'
-import { getCountryFromPhone } from '@/lib/payments/payment-methods'
 import type { Shop } from '@/types'
 
 type Props = {
@@ -43,8 +40,6 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   const shop = order.shops
   if (!shop || shop.slug !== slug) notFound()
 
-  const phone = order.clients?.phone ?? ''
-  const country = getCountryFromPhone(phone)
   const isDeposit = order.payment_type === 'online_deposit' && order.deposit_amount > 0
   const amount = isDeposit ? order.deposit_amount : order.total_price
   const color = shop.primary_color ?? '#0EA5E9'
@@ -53,30 +48,16 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     orderId: order.id,
     shopSlug: slug,
     customerName: order.clients?.first_name ?? '',
-    customerPhone: phone,
+    customerPhone: order.clients?.phone ?? '',
     amount,
     shopName: shop.name,
     shopLogo: shop.logo_url,
     primaryColor: color,
     isDeposit,
+    method,
   }
 
-  // Routage selon la méthode de paiement et le pays
-  // Wave Money : SN et CI ont des deep links directs
-  if (method === 'wave' && country === 'SN') {
-    return <WaveCheckout {...componentProps} country={country} />
-  }
-
-  if (method === 'wave' && country === 'CI') {
-    return <WaveCheckout {...componentProps} country={country} />
-  }
-
-  // Orange Money : CI utilise OTP, SN utilise Bictorys
-  if (method === 'orange_money' && country === 'CI') {
-    return <OrangeMoneyCheckout {...componentProps} />
-  }
-
-  // Pour tout le reste, utiliser Bictorys (maxit, orange_money SN, bictorys fallback)
-  // Plus tous les autres pays qui utilisent Bictorys par défaut
+  // Utiliser le Bictorys Direct API pour tous les paiements (wave, orange_money, maxit, etc.)
+  // Bictorys gère les deep links et redirections vers les apps mobiles
   return <BictorysCheckout {...componentProps} />
 }

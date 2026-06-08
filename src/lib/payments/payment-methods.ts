@@ -43,13 +43,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       icon: '/logo-payments/maxit.webp',
       timeEstimate: 'Instantané',
     },
-    {
-      id: 'bictorys',
-      label: 'Autres méthodes',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Variable',
-    },
   ],
   CI: [
     {
@@ -66,13 +59,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       icon: '/logo-payments/om_1.svg',
       timeEstimate: '1-2 min',
     },
-    {
-      id: 'bictorys',
-      label: 'MTN Money',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/mtn_1.svg',
-      timeEstimate: 'Variable',
-    },
   ],
   BK: [
     {
@@ -81,13 +67,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
       timeEstimate: 'Instantané',
-    },
-    {
-      id: 'bictorys',
-      label: 'Autres méthodes',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Variable',
     },
   ],
   ML: [
@@ -98,13 +77,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       icon: '/logo-payments/wave_1.svg',
       timeEstimate: 'Instantané',
     },
-    {
-      id: 'bictorys',
-      label: 'Autres méthodes',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Variable',
-    },
   ],
   TG: [
     {
@@ -114,13 +86,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       icon: '/logo-payments/wave_1.svg',
       timeEstimate: 'Instantané',
     },
-    {
-      id: 'bictorys',
-      label: 'Autres méthodes',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Variable',
-    },
   ],
   BJ: [
     {
@@ -129,13 +94,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
       timeEstimate: 'Instantané',
-    },
-    {
-      id: 'bictorys',
-      label: 'Autres méthodes',
-      description: 'Autres options disponibles',
-      icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Variable',
     },
   ],
 }

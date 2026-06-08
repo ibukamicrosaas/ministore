@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   orderId: string
@@ -13,6 +13,7 @@ interface Props {
   shopLogo: string | null
   primaryColor: string
   isDeposit: boolean
+  method: string
 }
 
 export function BictorysCheckout({
@@ -22,10 +23,9 @@ export function BictorysCheckout({
   shopName,
   shopLogo,
   primaryColor,
+  method,
 }: Props) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const method = searchParams.get('method') ?? 'bictorys'
   
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error'>('loading')
   const [error, setError] = useState('')
