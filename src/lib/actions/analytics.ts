@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { subDays, startOfDay, format } from 'date-fns'
 
 const PLAN_PRICES: Record<string, number> = {
-  decouverte: 2900,
+  discovery: 2900,
   business: 4900,
   pro: 9900,
 }
@@ -122,7 +122,7 @@ export async function getMRRBreakdown() {
     churnedMRR: 0,
     netMRR: newMRR,
     byPlan: {
-      decouverte: (planCounts['decouverte'] ?? 0) * PLAN_PRICES.decouverte,
+      discovery: (planCounts['discovery'] ?? 0) * PLAN_PRICES.discovery,
       business: (planCounts['business'] ?? 0) * PLAN_PRICES.business,
       pro: (planCounts['pro'] ?? 0) * PLAN_PRICES.pro,
     },
@@ -136,7 +136,7 @@ export async function getPlanDistribution() {
     .from('shops')
     .select('plan')
 
-  const dist = { trial: 0, decouverte: 0, business: 0, pro: 0 }
+  const dist = { trial: 0, discovery: 0, business: 0, pro: 0 }
   shops?.forEach(s => {
     if (s.plan in dist) dist[s.plan as keyof typeof dist]++
   })

@@ -6,7 +6,7 @@ import { createBictorysPayout } from '@/lib/payments/bictorys'
 import { revalidatePath } from 'next/cache'
 
 const COMMISSION_RATES: Record<string, number> = {
-  decouverte: 0.03,
+  discovery: 0.03,
   business:   0.03,
   pro:        0,
 }
@@ -65,7 +65,7 @@ export async function processPayout(
     return { error: `Numéro de reversement ${payoutMethod === 'wave' ? 'Wave' : 'Orange Money'} non configuré.` }
   }
 
-  const commissionRate = COMMISSION_RATES[shop.plan ?? 'decouverte'] ?? 0.03
+  const commissionRate = COMMISSION_RATES[shop.plan ?? 'discovery'] ?? 0.03
   const commissionAmount = Math.round(grossAmount * commissionRate)
   const netAmount = grossAmount - commissionAmount
 

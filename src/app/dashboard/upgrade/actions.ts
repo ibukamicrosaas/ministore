@@ -6,7 +6,7 @@ import { getBictorysCharge } from '@/lib/payments/bictorys'
 import { activatePlan } from '@/lib/billing/activate-plan'
 import { revalidatePath } from 'next/cache'
 
-const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
+const VALID_PLAN_KEYS = new Set(['discovery', 'business', 'pro'])
 
 export async function verifySubscriptionPayment(
   txn: string,

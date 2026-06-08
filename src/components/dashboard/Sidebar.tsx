@@ -181,7 +181,7 @@ function PlanBadge({ plan }: { plan: string }) {
     )
   }
   const label = plan === 'starter' ? 'Starter'
-    : plan === 'decouverte' ? 'Découverte'
+    : plan === 'discovery' ? 'Découverte'
     : plan === 'business' ? 'Business'
     : plan === 'pro' ? 'Pro'
     : plan

@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 const PLAN_LABELS: Record<string, string> = {
-  decouverte: 'Découverte',
+  discovery: 'Découverte',
   business:   'Business',
   pro:        'Pro',
 }

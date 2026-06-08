@@ -11,7 +11,7 @@ import { fr } from 'date-fns/locale'
 
 const PLANS = [
   { value: 'trial',      label: 'Essai gratuit' },
-  { value: 'decouverte', label: 'Découverte — 2 900 FCFA/mois' },
+  { value: 'discovery', label: 'Découverte — 2 900 FCFA/mois' },
   { value: 'business',   label: 'Business — 4 900 FCFA/mois' },
   { value: 'pro',        label: 'Pro — 9 900 FCFA/mois' },
 ]

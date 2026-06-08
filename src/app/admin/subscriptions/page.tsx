@@ -107,13 +107,13 @@ export default function AdminSubscriptionsPage() {
     revenue: transactions
       .filter((t: any) => t.status === 'activated')
       .reduce((sum: number, t: any) => {
-        const prices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
+        const prices: Record<string, number> = { discovery: 2900, business: 4900, pro: 9900 }
         return sum + (prices[t.plan_key] || 0)
       }, 0),
   }
 
   const prices: Record<string, { label: string; amount: number; color: string }> = {
-    decouverte: { label: 'Découverte', amount: 2900, color: 'emerald' },
+    discovery: { label: 'Découverte', amount: 2900, color: 'emerald' },
     business: { label: 'Business', amount: 4900, color: 'blue' },
     pro: { label: 'Pro', amount: 9900, color: 'purple' },
   }

@@ -37,7 +37,7 @@ export default async function SettingsPage() {
   if (!shop) redirect('/dashboard')
 
   const isActivePlan = shop.plan !== 'trial'
-  const planLabel    = shop.plan === 'decouverte' ? 'Découverte'
+  const planLabel    = shop.plan === 'discovery' ? 'Découverte'
     : shop.plan === 'business' ? 'Business'
     : shop.plan === 'pro' ? 'Pro'
     : shop.plan

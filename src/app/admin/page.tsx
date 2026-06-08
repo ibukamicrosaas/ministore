@@ -10,7 +10,7 @@ import { FixShopCountriesButton } from '@/components/admin/FixShopCountriesButto
 export const metadata = { title: 'Admin — TekkiShop' }
 
 const PLAN_PRICES: Record<string, number> = {
-  decouverte: 2900,
+  discovery: 2900,
   business:   4900,
   pro:        9900,
 }
@@ -103,7 +103,7 @@ export default async function AdminOverviewPage() {
     (pendingSubscriptionsRes as unknown as { data: Array<{ id: string; shop_id: string; plan_key: string; created_at: string; shops: { name: string } | null }> }).data ?? []
   )
   const pendingSubscriptionsTotal = pendingSubscriptions.reduce((sum, t) => {
-    const prices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
+    const prices: Record<string, number> = { discovery: 2900, business: 4900, pro: 9900 }
     return sum + (prices[t.plan_key] || 0)
   }, 0)
 
@@ -217,7 +217,7 @@ export default async function AdminOverviewPage() {
             <div className="space-y-4">
               {[
                 { key: 'trial',      label: 'Essai gratuit', price: '0 F/mois', color: 'bg-gray-100' },
-                { key: 'decouverte', label: 'Découverte',    price: '2 900 F/mois', color: 'bg-emerald-100' },
+                { key: 'discovery', label: 'Découverte',    price: '2 900 F/mois', color: 'bg-emerald-100' },
                 { key: 'business',   label: 'Business',      price: '4 900 F/mois', color: 'bg-blue-100' },
                 { key: 'pro',        label: 'Pro',           price: '9 900 F/mois', color: 'bg-purple-100' },
               ].map(({ key, label, price, color }) => (
@@ -329,11 +329,11 @@ export default async function AdminOverviewPage() {
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${
                     s.plan === 'pro'        ? 'bg-purple-100 text-purple-700' :
                     s.plan === 'business'   ? 'bg-blue-100 text-blue-700' :
-                    s.plan === 'decouverte' ? 'bg-emerald-100 text-emerald-700' :
+                    s.plan === 'discovery' ? 'bg-emerald-100 text-emerald-700' :
                     'bg-gray-100 text-gray-600'
                   }`}>{
                     s.plan === 'trial'      ? 'Essai' :
-                    s.plan === 'decouverte' ? 'Découverte' :
+                    s.plan === 'discovery' ? 'Découverte' :
                     s.plan === 'business'   ? 'Business' :
                     s.plan === 'pro'        ? 'Pro' :
                     s.plan
