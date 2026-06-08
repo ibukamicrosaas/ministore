@@ -13,7 +13,17 @@ const COUNTRIES = [
   { code: 'TG', flag: '🇹🇬', dial: '+228', name: 'Togo' },
   { code: 'BJ', flag: '🇧🇯', dial: '+229', name: 'Bénin' },
   { code: 'BF', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso' },
+  { code: 'ML', flag: '🇲🇱', dial: '+223', name: 'Mali' },
 ]
+
+const PHONE_PLACEHOLDERS: Record<string, string> = {
+  '+221': '77 000 00 00',    // SN — 8 chiffres
+  '+225': '07 00 00 00 00',  // CI — 10 chiffres avec 0 initial
+  '+228': '90 00 00 00',     // TG — 8 chiffres
+  '+229': '97 00 00 00',     // BJ — 8 chiffres
+  '+226': '70 00 00 00',     // BF — 8 chiffres
+  '+223': '70 00 00 00',     // ML — 8 chiffres
+}
 
 function SectionLabel({
   n,
@@ -622,7 +632,7 @@ export function OrderForm({
                 }}
                 dialCode={phoneDial}
                 onDialChange={(d) => { setPhoneDial(d); saveCart({ phoneDial: d }) }}
-                placeholder="77 000 00 00"
+                placeholder={PHONE_PLACEHOLDERS[phoneDial] ?? '00 00 00 00'}
               />
               {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
             </div>
@@ -645,7 +655,7 @@ export function OrderForm({
                   onChange={setWaNum}
                   dialCode={waDial}
                   onDialChange={setWaDial}
-                  placeholder="77 000 00 00"
+                  placeholder={PHONE_PLACEHOLDERS[waDial] ?? '00 00 00 00'}
                 />
               </div>
             )}
@@ -822,7 +832,7 @@ export function OrderForm({
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto space-y-2 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent px-4 pb-8 pt-3">
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto space-y-2 bg-white border-t border-gray-100 px-4 pb-8 pt-3 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
         {total > 0 && (
           <div className="space-y-0.5 px-1">
             {deliveryPrice > 0 && (
