@@ -15,7 +15,7 @@ import {
 } from '@/lib/payments/bictorys'
 
 const PAYMENT_LOGOS: Record<string, string> = {
-  wave: '/logo-payments/wave_1.svg',
+  wave_money: '/logo-payments/wave_1.svg',
   orange_money: '/logo-payments/om_1.svg',
   maxit: '/logo-payments/maxit.webp',
   mtn_money: '/logo-payments/mtn_1.svg',
@@ -54,11 +54,9 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
   const [customerPhone, setCustomerPhone] = useState('')
   const [selectedPaymentType, setSelectedPaymentType] = useState<BictorysPaymentType | null>(null)
   const [otpCode, setOtpCode] = useState('')
-  const [showAllCountries, setShowAllCountries] = useState(false)
 
   const paymentMethods = getPaymentMethodsByCountry(selectedCountry)
   const requiresOtp = selectedPaymentType ? needsOtpForPayment(selectedCountry, selectedPaymentType) : false
-  const visibleCountries = showAllCountries ? COUNTRIES : COUNTRIES.filter(c => c.main)
   const countryPhone = COUNTRIES.find(c => c.code === selectedCountry)?.phone || '+221'
 
   async function handlePayment(e: React.FormEvent) {
@@ -167,7 +165,19 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
             <div className="rounded-lg border border-gray-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-sky-100 transition-all">
-              <div className="flex">
+              <div className="flex items-stretch">
+                {/* Wave Logo */}
+                <div className="shrink-0 px-4 py-3 flex items-center">
+                  <Image
+                    src="/logo-payments/wave_1.svg"
+                    alt="Wave"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+
                 {/* Country Selector */}
                 <select
                   value={selectedCountry}
@@ -175,9 +185,9 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                     setSelectedCountry(e.target.value as BictorysCountry)
                   }}
                   disabled={loading}
-                  className="shrink-0 px-4 py-3 border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
+                  className="shrink-0 px-4 py-3 border-l border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
                 >
-                  {visibleCountries.map((country) => (
+                  {COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
                       {country.flag} {country.phone}
                     </option>
@@ -196,15 +206,6 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 />
               </div>
             </div>
-            {!showAllCountries && COUNTRIES.length > visibleCountries.length && (
-              <button
-                type="button"
-                onClick={() => setShowAllCountries(true)}
-                className="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                + {COUNTRIES.length - visibleCountries.length} autres pays
-              </button>
-            )}
           </div>
 
           {/* Payment Methods */}
