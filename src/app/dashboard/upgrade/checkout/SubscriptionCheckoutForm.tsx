@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Loader2, CreditCard, Smartphone } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import {
@@ -140,7 +140,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
         </div>
 
         {/* Form */}
-        <form onSubmit={handlePayment} className="space-y-8">
+        <form onSubmit={handlePayment} className="space-y-6">
           {/* Name Field */}
           <div>
             <Input
@@ -157,14 +157,16 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
           {/* Phone Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
-            <div className="flex gap-3 items-end">
-              {/* Country Selector */}
-              <div className="w-40 shrink-0">
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-sky-100 transition-all">
+              <div className="flex">
+                {/* Country Selector */}
                 <select
                   value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value as BictorysCountry)}
+                  onChange={(e) => {
+                    setSelectedCountry(e.target.value as BictorysCountry)
+                  }}
                   disabled={loading}
-                  className="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-[var(--color-primary,#0EA5E9)] focus:ring-sky-100"
+                  className="shrink-0 px-4 py-3 border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
                 >
                   {visibleCountries.map((country) => (
                     <option key={country.code} value={country.code}>
@@ -172,96 +174,114 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                     </option>
                   ))}
                 </select>
-                {!showAllCountries && COUNTRIES.length > visibleCountries.length && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllCountries(true)}
-                    className="mt-2 text-xs text-gray-500 hover:text-gray-700 w-full text-center transition-colors"
-                  >
-                    + {COUNTRIES.length - visibleCountries.length} autres
-                  </button>
-                )}
-              </div>
 
-              {/* Phone Input */}
-              <input
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                placeholder="01 23 45 67 89"
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-[var(--color-primary,#0EA5E9)] focus:ring-sky-100"
-                disabled={loading}
-                required
-              />
+                {/* Phone Input */}
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  placeholder="01 23 45 67 89"
+                  className="flex-1 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white"
+                  disabled={loading}
+                  required
+                />
+              </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              {countryPhone} {selectedCountry}
-            </p>
+            {!showAllCountries && COUNTRIES.length > visibleCountries.length && (
+              <button
+                type="button"
+                onClick={() => setShowAllCountries(true)}
+                className="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                + {COUNTRIES.length - visibleCountries.length} autres pays
+              </button>
+            )}
           </div>
 
           {/* Payment Methods */}
           {paymentMethods.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Mode de paiement</label>
-              <div className="space-y-2">
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.type}
-                    type="button"
-                    onClick={() => {
-                      setSelectedPaymentType(method.type)
-                      setOtpCode('')
-                    }}
-                    className="w-full text-left rounded-lg border-2 transition-colors p-4"
-                    style={
-                      selectedPaymentType === method.type
-                        ? {
-                            borderColor: primaryColor,
-                            backgroundColor: `${primaryColor}0D`,
-                          }
-                        : {
-                            borderColor: '#E5E7EB',
-                          }
+              <div className="space-y-3">
+                {paymentMethods.map((method) => {
+                  const isSelected = selectedPaymentType === method.type
+                  const getMethodIcon = () => {
+                    switch (method.type) {
+                      case 'wave':
+                        return '👋'
+                      case 'orange_money':
+                        return '🟠'
+                      case 'maxit':
+                        return '💳'
+                      default:
+                        return '💰'
                     }
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-gray-900">{method.label}</p>
-                        {method.description && (
-                          <p className="text-xs text-gray-600 mt-1">{method.description}</p>
-                        )}
+                  }
+
+                  return (
+                    <button
+                      key={method.type}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPaymentType(method.type)
+                        setOtpCode('')
+                      }}
+                      disabled={loading}
+                      className="w-full text-left rounded-lg border-2 transition-all p-5"
+                      style={
+                        isSelected
+                          ? {
+                              borderColor: primaryColor,
+                              backgroundColor: `${primaryColor}0D`,
+                            }
+                          : {
+                              borderColor: '#E5E7EB',
+                              backgroundColor: '#FFFFFF',
+                            }
+                      }
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="text-2xl flex-shrink-0">{getMethodIcon()}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900">{method.label}</p>
+                            {method.description && (
+                              <p className="text-xs text-gray-600 mt-1.5">{method.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div
+                          className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-1"
+                          style={
+                            isSelected
+                              ? {
+                                  borderColor: primaryColor,
+                                  backgroundColor: primaryColor,
+                                }
+                              : {
+                                  borderColor: '#D1D5DB',
+                                }
+                          }
+                        >
+                          {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                        </div>
                       </div>
-                      <div
-                        className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                        style={
-                          selectedPaymentType === method.type
-                            ? {
-                                borderColor: primaryColor,
-                                backgroundColor: primaryColor,
-                              }
-                            : {
-                                borderColor: '#D1D5DB',
-                              }
-                        }
-                      >
-                        {selectedPaymentType === method.type && (
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
 
           {/* OTP Field */}
           {requiresOtp && selectedPaymentType && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 space-y-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 space-y-4">
               <div>
-                <p className="text-sm font-semibold text-amber-900">Code OTP requis</p>
-                <p className="text-xs text-amber-800 mt-1.5">
-                  Tapez <span className="font-mono font-bold bg-amber-100 px-1.5 py-0.5 rounded">#144*82#</span> sur votre téléphone Orange Money pour recevoir un code.
+                <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                  <span>⚡ Code OTP requis</span>
+                </p>
+                <p className="text-sm text-amber-800 mt-2 leading-relaxed">
+                  Composez <span className="inline-block font-mono font-bold bg-amber-100 px-2.5 py-1 rounded text-amber-900">#144*82#</span> sur votre téléphone pour recevoir le code de confirmation.
                 </p>
               </div>
               <input
@@ -270,7 +290,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
                 maxLength={6}
-                className="w-full px-4 py-3 border border-amber-300 rounded-lg text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full px-4 py-3 border border-amber-300 rounded-lg text-center font-mono text-2xl tracking-wider font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
                 disabled={loading}
               />
             </div>
