@@ -324,8 +324,8 @@ export function OrderForm({
   const deposit = paymentType === 'online' ? computeDeposit() : 0
   const hasDeposit = deposit > 0 && deposit < total
 
-  const fullPhone = `${phoneDial}${phoneNum.replace(/^0+/, '')}`
-  const fullWhatsapp = sameWa ? fullPhone : `${waDial}${waNum.replace(/^0+/, '')}`
+  const fullPhone = `${phoneDial}${phoneNum}`
+  const fullWhatsapp = sameWa ? fullPhone : `${waDial}${waNum}`
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

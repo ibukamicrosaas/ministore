@@ -9,9 +9,24 @@ export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 export function normalizePhoneForBictorys(phone: string): string {
   if (!phone) return ''
   const cleaned = phone.replace(/[\s().\-]/g, '')
-  if (cleaned.startsWith('+')) return cleaned
-  if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`
-  return cleaned.startsWith('+') ? cleaned : `+${cleaned}`
+
+  let result: string
+  if (cleaned.startsWith('+')) {
+    result = cleaned
+  } else if (cleaned.startsWith('00')) {
+    result = `+${cleaned.slice(2)}`
+  } else {
+    result = `+${cleaned}`
+  }
+
+  // CI (+225) : les numéros locaux sont 10 chiffres (07xx, 05xx, 01xx).
+  // Si on a seulement 9 chiffres après l'indicatif (zéro supprimé par erreur), on le réinsère.
+  // Ex : +225701234567 (13 car.) → +2250701234567 (14 car.)
+  if (result.startsWith('+225') && result.length === 13) {
+    result = `+225${`0${result.slice(4)}`}`
+  }
+
+  return result
 }
 
 export function detectCountryFromPhone(phone: string): BictorysCountry | null {
