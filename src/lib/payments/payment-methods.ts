@@ -1,4 +1,4 @@
-export type PaymentMethod = 'wave' | 'orange_money' | 'maxit' | 'bictorys'
+export type PaymentMethod = 'wave' | 'orange_money' | 'maxit' | 'mtn_money' | 'bictorys'
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
 export interface PaymentMethodOption {
@@ -52,6 +52,12 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Orange Money',
       description: 'Via code OTP',
       icon: '/logo-payments/om_1.svg',
+    },
+    {
+      id: 'mtn_money',
+      label: 'MTN Money',
+      description: 'Paiement mobile',
+      icon: '/logo-payments/mtn_1.svg',
     },
   ],
   BK: [

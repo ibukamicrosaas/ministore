@@ -125,54 +125,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ checkoutUrl })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
-    console.error('[bictorys/create] Direct API échoué:', message, '| country:', paymentCountry, '| paymentType:', paymentType)
-
-    // FALLBACK pour Wave CI: si Direct API échoue et que c'est Wave en CI, rediriger vers page Bictorys générique
-    if (paymentCountry === 'CI' && paymentType === 'wave_money') {
-      console.log('[bictorys/create] Fallback: Wave CI en Direct API a échoué, redirection vers page générique')
-      try {
-        const fallbackResponse = await createBictorysCharge(
-          apiKey,
-          {
-            amount: amountToCharge,
-            currency: 'XOF',
-            country: paymentCountry,
-            paymentReference: `tekkishop-${orderId.slice(0, 8)}`,
-            merchantReference: orderId,
-            successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
-            errorRedirectUrl: `${APP_URL}/${shopSlug}/commander/pay?cancelled=1&order_id=${orderId}`,
-            webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
-            orderDetails: [{ name: 'Commande TekkiShop', price: amountToCharge, quantity: 1, taxRate: 0 }],
-            customerObject: {
-              name: customerName || undefined,
-              phone: normalizedPhone || undefined,
-              locale: 'fr-FR',
-              country: paymentCountry,
-            },
-          },
-          undefined, // Pas de payment_type = page générique
-        )
-
-        await supabase.from('payments').insert({
-          order_id:           orderId,
-          shop_id:            order.shop_id,
-          amount:             amountToCharge,
-          currency:           'XOF',
-          payment_method:     'bictorys',
-          payment_type:       isDeposit ? 'deposit' : 'full',
-          provider_payment_id: fallbackResponse.transactionId || `bictorys-${orderId}`,
-          status:             'pending',
-        })
-
-        console.log('[bictorys/create] ✅ Fallback réussi — redirection vers page générique')
-        return NextResponse.json({ checkoutUrl: fallbackResponse.checkoutUrl })
-      } catch (fallbackErr) {
-        const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Fallback échoué'
-        console.error('[bictorys/create] Fallback aussi échoué:', fallbackMsg)
-        return NextResponse.json({ error: `Erreur paiement (${fallbackMsg})` }, { status: 500 })
-      }
-    }
-
+    console.error('[bictorys/create] ❌ Erreur Direct API:', message, '| country:', paymentCountry, '| paymentType:', paymentType)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
