@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const countryCode = shop.country || detectedCountry || 'SN'
     const paymentType = PAYMENT_TYPE_MAP[method ?? 'bictorys']
 
-    const baseUrl = process.env.APP_URL || 'https://ministore.tekkistudio.com'
+    const baseUrl = process.env.APP_URL || `https://${req.headers.get('host')}`
 
     try {
       const { checkoutUrl, transactionId } = await createBictorysCharge(
