@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import {
   normalizePhoneForBictorys,
   detectCountryFromPhone,
@@ -10,6 +11,14 @@ import {
   needsOtpForPayment,
   type BictorysPaymentType,
 } from '@/lib/payments/bictorys'
+
+const PAYMENT_LOGOS: Record<string, string> = {
+  wave: '/logo-payments/wave_1.svg',
+  orange_money: '/logo-payments/om_1.svg',
+  maxit: '/logo-payments/maxit.webp',
+  mtn_money: '/logo-payments/mtn_1.svg',
+  moov_money: '/logo-payments/moov_1.svg',
+}
 
 interface Props {
   shopSlug: string
@@ -130,42 +139,59 @@ export function CheckoutForm({ shopSlug, orderId, customerName, customerPhone }:
             </div>
 
             {/* Payment Methods */}
-            <div className="space-y-2">
-              {paymentMethods.map((method) => (
-                <button
-                  key={method.type}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPaymentType(method.type)
-                    setOtpCode('')
-                  }}
-                  className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                    selectedPaymentType === method.type
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">{method.label}</p>
-                      {method.description && (
-                        <p className="text-xs text-gray-600 mt-1">{method.description}</p>
-                      )}
+            <div className="space-y-3">
+              {paymentMethods.map((method) => {
+                const logoPath = PAYMENT_LOGOS[method.type]
+                return (
+                  <button
+                    key={method.type}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPaymentType(method.type)
+                      setOtpCode('')
+                    }}
+                    className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
+                      selectedPaymentType === method.type
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        {logoPath && (
+                          <div className="flex-shrink-0 w-10 h-8 relative flex items-center">
+                            <Image
+                              src={logoPath}
+                              alt={method.label}
+                              width={40}
+                              height={32}
+                              className="object-contain"
+                              unoptimized
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900">{method.label}</p>
+                          {method.description && (
+                            <p className="text-xs text-gray-600 mt-1">{method.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          selectedPaymentType === method.type
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        {selectedPaymentType === method.type && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </div>
                     </div>
-                    <div
-                      className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        selectedPaymentType === method.type
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {selectedPaymentType === method.type && (
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
 
             {/* OTP Field */}

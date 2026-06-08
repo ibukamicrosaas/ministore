@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, CreditCard, Smartphone } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import {
@@ -12,6 +13,14 @@ import {
   type BictorysCountry,
   type BictorysPaymentType,
 } from '@/lib/payments/bictorys'
+
+const PAYMENT_LOGOS: Record<string, string> = {
+  wave: '/logo-payments/wave_1.svg',
+  orange_money: '/logo-payments/om_1.svg',
+  maxit: '/logo-payments/maxit.webp',
+  mtn_money: '/logo-payments/mtn_1.svg',
+  moov_money: '/logo-payments/moov_1.svg',
+}
 
 interface Plan {
   key: string
@@ -205,18 +214,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
               <div className="space-y-3">
                 {paymentMethods.map((method) => {
                   const isSelected = selectedPaymentType === method.type
-                  const getMethodIcon = () => {
-                    switch (method.type) {
-                      case 'wave':
-                        return '👋'
-                      case 'orange_money':
-                        return '🟠'
-                      case 'maxit':
-                        return '💳'
-                      default:
-                        return '💰'
-                    }
-                  }
+                  const logoPath = PAYMENT_LOGOS[method.type]
 
                   return (
                     <button
@@ -242,7 +240,20 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 flex-1">
-                          <div className="text-2xl flex-shrink-0">{getMethodIcon()}</div>
+                          {logoPath ? (
+                            <div className="flex-shrink-0 w-12 h-8 relative flex items-center">
+                              <Image
+                                src={logoPath}
+                                alt={method.label}
+                                width={48}
+                                height={32}
+                                className="object-contain"
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-2xl flex-shrink-0">💰</div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900">{method.label}</p>
                             {method.description && (
