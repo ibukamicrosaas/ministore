@@ -101,8 +101,9 @@ export async function createBictorysCharge(
 
   console.log('[createBictorysCharge] 📥 Réponse Bictorys:', JSON.stringify(json, null, 2))
 
-  // L'API Bictorys retourne 'link' (CheckoutLinkObject), 'url', ou 'confirmationLink'
-  const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink) as string | undefined
+  // Wave/Carte → 'link' (deep link direct)
+  // Orange Money / autres → 'redirectUrl' (page Bictorys générique, toujours présent)
+  const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink ?? json.redirectUrl) as string | undefined
 
   // Essayer plusieurs variantes pour le transaction ID (Bictorys peut utiliser différentes clés)
   const transactionId = (

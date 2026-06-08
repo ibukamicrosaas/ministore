@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+const PAYMENT_TYPE_MAP: Record<string, string> = {
+  wave:         'wave_money',
+  orange_money: 'orange_money',
+  maxit:        'maxit',
+}
 
 interface Props {
   orderId: string
@@ -19,14 +24,12 @@ interface Props {
 export function BictorysCheckout({
   orderId,
   shopSlug,
+  customerName,
+  customerPhone,
   amount,
-  shopName,
-  shopLogo,
   primaryColor,
   method,
 }: Props) {
-  const router = useRouter()
-  
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error'>('loading')
   const [error, setError] = useState('')
 
@@ -38,29 +41,32 @@ export function BictorysCheckout({
     try {
       setStatus('loading')
 
-      const response = await fetch('/api/orders/bictorys-checkout', {
+      const paymentType = PAYMENT_TYPE_MAP[method] ?? undefined
+
+      const response = await fetch('/api/payments/bictorys/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          amount,
-          method, // Passer la méthode pour pré-sélection dans Bictorys
+          shopSlug,
+          customerFirstName: customerName,
+          customerPhone,
+          paymentType,
         }),
       })
 
+      const data = await response.json() as { checkoutUrl?: string; error?: string }
+
       if (!response.ok) {
-        const data = await response.json() as { error?: string }
-        throw new Error(data.error || 'Impossible de créer la session Bictorys')
+        throw new Error(data.error || 'Impossible de créer la session de paiement')
       }
 
-      const data = (await response.json()) as { checkoutUrl?: string }
-
-      if (data.checkoutUrl) {
-        setStatus('redirecting')
-        window.location.href = data.checkoutUrl
-      } else {
+      if (!data.checkoutUrl) {
         throw new Error('URL de paiement manquante')
       }
+
+      setStatus('redirecting')
+      window.location.href = data.checkoutUrl
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Une erreur est survenue'
       setError(message)
