@@ -168,7 +168,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Jean Dupont"
+              placeholder="Fanta Diallo"
               disabled={loading}
               required
             />
