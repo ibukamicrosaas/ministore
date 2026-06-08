@@ -773,19 +773,6 @@ export function SettingsForm({ shop }: Props) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Site web personnel</label>
-              <div className="flex items-center rounded-lg border border-gray-200 px-3 py-2 bg-white gap-2">
-                <Globe className="h-4 w-4 text-gray-600 shrink-0" />
-                <input
-                  type="url"
-                  value={socialLinks.website || ''}
-                  onChange={e => setSocialLinks(prev => ({ ...prev, website: e.target.value }))}
-                  placeholder="https://..."
-                  className="flex-1 text-sm bg-transparent outline-none"
-                />
-              </div>
-            </div>
           </div>
           <p className="text-xs text-gray-400">Laisse vide pour ne pas afficher le lien</p>
         </div>

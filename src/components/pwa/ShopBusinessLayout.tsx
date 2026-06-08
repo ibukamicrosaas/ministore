@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Phone, Globe, Clock, Star, MessageSquare, ExternalLink } from 'lucide-react'
+import { Phone, Star, MessageSquare, MessageCircle } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
@@ -27,11 +27,10 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
   const reviewCount = 28
 
   // Boutons d'action
+  const whatsappNumber = shop.phone_whatsapp?.replace(/\D/g, '')
   const actionButtons = [
-    { icon: Phone, label: 'Appeler', href: `tel:${shop.phone_whatsapp?.replace(/\s/g, '')}` },
-    { icon: MapPin, label: 'Adresse', href: `https://maps.google.com/?q=${encodeURIComponent(shop.address || shop.city || '')}`, target: '_blank' },
-    { icon: Globe, label: 'Site web', href: socialLinks.website, target: '_blank', show: !!socialLinks.website },
-    { icon: Clock, label: 'Horaires', onClick: true },
+    { icon: Phone, label: 'Appeler', href: `tel:${whatsappNumber}`, show: !!whatsappNumber },
+    { icon: MessageCircle, label: 'Écrire', href: `https://wa.me/${whatsappNumber}`, target: '_blank', show: !!whatsappNumber },
   ]
 
   return (
@@ -97,6 +96,11 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
           />
         </div>
 
+        {/* Description (après catégorie) */}
+        {shop.description && (
+          <p className="text-sm text-gray-700 leading-relaxed">{shop.description}</p>
+        )}
+
         {/* Rating */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
@@ -109,22 +113,6 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
           </div>
           <span className="text-sm font-semibold text-gray-900">{rating}</span>
           <span className="text-xs text-gray-500">({reviewCount} avis)</span>
-        </div>
-
-        {/* Adresse et horaires */}
-        <div className="space-y-1">
-          {shop.address && (
-            <div className="flex items-start gap-2 text-sm text-gray-700">
-              <MapPin className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
-              <span>{shop.address}</span>
-            </div>
-          )}
-          {shop.city && (
-            <div className="flex items-start gap-2 text-xs text-gray-500">
-              <span className="w-4 text-center" />
-              <span>{shop.city}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -144,8 +132,48 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
         </div>
       )}
 
-      {/* -- Action Buttons -------------------------------------- */}
-      <div className="px-4 py-3 border-t border-gray-100 space-y-2">
+      {/* -- Social + Action Buttons -------------------------------------- */}
+      <div className="px-4 py-3 border-t border-gray-100 space-y-3">
+        {/* Social Links */}
+        {Object.keys(socialLinks).filter(k => socialLinks[k]).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {socialLinks.instagram && (
+              <a
+                href={socialLinks.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-700 hover:bg-pink-100 transition-colors"
+              >
+                <span>📷</span>
+                Instagram
+              </a>
+            )}
+            {socialLinks.tiktok && (
+              <a
+                href={socialLinks.tiktok}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black transition-colors"
+              >
+                <span>♪</span>
+                TikTok
+              </a>
+            )}
+            {socialLinks.facebook && (
+              <a
+                href={socialLinks.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                <span>f</span>
+                Facebook
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
           {actionButtons
             .filter(b => b.show !== false)
@@ -164,55 +192,8 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
         </div>
       </div>
 
-      {/* -- Social Links ---------------------------------------- */}
-      {Object.keys(socialLinks).filter(k => socialLinks[k]).length > 0 && (
-        <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
-          {socialLinks.instagram && (
-            <a
-              href={socialLinks.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-700 hover:bg-pink-100 transition-colors"
-            >
-              <span>📷</span>
-              Instagram
-            </a>
-          )}
-          {socialLinks.tiktok && (
-            <a
-              href={socialLinks.tiktok}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black transition-colors"
-            >
-              <span>♪</span>
-              TikTok
-            </a>
-          )}
-          {socialLinks.facebook && (
-            <a
-              href={socialLinks.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-            >
-              <span>f</span>
-              Facebook
-            </a>
-          )}
-        </div>
-      )}
-
-      {/* -- Descripción ------------------------------------------ */}
-      {shop.description && (
-        <div className="px-4 py-3 border-t border-gray-100">
-          <p className="text-sm text-gray-700 leading-relaxed">{shop.description}</p>
-        </div>
-      )}
-
       {/* -- Catalogue / Produits -------------------------------------- */}
       <div className="px-4 py-6 border-t border-gray-100 flex-1">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Nos produits</h2>
         <ProductGrid products={products} shopSlug={shopSlug} primaryColor={shop.primary_color} />
       </div>
 
