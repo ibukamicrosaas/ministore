@@ -6,7 +6,6 @@ export interface PaymentMethodOption {
   label: string
   description: string
   icon: string
-  timeEstimate?: string
 }
 
 export function getCountryFromPhone(phone: string): BictorysCountry | null {
@@ -27,21 +26,18 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
     {
       id: 'orange_money',
       label: 'Orange Money',
       description: 'Via code USSD',
       icon: '/logo-payments/om_1.svg',
-      timeEstimate: '1-2 min',
     },
     {
       id: 'maxit',
       label: 'MaxIt',
       description: 'Paiement instantané',
       icon: '/logo-payments/maxit.webp',
-      timeEstimate: 'Instantané',
     },
   ],
   CI: [
@@ -50,14 +46,12 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
     {
       id: 'orange_money',
       label: 'Orange Money',
       description: 'Via code OTP',
       icon: '/logo-payments/om_1.svg',
-      timeEstimate: '1-2 min',
     },
   ],
   BK: [
@@ -66,7 +60,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
   ],
   ML: [
@@ -75,7 +68,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
   ],
   TG: [
@@ -84,7 +76,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
   ],
   BJ: [
@@ -93,7 +84,6 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
       label: 'Wave Money',
       description: 'Paiement instantané',
       icon: '/logo-payments/wave_1.svg',
-      timeEstimate: 'Instantané',
     },
   ],
 }

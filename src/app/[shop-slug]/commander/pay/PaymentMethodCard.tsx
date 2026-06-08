@@ -35,18 +35,17 @@ export function PaymentMethodCard({ method, selected, primaryColor, onClick }: P
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-2">
             <img
               src={method.icon}
               alt={method.label}
               className="w-10 h-10 object-contain"
             />
-            <p className="font-semibold text-gray-900">{method.label}</p>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">{method.label}</p>
+              <p className="text-sm text-gray-500">Paiement direct via {method.label}</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">{method.description}</p>
-          {method.timeEstimate && (
-            <p className="text-xs text-gray-400 mt-1">⏱ {method.timeEstimate}</p>
-          )}
         </div>
       </div>
     </button>
