@@ -29,19 +29,30 @@ interface Plan {
   priceInt: number
 }
 
-const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string; main: boolean }> = [
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone: '+221', main: true },
-  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone: '+225', main: true },
-  { code: 'BJ', name: 'Bénin', flag: '🇧🇯', phone: '+229', main: false },
-  { code: 'TG', name: 'Togo', flag: '🇹🇬', phone: '+228', main: false },
-  { code: 'ML', name: 'Mali', flag: '🇲🇱', phone: '+223', main: false },
-  { code: 'BK', name: 'Burkina Faso', flag: '🇧🇫', phone: '+226', main: false },
+const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string }> = [
+  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone: '+221' },
+  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone: '+225' },
+  { code: 'BJ', name: 'Bénin', flag: '🇧🇯', phone: '+229' },
+  { code: 'TG', name: 'Togo', flag: '🇹🇬', phone: '+228' },
+  { code: 'ML', name: 'Mali', flag: '🇲🇱', phone: '+223' },
+  { code: 'BK', name: 'Burkina Faso', flag: '🇧🇫', phone: '+226' },
 ]
 
 interface Props {
   plan: Plan
   shopName: string
   primaryColor: string
+}
+
+function StepNumber({ number, primaryColor }: { number: number; primaryColor: string }) {
+  return (
+    <div
+      className="flex items-center justify-center h-7 w-7 rounded-full text-white font-bold text-sm flex-shrink-0"
+      style={{ backgroundColor: primaryColor }}
+    >
+      {number}
+    </div>
+  )
 }
 
 export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props) {
@@ -118,8 +129,8 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-2xl mx-auto px-6 py-4">
+      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-4">
           <button
             onClick={() => router.push('/dashboard/upgrade')}
             className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
@@ -131,25 +142,29 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
       </div>
 
       {/* Main Content */}
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Title Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Finaliser votre abonnement</h1>
-          <p className="mt-2 text-gray-600">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Finaliser votre abonnement</h1>
+          <p className="mt-1 text-sm text-gray-600">
             Plan <span className="font-semibold">{plan.name}</span> — <span className="font-semibold">{plan.price} FCFA/mois</span>
           </p>
         </div>
 
         {/* Shop Card */}
-        <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6">
-          <p className="text-xs font-medium uppercase text-gray-500 tracking-wide mb-2">Boutique</p>
-          <h2 className="text-2xl font-bold text-gray-900">{shopName}</h2>
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-xs font-medium uppercase text-gray-500 tracking-wide mb-1">Boutique</p>
+          <h2 className="text-xl font-bold text-gray-900">{shopName}</h2>
         </div>
 
         {/* Form */}
-        <form onSubmit={handlePayment} className="space-y-6">
-          {/* Name Field */}
-          <div>
+        <form onSubmit={handlePayment} className="space-y-5">
+          {/* Step 1: Vos informations */}
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <StepNumber number={1} primaryColor={primaryColor} />
+              <h3 className="font-semibold text-gray-900">Vos informations</h3>
+            </div>
             <Input
               label="Nom complet"
               type="text"
@@ -161,10 +176,13 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
             />
           </div>
 
-          {/* Phone Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-sky-100 transition-all">
+          {/* Step 2: Numéro de téléphone */}
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <StepNumber number={2} primaryColor={primaryColor} />
+              <h3 className="font-semibold text-gray-900">Numéro de téléphone</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden focus-within:ring-2 focus-within:ring-offset-0 focus-within:border-gray-300 transition-all">
               <div className="flex">
                 {/* Country Selector */}
                 <select
@@ -173,7 +191,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                     setSelectedCountry(e.target.value as BictorysCountry)
                   }}
                   disabled={loading}
-                  className="shrink-0 px-4 py-3 border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
+                  className="shrink-0 px-3 py-2.5 border-r border-gray-200 bg-white text-sm text-gray-900 font-medium focus:outline-none cursor-pointer"
                 >
                   {COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
@@ -188,7 +206,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
                   placeholder="01 23 45 67 89"
-                  className="flex-1 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white"
+                  className="flex-1 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-gray-50"
                   disabled={loading}
                   required
                 />
@@ -196,11 +214,14 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
             </div>
           </div>
 
-          {/* Payment Methods */}
+          {/* Step 3: Mode de paiement */}
           {paymentMethods.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Mode de paiement</label>
-              <div className="space-y-3">
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <StepNumber number={3} primaryColor={primaryColor} />
+                <h3 className="font-semibold text-gray-900">Mode de paiement</h3>
+              </div>
+              <div className="space-y-2">
                 {paymentMethods.map((method) => {
                   const isSelected = selectedPaymentType === method.type
                   const logoPath = PAYMENT_LOGOS[method.type]
@@ -214,7 +235,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                         setOtpCode('')
                       }}
                       disabled={loading}
-                      className="w-full text-left rounded-lg border-2 transition-all p-5"
+                      className="w-full text-left rounded-lg border-2 transition-all p-4"
                       style={
                         isSelected
                           ? {
@@ -227,31 +248,31 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                             }
                       }
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
                           {logoPath ? (
-                            <div className="flex-shrink-0 w-12 h-8 relative flex items-center">
+                            <div className="flex-shrink-0 w-10 h-8 relative flex items-center">
                               <Image
                                 src={logoPath}
                                 alt={method.label}
-                                width={48}
+                                width={40}
                                 height={32}
                                 className="object-contain"
                                 unoptimized
                               />
                             </div>
                           ) : (
-                            <div className="text-2xl flex-shrink-0">💰</div>
+                            <div className="text-xl flex-shrink-0">💰</div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900">{method.label}</p>
+                            <p className="font-semibold text-gray-900 text-sm">{method.label}</p>
                             {method.description && (
-                              <p className="text-xs text-gray-600 mt-1.5">{method.description}</p>
+                              <p className="text-xs text-gray-600 mt-1">{method.description}</p>
                             )}
                           </div>
                         </div>
                         <div
-                          className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-1"
+                          className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-0.5"
                           style={
                             isSelected
                               ? {
@@ -273,24 +294,28 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
             </div>
           )}
 
-          {/* OTP Field */}
+          {/* Step 4: Code OTP (if needed) */}
           {requiresOtp && selectedPaymentType && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-amber-900 flex items-center gap-2">
-                  <span>⚡ Code OTP requis</span>
-                </p>
-                <p className="text-sm text-amber-800 mt-2 leading-relaxed">
-                  Composez <span className="inline-block font-mono font-bold bg-amber-100 px-2.5 py-1 rounded text-amber-900">#144*82#</span> sur votre téléphone pour recevoir le code de confirmation.
-                </p>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className="flex items-center justify-center h-7 w-7 rounded-full text-white font-bold text-sm flex-shrink-0"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  4
+                </div>
+                <h3 className="font-semibold text-gray-900">Code OTP</h3>
               </div>
+              <p className="text-sm text-amber-800 mb-3">
+                Composez <span className="inline-block font-mono font-bold bg-amber-100 px-2 py-1 rounded text-amber-900 text-xs">#144*82#</span> sur votre téléphone pour recevoir le code.
+              </p>
               <input
                 type="text"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
                 maxLength={6}
-                className="w-full px-4 py-3 border border-amber-300 rounded-lg text-center font-mono text-2xl tracking-wider font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                className="w-full px-3 py-2.5 border border-amber-300 rounded-lg text-center font-mono text-lg tracking-wider font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
                 disabled={loading}
               />
             </div>
@@ -313,10 +338,10 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
             disabled={!customerName.trim() || !customerPhone.trim() || !selectedPaymentType}
             style={{ backgroundColor: primaryColor }}
           >
-            Payer {plan.price} FCFA
+            {loading ? 'Traitement...' : `Payer ${plan.price} FCFA`}
           </Button>
 
-          {/* Info */}
+          {/* Info Footer */}
           <p className="text-center text-xs text-gray-600">
             Vos données sont sécurisées. Vous serez redirigé vers Bictorys pour finaliser le paiement.
           </p>
