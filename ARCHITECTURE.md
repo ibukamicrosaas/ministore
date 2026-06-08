@@ -50,11 +50,17 @@ ministore/
 │   │   │   │   └── [id]/page.tsx          → Détail produit
 │   │   │   ├── commander/
 │   │   │   │   ├── page.tsx               → Formulaire commande
-│   │   │   │   └── pay/page.tsx           → Page paiement (legacy)
-│   │   │   ├── checkout/
-│   │   │   │   └── page.tsx               → Page checkout Bictorys
-│   │   │   ├── success/
-│   │   │   │   └── page.tsx               → Confirmation commande
+│   │   │   │   ├── pay/
+│   │   │   │   │   ├── page.tsx           → Sélecteur méthodes paiement
+│   │   │   │   │   ├── PaymentMethodSelector.tsx → Affichage méthodes avec logos
+│   │   │   │   │   └── PaymentMethodCard.tsx    → Card avec logo réel + détails
+│   │   │   │   ├── checkout/
+│   │   │   │   │   ├── page.tsx           → Router vers composant approprié
+│   │   │   │   │   ├── WaveCheckout.tsx   → Deep linking Wave Money
+│   │   │   │   │   ├── OrangeMoneyCheckout.tsx → OTP Orange Money
+│   │   │   │   │   └── BictorysCheckout.tsx    → Checkout Bictorys fallback
+│   │   │   │   └── success/
+│   │   │   │       └── page.tsx           → Confirmation commande
 │   │   │   └── layout.tsx                 → Layout avec CSS variables couleur
 │   │   │
 │   │   ├── dashboard/                     → Back-office (protégé)
@@ -91,10 +97,15 @@ ministore/
 │   │   │   │   └── [id]/route.ts          → GET détail produit
 │   │   │   ├── orders/
 │   │   │   │   ├── route.ts               → POST créer commande
-│   │   │   │   └── [id]/route.ts          → GET détail commande
+│   │   │   │   ├── [id]/route.ts          → GET détail commande
+│   │   │   │   ├── bictorys-checkout/route.ts → POST créer session Bictorys
+│   │   │   │   ├── wave-payment/route.ts → POST enregistrer tentative Wave
+│   │   │   │   ├── orange-money-payment/route.ts → POST session Orange Money
+│   │   │   │   ├── verify-orange-otp/route.ts → POST vérifier OTP
+│   │   │   │   └── [id]/verify-payment/route.ts → GET vérifier statut paiement
 │   │   │   ├── checkout/
 │   │   │   │   └── bictorys/
-│   │   │   │       └── create/route.ts    → POST créer session Bictorys
+│   │   │   │       └── create/route.ts    → POST créer session Bictorys (legacy)
 │   │   │   ├── webhooks/
 │   │   │   │   └── bictorys/route.ts      → Webhook paiements Bictorys
 │   │   │   ├── admin/
@@ -153,7 +164,8 @@ ministore/
 │   │   │   ├── server.ts                  → createServerClient()
 │   │   │   └── admin.ts                   → createAdminClient()
 │   │   ├── payments/
-│   │   │   ├── bictorys.ts                → createBictorysCharge(), verifyWebhook()
+│   │   │   ├── payment-methods.ts         → PAYMENT_METHODS_BY_COUNTRY, getCountryFromPhone()
+│   │   │   ├── bictorys.ts                → createBictorysCharge(), detectCountryFromPhone(), verifyBictorysSignature()
 │   │   │   └── webhook.ts                 → helpers webhook verification
 │   │   ├── notifications/
 │   │   │   ├── sms.ts                     → sendSMS(), templates

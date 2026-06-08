@@ -2,16 +2,16 @@
 
 ## État Actuel ✅
 
-**Commit :** `3a6c80e` - "fix: activation automatique des plans après paiement Bictorys"
+**Commit :** `dfbbd25` - "fix: payment flow improvements — real logos, direct checkout, complete Bictorys integration"
 
 ### ✅ Complété
 
-- [x] Diagnostic du problème d'activation de plans
-- [x] Restructure du webhook Bictorys avec fallback API
-- [x] Amélioration de la vérification client-side
-- [x] Ajout de logging systématique
-- [x] Création de la migration `subscription_transactions`
-- [x] Documentation complète (`FIX_SUBSCRIPTION_ACTIVATION.md`)
+- [x] Remplacement des emojis par des logos réels (Wave, Orange Money, MaxIt, MTN)
+- [x] Suppression de l'étape de sélection inutile (redirection directe au paiement)
+- [x] Amélioration complète de l'intégration Bictorys avec tous les pays
+- [x] Support complet des méthodes de paiement par pays (SN, CI, BK, ML, TG, BJ)
+- [x] Correction de l'API bictorys-checkout (déchiffrement clé, token, payment_type)
+- [x] Amélioration des logs et gestion d'erreurs
 - [x] Test de compilation TypeScript
 
 ---

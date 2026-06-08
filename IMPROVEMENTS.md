@@ -210,6 +210,7 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 | ✅ | Fix OG tags boutiques (partage réseaux sociaux) | Mai 2026 |
 | ✅ | Variantes produit avec presets (7 templates) | Mai 2026 |
 | ✅ | Toggle paiement à la livraison (accept_cash_on_delivery) | Mai 2026 |
+| ✅ | Flux paiement amélioré : logos réels, redirection directe, Bictorys complet | Juin 2026 |
 
 ---
 
