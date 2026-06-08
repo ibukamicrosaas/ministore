@@ -2,7 +2,7 @@ import crypto from 'crypto'
 
 const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
 
-export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit'
+export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money'
 export type BictorysMethod = BictorysPaymentType
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
@@ -50,6 +50,7 @@ export interface BictorysChargePayload {
   errorRedirectUrl: string
   webhookUrl?: string
   merchantReference?: string
+  otp?: string
   orderDetails?: { name: string; price: number; quantity: number; taxRate: number }[]
   customerObject?: {
     name?: string
@@ -79,7 +80,7 @@ export async function createBictorysCharge(
   apiKey: string,
   payload: BictorysChargePayload,
   paymentType?: BictorysPaymentType,
-): Promise<{ checkoutUrl: string; transactionId: string }> {
+): Promise<{ checkoutUrl?: string; transactionId: string; message?: string }> {
   const url = paymentType
     ? `${BICTORYS_BASE_URL}/charges?payment_type=${paymentType}`
     : `${BICTORYS_BASE_URL}/charges`
@@ -116,11 +117,11 @@ export async function createBictorysCharge(
 
   console.log('[createBictorysCharge] 📥 Réponse Bictorys:', JSON.stringify(json, null, 2))
 
-  // Wave/Carte → 'link' (deep link direct)
-  // Orange Money / autres → 'redirectUrl' (page Bictorys générique, toujours présent)
+  // Wave → 'link' (deep link direct), autres → 'redirectUrl' si dispo
+  // MoMo push (Orange Money SN/BK, MTN Money CI) → 'message' sans URL
   const checkoutUrl = (json.link ?? json.url ?? json.confirmationLink ?? json.redirectUrl) as string | undefined
+  const message = (json.message as string | undefined) || undefined
 
-  // Essayer plusieurs variantes pour le transaction ID (Bictorys peut utiliser différentes clés)
   const transactionId = (
     json.chargeId ??
     json.charge_id ??
@@ -131,17 +132,21 @@ export async function createBictorysCharge(
     json.payment_id
   ) as string | undefined
 
-  if (!checkoutUrl) {
-    throw new Error(`Bictorys: pas d'URL dans la réponse: ${JSON.stringify(json)}`)
+  // Échec total : aucune URL, aucun message, aucun transactionId
+  if (!checkoutUrl && !message && !transactionId) {
+    throw new Error(`Bictorys: réponse invalide: ${JSON.stringify(json)}`)
   }
 
   if (!transactionId) {
-    console.warn('[createBictorysCharge] ⚠️ Pas d\'ID de transaction dans la réponse Bictorys!')
-    console.warn('[createBictorysCharge] Réponse complète:', json)
+    console.warn('[createBictorysCharge] ⚠️ Pas d\'ID de transaction dans la réponse Bictorys:', json)
   }
 
-  console.log('[createBictorysCharge] ✅ Succès:', { checkoutUrl: checkoutUrl?.slice(0, 50) + '...', transactionId })
-  return { checkoutUrl, transactionId: transactionId ?? '' }
+  console.log('[createBictorysCharge] ✅ Succès:', {
+    checkoutUrl: checkoutUrl ? checkoutUrl.slice(0, 50) + '...' : '(aucune)',
+    transactionId,
+    message: message ? message.slice(0, 60) : '(aucun)',
+  })
+  return { checkoutUrl, transactionId: transactionId ?? '', message }
 }
 
 export async function getBictorysCharge(

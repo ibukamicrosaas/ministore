@@ -11,13 +11,14 @@ interface RequestBody {
   customerLastName?: string
   customerPhone?: string
   paymentType?: BictorysPaymentType
+  otp?: string
 }
 
 export async function POST(req: NextRequest) {
   const platformApiKey = process.env.BICTORYS_API_KEY
 
   const body = (await req.json()) as RequestBody
-  const { orderId, shopSlug, customerFirstName, customerLastName, customerPhone, paymentType } = body
+  const { orderId, shopSlug, customerFirstName, customerLastName, customerPhone, paymentType, otp } = body
 
   if (!orderId || !shopSlug) {
     return NextResponse.json({ error: 'orderId et shopSlug requis' }, { status: 400 })
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { checkoutUrl, transactionId } = await createBictorysCharge(
+    const { checkoutUrl, transactionId, message } = await createBictorysCharge(
       apiKey,
       {
         amount: amountToCharge,
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
         country: paymentCountry,
         paymentReference: `tekkishop-${orderId.slice(0, 8)}`,
         merchantReference: orderId,
+        otp: otp || undefined,
         successRedirectUrl: `${APP_URL}/${shopSlug}/commander/success?order_id=${orderId}&token=${order.client_token}`,
         errorRedirectUrl: `${APP_URL}/${shopSlug}/commander/pay?cancelled=1&order_id=${orderId}`,
         webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
@@ -122,7 +124,10 @@ export async function POST(req: NextRequest) {
       status:             'pending',
     })
 
-    return NextResponse.json({ checkoutUrl })
+    if (checkoutUrl) {
+      return NextResponse.json({ checkoutUrl, transactionId })
+    }
+    return NextResponse.json({ message, transactionId })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
     console.error('[bictorys/create] ❌ Erreur Direct API:', message, '| country:', paymentCountry, '| paymentType:', paymentType)

@@ -137,6 +137,7 @@ export default async function PayPage({ params, searchParams }: Props) {
         amount={amount}
         primaryColor={color}
         isDeposit={isDeposit}
+        clientToken={order.client_token}
       />
     </div>
   )
