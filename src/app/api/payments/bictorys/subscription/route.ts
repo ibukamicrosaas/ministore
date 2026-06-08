@@ -26,8 +26,14 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
-  const body = await req.json() as { planKey?: string; paymentType?: BictorysPaymentType | null }
-  const { planKey, paymentType } = body
+  const body = await req.json() as {
+    planKey?: string
+    paymentType?: BictorysPaymentType | null
+    customerPhone?: string
+    customerName?: string
+    otp?: string
+  }
+  const { planKey, paymentType, customerPhone, customerName, otp } = body
 
   if (!planKey || !PLAN_PRICES[planKey]) {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
@@ -58,9 +64,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
   }
 
-  // Détecter le pays depuis le téléphone de la boutique si disponible (sinon fallback sur shop.country)
+  // Détecter le pays depuis customerPhone (nouveau flow checkout) ou shop.phone_whatsapp (ancien flow)
   let paymentCountry = shop.country
-  if (shop.phone_whatsapp) {
+  let normalizedPhone: string | undefined
+
+  if (customerPhone) {
+    const normalized = normalizePhoneForBictorys(customerPhone)
+    const detectedCountry = detectCountryFromPhone(normalized)
+    if (detectedCountry) {
+      paymentCountry = detectedCountry
+      normalizedPhone = normalized
+    }
+  } else if (shop.phone_whatsapp) {
     const detectedCountry = detectCountryFromPhone(shop.phone_whatsapp)
     if (detectedCountry) {
       paymentCountry = detectedCountry
@@ -88,6 +103,13 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           taxRate:  0,
         }],
+        customerObject: {
+          name: customerName || undefined,
+          phone: normalizedPhone || undefined,
+          locale: 'fr-FR',
+          country: paymentCountry,
+        },
+        ...(otp && { otp }),
       },
       paymentType ?? undefined,
     )
@@ -115,6 +137,13 @@ export async function POST(req: NextRequest) {
               quantity: 1,
               taxRate:  0,
             }],
+            customerObject: {
+              name: customerName || undefined,
+              phone: normalizedPhone || undefined,
+              locale: 'fr-FR',
+              country: paymentCountry,
+            },
+            ...(otp && { otp }),
           },
           undefined, // Pas de payment_type = page générique
         )
