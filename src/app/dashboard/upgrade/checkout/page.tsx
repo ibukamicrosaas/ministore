@@ -10,7 +10,7 @@ interface Plan {
 }
 
 const PLANS: Record<string, Plan> = {
-  discovery: { key: 'discovery', name: 'Découverte', price: '2 900', priceInt: 2900 },
+  decouverte: { key: 'decouverte', name: 'Découverte', price: '2 900', priceInt: 2900 },
   business: { key: 'business', name: 'Business', price: '4 900', priceInt: 4900 },
   pro: { key: 'pro', name: 'Pro', price: '9 900', priceInt: 9900 },
 }
@@ -22,8 +22,8 @@ type Props = {
 export default async function SubscriptionCheckoutPage({ searchParams }: Props) {
   const { plan: planKey } = await searchParams
 
-  // Backward compatibility: map 'decouverte' to 'discovery'
-  const normalizedKey = planKey === 'decouverte' ? 'discovery' : planKey
+  // Backward compatibility: map 'decouverte' to 'decouverte'
+  const normalizedKey = planKey === 'decouverte' ? 'decouverte' : planKey
   const plan = normalizedKey && PLANS[normalizedKey] ? PLANS[normalizedKey] : null
 
   if (!plan) {

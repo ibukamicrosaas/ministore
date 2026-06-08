@@ -4,7 +4,7 @@ import { getBictorysCharge } from '@/lib/payments/bictorys'
 import { activatePlan } from '@/lib/billing/activate-plan'
 
 const PLAN_PRICES: Record<string, number> = {
-  discovery: 2900,
+  decouverte: 2900,
   business:   4900,
   pro:        9900,
 }

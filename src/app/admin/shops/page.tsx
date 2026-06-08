@@ -13,7 +13,7 @@ export default function AdminShopsPage() {
   const [shops, setShops] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterPlan, setFilterPlan] = useState<'all' | 'trial' | 'discovery' | 'business' | 'pro'>('all')
+  const [filterPlan, setFilterPlan] = useState<'all' | 'trial' | 'decouverte' | 'business' | 'pro'>('all')
   const [filterCountry, setFilterCountry] = useState<'all' | 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'>('all')
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function AdminShopsPage() {
 
   const planConfig = {
     trial: { label: 'Essai', color: 'bg-gray-100 text-gray-700', icon: '📋' },
-    discovery: { label: 'Découverte', color: 'bg-emerald-100 text-emerald-700', icon: '🚀' },
+    decouverte: { label: 'Découverte', color: 'bg-emerald-100 text-emerald-700', icon: '🚀' },
     business: { label: 'Business', color: 'bg-blue-100 text-blue-700', icon: '💼' },
     pro: { label: 'Pro', color: 'bg-purple-100 text-purple-700', icon: '👑' },
   }
@@ -111,7 +111,7 @@ export default function AdminShopsPage() {
 
           {/* Plan filters */}
           <div className="flex gap-2 flex-wrap">
-            {(['all', 'trial', 'discovery', 'business', 'pro'] as const).map((plan) => (
+            {(['all', 'trial', 'decouverte', 'business', 'pro'] as const).map((plan) => (
               <button
                 key={plan}
                 onClick={() => setFilterPlan(plan)}

@@ -37,12 +37,12 @@ interface MRRData {
   newMRR: number
   churnedMRR: number
   netMRR: number
-  byPlan: { discovery: number; business: number; pro: number }
+  byPlan: { decouverte: number; business: number; pro: number }
 }
 
 interface PlanDist {
   trial: number
-  discovery: number
+  decouverte: number
   business: number
   pro: number
 }
@@ -195,7 +195,7 @@ export default function DetailedAnalyticsPage() {
                     <p className="text-sm font-semibold text-gray-700 mb-4">MRR par plan</p>
                     <div className="space-y-2">
                       {[
-                        { plan: 'Découverte', value: mrrBreakdown.byPlan.discovery, color: 'bg-emerald-100' },
+                        { plan: 'Découverte', value: mrrBreakdown.byPlan.decouverte, color: 'bg-emerald-100' },
                         { plan: 'Business', value: mrrBreakdown.byPlan.business, color: 'bg-blue-100' },
                         { plan: 'Pro', value: mrrBreakdown.byPlan.pro, color: 'bg-purple-100' },
                       ].map(({ plan, value, color }) => (
@@ -222,7 +222,7 @@ export default function DetailedAnalyticsPage() {
                       <Pie
                         data={[
                           { name: 'Essai', value: planDist.trial },
-                          { name: 'Découverte', value: planDist.discovery },
+                          { name: 'Découverte', value: planDist.decouverte },
                           { name: 'Business', value: planDist.business },
                           { name: 'Pro', value: planDist.pro },
                         ]}

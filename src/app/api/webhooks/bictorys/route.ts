@@ -12,7 +12,7 @@ import { activatePlan } from '@/lib/billing/activate-plan'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
-const VALID_PLAN_KEYS = new Set(['discovery', 'business', 'pro'])
+const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function POST(req: NextRequest) {
@@ -201,7 +201,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   const { shop_id: shopId, plan_key: planKey } = transaction as any
 
   // Vérifier montants, activer plan, mettre à jour transaction
-  const planPrices: Record<string, number> = { discovery: 2900, business: 4900, pro: 9900 }
+  const planPrices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
   const expectedAmount = planPrices[planKey] ?? 0
 
   if (payload.amount !== expectedAmount) {

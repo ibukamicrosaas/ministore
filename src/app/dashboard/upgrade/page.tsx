@@ -10,7 +10,7 @@ export const metadata = { title: 'Choisir un plan — TekkiShop' }
 
 const PLANS: Plan[] = [
   {
-    key:         'discovery',
+    key:         'decouverte',
     name:        'Découverte',
     price:       '2 900',
     priceInt:    2900,

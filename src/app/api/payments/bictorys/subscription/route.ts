@@ -5,13 +5,13 @@ import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys
 import { APP_URL } from '@/constants'
 
 const PLAN_PRICES: Record<string, number> = {
-  discovery: 2900,
+  decouverte: 2900,
   business:   4900,
   pro:        9900,
 }
 
 const PLAN_LABELS: Record<string, string> = {
-  discovery: 'Découverte',
+  decouverte: 'Découverte',
   business:   'Business',
   pro:        'Pro',
 }
