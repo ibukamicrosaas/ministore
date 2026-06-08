@@ -1,8 +1,8 @@
-# BeautyDesk — Product Requirements Document
+# TEKKIShop — Product Requirements Document
 
-> Document de référence pour la création de BeautyDesk.
+> Document de référence pour la création de TEKKIShop.
 > Tout agent IA ou développeur peut démarrer l'implémentation à partir de ce document sans instructions supplémentaires.
-> Version 1.0 — Avril 2026
+> Version 2.0 — Juin 2026 (Mise à jour depuis BeautyDesk)
 
 ---
 
@@ -25,218 +25,306 @@
 
 ### Le produit
 
-**BeautyDesk** est un SaaS de gestion tout-en-un pour salons de coiffure et de beauté africains. Il combine trois outils en un : un système de réservation en ligne accessible aux clients via PWA, un back-office de gestion des employés et des prestations, et un tableau de bord de suivi des performances.
+**TEKKIShop** est un SaaS e-commerce tout-en-un permettant aux petits vendeurs et entrepreneurs d'Afrique de l'Ouest de créer un mini-site marchand en 5 minutes et vendre leurs produits facilement. Le SaaS combine trois outils en un : une PWA publique accessible aux clients, un back-office de gestion des produits et commandes, et un tableau de bord de suivi des performances et revenues.
 
 ### Le problème résolu
 
-Les salons de beauté africains font face à deux problèmes quotidiens non résolus par aucun outil existant :
+Les petits vendeurs (vêtements, alimentation, artisanat, services) africains font face à un problème quotidien non résolu :
 
-**Côté réservations :** Les clients appellent ou écrivent sur WhatsApp pour annoncer leur passage, mais ces "réservations" ne sont jamais formalisées. Résultat : le salon bloque du temps pour une cliente qui n'arrive pas, ou la cliente arrive sans que le salon l'ait noté. Les deux parties sont frustrées. Aucun logiciel occidental de réservation n'est adapté au contexte africain (pas de mobile money, interface trop complexe, pas de version française adaptée).
+**Absence de vitrine digitale simple :** Aujourd'hui, un petit vendeur doit choisir entre :
+- Rester offline (bouche-à-oreille, WhatsApp manuel)
+- Utiliser Shopify/WooCommerce (trop complexe, trop cher, pas adapté au contexte africain)
+- Ouvrir un compte Instagram Shop (limité, pas de paiement mobile money africain)
 
-**Côté gestion employés :** La majorité des salons paient leurs employés à la commission (40 à 60% des prestations effectuées) ou à salaire fixe. Aujourd'hui, ces calculs se font à la main dans un cahier, source d'erreurs et de tensions. Le patron n'a aucune visibilité sur les performances individuelles ni sur la rentabilité réelle de son salon.
+Il n'existe pas d'outil simple, accessible, mobile-first, avec paiement par mobile money africain (Wave, Orange Money, Maxit) ET à la livraison. **TEKKIShop résout ce problème en 5 minutes.**
 
 ### URL cible
 
-`beautydesk.app` (ou sous-domaine configurable par salon : `monbeausalon.beautydesk.app`)
+`tekki.shop` (ou domaine personnalisé configurable par vendeur : `monboutique.tekki.shop` ou `monboutique.com`)
 
 ### Principes fondateurs
 
-- **Mobile-first** — 90% des utilisateurs sont sur mobile. Chaque écran est conçu pour mobile d'abord.
-- **PWA pour les clients** — pas de téléchargement, accessible via un lien WhatsApp
-- **Paiement africain-first** — Moneroo (mobile money Wave, Orange Money, MTN, Free, etc.) + Stripe (carte)
-- **Ultra-simple** — une patronne de salon sans formation technique doit pouvoir utiliser le back-office seule
-- **WhatsApp natif** — les rappels, confirmations et notifications passent par WhatsApp
-- **Multi-salon** — une même instance peut gérer N salons indépendants
+- **Mobile-first** — 95% des utilisateurs sont sur mobile. Chaque écran est conçu pour mobile d'abord.
+- **PWA pour les clients** — pas de téléchargement, accessible via lien WhatsApp partagé
+- **Paiement africain-first** — Bictorys (Wave, Orange Money, Maxit sur SN/CI/BF/BJ/ML/TG) + paiement à la livraison
+- **Ultra-simple** — un vendeur sans formation IT doit pouvoir créer sa boutique et recevoir des commandes seul
+- **Notifications par SMS** — confirmations, statuts commandes, alertes stock
+- **Scalable** — 1 vendeur = 1 boutique, support des domaines personnalisés Pro
 
 ---
 
 ## 2. Utilisateurs cibles
 
-### Profil 1 — La patronne de salon (Admin)
+### Profil 1 — Le marchand vendeur (Shop Owner)
 
-Propriétaire ou gérante d'un salon de coiffure ou de beauté en Afrique francophone. Gère 2 à 15 employés. Familière avec WhatsApp et les applications mobiles simples, mais pas nécessairement à l'aise avec des logiciels complexes. Principal problème : passer des heures à calculer les commissions et gérer les réservations manuellement.
-
-**Besoins :**
-- Voir toutes les réservations du jour en un coup d'œil
-- Calculer automatiquement ce qu'elle doit à chaque employée
-- Ajouter/modifier les services proposés et leurs prix
-- Recevoir une notification WhatsApp à chaque nouvelle réservation
-
-### Profil 2 — La cliente du salon (Client)
-
-Femme de 18 à 45 ans, urbaine, habituée à utiliser WhatsApp et à payer par mobile money. Elle ne veut pas télécharger une application. Elle veut réserver facilement depuis son téléphone, payer en avance pour sécuriser son créneau, et recevoir un rappel avant son rendez-vous.
+Petit entrepreneur ou commerçant en Afrique francophone (vêtements, alimentation, artisanat, services). Âge 20-50 ans. Vend localement ou via WhatsApp, sans présence digitale formelle. Familier avec WhatsApp et paiement mobile money, mais pas avec les outils e-commerce. Principal problème : aucune vitrine digitale, gestion des commandes manuel, pas de suivi de stock.
 
 **Besoins :**
-- Voir les services disponibles et leurs prix
-- Choisir une date et une heure disponible
-- Payer l'acompte par mobile money ou carte
-- Recevoir une confirmation et un rappel
+- Créer sa boutique en 5 minutes sans expertise technique
+- Ajouter ses produits avec photos et variantes facilement
+- Recevoir les commandes automatiquement (SMS + paiement confirmé)
+- Voir ses commandes, clients et revenus au même endroit
+- Gérer l'expédition et les livraisons simples
 
-### Profil 3 — L'employée du salon (Staff)
+### Profil 2 — Le client acheteur (Customer)
 
-Coiffeuse ou esthéticienne employée dans le salon. Elle veut voir ses rendez-vous du jour et connaître ses gains de la semaine sans dépendre de la patronne pour l'information.
+Femme ou homme de 18 à 60 ans, urbain, habituée à utiliser WhatsApp et payer par mobile money. Ne veut pas télécharger une application. Veut commander facilement depuis son téléphone, payer en ligne (Wave, Orange Money, Maxit) ou à la livraison, et être tenu informé de son commande.
 
 **Besoins :**
-- Voir son planning du jour
-- Consulter ses commissions de la semaine
-- Être notifiée d'une nouvelle réservation qui lui est assignée
+- Voir les produits disponibles et leurs photos
+- Choisir produits, variantes et quantité
+- Payer par mobile money ou à la livraison
+- Recevoir une confirmation de commande et suivi livraison
+- Connaître les délais et zones de livraison
+
+### Profil 3 — L'administrateur TEKKIShop (Admin)
+
+Équipe TEKKIShop responsable du SaaS. Gère les plans d'abonnement, active les boutiques, traite les paiouts, suit les KPIs.
+
+**Besoins :**
+- Valider les abonnements payés
+- Générer les rapports de revenus
+- Supporter les marchands en cas de problème
 
 ---
 
 ## 3. Fonctionnalités principales
 
-### MODULE 1 — PWA Client (interface publique)
+### MODULE 1 — Mini-site public (PWA)
 
-- Page d'accueil salon avec logo, nom, description courte
-- Catalogue des services sous forme de cartes (nom, durée, prix, photo optionnelle)
-- Calendrier de disponibilité par service et par employée
-- Formulaire de réservation (service, date, heure, employée optionnelle)
-- Paiement de l'acompte en ligne (Moneroo + Stripe)
-- Espace client : historique des réservations, statuts, annulation
-- Confirmation par WhatsApp + email optionnel
-- Rappel automatique 24h avant le rendez-vous
+- **Page d'accueil :** Logo, nom, description, adresse, couleur primaire configurable
+- **Header :** Logo, nom, boutons "Commander" + "Contact WhatsApp"
+- **Catalogue produits :** 
+  - Barre de recherche
+  - Filtres par catégorie (chips)
+  - Toggle liste/grille
+  - Section "Coups de cœur" (produits mis en avant)
+  - Pagination si > 100 articles
+- **Page produit :**
+  - Galerie photo (carousel + thumbnails)
+  - Vidéo en modal (YouTube embed ou Cloudinary)
+  - Prix, stock, description, variantes (couleurs, tailles, etc.)
+  - Bouton "Commander" sticky
+- **Footer viral :** "Toi aussi, ouvre ta boutique avec TekkiShop →"
+- **Footer** : Adresse, téléphone, horaires si disponibles
+- **Cache :** ISR 60s sur pages publiques (revalidate = 60)
 
-### MODULE 2 — Back-office Salon (interface admin)
+### MODULE 2 — Checkout & Paiement
+
+**Page Commande (`[shop-slug]/commander/`):**
+- Formulaire multi-articles (1 à N articles)
+- Sélecteur produit + variante + quantité (+ / -)
+- Sélecteur zone de livraison (dropdown) avec prix dynamique
+- Sélecteur pays avec flag + indicatif téléphonique
+- Total = articles + frais livraison
+- Validation client-side et server-side
+
+**Page Checkout (`[shop-slug]/checkout/`):**
+- Step 1 : Infos client (nom, téléphone)
+- Auto-détection pays depuis préfixe téléphone
+- Step 2 : Sélection méthode paiement (Wave, Orange Money, Maxit, Paiement à la livraison)
+- Champ OTP si Orange Money (CI/BF)
+- Récapitulatif commande
+- Redirection Bictorys ou confirmation si paiement à la livraison
+
+**Post-paiement:**
+- Confirmation SMS au client
+- Confirmation SMS au marchand
+- Page succès avec référence commande
+
+### MODULE 3 — Dashboard marchand (back-office)
 
 **Tableau de bord :**
-- CA du jour / semaine / mois
-- Nombre de réservations confirmées vs annulées
-- Taux de no-show
-- Prestation la plus demandée
-- Employée la plus productive
+- CA jour / semaine / mois
+- Nombre de commandes (pending, confirmed, delivered)
+- Top 3 produits par quantité
+- Taux de livraison
+- État abonnement (plan actif, date renouvellement)
 
-**Gestion des réservations :**
-- Vue calendrier (jour / semaine)
-- Vue liste avec filtres (statut, employée, service, date)
-- Actions : confirmer, marquer présent, annuler, rembourser
-- Détail complet de chaque réservation
+**Gestion des commandes :**
+- Vue liste avec filtres (statut, date, montant)
+- Statuts : pending → confirmed → preparing → ready → delivered (+ cancelled)
+- Actions : confirmer, marquer en préparation, marquer prête, marquer livrée
+- Édition notes internes
+- Détail complet : produits, client, adresse, montant, paiement, livraison
 
-**Gestion des employées :**
-- Ajout / modification / désactivation d'une employée
-- Type de rémunération : commission (%) ou salaire fixe (montant/mois)
-- Calcul automatique des commissions hebdomadaires et mensuelles
-- Fiche de paie exportable par employée
+**Gestion des produits :**
+- Ajout / modification / suppression de produit
+- Champs : nom, description, prix, photos (galerie), vidéo (YouTube/Cloudinary)
+- Catégorie, SKU, stock, variantes (presets : couleur, taille, style, etc.)
+- Toggle actif/inactif
+- Produits en rupture filtrés (n'apparaissent pas publiquement)
+- Toggle "Coup de cœur" (produit mis en avant)
 
-**Gestion des services :**
-- Ajout / modification / suppression de services
-- Champs : nom, description, durée (minutes), prix, photo, actif/inactif
-- Assignation de services à des employées spécifiques (optionnel)
+**Gestion des clients :**
+- Base clients avec nombre de commandes, montant total, dernière commande
+- Pagination (50/page)
+- Recherche par nom/téléphone
 
-**Paramètres du salon :**
-- Nom, logo, description, couleur principale
-- Horaires d'ouverture par jour de la semaine
-- Politique d'acompte : pourcentage requis (ex : 30%, 50%, 100%)
-- Politique d'annulation : délai minimum et conditions de remboursement
-- Numéro WhatsApp du salon (pour les notifications)
-- Intégration Moneroo (clés API) et Stripe (clés API)
+**Paramètres boutique :**
+- Logo, couleur primaire (8 presets + custom), nom, ville, adresse
+- Description courte (meta description) + À propos (500 chars)
+- Image de couverture (cover_url, Pro uniquement)
+- Téléphone WhatsApp, horaires d'ouverture
+- URL personnalisée / slug (vérification disponibilité en temps réel)
+- Toggle "Paiement à la livraison"
+- Zones de livraison : ajout/suppression dynamique (nom + prix FCFA)
+- Numéros de reversement (Wave, Orange Money)
 
-### MODULE 3 — Espace Employée (interface staff)
+**Gestion de l'abonnement :**
+- Plan actif (Découverte, Business, Pro)
+- Boutons "Upgrade" + "Gérer l'abonnement"
+- Date de renouvellement
+- Lien facturation Bictorys
 
-- Planning du jour et de la semaine
-- Liste des réservations assignées
-- Récapitulatif des commissions de la semaine
-- Historique des prestations effectuées
+**Rapports :**
+- Export CSV des commandes (Pro uniquement)
+- Graphique CA 30 jours
+- Rapport top produits, taux livraison
+
+### MODULE 4 — Notifications
+
+- SMS Twilio à chaque changement de statut commande
+- SMS Twilio à chaque nouvelle commande
+- SMS Twilio alertes stock faible (< threshold)
+- SMS Twilio notifications post-paiement abonnement
 
 ---
 
 ## 4. Parcours utilisateurs détaillés
 
-### Parcours A — Réservation client (nouveau client)
+### Parcours A — Commande client (nouveau client)
 
 ```
-1. La cliente reçoit le lien du salon sur WhatsApp
-   → Ouvre beautydesk.app/[slug-salon] dans son navigateur
+1. Le client reçoit le lien de la boutique sur WhatsApp ou réseaux sociaux
+   → Ouvre tekki.shop/[slug-boutique] dans son navigateur
 
-2. Elle voit la page d'accueil du salon
-   → Logo, nom du salon, services disponibles en cartes
+2. Il voit la page d'accueil de la boutique
+   → Logo, nom, description, couleur primaire, section "Coups de cœur"
 
-3. Elle clique sur le service qui l'intéresse
-   → Ex : "Tresses box braids — 120 min — 15 000 FCFA"
+3. Il explore le catalogue
+   → Recherche, filtre par catégorie, toggle liste/grille
+   → Voit les produits disponibles avec photos et prix
 
-4. Elle choisit une date sur le calendrier
-   → Seules les dates disponibles sont affichées
+4. Il clique sur un produit qui l'intéresse
+   → Voir galerie (carousel + thumbnails)
+   → Voir prix, stock, description, variantes disponibles
+   → Voir vidéo démo si disponible
 
-5. Elle choisit un créneau horaire
-   → Les créneaux sont générés selon les horaires du salon
-      et les réservations existantes
+5. Il ajoute produit(s) au panier
+   → Sélectionne variantes (couleur, taille, etc.)
+   → Choisit quantité (+ / -)
+   → Total mis à jour en temps réel
 
-6. Elle renseigne ses informations
-   → Prénom, nom, numéro WhatsApp (obligatoire), email (optionnel)
+6. Il clique "Commander"
+   → Redirection vers /[shop-slug]/commander/
 
-7. Elle voit le récapitulatif + montant de l'acompte
-   → Ex : "Acompte requis : 50% = 7 500 FCFA"
+7. Page commande : remplit infos + sélectionne livraison
+   → Nom, téléphone (détection auto du pays)
+   → Sélectionne zone de livraison (dropdown avec prix)
+   → Voit total = articles + livraison
+   → Continue vers paiement
 
-8. Elle paie via Moneroo (Wave, Orange Money, etc.) ou Stripe
+8. Page checkout : choisit méthode de paiement
+   → Pays auto-détecté depuis téléphone (+225 → CI)
+   → Affichage des moyens disponibles (Wave, Orange Money, Maxit)
+   → Si Orange Money CI/BF : saisit code OTP reçu via #144*82#
+   → Clique "Payer"
 
-9. Elle reçoit une confirmation WhatsApp immédiate
-   → "Votre réservation chez [Salon] est confirmée !
-      Service : Tresses box braids
-      Date : Mercredi 25 avril à 10h00
-      Acompte payé : 7 500 FCFA
-      Solde à régler sur place : 7 500 FCFA"
+9. Redirection Bictorys checkout (ou confirmation si paiement à livraison)
+   → Paiement validé
 
-10. Elle reçoit un rappel WhatsApp 24h avant
-    → "Rappel : vous avez RDV demain à 10h00 chez [Salon].
-       Besoin de modifier ? [lien]"
+10. Le client reçoit SMS de confirmation immédiat
+    → "Commande reçue ! Réf: #CMD-12345. Livraison estimée : demain. Suivi : [lien]"
+
+11. Le client peut suivre sa commande via SMS + page suivi
+    → Statuts : pending → confirmed → preparing → ready → delivered
 ```
 
-### Parcours B — Réception d'une réservation (côté salon)
+### Parcours B — Réception d'une commande (côté marchand)
 
 ```
-1. Le salon reçoit une notification WhatsApp immédiate
-   → "Nouvelle réservation !
-      Cliente : Aminata Diallo
-      Service : Tresses box braids
-      Date : Mercredi 25 avril à 10h00
-      Acompte reçu : 7 500 FCFA ✓"
+1. Webhook Bictorys reçoit notification paiement réussi
+   → Appel `/api/webhooks/bictorys`
 
-2. La réservation apparaît dans le back-office
-   → Statut : "Confirmée" (acompte payé)
-   → Assignable à une employée depuis le back-office
+2. Statut commande passe à "confirmed"
+   → SMS envoyé au client : confirmation
+   → SMS envoyé au marchand : "Nouvelle commande ! Montant : X FCFA"
 
-3. Le jour J, la patronne marque la cliente comme "Présente"
-   → La prestation est enregistrée dans les stats du salon
-   → La commission de l'employée est calculée automatiquement
+3. Marchand voit la commande dans son dashboard
+   → Détail : produits, adresse, montant, paiement confirmé
+   → Peut ajouter notes internes
+   → Peut changer statut
 
-4. En fin de semaine, la patronne consulte le récapitulatif
-   → Total CA de la semaine
-   → Montant dû à chaque employée
+4. Marchand marque "En préparation"
+   → SMS client : "Votre commande est en préparation"
+
+5. Marchand marque "Prête"
+   → SMS client : "Votre commande est prête ! Livraison aujourd'hui."
+
+6. Marchand marque "Livrée"
+   → SMS client : "Livraison confirmée. Merci !"
+   → Statut visible en dashboard
+
+7. En fin de semaine, marchand consulte rapports
+   → Total CA cette semaine
+   → Top produits commandés
+   → Taux de livraison
 ```
 
-### Parcours C — Annulation par la cliente
+### Parcours C — Activation abonnement (marchand)
 
 ```
-1. La cliente accède à son espace depuis la confirmation WhatsApp
-2. Elle clique sur "Annuler ma réservation"
-3. Le système vérifie la politique d'annulation du salon :
-   - Si annulation > 24h avant → remboursement intégral automatique
-   - Si annulation < 24h avant → acompte retenu (configurable)
-4. La cliente reçoit une confirmation d'annulation sur WhatsApp
-5. Le salon reçoit une notification d'annulation
-6. Le créneau est remis disponible automatiquement
+1. Marchand crée sa boutique (gratuit, 10 produits max, plan Découverte)
+2. Il configure son boutique (logo, description, zone livraison)
+3. Au bout de 30 jours (trial), il voit une bannière "Votre essai se termine"
+4. Il clique "Upgrade" → page `/dashboard/upgrade`
+5. Il choisit un plan (Business ou Pro)
+6. Il clique "S'abonner" → page `/dashboard/upgrade/checkout?plan=business`
+7. Il remplit infos (nom complet, pays)
+8. Il sélectionne méthode de paiement (Wave CI, Orange Money SN, etc.)
+9. Il paie via Bictorys
+10. Webhook confirme paiement → statut subscription passe à "activated"
+11. Son accès est actif, SMS de confirmation reçu
+```
+
+### Parcours D — Annulation commande (marchand)
+
+```
+1. Commande en statut "pending" ou "confirmed"
+2. Marchand clique "Annuler la commande"
+3. Saisit motif d'annulation (obligatoire)
+4. Si paiement en ligne : remboursement automatique via Bictorys
+5. SMS client : "Votre commande a été annulée : [motif]"
+6. Statut commande → "cancelled"
 ```
 
 ---
 
 ## 5. Modèle économique
 
-### Modèle SaaS par salon
+### Modèle SaaS par boutique
 
 | Plan | Prix | Inclus |
 |---|---|---|
-| Starter | 5 000 FCFA/mois | 1 salon, jusqu'à 3 employées, réservations illimitées |
-| Pro | 9 000 FCFA/mois | 1 salon, employées illimitées, tableau de bord avancé |
-| Multi | 20 000 FCFA/mois | Jusqu'à 5 salons, tout inclus |
+| Découverte | Gratuit | 1 boutique, jusqu'à 10 produits, 30 jours |
+| Business | 4 900 FCFA/mois | 1 boutique, produits illimitées, tableau de bord avancé, export CSV, analytics basique |
+| Pro | 9 900 FCFA/mois | Business + domaine personnalisé, cover boutique, section À propos, masquage branding TEKKIShop |
 
-> Note implémentation : le modèle de pricing est stocké en base de données et configurable sans toucher au code.
+> Note implémentation : le modèle de pricing est stocké en base de données et configurable sans toucher au code. Voir `src/lib/constants/pricing.ts`.
 
 ### Période d'essai
 
-30 jours gratuits sans carte bancaire requise. À l'issue, le salon choisit son plan ou perd l'accès au back-office (les réservations existantes restent accessibles en lecture seule).
+Plan Découverte : 30 jours gratuits, plafonné à 10 produits. À l'issue, le marchand choisit un plan payant (Business ou Pro) pour continuer. Le back-office devient inaccessible si l'essai expire, mais les commandes existantes restent visibles en lecture seule.
 
-### Commission sur transactions (optionnel, phase 2)
+### Commissions de paiement
 
-Possibilité d'activer une micro-commission de 0,5% sur chaque paiement traité via BeautyDesk, en complément de l'abonnement. À activer uniquement si le volume de transactions le justifie.
+TEKKIShop ne prend pas commission sur les paiements Bictorys. Le marchand paie uniquement l'abonnement mensuel. Les frais Bictorys (2-3% selon pays et opérateur) sont supportés par le marchand.
+
+### Revenus TEKKIShop
+
+- Abonnements mensuels (Business + Pro)
+- Partenariats (commission d'affiliation sur nouveaux marchands)
 
 ---
 
@@ -244,496 +332,547 @@ Possibilité d'activer une micro-commission de 0,5% sur chaque paiement traité 
 
 ```sql
 -- ============================================================
--- BEAUTYDESK — Schéma Supabase PostgreSQL
+-- TEKKISHOP — Schéma Supabase PostgreSQL
 -- ============================================================
 
--- 1. SALONS
-CREATE TABLE salons (
+-- 1. BOUTIQUES (shops)
+CREATE TABLE shops (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug                  TEXT UNIQUE NOT NULL,
   name                  TEXT NOT NULL,
   description           TEXT,
+  about_text            TEXT,
   logo_url              TEXT,
-  primary_color         TEXT DEFAULT '#E85D04',
+  cover_url             TEXT,
+  about_photo_url       TEXT,
+  primary_color         TEXT DEFAULT '#0EA5E9',
   address               TEXT,
   city                  TEXT NOT NULL,
   country               TEXT DEFAULT 'SN',
   phone_whatsapp        TEXT NOT NULL,
   email                 TEXT,
-  opening_hours         JSONB DEFAULT '{}',
-  -- Ex: {"monday": {"open": "09:00", "close": "19:00", "closed": false}, ...}
-  deposit_percentage    INTEGER DEFAULT 50,
-  -- Pourcentage d'acompte requis (0 = pas d'acompte, 100 = paiement total)
-  cancellation_hours    INTEGER DEFAULT 24,
-  -- Délai minimum avant RDV pour annulation avec remboursement
-  cancellation_refund   BOOLEAN DEFAULT true,
-  -- true = remboursement si annulation dans les délais
+  delivery_zones        JSONB DEFAULT '[]',
+  -- Ex: [{"id": "zone1", "name": "Centre-ville", "price": 5000}, ...]
+  accept_cash_on_delivery BOOLEAN DEFAULT false,
+  accept_online_payment BOOLEAN DEFAULT true,
   plan                  TEXT DEFAULT 'trial',
-  -- 'trial' | 'starter' | 'pro' | 'multi'
+  -- 'trial' | 'business' | 'pro'
   trial_ends_at         TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
-  stripe_customer_id    TEXT,
-  moneroo_api_key       TEXT,
-  stripe_account_id     TEXT,
+  subscription_ends_at  TIMESTAMPTZ,
+  custom_domain         TEXT,
+  hide_branding         BOOLEAN DEFAULT false,
+  wave_phone            TEXT,
+  orange_money_phone    TEXT,
   is_active             BOOLEAN DEFAULT true,
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 2. UTILISATEURS (AUTH via Supabase Auth)
--- Les profils étendent auth.users
 CREATE TABLE profiles (
   id                    UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  salon_id              UUID REFERENCES salons(id),
-  role                  TEXT NOT NULL DEFAULT 'staff',
-  -- 'owner' | 'staff' | 'client'
+  shop_id               UUID REFERENCES shops(id),
+  role                  TEXT NOT NULL DEFAULT 'owner',
+  -- 'owner' | 'admin'
   first_name            TEXT,
   last_name             TEXT,
   phone                 TEXT,
-  whatsapp              TEXT,
-  avatar_url            TEXT,
-  is_active             BOOLEAN DEFAULT true,
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. EMPLOYÉES
-CREATE TABLE staff (
+-- 3. PRODUITS
+CREATE TABLE products (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
-  user_id               UUID REFERENCES profiles(id),
-  -- null si l'employée n'a pas de compte
-  first_name            TEXT NOT NULL,
-  last_name             TEXT NOT NULL,
-  phone                 TEXT,
-  whatsapp              TEXT,
-  photo_url             TEXT,
-  remuneration_type     TEXT NOT NULL DEFAULT 'commission',
-  -- 'commission' | 'fixed_salary'
-  commission_rate       DECIMAL(5,2),
-  -- ex: 50.00 pour 50%
-  fixed_salary          INTEGER,
-  -- en FCFA, si remuneration_type = 'fixed_salary'
-  specialties           TEXT[],
-  -- ex: ['tresses', 'coupe', 'coloration']
-  is_active             BOOLEAN DEFAULT true,
-  created_at            TIMESTAMPTZ DEFAULT NOW(),
-  updated_at            TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. SERVICES / PRESTATIONS
-CREATE TABLE services (
-  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   name                  TEXT NOT NULL,
   description           TEXT,
-  duration_minutes      INTEGER NOT NULL DEFAULT 60,
   price                 INTEGER NOT NULL,
   -- en FCFA
-  photo_url             TEXT,
   category              TEXT,
-  -- ex: 'coiffure' | 'beaute' | 'soin'
-  staff_ids             UUID[],
-  -- liste des employées pouvant effectuer ce service (vide = toutes)
+  stock_count           INTEGER DEFAULT 0,
+  stock_alert_threshold INTEGER DEFAULT 3,
+  sku                   TEXT,
+  photo_urls            TEXT[],
+  -- tableau des URLs images (Cloudinary / Supabase Storage)
+  image_ratio           TEXT DEFAULT '1:1',
+  -- aspect ratio : '1:1' | '3:4' | '16:9' etc.
+  video_url             TEXT,
+  video_embed_url       TEXT,
+  -- YouTube embed ou Cloudinary video URL
+  variants              JSONB DEFAULT '[]',
+  -- Ex: [{"label": "Couleur", "values": ["Rouge", "Bleu", "Vert"]}, ...]
+  is_featured           BOOLEAN DEFAULT false,
   is_active             BOOLEAN DEFAULT true,
   display_order         INTEGER DEFAULT 0,
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. CLIENTS (pour les clients récurrents)
+-- 4. CLIENTS (pour historique client)
 CREATE TABLE clients (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   first_name            TEXT NOT NULL,
   last_name             TEXT,
   phone                 TEXT NOT NULL,
-  whatsapp              TEXT,
   email                 TEXT,
+  country               TEXT,
+  -- pays du client (détecté depuis téléphone ou manuel)
   notes                 TEXT,
-  -- notes internes du salon sur la cliente
-  total_visits          INTEGER DEFAULT 0,
+  -- notes internes du marchand
+  total_orders          INTEGER DEFAULT 0,
   total_spent           INTEGER DEFAULT 0,
   -- en FCFA
-  last_visit_at         TIMESTAMPTZ,
+  last_order_at         TIMESTAMPTZ,
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(salon_id, phone)
+  UNIQUE(shop_id, phone)
 );
 
--- 6. RÉSERVATIONS
-CREATE TABLE bookings (
+-- 5. COMMANDES
+CREATE TABLE orders (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   client_id             UUID REFERENCES clients(id),
-  service_id            UUID NOT NULL REFERENCES services(id),
-  staff_id              UUID REFERENCES staff(id),
-  -- null si pas d'employée assignée
-  booking_date          DATE NOT NULL,
-  booking_time          TIME NOT NULL,
-  duration_minutes      INTEGER NOT NULL,
-  -- copié depuis le service au moment de la réservation
+  customer_name         TEXT NOT NULL,
+  customer_phone        TEXT NOT NULL,
+  customer_email        TEXT,
+  delivery_address      TEXT NOT NULL,
+  delivery_zone_name    TEXT,
+  delivery_price        INTEGER DEFAULT 0,
   total_price           INTEGER NOT NULL,
-  -- en FCFA
-  deposit_amount        INTEGER NOT NULL DEFAULT 0,
-  -- montant de l'acompte en FCFA
-  deposit_paid          BOOLEAN DEFAULT false,
-  remaining_amount      INTEGER GENERATED ALWAYS AS (total_price - deposit_amount) STORED,
-  status                TEXT NOT NULL DEFAULT 'pending',
-  -- 'pending' | 'confirmed' | 'present' | 'completed' | 'cancelled' | 'no_show'
+  -- en FCFA (inclut delivery_price)
+  payment_method        TEXT NOT NULL,
+  -- 'wave' | 'orange_money' | 'maxit' | 'cash'
+  payment_status        TEXT DEFAULT 'pending',
+  -- 'pending' | 'completed' | 'failed' | 'refunded'
+  status                TEXT DEFAULT 'pending',
+  -- 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+  promo_code            TEXT,
+  discount_amount       INTEGER DEFAULT 0,
   cancellation_reason   TEXT,
-  cancelled_by          TEXT,
-  -- 'client' | 'salon'
-  refund_amount         INTEGER DEFAULT 0,
-  refund_status         TEXT,
-  -- null | 'pending' | 'processed'
   notes                 TEXT,
-  -- notes du client lors de la réservation
+  -- notes client
   internal_notes        TEXT,
-  -- notes internes du salon
-  reminder_sent_at      TIMESTAMPTZ,
-  confirmation_sent_at  TIMESTAMPTZ,
+  -- notes internes marchand
+  reference_number      TEXT UNIQUE,
+  -- Ex: #CMD-20260608-001
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. ARTICLES COMMANDE
+CREATE TABLE order_items (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id              UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id            UUID NOT NULL REFERENCES products(id),
+  product_name          TEXT NOT NULL,
+  price_at_order        INTEGER NOT NULL,
+  -- prix du produit au moment de la commande (en FCFA)
+  quantity              INTEGER NOT NULL DEFAULT 1,
+  variant_selection     JSONB,
+  -- Ex: {"Couleur": "Rouge", "Taille": "M"}
+  created_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 7. PAIEMENTS
 CREATE TABLE payments (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  booking_id            UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-  salon_id              UUID NOT NULL REFERENCES salons(id),
+  order_id              UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  shop_id               UUID NOT NULL REFERENCES shops(id),
   amount                INTEGER NOT NULL,
   -- en FCFA
   currency              TEXT DEFAULT 'XOF',
   payment_method        TEXT NOT NULL,
-  -- 'moneroo' | 'stripe' | 'cash'
-  payment_type          TEXT NOT NULL DEFAULT 'deposit',
-  -- 'deposit' | 'balance' | 'full' | 'refund'
+  -- 'wave' | 'orange_money' | 'maxit' | 'cash'
   provider_payment_id   TEXT,
-  -- ID de transaction Moneroo ou Stripe
-  status                TEXT NOT NULL DEFAULT 'pending',
+  -- ID de transaction Bictorys
+  provider_reference    TEXT,
+  status                TEXT DEFAULT 'pending',
   -- 'pending' | 'completed' | 'failed' | 'refunded'
   paid_at               TIMESTAMPTZ,
   created_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. COMMISSIONS (calculées automatiquement)
-CREATE TABLE commissions (
+-- 8. CODES PROMO
+CREATE TABLE promo_codes (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
-  staff_id              UUID NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
-  booking_id            UUID NOT NULL REFERENCES bookings(id),
-  service_price         INTEGER NOT NULL,
-  commission_rate       DECIMAL(5,2),
-  commission_amount     INTEGER NOT NULL,
-  -- en FCFA, calculé automatiquement
-  week_number           INTEGER NOT NULL,
-  year                  INTEGER NOT NULL,
-  is_paid               BOOLEAN DEFAULT false,
-  paid_at               TIMESTAMPTZ,
-  created_at            TIMESTAMPTZ DEFAULT NOW()
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  code                  TEXT NOT NULL,
+  discount_pct          INTEGER NOT NULL,
+  -- % de réduction (0-100)
+  max_uses              INTEGER,
+  -- null = illimité
+  used_count            INTEGER DEFAULT 0,
+  expires_at            TIMESTAMPTZ,
+  is_active             BOOLEAN DEFAULT true,
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(shop_id, code)
 );
 
--- 9. DISPONIBILITÉS (créneaux bloqués manuellement)
-CREATE TABLE blocked_slots (
+-- 9. PAIEMENTS ABONNEMENT
+CREATE TABLE subscription_transactions (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
-  staff_id              UUID REFERENCES staff(id),
-  -- null = bloqué pour tout le salon
-  blocked_date          DATE NOT NULL,
-  start_time            TIME NOT NULL,
-  end_time              TIME NOT NULL,
-  reason                TEXT,
-  created_at            TIMESTAMPTZ DEFAULT NOW()
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  plan_key              TEXT NOT NULL,
+  -- 'business' | 'pro'
+  charge_id             TEXT,
+  -- ID Bictorys charge
+  payment_reference     TEXT,
+  -- Reference Bictorys unique
+  status                TEXT DEFAULT 'pending',
+  -- 'pending' | 'activated' | 'error'
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 10. NOTIFICATIONS (log des messages envoyés)
+-- 10. NOTIFICATIONS (log des messages SMS)
 CREATE TABLE notification_logs (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id              UUID NOT NULL REFERENCES salons(id),
-  booking_id            UUID REFERENCES bookings(id),
+  shop_id               UUID NOT NULL REFERENCES shops(id),
+  order_id              UUID REFERENCES orders(id),
   recipient_phone       TEXT NOT NULL,
   notification_type     TEXT NOT NULL,
-  -- 'booking_confirmation' | 'booking_reminder' | 'cancellation' | 'new_booking_salon'
-  channel               TEXT DEFAULT 'whatsapp',
+  -- 'order_confirmation' | 'order_status' | 'stock_alert' | 'subscription'
+  channel               TEXT DEFAULT 'sms',
   message               TEXT NOT NULL,
   status                TEXT DEFAULT 'sent',
+  -- 'sent' | 'failed'
+  error_message         TEXT,
   sent_at               TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 11. AFFILIATIONS
+CREATE TABLE affiliations (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  referral_code         TEXT UNIQUE NOT NULL,
+  total_referrals       INTEGER DEFAULT 0,
+  total_commissions     INTEGER DEFAULT 0,
+  -- en FCFA
+  created_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 12. PAYOUTS (virements aux marchands)
+CREATE TABLE payouts (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_id               UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  amount                INTEGER NOT NULL,
+  -- en FCFA
+  gross_amount          INTEGER,
+  -- avant commissions/frais
+  status                TEXT DEFAULT 'pending',
+  -- 'pending' | 'completed' | 'failed'
+  payment_method        TEXT,
+  -- 'wave' | 'orange_money' | 'bank_transfer'
+  destination_phone     TEXT,
+  bank_account          TEXT,
+  bictorys_payout_id    TEXT,
+  -- ID de virement Bictorys
+  requested_at          TIMESTAMPTZ,
+  completed_at          TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 
-ALTER TABLE salons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shops ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
-ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE commissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE blocked_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE promo_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscription_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE affiliations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
 
--- Policies : un owner ne voit que les données de son salon
--- Les services et disponibilités sont publics en lecture (pour le PWA client)
+-- Products : lecture publique pour le PWA
+CREATE POLICY "products_public_read" ON products
+  FOR SELECT USING (is_active = true AND shop_id IN (SELECT id FROM shops WHERE is_active = true));
 
--- Services : lecture publique
-CREATE POLICY "services_public_read" ON services
-  FOR SELECT USING (is_active = true);
-
--- Bookings : lecture publique limitée (pour le client qui vérifie sa résa)
--- Écriture publique pour créer une réservation
-CREATE POLICY "bookings_public_insert" ON bookings
+-- Orders : lecture/écriture publique pour création
+CREATE POLICY "orders_public_insert" ON orders
   FOR INSERT WITH CHECK (true);
 
--- Salon owner : accès complet à ses données
-CREATE POLICY "owner_full_access_bookings" ON bookings
+-- Shop owner : accès complet à ses données
+CREATE POLICY "owner_full_access" ON orders
   FOR ALL USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid() AND role = 'owner'
+    shop_id IN (
+      SELECT shop_id FROM profiles WHERE id = auth.uid() AND role = 'owner'
     )
   );
 
 -- ============================================================
--- FONCTIONS UTILITAIRES
+-- INDEXES
 -- ============================================================
 
--- Calcule les créneaux disponibles pour un service/date donnés
-CREATE OR REPLACE FUNCTION get_available_slots(
-  p_salon_id UUID,
-  p_service_id UUID,
-  p_date DATE
-) RETURNS TABLE(slot_time TIME, is_available BOOLEAN) AS $$
--- Implémentation dans les migrations
-$$ LANGUAGE plpgsql;
-
--- Calcule les commissions d'une semaine pour une employée
-CREATE OR REPLACE FUNCTION calculate_weekly_commissions(
-  p_salon_id UUID,
-  p_week_start DATE
-) RETURNS VOID AS $$
--- Implémentation dans les migrations
-$$ LANGUAGE plpgsql;
+CREATE INDEX idx_products_shop_id ON products(shop_id);
+CREATE INDEX idx_products_is_active ON products(is_active);
+CREATE INDEX idx_orders_shop_id ON orders(shop_id);
+CREATE INDEX idx_orders_created_at ON orders(created_at);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_clients_shop_id ON clients(shop_id);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
 ```
 
 ---
 
 ## 7. Routes & API
 
-### Routes publiques (PWA Client)
+### Routes publiques (PWA mini-site)
 
 ```
-/[salon-slug]                         → Page d'accueil du salon
-/[salon-slug]/services                → Catalogue des services
-/[salon-slug]/book/[service-id]       → Sélection date/heure
-/[salon-slug]/book/[service-id]/info  → Informations client
-/[salon-slug]/book/[service-id]/pay   → Paiement acompte
-/[salon-slug]/book/success            → Confirmation réservation
-/[salon-slug]/my-bookings             → Espace client (accès par token WhatsApp)
-/[salon-slug]/booking/[id]            → Détail réservation + annulation
+/[shop-slug]                          → Page d'accueil boutique
+/[shop-slug]/produit/[product-id]     → Détail produit (galerie, variantes, vidéo)
+/[shop-slug]/commander                → Formulaire commande multi-articles
+/[shop-slug]/checkout                 → Page paiement avec sélection méthode
+/[shop-slug]/success                  → Confirmation commande (avec référence)
 ```
 
-### Routes protégées (Back-office Salon)
+### Routes authentifiées (Back-office marchand)
 
 ```
-/dashboard                            → Tableau de bord
-/dashboard/bookings                   → Gestion des réservations
-/dashboard/bookings/[id]              → Détail réservation
-/dashboard/calendar                   → Vue calendrier
-/dashboard/staff                      → Gestion employées
-/dashboard/staff/new                  → Ajouter une employée
-/dashboard/staff/[id]                 → Fiche employée + commissions
-/dashboard/services                   → Gestion des services
-/dashboard/services/new               → Ajouter un service
-/dashboard/services/[id]              → Modifier un service
-/dashboard/clients                    → Base clients
-/dashboard/clients/[id]               → Fiche cliente
-/dashboard/reports                    → Rapports et statistiques
-/dashboard/settings                   → Paramètres du salon
-/dashboard/settings/payments          → Configuration paiements
-/dashboard/settings/notifications     → Configuration WhatsApp
-/login                                → Connexion owner/staff
+/login                                → Connexion propriétaire
+/dashboard                            → Tableau de bord (KPIs, estado abonnement)
+/dashboard/orders                     → Liste commandes (filtres, recherche)
+/dashboard/orders/[id]                → Détail commande + changement statut
+/dashboard/products                   → Catalogue produits
+/dashboard/products/new               → Ajouter un produit
+/dashboard/products/[id]              → Modifier un produit
+/dashboard/clients                    → Base clients (historique, montant total)
+/dashboard/settings                   → Paramètres boutique (logo, color, zones, etc.)
+/dashboard/upgrade                    → Plans d'abonnement (Découverte → Business → Pro)
+/dashboard/upgrade/checkout           → Paiement abonnement (Bictorys checkout)
+/dashboard/reports                    → Rapports (CA, top produits, export CSV Pro)
+/dashboard/affiliate                  → Programme affiliation (code, commissions, historique)
+
+/admin/subscriptions                  → Admin: gestion abonnements (activation, paiements)
 ```
 
-### API Routes
+### API Routes publiques
 
 ```
-GET  /api/salons/[slug]               → Infos publiques d'un salon
-GET  /api/salons/[slug]/services      → Services actifs d'un salon
-GET  /api/salons/[slug]/availability  → Créneaux disponibles (query: date, serviceId)
-POST /api/bookings                    → Créer une réservation
-GET  /api/bookings/[id]               → Détail réservation (avec token)
-PATCH /api/bookings/[id]/cancel       → Annuler une réservation
-POST /api/bookings/[id]/present       → Marquer présent (admin)
-POST /api/bookings/[id]/complete      → Marquer terminé (admin)
+GET  /api/shops/[slug]                → Infos publiques boutique
+GET  /api/shops/[slug]/products       → Produits actifs boutique
+GET  /api/products/[id]               → Détail produit
+POST /api/orders                      → Créer commande
+GET  /api/orders/[id]                 → Détail commande (sans auth)
 
-POST /api/payments/moneroo/create     → Créer session Moneroo
-POST /api/payments/stripe/create      → Créer session Stripe
-POST /api/webhooks/moneroo            → Webhook paiement Moneroo
-POST /api/webhooks/stripe             → Webhook paiement Stripe
+POST /api/checkout/bictorys/create    → Créer session Bictorys commande
+POST /api/webhooks/bictorys           → Webhook paiements Bictorys
 
-GET  /api/admin/dashboard             → Stats tableau de bord
-GET  /api/admin/bookings              → Liste réservations (filtres)
-GET  /api/admin/staff                 → Liste employées
-POST /api/admin/staff                 → Créer employée
-PATCH /api/admin/staff/[id]           → Modifier employée
-GET  /api/admin/staff/[id]/commissions → Commissions d'une employée
-GET  /api/admin/services              → Liste services
-POST /api/admin/services              → Créer service
-PATCH /api/admin/services/[id]        → Modifier service
+GET  /api/promo-codes/validate        → Valider code promo (query: code, shopId)
+```
+
+### API Routes authentifiées (admin)
+
+```
+GET  /api/admin/dashboard             → KPIs tableau de bord
+GET  /api/admin/orders                → Liste commandes (filtres, pagination)
+PATCH /api/admin/orders/[id]          → Mettre à jour statut commande
+DELETE /api/admin/orders/[id]         → Annuler commande
+
+GET  /api/admin/products              → Liste produits boutique
+POST /api/admin/products              → Créer produit
+PATCH /api/admin/products/[id]        → Modifier produit
+DELETE /api/admin/products/[id]       → Supprimer produit
+
 GET  /api/admin/clients               → Liste clients
-GET  /api/admin/reports/revenue       → Rapport revenus
-GET  /api/admin/reports/staff         → Rapport performance staff
+GET  /api/admin/clients/[id]          → Détail client
 
-POST /api/notifications/send          → Envoyer notification WhatsApp
-POST /api/cron/reminders              → Cron job rappels 24h
+PATCH /api/admin/settings             → Mettre à jour paramètres boutique
+GET  /api/admin/analytics             → Analytics avancées (Business+Pro)
+GET  /api/export/orders               → Export CSV commandes (query: from, to)
+
+POST /api/payments/bictorys/subscription → Créer session abonnement Bictorys
+POST /api/admin/activate-subscription → Activation manuelle (admin interne)
+POST /api/cron/verify-subscription-payments → Webhook fallback (cron 1/jour)
+
+GET  /api/admin/payouts              → Liste virements
+POST /api/admin/payouts              → Demander virement
 ```
 
 ---
 
 ## 8. Spécifications fonctionnelles détaillées
 
-### 8.1 Calcul des créneaux disponibles
+### 8.1 Calcul des variantes de produit
 
-La logique de disponibilité doit prendre en compte :
-1. Les horaires d'ouverture du salon (table `salons.opening_hours`)
-2. La durée du service sélectionné
-3. Les réservations existantes confirmées pour la même date
-4. Les créneaux bloqués manuellement (`blocked_slots`)
-5. Le nombre d'employées disponibles pour ce service
-
-Un créneau est disponible si : horaires ouverts ET (pas de conflit avec une réservation existante OU une autre employée est disponible).
-
-**Granularité des créneaux :** 30 minutes par défaut (configurable dans les paramètres du salon).
-
-### 8.2 Calcul automatique des commissions
-
-Déclencheur : quand une réservation passe au statut `completed`.
-
-```
-commission_amount = total_price × (commission_rate / 100)
+Les variantes sont stockées en JSONB dans `products.variants`. Format :
+```json
+[
+  {"label": "Couleur", "values": ["Rouge", "Bleu", "Vert", "Noir"]},
+  {"label": "Taille", "values": ["XS", "S", "M", "L", "XL"]}
+]
 ```
 
-Si l'employée est à salaire fixe, aucune commission n'est calculée — la prestation est simplement enregistrée pour les statistiques.
+Lors d'une commande, l'utilisateur sélectionne une valeur par variante. La sélection est stockée dans `order_items.variant_selection` :
+```json
+{"Couleur": "Rouge", "Taille": "M"}
+```
 
-Les commissions sont agrégées par semaine (lundi → dimanche). La patronne peut les marquer comme "payées" depuis le back-office.
+**Validation server-side** : vérifier que chaque variante sélectionnée existe dans les valeurs possibles.
 
-### 8.3 Politique d'acompte et remboursements
+### 8.2 Gestion du stock atomique
 
-- Le pourcentage d'acompte est défini par le salon (0 à 100%)
-- Si 0% : réservation sans paiement (confirmation simple)
-- Si > 0% : le paiement est requis pour confirmer la réservation
-- Si annulation dans les délais : remboursement automatique via l'API de paiement
-- Si annulation hors délais : acompte retenu, notification envoyée aux deux parties
+Décrémentation du stock doit être atomique pour éviter les double-ventes.
 
-### 8.4 Notifications WhatsApp
+**Solution** : RPC PostgreSQL `decrement_stock_if_available(product_id, qty)` qui :
+1. Vérifie que `stock_count >= qty`
+2. Décrémente `stock_count`
+3. Retourne le nouveau stock
+4. Atomique : une seule query
 
-Utiliser l'API WhatsApp Business (via Twilio ou WABA directe) pour envoyer :
+Appelée depuis `/api/orders` avant de créer la commande. Si retour négatif, rejeter la commande avec message "Stock insuffisant".
 
-| Événement | Destinataire | Message |
-|---|---|---|
-| Réservation créée | Client | Confirmation avec détails |
-| Réservation créée | Salon (owner) | Alerte nouvelle réservation |
-| Réservation créée | Staff assigné | Alerte nouveau RDV |
-| 24h avant RDV | Client | Rappel avec lien de gestion |
-| Annulation client | Salon | Notification + créneau libéré |
-| Annulation salon | Client | Notification + info remboursement |
-| No-show | Interne | Log pour statistiques |
+### 8.3 Codes promo
 
-### 8.5 Espace client (sans compte)
+Format : code alphanumérique (ex: SOLDES15, NOEL2026)
 
-Le client n'a pas de compte BeautyDesk. Son identifiant est son numéro WhatsApp + un token de session généré à la réservation. Le lien envoyé sur WhatsApp contient ce token et donne accès à ses réservations pour ce salon.
+**Validation:**
+- Code doit exister
+- Code actif (`is_active = true`)
+- Pas expiré (`expires_at > NOW()`)
+- Pas dépassé le nombre d'utilisations (`used_count < max_uses`)
+- Code appartient à la boutique
+
+**Calcul remise :**
+```
+discount = total_price_before_delivery × (discount_pct / 100)
+total_price = articles + delivery - discount
+```
+
+Remise affichée avant paiement. Après paiement validé, `used_count` incrémenté.
+
+### 8.4 Alertes stock faible
+
+Déclenché après chaque décrémentation de stock :
+- Si `stock_count <= stock_alert_threshold`
+- Envoyer SMS au marchand : "Stock faible pour [produit] : il reste [count] unité(s)."
+- Logguer dans `notification_logs`
+
+### 8.5 Statuts commande et transitions
+
+```
+pending          → Commande créée, paiement attendu
+  ↓
+confirmed        → Paiement reçu (webhook Bictorys) OU paiement à livraison sélectionné
+  ↓
+preparing        → Marchand marque "En préparation"
+  ↓
+ready            → Marchand marque "Prête à être livrée"
+  ↓
+delivered        → Livraison complétée
+  ✗
+cancelled        → Annulée par client ou marchand (à tout moment)
+```
+
+**Notifications SMS** à chaque changement de statut (sauf pending).
+
+### 8.6 Paiements Bictorys multi-pays
+
+**Détection du pays :**
+1. Extraire le préfixe du téléphone (+225, +221, etc.)
+2. Mapper vers code pays (CI, SN, etc.)
+3. Envoyer à Bictorys avec champ `country` obligatoire
+
+**Méthodes disponibles par pays :**
+- SN : Wave, Orange Money, Maxit
+- CI : Wave, Orange Money
+- BJ : Wave, Orange Money
+- BF : Wave, Orange Money
+- ML : Wave, Orange Money
+- TG : Wave
+
+**OTP (Orange Money CI/BF)** : champ input distinct, instructions : "#144*82#"
+
+### 8.7 Abonnements boutique
+
+**Plans:**
+- Découverte : gratuit 30j (max 10 produits)
+- Business : 4 900 FCFA/mois (illimité, export CSV, analytics basique)
+- Pro : 9 900 FCFA/mois (Business + domaine custom + cover image + sans branding)
+
+**Cycle :**
+1. Marchand crée boutique → plan Découverte auto-activé
+2. `trial_ends_at = NOW() + 30 jours`
+3. Dashboard affiche bannière "Essai expiration dans X jours"
+4. À expiration : `is_active = false` (accès back-office bloqué)
+5. Marchand peut upgrader depuis `/dashboard/upgrade`
+6. Après paiement validé : `subscription_ends_at = NOW() + 1 mois`, `plan = 'business'` (par ex), `is_active = true`
+7. Cron job 1/jour : si `subscription_ends_at < NOW()` et non renouvelé, `is_active = false`
+
+**Webhook Bictorys :**
+- Identifie subscription via `sub-{shopId}-{planKey}` dans metadata
+- Met à jour `subscription_transactions.status = 'activated'`
+- Lance Server Action pour `updateShopPlan(shopId, planKey)`
+
+### 8.8 Domaine personnalisé (Pro)
+
+Stocké dans `shops.custom_domain` (ex: monboutique.com).
+
+**Middleware** : route toutes les requêtes vers `monboutique.com` au slug de la boutique.
+
+Certificat SSL géré par Vercel.
+
+### 8.9 Masquage branding (Pro)
+
+Colonne `shops.hide_branding = true`.
+
+Page footer ne montre pas "Crée avec TEKKIShop →" si true.
 
 ---
 
-## 9. Plan d'implémentation par phases
+## 9. Phases d'implémentation et statut
 
-### Phase 1 — Foundation (Semaine 1-2)
+### ✅ Phase 1 — Foundation (COMPLÉTÉE)
 
-**Objectif :** Infrastructure de base fonctionnelle
+Infrastructure de base, authentification, CRUD produits, mini-site PWA, ISR.
 
-- [ ] Initialisation projet Next.js + Supabase + Tailwind
-- [ ] Schéma de base de données complet (migration 001)
-- [ ] Authentification owner (email + mot de passe simple)
-- [ ] Création d'un salon (onboarding admin)
-- [ ] CRUD services (back-office)
-- [ ] CRUD staff (back-office)
-- [ ] Page publique du salon (PWA) avec liste des services
-
-**Critère de validation :** Un salon peut être créé, ses services configurés, et la page publique est accessible.
+**Statut :** ✅ Production
 
 ---
 
-### Phase 2 — Réservations (Semaine 2-3)
+### ✅ Phase 2 — Commandes & Paiements (COMPLÉTÉE)
 
-**Objectif :** Parcours de réservation complet
+Checkout multi-articles, formulaire commande, intégration Bictorys multi-pays, webhooks, SMS notifications.
 
-- [ ] Calcul des créneaux disponibles (API)
-- [ ] Formulaire de réservation client (sélection service → date → heure → infos)
-- [ ] Intégration Moneroo (paiement mobile money)
-- [ ] Intégration Stripe (paiement carte)
-- [ ] Webhooks de confirmation de paiement
-- [ ] Création automatique du client dans la base
-- [ ] Envoi confirmation WhatsApp (client + salon)
-- [ ] Back-office : vue liste des réservations
-- [ ] Back-office : actions (confirmer, présent, annuler)
-
-**Critère de validation :** Une cliente peut réserver et payer depuis son téléphone. Le salon reçoit la notification.
+**Statut :** ✅ Production
 
 ---
 
-### Phase 3 — Gestion employées & commissions (Semaine 3-4)
+### ✅ Phase 3 — Abonnement & Plan (COMPLÉTÉE)
 
-**Objectif :** Module RH complet
+Système d'abonnement 3 plans (Découverte/Business/Pro), activation fiable (webhook + fallback + polling), limites features par plan.
 
-- [ ] Fiche employée complète
-- [ ] Calcul automatique des commissions à la complétion d'une réservation
-- [ ] Vue hebdomadaire des commissions par employée
-- [ ] Marquage "payé" par la patronne
-- [ ] Espace staff : planning du jour + commissions
-
-**Critère de validation :** La patronne peut voir en un clic ce qu'elle doit à chaque employée cette semaine.
+**Statut :** ✅ Production
 
 ---
 
-### Phase 4 — Rappels & Notifications (Semaine 4)
+### ✅ Phase 4 — Dashboard & Rapports (COMPLÉTÉE)
 
-**Objectif :** Automatisation des communications
+Tableau de bord KPIs, gestion commandes, clients, produits, paramètres boutique, rapports basiques, export CSV, analytics.
 
-- [ ] Cron job rappels 24h avant (Vercel Cron)
-- [ ] Notifications d'annulation automatiques
-- [ ] Politique d'annulation et remboursement automatique
-- [ ] Log complet des notifications envoyées
-
-**Critère de validation :** Les rappels partent automatiquement sans intervention humaine.
+**Statut :** ✅ Production
 
 ---
 
-### Phase 5 — Tableau de bord & Rapports (Semaine 5)
+### ✅ Phase 5 — Avancé (COMPLÉTÉE)
 
-**Objectif :** Visibilité sur les performances
+Codes promo, zones de livraison, domaines personnalisés, masquage branding, paiement à la livraison, stock atomique, alertes stock.
 
-- [ ] Dashboard : CA jour / semaine / mois
-- [ ] Dashboard : taux de no-show, taux de confirmation
-- [ ] Dashboard : top services, top employées
-- [ ] Rapport mensuel exportable (PDF ou CSV)
-- [ ] Vue calendrier (jour / semaine)
-
-**Critère de validation :** La patronne peut voir la performance de son salon sans ouvrir un cahier.
+**Statut :** ✅ Production
 
 ---
 
-### Phase 6 — Polish & Multi-salon (Semaine 6)
+### 🔄 Phase 6 — Optimisations & Scale (EN COURS / BACKLOG)
 
-**Objectif :** Finalisation et scalabilité
-
-- [ ] Onboarding guidé pour les nouveaux salons
-- [ ] Gestion des plans (trial, starter, pro)
-- [ ] Interface de configuration complète du salon
-- [ ] Blocage de créneaux manuels
-- [ ] Tests complets du parcours client
-- [ ] Optimisation mobile (PWA manifest, performance)
-- [ ] SEO basique pour les pages publiques de salon
+Améliorations UX/perf, monitoring, WhatsApp Business API, multi-boutique, fidélité clients.
 
 ---
 
@@ -744,13 +883,14 @@ Le client n'a pas de compte BeautyDesk. Son identifiant est son numéro WhatsApp
 ```
 Framework      : Next.js 15 (App Router) + React 19 + TypeScript strict
 Styles         : Tailwind CSS uniquement — zéro CSS inline, zéro CSS module
-Auth           : Supabase Auth (email + mot de passe pour owners/staff)
+Auth           : Supabase Auth (email + mot de passe pour owners)
 Base données   : Supabase PostgreSQL + Row Level Security obligatoire
-Paiements      : Moneroo (mobile money) + Stripe (carte bancaire)
-Notifications  : WhatsApp Business API (Twilio ou WABA)
-Images         : Cloudinary (logos salon, photos services, photos staff)
-Déploiement    : Vercel
+Paiements      : Bictorys (Wave, Orange Money, Maxit multi-pays)
+Notifications  : Twilio SMS (SMS alerts, order status, stock warnings)
+Images         : Supabase Storage + Cloudinary (upload délégué)
+Déploiement    : Vercel + cron jobs (Vercel Cron)
 Package manager: npm
+Branding       : #0EA5E9 (sky blue) + Outfit (display) + DM Sans (body)
 ```
 
 ### Règles de code
@@ -758,24 +898,35 @@ Package manager: npm
 - TypeScript strict : pas de `any`, pas de `as unknown`
 - Tous les appels Supabase dans des Server Actions ou Route Handlers — jamais côté client
 - Variables d'environnement : toutes dans `.env.local`, jamais hardcodées
-- Gestion d'erreurs : chaque appel API a un bloc try/catch avec message utilisateur
+- Gestion d'erreurs : chaque appel API a un bloc try/catch avec message utilisateur clair
 - Toutes les mutations de données passent par des Server Actions Next.js
-- RLS activé sur toutes les tables — jamais utiliser le service role key côté client
+- RLS activé sur **toutes** les tables — jamais utiliser le service role key côté client
+- Montants financiers : TOUJOURS calculés côté serveur depuis la DB, jamais du client
+- Identifiants (`order_id`, `product_id`, etc.) : TOUJOURS validés côté serveur
 
 ### Règles UX/Design
 
-- Mobile-first : concevoir pour 375px, adapter pour desktop
-- Couleur principale du salon : configurable via `salon.primary_color` (CSS variable)
-- Temps de chargement : chaque page doit afficher du contenu en moins de 1,5s
-- Tous les formulaires ont une validation côté client ET côté serveur
-- Les états de chargement sont toujours indiqués (skeleton ou spinner)
-- Les erreurs de paiement sont toujours affichées clairement avec une action corrective
+- Mobile-first : concevoir pour 375px, adapter pour desktop (responsive par défaut)
+- Couleur primaire boutique : configurable via `shop.primary_color` + CSS variables
+- Temps de chargement : LCP < 2s sur 3G lent (réseau principal marché)
+- ISR activation : pages publiques revalidate = 60s minimum
+- Tous les formulaires : validation client-side (UX) ET server-side (sécurité)
+- États de chargement : skeleton ou spinner toujours visible pendant opérations async
+- Erreurs claires : messages génériques côté client, details dans logs serveur
+- Pas de scrolling horizontal sur mobile (viewport 100% max-width)
 
 ### Règles métier
 
-- Un créneau ne peut jamais être double-booké
-- Un paiement confirmé par webhook = réservation confirmée automatiquement
-- Les commissions ne sont calculées que sur les réservations au statut `completed`
-- Une réservation `pending` sans paiement après 30 minutes est automatiquement annulée
-- Le numéro WhatsApp du client est l'identifiant unique dans la table `clients` par salon
+- **Stock atomique** : Vérification + décrémentation dans une seule transaction PostgreSQL
+- **Paiements** : Confirmés UNIQUEMENT via webhook Bictorys, jamais sur redirect de retour
+- **Montants** : Toujours lus depuis la DB (prix produit + zone livraison + code promo)
+- **Commandes double-paiement** : Webhook idempotent — même event traité 2× = une seule mutation
+- **Codes promo** : Validés côté serveur avant application, `used_count` incrémenté après paiement confirmé
+- **Commandes pending** : Si paiement non confirmé après 30 min, statut → cancelled (optional, TODO)
+- **Zone livraison** : Dropdown si zones définies, total = articles + zone.price
+- **SMS notifications** : Envoyé à chaque changement de statut significatif (confirmed, preparing, ready, delivered)
+- **Alertes stock** : Déclenchées immédiatement après décrémentation si stock <= threshold
+- **Abonnement expiration** : Cron job 1/jour, si `subscription_ends_at < NOW()` et non renouvelé → `is_active = false`
+- **Numéro téléphone client** : Unique par boutique (UNIQUE constraint `(shop_id, phone)`)
+- **Détection pays** : Depuis préfixe téléphone client (+225→CI, +221→SN, etc.), fallback sur shop.country
 ```

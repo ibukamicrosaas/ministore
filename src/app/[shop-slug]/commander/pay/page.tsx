@@ -8,7 +8,7 @@ type Props = {
   searchParams: Promise<{ order_id?: string; token?: string; cancelled?: string }>
 }
 
-export const metadata = { title: 'Choisir un mode de paiement' }
+export const metadata = { title: 'Choisir une méthode de paiement' }
 
 export default async function PayPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
@@ -86,7 +86,7 @@ export default async function PayPage({ params, searchParams }: Props) {
   const color     = shop.primary_color ?? '#0EA5E9'
 
   return (
-    <div className="max-w-lg mx-auto min-h-screen px-4 pt-10 pb-10">
+    <div className="max-w-lg mx-auto min-h-screen px-4 pt-6 pb-10">
       {/* Bouton retour */}
       <div className="mb-6">
         <a
@@ -117,10 +117,9 @@ export default async function PayPage({ params, searchParams }: Props) {
             {shop.name[0]?.toUpperCase()}
           </div>
         )}
-        <h1 className="text-xl font-bold text-gray-900">Choisir un mode de paiement</h1>
+        <h1 className="text-lg font-bold text-gray-900">Choisir une méthode</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {isDeposit ? 'Acompte pour confirmer votre commande' : 'Paiement de votre commande'} chez{' '}
-          <span className="font-semibold">{shop.name}</span>
+          {isDeposit ? 'Acompte' : 'Paiement'} chez <span className="font-semibold">{shop.name}</span>
         </p>
         <div
           className="inline-block mt-3 rounded-full px-4 py-1.5 text-sm font-bold text-white"
