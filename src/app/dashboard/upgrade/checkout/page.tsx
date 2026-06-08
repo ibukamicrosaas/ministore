@@ -21,7 +21,10 @@ type Props = {
 
 export default async function SubscriptionCheckoutPage({ searchParams }: Props) {
   const { plan: planKey } = await searchParams
-  const plan = planKey && PLANS[planKey] ? PLANS[planKey] : null
+
+  // Backward compatibility: map 'decouverte' to 'discovery'
+  const normalizedKey = planKey === 'decouverte' ? 'discovery' : planKey
+  const plan = normalizedKey && PLANS[normalizedKey] ? PLANS[normalizedKey] : null
 
   if (!plan) {
     notFound()
