@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface Props {
   orderId: string
@@ -24,6 +24,9 @@ export function BictorysCheckout({
   primaryColor,
 }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const method = searchParams.get('method') ?? 'bictorys'
+  
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error'>('loading')
   const [error, setError] = useState('')
 
@@ -35,25 +38,25 @@ export function BictorysCheckout({
     try {
       setStatus('loading')
 
-      // Créer une session de paiement Bictorys
       const response = await fetch('/api/orders/bictorys-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
           amount,
+          method, // Passer la méthode pour pré-sélection dans Bictorys
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Impossible de créer la session Bictorys')
+        const data = await response.json() as { error?: string }
+        throw new Error(data.error || 'Impossible de créer la session Bictorys')
       }
 
       const data = (await response.json()) as { checkoutUrl?: string }
 
       if (data.checkoutUrl) {
         setStatus('redirecting')
-        // Rediriger vers Bictorys
         window.location.href = data.checkoutUrl
       } else {
         throw new Error('URL de paiement manquante')
@@ -62,6 +65,7 @@ export function BictorysCheckout({
       const message = err instanceof Error ? err.message : 'Une erreur est survenue'
       setError(message)
       setStatus('error')
+      console.error('[BictorysCheckout] Erreur:', message)
     }
   }
 
@@ -69,7 +73,7 @@ export function BictorysCheckout({
     return (
       <div className="max-w-lg mx-auto min-h-screen flex flex-col items-center justify-center px-4 text-center pb-10">
         <div className="text-6xl mb-6">❌</div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Erreur de paiement</h1>
         <p className="text-sm text-gray-500 mb-8">{error}</p>
 
         <div className="space-y-3">

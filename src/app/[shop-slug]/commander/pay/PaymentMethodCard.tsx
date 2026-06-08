@@ -36,12 +36,16 @@ export function PaymentMethodCard({ method, selected, primaryColor, onClick }: P
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">{method.icon}</span>
+            <img
+              src={method.icon}
+              alt={method.label}
+              className="w-5 h-5 object-contain"
+            />
             <p className="font-semibold text-gray-900">{method.label}</p>
           </div>
           <p className="text-sm text-gray-500">{method.description}</p>
           {method.timeEstimate && (
-            <p className="text-xs text-gray-400 mt-1">⏱️ {method.timeEstimate}</p>
+            <p className="text-xs text-gray-400 mt-1">⏱ {method.timeEstimate}</p>
           )}
         </div>
       </div>

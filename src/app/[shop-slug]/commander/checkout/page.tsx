@@ -21,7 +21,6 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
 
   const supabase = createAdminClient()
 
-  // Récupérer la commande
   const { data: orderData } = await supabase
     .from('orders')
     .select('id, shop_id, total_price, deposit_amount, payment_type, status, clients(first_name, phone), shops(name, slug, primary_color, logo_url)')
@@ -50,7 +49,6 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   const amount = isDeposit ? order.deposit_amount : order.total_price
   const color = shop.primary_color ?? '#0EA5E9'
 
-  // Afficher la page de checkout appropriée
   const componentProps = {
     orderId: order.id,
     shopSlug: slug,
@@ -63,19 +61,22 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     isDeposit,
   }
 
-  if (method === 'wave' && (country === 'SN' || country === 'CI')) {
+  // Routage selon la méthode de paiement et le pays
+  // Wave Money : SN et CI ont des deep links directs
+  if (method === 'wave' && country === 'SN') {
     return <WaveCheckout {...componentProps} country={country} />
   }
 
+  if (method === 'wave' && country === 'CI') {
+    return <WaveCheckout {...componentProps} country={country} />
+  }
+
+  // Orange Money : CI utilise OTP, SN utilise Bictorys
   if (method === 'orange_money' && country === 'CI') {
     return <OrangeMoneyCheckout {...componentProps} />
   }
 
-  if (method === 'orange_money' && country === 'SN') {
-    // Pour SN, utiliser Bictorys pour Orange Money
-    return <BictorysCheckout {...componentProps} />
-  }
-
-  // Par défaut: utiliser Bictorys
+  // Pour tout le reste, utiliser Bictorys (maxit, orange_money SN, bictorys fallback)
+  // Plus tous les autres pays qui utilisent Bictorys par défaut
   return <BictorysCheckout {...componentProps} />
 }
