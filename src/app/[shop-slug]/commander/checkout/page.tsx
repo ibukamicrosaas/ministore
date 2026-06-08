@@ -20,7 +20,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
 
   const { data: orderData } = await supabase
     .from('orders')
-    .select('id, shop_id, total_price, deposit_amount, payment_type, status, clients(first_name, phone), shops(name, slug, primary_color, logo_url)')
+    .select('id, client_token, shop_id, total_price, deposit_amount, payment_type, status, clients(first_name, phone), shops(name, slug, primary_color, logo_url)')
     .eq('id', order_id)
     .single()
 
