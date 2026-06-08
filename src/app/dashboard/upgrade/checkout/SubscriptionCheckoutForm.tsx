@@ -29,13 +29,9 @@ interface Plan {
   priceInt: number
 }
 
-const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string }> = [
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone: '+221' },
-  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone: '+225' },
-  { code: 'BJ', name: 'Bénin', flag: '🇧🇯', phone: '+229' },
-  { code: 'TG', name: 'Togo', flag: '🇹🇬', phone: '+228' },
-  { code: 'ML', name: 'Mali', flag: '🇲🇱', phone: '+223' },
-  { code: 'BK', name: 'Burkina Faso', flag: '🇧🇫', phone: '+226' },
+const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string; placeholder: string }> = [
+  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone: '+221', placeholder: '77 123 45 67' },
+  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone: '+225', placeholder: '07 00 00 00 00' },
 ]
 
 interface Props {
@@ -68,7 +64,9 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
 
   const paymentMethods = getPaymentMethodsByCountry(selectedCountry)
   const requiresOtp = selectedPaymentType ? needsOtpForPayment(selectedCountry, selectedPaymentType) : false
-  const countryPhone = COUNTRIES.find(c => c.code === selectedCountry)?.phone || '+221'
+  const selectedCountryData = COUNTRIES.find(c => c.code === selectedCountry)
+  const countryPhone = selectedCountryData?.phone || '+221'
+  const phonePlaceholder = selectedCountryData?.placeholder || '77 123 45 67'
 
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault()
@@ -195,7 +193,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 >
                   {COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
-                      {country.flag} {country.phone}
+                      {country.flag} {country.name} {country.phone}
                     </option>
                   ))}
                 </select>
@@ -205,7 +203,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                   type="tel"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder="01 23 45 67 89"
+                  placeholder={phonePlaceholder}
                   className="flex-1 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-gray-50"
                   disabled={loading}
                   required
@@ -225,6 +223,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 {paymentMethods.map((method) => {
                   const isSelected = selectedPaymentType === method.type
                   const logoPath = PAYMENT_LOGOS[method.type]
+                  const displayDescription = `Paiement direct via ${method.label}`
 
                   return (
                     <button
@@ -266,9 +265,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900 text-sm">{method.label}</p>
-                            {method.description && (
-                              <p className="text-xs text-gray-600 mt-1">{method.description}</p>
-                            )}
+                            <p className="text-xs text-gray-600 mt-1">{displayDescription}</p>
                           </div>
                         </div>
                         <div
