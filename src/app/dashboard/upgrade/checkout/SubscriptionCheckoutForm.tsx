@@ -10,6 +10,7 @@ import {
   normalizePhoneForBictorys,
   getPaymentMethodsByCountry,
   needsOtpForPayment,
+  getOtpInstruction,
   type BictorysCountry,
   type BictorysPaymentType,
 } from '@/lib/payments/bictorys'
@@ -311,11 +312,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 <h3 className="font-semibold text-gray-900 text-sm">Code OTP</h3>
               </div>
               <p className="text-sm text-amber-800 mb-3">
-                Composez{' '}
-                <span className="inline-block font-mono font-bold bg-amber-100 px-2 py-1 rounded text-amber-900 text-xs">
-                  #144*82#
-                </span>
-                {' '}sur votre téléphone pour recevoir le code.
+                {getOtpInstruction(selectedCountry, plan.priceInt)}
               </p>
               <input
                 type="text"

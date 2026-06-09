@@ -13,12 +13,12 @@ interface Props {
 }
 
 const PAYOUT_COUNTRIES = [
-  { code: 'SN', flag: '🇸🇳', name: 'Sénégal',       dial: '+221', placeholder: '+221 77 000 00 00' },
-  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",  dial: '+225', placeholder: '+225 07 00 00 00 00' },
-  { code: 'BJ', flag: '🇧🇯', name: 'Bénin',          dial: '+229', placeholder: '+229 97 00 00 00' },
-  { code: 'TG', flag: '🇹🇬', name: 'Togo',           dial: '+228', placeholder: '+228 90 00 00 00' },
-  { code: 'ML', flag: '🇲🇱', name: 'Mali',           dial: '+223', placeholder: '+223 70 00 00 00' },
-  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '+226 70 00 00 00' },
+  { code: 'SN', flag: '🇸🇳', name: 'Sénégal',       dial: '+221', placeholder: '77 000 00 00' },
+  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",  dial: '+225', placeholder: '07 00 00 00 00' },
+  { code: 'BJ', flag: '🇧🇯', name: 'Bénin',          dial: '+229', placeholder: '97 00 00 00' },
+  { code: 'TG', flag: '🇹🇬', name: 'Togo',           dial: '+228', placeholder: '90 00 00 00' },
+  { code: 'ML', flag: '🇲🇱', name: 'Mali',           dial: '+223', placeholder: '70 00 00 00' },
+  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '70 00 00 00' },
 ]
 
 const COUNTRY_OPTIONS = [
@@ -134,6 +134,15 @@ export function SettingsForm({ shop }: Props) {
   }, [])
 
   const selectedPayoutCountry = PAYOUT_COUNTRIES.find(c => c.code === payoutCountry) ?? PAYOUT_COUNTRIES[0]
+
+  // Numéros locaux (sans indicatif) pour les champs Wave et OM
+  const stripDial = (full: string | null): string => {
+    if (!full) return ''
+    const found = PAYOUT_COUNTRIES.find(c => full.startsWith(c.dial))
+    return found ? full.slice(found.dial.length) : full
+  }
+  const [waveLocal, setWaveLocal] = useState(() => stripDial(shop.payout_wave_number ?? null))
+  const [omLocal,   setOmLocal]   = useState(() => stripDial(shop.payout_om_number   ?? null))
 
   // Meta Pixel
   const metaPixelIdValue = (shop as unknown as Record<string, unknown>).meta_pixel_id
@@ -315,8 +324,8 @@ export function SettingsForm({ shop }: Props) {
       primary_color:     primaryColor,
       accept_online_payment:    acceptOnlinePayment,
       accept_cash_on_delivery:  acceptCashOnDelivery,
-      payout_wave_number: (fd.get('payout_wave_number') as string).trim() || null,
-      payout_om_number:  (fd.get('payout_om_number') as string).trim() || null,
+      payout_wave_number: waveLocal.trim() ? `${selectedPayoutCountry.dial}${waveLocal.trim()}` : null,
+      payout_om_number:  omLocal.trim()   ? `${selectedPayoutCountry.dial}${omLocal.trim()}`   : null,
       target_countries:  targetCountries,
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
       ...(shop.plan === 'pro' ? {
@@ -550,21 +559,23 @@ export function SettingsForm({ shop }: Props) {
 
         {acceptOnlinePayment && (
           <div className="space-y-3 pt-1 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
-              {/* Sélecteur de pays pour les indicatifs — limité aux 6 pays Bictorys */}
-              <div className="relative" ref={payoutDialRef}>
+            <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
+
+            {/* Wave — avec sélecteur inline */}
+            <div ref={payoutDialRef}>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
+              <div className="relative flex rounded-xl border border-gray-200 bg-white focus-within:border-[var(--color-primary)] transition-colors">
                 <button
                   type="button"
                   onClick={() => setPayoutDialOpen(v => !v)}
-                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50 transition-colors"
+                  className="flex shrink-0 h-full items-center gap-1 bg-gray-50 px-3 border-r border-gray-200 text-sm font-medium text-gray-700 rounded-l-xl"
                 >
                   <span>{selectedPayoutCountry.flag}</span>
-                  <span className="font-mono text-gray-700">{selectedPayoutCountry.dial}</span>
+                  <span className="font-mono">{selectedPayoutCountry.dial}</span>
                   <ChevronDown className="h-3 w-3 text-gray-400" />
                 </button>
                 {payoutDialOpen && (
-                  <div className="absolute top-full right-0 mt-1 z-20 w-52 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                  <div className="absolute left-0 top-full mt-1 z-30 w-52 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
                     {PAYOUT_COUNTRIES.map(c => (
                       <button
                         key={c.code}
@@ -580,27 +591,32 @@ export function SettingsForm({ shop }: Props) {
                     ))}
                   </div>
                 )}
+                <input
+                  type="tel"
+                  value={waveLocal}
+                  onChange={e => setWaveLocal(e.target.value)}
+                  placeholder={selectedPayoutCountry.placeholder}
+                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent"
+                />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
-              <input
-                name="payout_wave_number"
-                type="tel"
-                defaultValue={shop.payout_wave_number ?? ''}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-                placeholder={selectedPayoutCountry.placeholder}
-              />
-            </div>
+
+            {/* Orange Money — badge statique, même indicatif */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Orange Money</label>
-              <input
-                name="payout_om_number"
-                type="tel"
-                defaultValue={shop.payout_om_number ?? ''}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-                placeholder={selectedPayoutCountry.placeholder}
-              />
+              <div className="flex rounded-xl border border-gray-200 bg-white focus-within:border-[var(--color-primary)] transition-colors">
+                <div className="flex shrink-0 h-full items-center gap-1 bg-gray-50 px-3 border-r border-gray-200 text-sm font-medium text-gray-700 rounded-l-xl select-none">
+                  <span>{selectedPayoutCountry.flag}</span>
+                  <span className="font-mono">{selectedPayoutCountry.dial}</span>
+                </div>
+                <input
+                  type="tel"
+                  value={omLocal}
+                  onChange={e => setOmLocal(e.target.value)}
+                  placeholder={selectedPayoutCountry.placeholder}
+                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent"
+                />
+              </div>
             </div>
           </div>
         )}

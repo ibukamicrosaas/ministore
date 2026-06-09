@@ -107,12 +107,12 @@ function PhoneInput({
   }, [open])
 
   return (
-    <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-gray-300">
+    <div className="flex rounded-xl border border-gray-200 bg-white focus-within:border-gray-300">
       <div className="relative shrink-0 border-r border-gray-200" ref={wrapRef}>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex h-full items-center gap-1.5 bg-gray-50 px-3 text-sm font-medium text-gray-700"
+          className="flex h-full items-center gap-1.5 bg-gray-50 px-3 text-sm font-medium text-gray-700 rounded-l-xl"
         >
           <span className="text-base leading-none">{selected.flag}</span>
           <span>{selected.dial}</span>
