@@ -32,9 +32,9 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
     { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
   ],
   BK: [
-    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',          icon: '/logo-payments/wave_1.svg' },
-    { id: 'orange_money', label: 'Orange Money',  description: 'Via code OTP (#144*82#)',      icon: '/logo-payments/om_1.svg' },
-    { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
+    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',              icon: '/logo-payments/wave_1.svg' },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Via code OTP (*144*4*6*montant#)', icon: '/logo-payments/om_1.svg' },
+    { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',            icon: '/logo-payments/moov_1.svg' },
   ],
   ML: [
     { id: 'orange_money', label: 'Orange Money',  description: 'Paiement push mobile',        icon: '/logo-payments/om_1.svg' },

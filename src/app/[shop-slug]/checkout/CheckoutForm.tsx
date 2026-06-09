@@ -9,15 +9,16 @@ import {
   detectCountryFromPhone,
   getPaymentMethodsByCountry,
   needsOtpForPayment,
+  getOtpInstruction,
   type BictorysPaymentType,
 } from '@/lib/payments/bictorys'
 
 const PAYMENT_LOGOS: Record<string, string> = {
-  wave: '/logo-payments/wave_1.svg',
+  wave_money:   '/logo-payments/wave_1.svg',
   orange_money: '/logo-payments/om_1.svg',
-  maxit: '/logo-payments/maxit.webp',
-  mtn_money: '/logo-payments/mtn_1.svg',
-  moov_money: '/logo-payments/moov_1.svg',
+  maxit:        '/logo-payments/maxit.webp',
+  mtn_money:    '/logo-payments/mtn_1.svg',
+  moov:         '/logo-payments/moov_1.svg',
 }
 
 interface Props {
@@ -76,7 +77,7 @@ export function CheckoutForm({ shopSlug, orderId, customerName, customerPhone }:
 
       const { checkoutUrl } = await response.json()
       if (checkoutUrl) {
-        window.location.href = checkoutUrl
+        window.location.assign(checkoutUrl as string)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -195,12 +196,12 @@ export function CheckoutForm({ shopSlug, orderId, customerName, customerPhone }:
             </div>
 
             {/* OTP Field */}
-            {requiresOtp && selectedPaymentType && (
+            {requiresOtp && selectedPaymentType && detectedCountry && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
                 <div>
                   <p className="text-sm font-semibold text-amber-900">Code OTP requis</p>
                   <p className="text-xs text-amber-800 mt-1">
-                    Tapez <span className="font-mono font-bold">#144*82#</span> sur votre téléphone Orange Money pour recevoir le code.
+                    {getOtpInstruction(detectedCountry)}
                   </p>
                 </div>
                 <input

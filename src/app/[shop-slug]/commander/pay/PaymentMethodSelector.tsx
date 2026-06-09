@@ -8,6 +8,7 @@ import {
 } from '@/lib/payments/payment-methods'
 import {
   needsOtpForPayment,
+  getOtpInstruction,
   normalizePhoneForBictorys,
   type BictorysCountry,
   type BictorysPaymentType,
@@ -213,15 +214,11 @@ export function PaymentMethodSelector({
       </div>
 
       {/* Champ OTP — Orange Money CI / Burkina */}
-      {requiresOtp && (
+      {requiresOtp && country && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
           <p className="text-sm font-bold text-amber-900">Code OTP requis</p>
           <p className="text-sm text-amber-800">
-            Composez{' '}
-            <span className="font-mono font-bold bg-amber-100 px-1.5 py-0.5 rounded">
-              #144*82#
-            </span>{' '}
-            sur votre téléphone pour recevoir votre code.
+            {getOtpInstruction(country, amount)}
           </p>
           <input
             type="text"

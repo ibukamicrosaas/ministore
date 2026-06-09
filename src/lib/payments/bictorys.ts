@@ -245,7 +245,7 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
     ],
     BK: [
       { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
-      { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Tapez #144*82# puis entrez le code OTP' },
+      { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Via code OTP (*144*4*6*montant#)' },
       { type: 'moov',         label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     ML: [
@@ -265,4 +265,13 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
 
 export function needsOtpForPayment(country: BictorysCountry, paymentType: BictorysPaymentType): boolean {
   return paymentType === 'orange_money' && (country === 'CI' || country === 'BK')
+}
+
+export function getOtpInstruction(country: BictorysCountry, amount?: number): string {
+  if (country === 'BK') {
+    const code = amount ? `*144*4*6*${amount}#` : '*144*4*6*[montant]#'
+    return `Composez ${code} sur votre téléphone Orange Money pour générer votre code OTP.`
+  }
+  // CI
+  return 'Composez #144*82# sur votre téléphone Orange Money pour recevoir votre code OTP.'
 }
