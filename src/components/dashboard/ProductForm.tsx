@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import {
@@ -9,16 +9,18 @@ import {
   deleteProduct,
   uploadProductPhoto,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto } from '@/types'
+import { slugify } from '@/lib/utils/slugify'
 
 interface ProductFormProps {
   product?: Product
+  shopSlug?: string
 }
 
-export function ProductForm({ product }: ProductFormProps) {
+export function ProductForm({ product, shopSlug }: ProductFormProps) {
   const router = useRouter()
   const [loading, setLoading]           = useState(false)
   const [deleting, setDeleting]         = useState(false)
@@ -62,6 +64,25 @@ export function ProductForm({ product }: ProductFormProps) {
     (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
   )
   const descRef = useRef<HTMLTextAreaElement>(null)
+
+  // Nom contrôlé pour auto-générer le slug
+  const [productName, setProductName] = useState(product?.name ?? '')
+  const existingSlug = (product as Product & { slug?: string | null })?.slug ?? ''
+  const [slug, setSlug] = useState(existingSlug)
+  const [slugEdited, setSlugEdited] = useState(!!existingSlug)
+  const [metaTitle, setMetaTitle] = useState(
+    (product as Product & { meta_title?: string | null })?.meta_title ?? ''
+  )
+  const [metaDescription, setMetaDescription] = useState(
+    (product as Product & { meta_description?: string | null })?.meta_description ?? ''
+  )
+
+  // Auto-generate slug from name when not manually edited
+  useEffect(() => {
+    if (!slugEdited) {
+      setSlug(slugify(productName))
+    }
+  }, [productName, slugEdited])
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -169,6 +190,9 @@ export function ProductForm({ product }: ProductFormProps) {
       variants: validVariants.length > 0 ? validVariants : null,
       stock_count: fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null,
       is_featured: isFeatured,
+      slug: slug.trim() || null,
+      meta_title: metaTitle.trim() || null,
+      meta_description: metaDescription.trim() || null,
     }
 
     let result
@@ -331,11 +355,46 @@ export function ProductForm({ product }: ProductFormProps) {
             </label>
             <input
               name="name"
-              defaultValue={product?.name}
+              value={productName}
+              onChange={e => setProductName(e.target.value)}
               required
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
               placeholder="Ex : Thiéboudienne, Robe wax..."
             />
+          </div>
+
+          {/* Slug URL */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">URL du produit</label>
+            <div className="flex rounded-xl border border-gray-200 overflow-hidden focus-within:border-[var(--color-primary)] transition-colors">
+              {shopSlug && (
+                <span className="flex items-center px-3 py-2.5 bg-gray-50 border-r border-gray-200 text-[10px] text-gray-400 shrink-0 font-mono whitespace-nowrap">
+                  /{shopSlug}/produit/
+                </span>
+              )}
+              <input
+                value={slug}
+                onChange={e => {
+                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80))
+                  setSlugEdited(true)
+                }}
+                placeholder="nom-du-produit"
+                className="flex-1 min-w-0 px-3 py-2.5 text-sm font-mono outline-none bg-white"
+              />
+              {slugEdited && productName && (
+                <button
+                  type="button"
+                  title="Regénérer depuis le nom"
+                  onClick={() => { setSlug(slugify(productName)); setSlugEdited(false) }}
+                  className="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 border-l border-gray-200 hover:text-[var(--color-primary)] transition-colors shrink-0"
+                >
+                  ↺
+                </button>
+              )}
+            </div>
+            <p className="mt-1 text-[10px] text-gray-400">
+              Utilisé dans les liens de campagne publicitaire · Meilleur pour le SEO
+            </p>
           </div>
 
           <div>
@@ -535,6 +594,42 @@ export function ProductForm({ product }: ProductFormProps) {
           className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
           placeholder="Ex : 20 (laisser vide = illimité)"
         />
+      </Card>
+
+      {/* SEO */}
+      <Card>
+        <div className="flex items-center gap-2 mb-3">
+          <Search className="h-4 w-4 text-gray-400" />
+          <p className="text-sm font-semibold text-gray-900">SEO & Réseaux sociaux</p>
+          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-600">Optionnel</span>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Titre SEO <span className="text-gray-400 font-normal">— affiché dans Google et Meta Ads</span>
+            </label>
+            <input
+              value={metaTitle}
+              onChange={e => setMetaTitle(e.target.value.slice(0, 60))}
+              placeholder={productName || 'Ex : Microphone Rode PodMic — Boutique TEKKIStore'}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+            />
+            <p className="mt-1 text-[10px] text-gray-400">{metaTitle.length}/60 caractères recommandés</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Description SEO <span className="text-gray-400 font-normal">— aperçu dans Google et les partages</span>
+            </label>
+            <textarea
+              value={metaDescription}
+              onChange={e => setMetaDescription(e.target.value.slice(0, 160))}
+              placeholder="Courte description qui apparaît dans les résultats de recherche et les aperçus de liens partagés..."
+              rows={2}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-none"
+            />
+            <p className="mt-1 text-[10px] text-gray-400">{metaDescription.length}/160 caractères recommandés</p>
+          </div>
+        </div>
       </Card>
 
       {/* Actions */}

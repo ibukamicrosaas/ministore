@@ -86,6 +86,9 @@ export interface CreateProductInput {
   stock_count?: number | null
   display_order?: number
   is_featured?: boolean | null
+  slug?: string | null
+  meta_title?: string | null
+  meta_description?: string | null
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {

@@ -1,6 +1,6 @@
 import React from 'react'
 import { createServerClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ShoppingBag } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
@@ -14,43 +14,63 @@ import { ProductGallery } from '@/components/pwa/ProductGallery'
 
 type Props = { params: Promise<{ 'shop-slug': string; id: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { 'shop-slug': slug, id } = await params
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+async function fetchShopAndProduct(shopSlug: string, id: string) {
   const supabase = await createServerClient()
 
-  const [productRes, shopRes] = await Promise.all([
-    supabase.from('products').select('name, description, photo_url, photos').eq('id', id).single(),
-    supabase.from('shops').select('name').eq('slug', slug).single(),
-  ])
+  const shopRes = await supabase
+    .from('shops')
+    .select('id, name, primary_color, plan')
+    .eq('slug', shopSlug)
+    .single()
 
-  if (!productRes.data) return {}
-  const p        = productRes.data as Pick<Product, 'name' | 'description' | 'photo_url' | 'photos'>
-  const shopName = (shopRes.data as { name: string } | null)?.name ?? ''
+  if (!shopRes.data) return { shop: null, product: null }
 
-  const photos      = Array.isArray(p.photos) ? (p.photos as unknown as ProductPhoto[]) : []
-  const primaryPhoto = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? p.photo_url ?? null
+  const shopId = shopRes.data.id
+  const isUUID = UUID_REGEX.test(id)
 
-  const url  = `${APP_URL}/${slug}/produit/${id}`
-  const desc = p.description ?? `${p.name}${shopName ? ` — ${shopName}` : ''}`
-  const ogImage = primaryPhoto
-    ? { url: primaryPhoto, width: 800, height: 800, alt: p.name }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = supabase.from('products') as any
+  const productRes = isUUID
+    ? await table.select('*').eq('id', id).eq('shop_id', shopId).eq('is_active', true).single()
+    : await table.select('*').eq('slug', id).eq('shop_id', shopId).eq('is_active', true).single()
+
+  return { shop: shopRes.data, product: (productRes.data ?? null) as (Product & { slug?: string | null }) | null }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { 'shop-slug': shopSlug, id } = await params
+  const { shop, product } = await fetchShopAndProduct(shopSlug, id)
+
+  if (!product || !shop) return {}
+
+  const p         = product as Product & { slug?: string | null; meta_title?: string | null; meta_description?: string | null }
+  const photos    = Array.isArray(p.photos) ? (p.photos as unknown as ProductPhoto[]) : []
+  const primary   = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? p.photo_url ?? null
+  const canonical = `${APP_URL}/${shopSlug}/produit/${p.slug ?? id}`
+  const title     = p.meta_title || p.name
+  const desc      = p.meta_description || p.description || `${p.name} — ${shop.name}`
+  const ogImage   = primary
+    ? { url: primary, width: 800, height: 800, alt: p.name }
     : { url: `${APP_URL}/og-ministore.png`, width: 1200, height: 630, alt: p.name }
 
   return {
-    title: p.name,
+    title,
     description: desc,
+    alternates: { canonical },
     openGraph: {
-      title: p.name,
+      title,
       description: desc,
-      url,
-      siteName: shopName,
+      url: canonical,
+      siteName: shop.name,
       images: [ogImage],
       locale: 'fr_FR',
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: p.name,
+      title,
       description: desc,
       images: [ogImage.url],
     },
@@ -58,8 +78,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // Rendu enrichi de la description pour les boutiques Pro.
-// Syntaxe image : ![texte alternatif](https://url-de-l-image.jpg)
-// Le reste est rendu comme du texte simple avec préservation des sauts de ligne.
 function renderProDescription(text: string) {
   const IMAGE_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g
   const parts: React.ReactNode[] = []
@@ -100,19 +118,19 @@ function renderProDescription(text: string) {
 }
 
 export default async function ProductDetailPage({ params }: Props) {
-  const { 'shop-slug': slug, id } = await params
-  const supabase = await createServerClient()
+  const { 'shop-slug': shopSlug, id } = await params
+  const { shop: shopData, product: productData } = await fetchShopAndProduct(shopSlug, id)
 
-  const [shopRes, productRes] = await Promise.all([
-    // Pas de filtre is_active sur shop : le layout est le gardien des boutiques inactives
-    supabase.from('shops').select('id, name, primary_color, plan').eq('slug', slug).single(),
-    supabase.from('products').select('*').eq('id', id).eq('is_active', true).single(),
-  ])
+  if (!shopData || !productData) notFound()
 
-  if (!shopRes.data || !productRes.data) notFound()
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string }
+  const product = productData as Product & { slug?: string | null }
 
-  const shop    = shopRes.data as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string }
-  const product = productRes.data as Product
+  // 308 permanent redirect: UUID in URL but product now has a slug
+  if (UUID_REGEX.test(id) && product.slug) {
+    permanentRedirect(`/${shopSlug}/produit/${product.slug}`)
+  }
+
   const soldOut = product.stock_count === 0
   const color   = shop.primary_color ?? '#0EA5E9'
 
@@ -132,9 +150,11 @@ export default async function ProductDetailPage({ params }: Props) {
     ? `À partir de ${Math.min(...variants.map(v => v.price)).toLocaleString('fr-FR')} FCFA`
     : `${product.price.toLocaleString('fr-FR')} FCFA`
 
+  const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
+
   return (
     <div className="max-w-lg mx-auto">
-      {/* Galerie — photos + modal vidéo */}
+      {/* Galerie */}
       <div className="relative">
         <ProductGallery
           photos={photos}
@@ -144,19 +164,17 @@ export default async function ProductDetailPage({ params }: Props) {
           isPortrait={isPortrait}
         />
 
-        {/* Floating back button */}
         <Link
-          href={`/${slug}`}
+          href={`/${shopSlug}`}
           className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors z-10"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           {shop.name}
         </Link>
 
-        {/* Share button */}
         <div className="absolute top-4 right-4 z-10">
           <ShareButton
-            url={`${APP_URL}/${slug}/produit/${product.id}`}
+            url={publicUrl}
             title={product.name}
             text={product.description ?? `${product.name} — ${displayPrice}`}
             primaryColor={color}
@@ -166,7 +184,6 @@ export default async function ProductDetailPage({ params }: Props) {
 
       {/* Info card */}
       <div className="bg-white px-5 pt-5 pb-36">
-        {/* Name + price */}
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
 
         {variants && variants.length > 0 ? (
@@ -187,7 +204,6 @@ export default async function ProductDetailPage({ params }: Props) {
           <p className="mt-3 text-2xl font-bold" style={{ color }}>{displayPrice}</p>
         )}
 
-        {/* Description */}
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
@@ -207,7 +223,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         ) : (
           <Link
-            href={`/${slug}/commander?product=${product.id}`}
+            href={`/${shopSlug}/commander?product=${product.id}`}
             className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
             style={{ backgroundColor: color }}
           >

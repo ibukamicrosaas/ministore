@@ -4,6 +4,32 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { CreateProductInput, UpdateProductInput, ProductPhoto } from '@/types'
+import { slugify } from '@/lib/utils/slugify'
+
+async function generateUniqueSlug(
+  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  shopId: string,
+  name: string,
+  excludeId?: string,
+): Promise<string> {
+  const base = slugify(name)
+  if (!base) return ''
+
+  const check = async (candidate: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase.from('products') as any).select('id').eq('shop_id', shopId).eq('slug', candidate)
+    if (excludeId) q = q.neq('id', excludeId)
+    const { data } = await q.maybeSingle()
+    return !data
+  }
+
+  if (await check(base)) return base
+  for (let i = 2; i <= 20; i++) {
+    const candidate = `${base}-${i}`
+    if (await check(candidate)) return candidate
+  }
+  return `${base}-${Date.now()}`
+}
 
 async function getOwnerShopId() {
   const supabase = await createServerClient()
@@ -40,6 +66,10 @@ export async function createProduct(input: CreateProductInput) {
     .limit(1)
     .single()
 
+  const productSlug = input.slug?.trim()
+    ? input.slug.trim()
+    : await generateUniqueSlug(supabase, shopId, input.name)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from('products') as any).insert({
     shop_id:            shopId,
@@ -57,6 +87,9 @@ export async function createProduct(input: CreateProductInput) {
     display_order:      (maxOrder?.display_order ?? 0) + 1,
     is_active:          true,
     is_featured:        input.is_featured ?? false,
+    slug:               productSlug || null,
+    meta_title:         input.meta_title?.trim() || null,
+    meta_description:   input.meta_description?.trim() || null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -90,6 +123,23 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.stock_count !== undefined)        updates.stock_count        = input.stock_count
   if (input.is_active !== undefined)          updates.is_active          = input.is_active
   if (input.is_featured !== undefined)        updates.is_featured        = input.is_featured
+  if (input.meta_title !== undefined)         updates.meta_title         = input.meta_title?.trim() || null
+  if (input.meta_description !== undefined)   updates.meta_description   = input.meta_description?.trim() || null
+
+  if (input.slug !== undefined) {
+    const newSlug = input.slug?.trim() || null
+    updates.slug = newSlug
+    // If slug is being cleared, auto-generate from current name
+    if (!newSlug && input.name) {
+      updates.slug = await generateUniqueSlug(supabase, shopId, input.name, id)
+    } else if (newSlug) {
+      // Validate uniqueness manually — DB constraint will catch it, but give a nicer error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: conflict } = await (supabase.from('products') as any)
+        .select('id').eq('shop_id', shopId).eq('slug', newSlug).neq('id', id).maybeSingle()
+      if (conflict) return { error: 'Ce slug est déjà utilisé par un autre produit.' }
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase
@@ -108,6 +158,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (shopSlug) {
     revalidatePath(`/${shopSlug}`)
     revalidatePath(`/${shopSlug}/produit/${id}`)
+    if (updates.slug) revalidatePath(`/${shopSlug}/produit/${updates.slug}`)
   }
   return { success: true }
 }
