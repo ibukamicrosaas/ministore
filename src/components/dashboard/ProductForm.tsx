@@ -9,7 +9,7 @@ import {
   deleteProduct,
   uploadProductPhoto,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto } from '@/types'
@@ -63,7 +63,10 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
   const [isFeatured, setIsFeatured] = useState(
     (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
   )
-  const descRef = useRef<HTMLTextAreaElement>(null)
+  const descRef           = useRef<HTMLTextAreaElement>(null)
+  const descImageInputRef = useRef<HTMLInputElement>(null)
+  const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+  const [uploadingDescImage, setUploadingDescImage] = useState(false)
 
   // Nom contrôlé pour auto-générer le slug
   const [productName, setProductName] = useState(product?.name ?? '')
@@ -211,24 +214,44 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
     setLoading(false)
   }
 
-  function insertImageSyntax() {
+  function insertAtCursor(url: string) {
     const ta = descRef.current
     if (!ta) return
-    const snippet = '![Description](https://...)'
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
+    const snippet = `![image](${url})`
+    const { start, end } = descCursorRef.current
     const before = ta.value.slice(0, start)
-    const after = ta.value.slice(end)
+    const after  = ta.value.slice(end)
     const newVal = before + snippet + after
-    // React controlled textarea — trigger onChange by dispatching native input event
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
-    nativeInputValueSetter?.call(ta, newVal)
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
+    setter?.call(ta, newVal)
     ta.dispatchEvent(new Event('input', { bubbles: true }))
-    // Move cursor inside the URL placeholder
-    const urlStart = before.length + snippet.indexOf('https://')
-    const urlEnd = urlStart + 'https://...'.length
     ta.focus()
-    ta.setSelectionRange(urlStart, urlEnd)
+    ta.setSelectionRange(start + snippet.length, start + snippet.length)
+  }
+
+  function handleDescImageClick() {
+    const ta = descRef.current
+    descCursorRef.current = {
+      start: ta?.selectionStart ?? (ta?.value.length ?? 0),
+      end:   ta?.selectionEnd   ?? (ta?.value.length ?? 0),
+    }
+    descImageInputRef.current?.click()
+  }
+
+  async function handleDescImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingDescImage(true)
+    const fd = new FormData()
+    fd.append('photo', file)
+    const result = await uploadProductPhoto(fd)
+    if (result.error) {
+      toast.error(result.error)
+    } else if (result.url) {
+      insertAtCursor(result.url)
+    }
+    setUploadingDescImage(false)
+    if (descImageInputRef.current) descImageInputRef.current.value = ''
   }
 
   async function handleDelete() {
@@ -402,11 +425,15 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
               <label className="text-xs font-medium text-gray-700">Description</label>
               <button
                 type="button"
-                onClick={insertImageSyntax}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
-                title="Insérer une image (syntaxe ![alt](url))"
+                onClick={handleDescImageClick}
+                disabled={uploadingDescImage}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50"
+                title="Ajouter une image depuis votre appareil"
               >
-                <ImageIcon className="h-3 w-3" />
+                {uploadingDescImage
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <ImageIcon className="h-3 w-3" />
+                }
                 Image
               </button>
             </div>
@@ -418,11 +445,18 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-none"
               placeholder="Décrivez votre produit..."
             />
-            <p className="mt-1 text-[10px] text-gray-400">Insérer une image : ![description](https://url-de-l-image.jpg)</p>
+            <input
+              ref={descImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleDescImageUpload}
+              className="hidden"
+            />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
+
             <input
               value={category}
               onChange={e => setCategory(e.target.value)}

@@ -82,14 +82,16 @@ function PhoneInput({
   dialCode,
   onDialChange,
   placeholder,
+  countries,
 }: {
   value: string
   onChange: (v: string) => void
   dialCode: string
   onDialChange: (d: string) => void
   placeholder: string
+  countries: typeof COUNTRIES
 }) {
-  const selected = COUNTRIES.find((c) => c.dial === dialCode) ?? COUNTRIES[0]
+  const selected = countries.find((c) => c.dial === dialCode) ?? countries[0]
   return (
     <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-gray-300">
       <div className="relative shrink-0 border-r border-gray-200">
@@ -99,7 +101,7 @@ function PhoneInput({
           className="h-full appearance-none bg-gray-50 pl-8 pr-6 text-sm font-medium text-gray-700 outline-none cursor-pointer"
           style={{ minWidth: 90 }}
         >
-          {COUNTRIES.map((c) => (
+          {countries.map((c) => (
             <option key={c.code} value={c.dial}>
               {c.dial}
             </option>
@@ -152,6 +154,7 @@ interface Props {
   acceptOnlinePayment: boolean
   acceptCashOnDelivery: boolean
   deliveryZones: DeliveryZone[]
+  targetCountries: string[] | null
   preselectedProductId: string | null
 }
 
@@ -170,6 +173,7 @@ export function OrderForm({
   acceptOnlinePayment,
   acceptCashOnDelivery,
   deliveryZones,
+  targetCountries,
   preselectedProductId,
 }: Props) {
   const router = useRouter()
@@ -180,7 +184,12 @@ export function OrderForm({
     address?: string
   }>({})
 
-  const defaultDial = COUNTRIES.find((c) => c.code === shopCountry)?.dial ?? '+221'
+  // Filtrer les pays selon les marchés cibles de la boutique
+  const availableCountries = targetCountries && targetCountries.length > 0
+    ? COUNTRIES.filter(c => targetCountries.includes(c.code))
+    : COUNTRIES
+
+  const defaultDial = (availableCountries.find((c) => c.code === shopCountry) ?? availableCountries[0])?.dial ?? '+221'
   const CART_KEY    = `tekki_cart_${shopId}`
 
   const makeItem = (productId?: string): OrderItem => ({
@@ -633,6 +642,7 @@ export function OrderForm({
                 dialCode={phoneDial}
                 onDialChange={(d) => { setPhoneDial(d); saveCart({ phoneDial: d }) }}
                 placeholder={PHONE_PLACEHOLDERS[phoneDial] ?? '00 00 00 00'}
+                countries={availableCountries}
               />
               {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
             </div>
@@ -656,6 +666,7 @@ export function OrderForm({
                   dialCode={waDial}
                   onDialChange={setWaDial}
                   placeholder={PHONE_PLACEHOLDERS[waDial] ?? '00 00 00 00'}
+                  countries={availableCountries}
                 />
               </div>
             )}

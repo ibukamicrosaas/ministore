@@ -115,6 +115,7 @@ export interface UpdateShopInput {
   bictorys_secret_key?: string | null
   bictorys_webhook_secret?: string | null
   accept_cash_on_delivery?: boolean
+  target_countries?: string[] | null
 }
 
 // Réponses standard des Server Actions

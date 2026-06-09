@@ -94,6 +94,22 @@ export function SettingsForm({ shop }: Props) {
 
   const [country, setCountry] = useState(shop.country ?? '')
 
+  // Marchés cibles — pays depuis lesquels les clients peuvent commander
+  const ALL_MARKET_COUNTRIES = ['SN', 'CI', 'BJ', 'TG', 'ML', 'BF']
+  const shopAnyMarkets = shop as unknown as Record<string, unknown>
+  const [targetCountries, setTargetCountries] = useState<string[]>(() => {
+    const val = shopAnyMarkets.target_countries
+    return Array.isArray(val) ? (val as string[]) : ALL_MARKET_COUNTRIES
+  })
+
+  function toggleMarket(code: string) {
+    setTargetCountries(prev =>
+      prev.includes(code)
+        ? prev.length > 1 ? prev.filter(c => c !== code) : prev // au moins 1 pays
+        : [...prev, code]
+    )
+  }
+
   // Pays pour les numéros de reversement (limité aux 6 pays Bictorys)
   const initPayoutCountryCode: string = (() => {
     const num = shop.payout_wave_number ?? shop.payout_om_number
@@ -301,6 +317,7 @@ export function SettingsForm({ shop }: Props) {
       accept_cash_on_delivery:  acceptCashOnDelivery,
       payout_wave_number: (fd.get('payout_wave_number') as string).trim() || null,
       payout_om_number:  (fd.get('payout_om_number') as string).trim() || null,
+      target_countries:  targetCountries,
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
       ...(shop.plan === 'pro' ? {
         bictorys_secret_key:     bictorysKey,
@@ -643,6 +660,44 @@ export function SettingsForm({ shop }: Props) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Marchés cibles */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Marchés cibles</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Choisis les pays depuis lesquels tes clients peuvent passer commande. Seuls les indicatifs sélectionnés apparaîtront sur ton site.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {PAYOUT_COUNTRIES.map(c => {
+            const active = targetCountries.includes(c.code)
+            return (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => toggleMarket(c.code)}
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors text-left ${
+                  active
+                    ? 'border-[var(--color-primary)] bg-sky-50 text-gray-900'
+                    : 'border-gray-200 bg-white text-gray-500'
+                }`}
+              >
+                <div className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                  active ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-gray-300'
+                }`}>
+                  {active && <Check className="h-2.5 w-2.5 text-white" />}
+                </div>
+                <span>{c.flag}</span>
+                <span className="text-xs font-medium truncate">{c.name}</span>
+              </button>
+            )
+          })}
+        </div>
+        {targetCountries.length === 1 && (
+          <p className="text-[11px] text-amber-600">Au moins 1 marché doit rester actif.</p>
+        )}
       </div>
 
       {/* Clés Bictorys — visible uniquement pour le plan Pro */}

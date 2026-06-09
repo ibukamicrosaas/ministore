@@ -36,6 +36,18 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     acceptCashOnDelivery = (cashData as Record<string, unknown>).accept_cash_on_delivery as boolean
   }
 
+  // target_countries not yet in generated types — fetch separately
+  let targetCountriesVal: string[] | null = null
+  const { data: tcData } = await supabase
+    .from('shops')
+    .select('target_countries' as never)
+    .eq('id', shopData.id)
+    .single()
+  if (tcData) {
+    const raw = (tcData as unknown as Record<string, unknown>).target_countries
+    if (Array.isArray(raw)) targetCountriesVal = raw as string[]
+  }
+
   const shop = shopData as Pick<Shop,
     'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
     'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment' |
@@ -112,6 +124,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         acceptOnlinePayment={shop.accept_online_payment ?? true}
         acceptCashOnDelivery={acceptCashOnDelivery}
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}
+        targetCountries={targetCountriesVal}
         preselectedProductId={preselectedProductId ?? null}
       />
     </div>
