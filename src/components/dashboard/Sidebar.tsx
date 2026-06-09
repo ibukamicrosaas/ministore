@@ -17,6 +17,7 @@ import {
   BarChart2,
   Gift,
   Tag,
+  CreditCard,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/products',      label: 'Produits',        icon: Package },
   { href: '/dashboard/clients',       label: 'Clients',         icon: UserCircle },
   { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet },
+  { href: '/dashboard/billing',       label: 'Facturation',     icon: CreditCard },
   { href: '/dashboard/rapports',      label: 'Rapports',        icon: BarChart2 },
   { href: '/dashboard/affiliation',   label: 'Affiliation',     icon: Gift },
   { href: '/dashboard/promo-codes',   label: 'Codes promo',     icon: Tag },

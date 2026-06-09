@@ -22,7 +22,7 @@ export function getCountryFromPhone(phone: string): BictorysCountry | null {
 export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOption[]> = {
   SN: [
     { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',         icon: '/logo-payments/wave_1.svg' },
-    { id: 'orange_money', label: 'Orange Money',  description: 'Via code USSD #144*82#',      icon: '/logo-payments/om_1.svg' },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Paiement instantané',         icon: '/logo-payments/om_1.svg' },
     { id: 'maxit',        label: 'MaxIt',         description: 'Paiement instantané',         icon: '/logo-payments/maxit.webp' },
   ],
   CI: [

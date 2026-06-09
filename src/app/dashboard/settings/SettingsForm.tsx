@@ -4,13 +4,22 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, updateMetaPixelId } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
 interface Props {
   shop: Shop
 }
+
+const PAYOUT_COUNTRIES = [
+  { code: 'SN', flag: '🇸🇳', name: 'Sénégal',       dial: '+221', placeholder: '+221 77 000 00 00' },
+  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",  dial: '+225', placeholder: '+225 07 00 00 00 00' },
+  { code: 'BJ', flag: '🇧🇯', name: 'Bénin',          dial: '+229', placeholder: '+229 97 00 00 00' },
+  { code: 'TG', flag: '🇹🇬', name: 'Togo',           dial: '+228', placeholder: '+228 90 00 00 00' },
+  { code: 'ML', flag: '🇲🇱', name: 'Mali',           dial: '+223', placeholder: '+223 70 00 00 00' },
+  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '+226 70 00 00 00' },
+]
 
 const COUNTRY_OPTIONS = [
   { value: 'SN', label: '🇸🇳 Sénégal' },
@@ -84,6 +93,31 @@ export function SettingsForm({ shop }: Props) {
   const coverInputRef                           = useRef<HTMLInputElement>(null)
 
   const [country, setCountry] = useState(shop.country ?? '')
+
+  // Pays pour les numéros de reversement (limité aux 6 pays Bictorys)
+  const initPayoutCountryCode: string = (() => {
+    const num = shop.payout_wave_number ?? shop.payout_om_number
+    if (num) {
+      const found = PAYOUT_COUNTRIES.find(c => num.startsWith(c.dial))
+      if (found) return found.code
+    }
+    return PAYOUT_COUNTRIES.some(c => c.code === shop.country) ? (shop.country ?? 'SN') : 'SN'
+  })()
+  const [payoutCountry, setPayoutCountry]   = useState(initPayoutCountryCode)
+  const [payoutDialOpen, setPayoutDialOpen] = useState(false)
+  const payoutDialRef                       = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (payoutDialRef.current && !payoutDialRef.current.contains(e.target as Node)) {
+        setPayoutDialOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [])
+
+  const selectedPayoutCountry = PAYOUT_COUNTRIES.find(c => c.code === payoutCountry) ?? PAYOUT_COUNTRIES[0]
 
   // Meta Pixel
   const metaPixelIdValue = (shop as unknown as Record<string, unknown>).meta_pixel_id
@@ -499,7 +533,38 @@ export function SettingsForm({ shop }: Props) {
 
         {acceptOnlinePayment && (
           <div className="space-y-3 pt-1 border-t border-gray-100">
-            <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
+              {/* Sélecteur de pays pour les indicatifs — limité aux 6 pays Bictorys */}
+              <div className="relative" ref={payoutDialRef}>
+                <button
+                  type="button"
+                  onClick={() => setPayoutDialOpen(v => !v)}
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50 transition-colors"
+                >
+                  <span>{selectedPayoutCountry.flag}</span>
+                  <span className="font-mono text-gray-700">{selectedPayoutCountry.dial}</span>
+                  <ChevronDown className="h-3 w-3 text-gray-400" />
+                </button>
+                {payoutDialOpen && (
+                  <div className="absolute top-full right-0 mt-1 z-20 w-52 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                    {PAYOUT_COUNTRIES.map(c => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => { setPayoutCountry(c.code); setPayoutDialOpen(false) }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-gray-50 text-left transition-colors"
+                      >
+                        <span>{c.flag}</span>
+                        <span className="flex-1 text-gray-800 text-xs">{c.name}</span>
+                        <span className="font-mono text-gray-500 text-xs">{c.dial}</span>
+                        {payoutCountry === c.code && <Check className="h-3.5 w-3.5 text-[var(--color-primary)] shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
               <input
@@ -507,7 +572,7 @@ export function SettingsForm({ shop }: Props) {
                 type="tel"
                 defaultValue={shop.payout_wave_number ?? ''}
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-                placeholder="+221 77 000 00 00"
+                placeholder={selectedPayoutCountry.placeholder}
               />
             </div>
             <div>
@@ -517,7 +582,7 @@ export function SettingsForm({ shop }: Props) {
                 type="tel"
                 defaultValue={shop.payout_om_number ?? ''}
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-                placeholder="+221 77 000 00 00"
+                placeholder={selectedPayoutCountry.placeholder}
               />
             </div>
           </div>

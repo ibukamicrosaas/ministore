@@ -117,7 +117,7 @@ export default async function PayPage({ params, searchParams }: Props) {
             {shop.name[0]?.toUpperCase()}
           </div>
         )}
-        <h1 className="text-lg font-bold text-gray-900">Choisir une méthode</h1>
+        <h1 className="text-lg font-bold text-gray-900">Comment voulez-vous payer ?</h1>
         <p className="text-sm text-gray-500 mt-1">
           {isDeposit ? 'Acompte' : 'Paiement'} chez <span className="font-semibold">{shop.name}</span>
         </p>
