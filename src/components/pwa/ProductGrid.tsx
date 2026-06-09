@@ -12,6 +12,14 @@ interface ProductGridProps {
   primaryColor: string
 }
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+
+function isNew(product: Product): boolean {
+  const createdAt = (product as Product & { created_at?: string }).created_at
+  if (!createdAt) return false
+  return Date.now() - new Date(createdAt).getTime() < SEVEN_DAYS_MS
+}
+
 function getPrimaryPhoto(product: Product): string | null {
   if (Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0) {
     const photos = product.photos as unknown as ProductPhoto[]
@@ -37,6 +45,7 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
   const price = getPrice(product)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const soldOut = product.stock_count === 0
+  const newProduct = isNew(product)
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className={`shrink-0 w-44 group ${soldOut ? 'opacity-60' : ''}`}>
@@ -62,6 +71,11 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
               <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
             </div>
           )}
+          {newProduct && !soldOut && (
+            <span className="absolute top-1.5 left-1.5 rounded-full bg-green-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+              NOUVEAU
+            </span>
+          )}
         </div>
         <div className="p-2.5">
           <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
@@ -77,6 +91,7 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
   const price = getPrice(product)
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
+  const newProduct = isNew(product)
 
   return (
     <Link
@@ -103,6 +118,11 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
           <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
             <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
           </div>
+        )}
+        {newProduct && !soldOut && (
+          <span className="absolute -top-1 -right-1 rounded-full bg-green-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+            NEW
+          </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -142,6 +162,7 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
   const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
+  const newProduct = isNew(product)
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className={`group ${soldOut ? 'opacity-60' : ''}`}>
@@ -164,6 +185,11 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <span className="text-[9px] font-bold text-white text-center leading-tight px-1">RUPTURE</span>
             </div>
+          )}
+          {newProduct && !soldOut && (
+            <span className="absolute top-1.5 left-1.5 rounded-full bg-green-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+              NOUVEAU
+            </span>
           )}
         </div>
         <div className="p-2.5">

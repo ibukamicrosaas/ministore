@@ -63,6 +63,7 @@ export function SettingsForm({ shop }: Props) {
   const [socialLinks, setSocialLinks]           = useState<Record<string, string>>(
     shopAny.social_links && typeof shopAny.social_links === 'object' ? (shopAny.social_links as Record<string, string>) : {}
   )
+  const [openingHours, setOpeningHours]         = useState((shopAny.opening_hours as string | null) ?? '')
   const [savingBusiness, setSavingBusiness]     = useState(false)
   const coverInputRef                           = useRef<HTMLInputElement>(null)
 
@@ -156,6 +157,7 @@ export function SettingsForm({ shop }: Props) {
       social_links: Object.fromEntries(
         Object.entries(socialLinks).filter(([_, v]) => v.trim())
       ),
+      opening_hours: openingHours.trim() || null,
     })
     if ('error' in result) toast.error(result.error ?? 'Erreur')
     else {
@@ -683,6 +685,19 @@ export function SettingsForm({ shop }: Props) {
             className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-amber-300 transition-colors"
           />
           <p className="text-xs text-gray-400">Décris ce que tu vends (visible sur la page de ton shop)</p>
+        </div>
+
+        {/* Horaires d'ouverture */}
+        <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+          <label className="block text-sm font-medium text-gray-900">Horaires d&apos;ouverture</label>
+          <textarea
+            value={openingHours}
+            onChange={e => setOpeningHours(e.target.value)}
+            rows={3}
+            placeholder={"Lun-Ven : 8h-20h\nSamedi : 9h-18h\nDimanche : Fermé"}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-amber-300 transition-colors resize-none"
+          />
+          <p className="text-xs text-gray-400">Affiché sur la page de ton shop (laisse vide pour ne pas afficher)</p>
         </div>
 
         {/* Badges / Certifications */}

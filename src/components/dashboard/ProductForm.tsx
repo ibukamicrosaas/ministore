@@ -9,7 +9,7 @@ import {
   deleteProduct,
   uploadProductPhoto,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto } from '@/types'
@@ -58,6 +58,10 @@ export function ProductForm({ product }: ProductFormProps) {
   const [depositPct, setDepositPct]     = useState(product?.deposit_percentage ?? 30)
 
   const [category, setCategory] = useState(product?.category ?? '')
+  const [isFeatured, setIsFeatured] = useState(
+    (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
+  )
+  const descRef = useRef<HTMLTextAreaElement>(null)
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -164,6 +168,7 @@ export function ProductForm({ product }: ProductFormProps) {
       deposit_percentage: useDeposit ? depositPct : null,
       variants: validVariants.length > 0 ? validVariants : null,
       stock_count: fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null,
+      is_featured: isFeatured,
     }
 
     let result
@@ -180,6 +185,26 @@ export function ProductForm({ product }: ProductFormProps) {
       router.push('/dashboard/products')
     }
     setLoading(false)
+  }
+
+  function insertImageSyntax() {
+    const ta = descRef.current
+    if (!ta) return
+    const snippet = '![Description](https://...)'
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const before = ta.value.slice(0, start)
+    const after = ta.value.slice(end)
+    const newVal = before + snippet + after
+    // React controlled textarea — trigger onChange by dispatching native input event
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
+    nativeInputValueSetter?.call(ta, newVal)
+    ta.dispatchEvent(new Event('input', { bubbles: true }))
+    // Move cursor inside the URL placeholder
+    const urlStart = before.length + snippet.indexOf('https://')
+    const urlEnd = urlStart + 'https://...'.length
+    ta.focus()
+    ta.setSelectionRange(urlStart, urlEnd)
   }
 
   async function handleDelete() {
@@ -314,14 +339,27 @@ export function ProductForm({ product }: ProductFormProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-gray-700">Description</label>
+              <button
+                type="button"
+                onClick={insertImageSyntax}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
+                title="Insérer une image (syntaxe ![alt](url))"
+              >
+                <ImageIcon className="h-3 w-3" />
+                Image
+              </button>
+            </div>
             <textarea
+              ref={descRef}
               name="description"
               defaultValue={product?.description ?? ''}
               rows={3}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-none"
               placeholder="Décrivez votre produit..."
             />
+            <p className="mt-1 text-[10px] text-gray-400">Insérer une image : ![description](https://url-de-l-image.jpg)</p>
           </div>
 
           <div>
@@ -332,6 +370,26 @@ export function ProductForm({ product }: ProductFormProps) {
               placeholder="Ex: Alimentation, Vêtements, Beauté..."
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
             />
+          </div>
+
+          {/* Produit en vedette */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <Star className="h-4 w-4 text-amber-400" />
+                <p className="text-sm font-medium text-gray-900">Produit en vedette</p>
+              </div>
+              <p className="text-xs text-gray-500">Apparaît dans la section &quot;Coups de cœur&quot;</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFeatured(v => !v)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                isFeatured ? 'bg-amber-400' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${isFeatured ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
           </div>
         </div>
       </Card>

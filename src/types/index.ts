@@ -85,6 +85,7 @@ export interface CreateProductInput {
   variants?: ProductVariant[] | null
   stock_count?: number | null
   display_order?: number
+  is_featured?: boolean | null
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {

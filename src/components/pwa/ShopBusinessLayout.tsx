@@ -1,6 +1,6 @@
 'use client'
 
-import { Phone, MessageSquare, MessageCircle } from 'lucide-react'
+import { Phone, MessageSquare, MessageCircle, Clock } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
@@ -60,6 +60,8 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
     : {}
   const businessCategory = typeof shopAny.business_category === 'string' ? shopAny.business_category : null
   const coverImageUrl = typeof shopAny.cover_image_url === 'string' ? shopAny.cover_image_url : null
+
+  const openingHours = typeof shopAny.opening_hours === 'string' ? shopAny.opening_hours : null
 
   const whatsappNumber = shop.phone_whatsapp?.replace(/\D/g, '')
   const actionButtons = [
@@ -145,6 +147,14 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
                 {badge}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Horaires d'ouverture */}
+        {openingHours && (
+          <div className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
+            <Clock className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{openingHours}</p>
           </div>
         )}
       </div>

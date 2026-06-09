@@ -340,6 +340,7 @@ export async function updateBusinessDesign(
       whatsapp?: string
       website?: string
     }
+    opening_hours?: string | null
   }
 ): Promise<{ error?: string }> {
   const supabase = await createServerClient()
@@ -371,6 +372,7 @@ export async function updateBusinessDesign(
       business_category: data.business_category,
       badges: data.badges ?? [],
       social_links: data.social_links ?? {},
+      opening_hours: data.opening_hours ?? null,
       updated_at: new Date().toISOString(),
     } as any)
     .eq('id', profile.shop_id)

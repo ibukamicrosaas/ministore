@@ -56,6 +56,7 @@ export async function createProduct(input: CreateProductInput) {
     stock_count:        input.stock_count ?? null,
     display_order:      (maxOrder?.display_order ?? 0) + 1,
     is_active:          true,
+    is_featured:        input.is_featured ?? false,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -88,6 +89,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.variants !== undefined)           updates.variants           = input.variants?.length ? input.variants : null
   if (input.stock_count !== undefined)        updates.stock_count        = input.stock_count
   if (input.is_active !== undefined)          updates.is_active          = input.is_active
+  if (input.is_featured !== undefined)        updates.is_featured        = input.is_featured
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase
