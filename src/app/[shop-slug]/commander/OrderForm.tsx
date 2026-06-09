@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag } from 'lucide-react'
@@ -91,27 +91,57 @@ function PhoneInput({
   placeholder: string
   countries: typeof COUNTRIES
 }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const selected = countries.find((c) => c.dial === dialCode) ?? countries[0]
+
+  useEffect(() => {
+    if (!open) return
+    function onOutside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [open])
+
   return (
     <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-gray-300">
-      <div className="relative shrink-0 border-r border-gray-200">
-        <select
-          value={dialCode}
-          onChange={(e) => onDialChange(e.target.value)}
-          className="h-full appearance-none bg-gray-50 pl-8 pr-6 text-sm font-medium text-gray-700 outline-none cursor-pointer"
-          style={{ minWidth: 90 }}
+      <div className="relative shrink-0 border-r border-gray-200" ref={wrapRef}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex h-full items-center gap-1.5 bg-gray-50 px-3 text-sm font-medium text-gray-700"
         >
-          {countries.map((c) => (
-            <option key={c.code} value={c.dial}>
-              {c.dial}
-            </option>
-          ))}
-        </select>
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base select-none">
-          {selected.flag}
-        </span>
-        <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+          <span className="text-base leading-none">{selected.flag}</span>
+          <span>{selected.dial}</span>
+          <ChevronDown className="h-3 w-3 text-gray-400" />
+        </button>
+
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+            {countries.map((c) => {
+              const isSelected = c.dial === dialCode
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => { onDialChange(c.dial); setOpen(false) }}
+                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 ${
+                    isSelected ? 'bg-gray-50 font-semibold' : ''
+                  }`}
+                >
+                  <span className="text-xl leading-none">{c.flag}</span>
+                  <span className="flex-1 text-left text-gray-800">{c.name}</span>
+                  <span className="font-mono text-xs text-gray-500">{c.dial}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
+
       <input
         type="tel"
         value={value}
