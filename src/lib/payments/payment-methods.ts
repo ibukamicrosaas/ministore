@@ -1,4 +1,4 @@
-export type PaymentMethod = 'wave' | 'orange_money' | 'maxit' | 'mtn_money' | 'bictorys'
+export type PaymentMethod = 'wave' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov_money' | 'bictorys'
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
 export interface PaymentMethodOption {
@@ -21,75 +21,30 @@ export function getCountryFromPhone(phone: string): BictorysCountry | null {
 
 export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOption[]> = {
   SN: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
-    {
-      id: 'orange_money',
-      label: 'Orange Money',
-      description: 'Via code USSD',
-      icon: '/logo-payments/om_1.svg',
-    },
-    {
-      id: 'maxit',
-      label: 'MaxIt',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/maxit.webp',
-    },
+    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',         icon: '/logo-payments/wave_1.svg' },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Via code USSD #144*82#',      icon: '/logo-payments/om_1.svg' },
+    { id: 'maxit',        label: 'MaxIt',         description: 'Paiement instantané',         icon: '/logo-payments/maxit.webp' },
   ],
   CI: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
-    {
-      id: 'orange_money',
-      label: 'Orange Money',
-      description: 'Via code OTP',
-      icon: '/logo-payments/om_1.svg',
-    },
-    {
-      id: 'mtn_money',
-      label: 'MTN Money',
-      description: 'Paiement mobile',
-      icon: '/logo-payments/mtn_1.svg',
-    },
+    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',          icon: '/logo-payments/wave_1.svg' },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Via code OTP (#144*82#)',      icon: '/logo-payments/om_1.svg' },
+    { id: 'mtn_money',    label: 'MTN Money',     description: 'Paiement push mobile',        icon: '/logo-payments/mtn_1.svg' },
+    { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
   ],
   BK: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
+    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',          icon: '/logo-payments/wave_1.svg' },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Via code OTP (#144*82#)',      icon: '/logo-payments/om_1.svg' },
+    { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
   ],
   ML: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
+    { id: 'orange_money', label: 'Orange Money',  description: 'Paiement push mobile',        icon: '/logo-payments/om_1.svg' },
+    { id: 'wave',         label: 'Wave',         description: 'Paiement instantané',          icon: '/logo-payments/wave_1.svg' },
   ],
   TG: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
+    { id: 'moov_money',   label: 'Moov Money (Flooz)', description: 'Paiement push mobile',  icon: '/logo-payments/moov_1.svg' },
   ],
   BJ: [
-    {
-      id: 'wave',
-      label: 'Wave Money',
-      description: 'Paiement instantané',
-      icon: '/logo-payments/wave_1.svg',
-    },
+    { id: 'mtn_money',    label: 'MTN Money',     description: 'Paiement push mobile',        icon: '/logo-payments/mtn_1.svg' },
+    { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
   ],
 }

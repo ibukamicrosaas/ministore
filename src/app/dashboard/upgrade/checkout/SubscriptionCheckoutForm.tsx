@@ -15,11 +15,11 @@ import {
 } from '@/lib/payments/bictorys'
 
 const PAYMENT_LOGOS: Record<string, string> = {
-  wave_money: '/logo-payments/wave_1.svg',
+  wave_money:   '/logo-payments/wave_1.svg',
   orange_money: '/logo-payments/om_1.svg',
-  maxit: '/logo-payments/maxit.webp',
-  mtn_money: '/logo-payments/mtn_1.svg',
-  moov_money: '/logo-payments/moov_1.svg',
+  maxit:        '/logo-payments/maxit.webp',
+  mtn_money:    '/logo-payments/mtn_1.svg',
+  moov_money:   '/logo-payments/moov_1.svg',
 }
 
 interface Plan {
@@ -30,8 +30,12 @@ interface Plan {
 }
 
 const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string; placeholder: string }> = [
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', phone: '+221', placeholder: '77 123 45 67' },
-  { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', phone: '+225', placeholder: '07 00 00 00 00' },
+  { code: 'SN', name: 'Sénégal',       flag: '🇸🇳', phone: '+221', placeholder: '77 123 45 67' },
+  { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮', phone: '+225', placeholder: '07 00 00 00 00' },
+  { code: 'BJ', name: 'Bénin',         flag: '🇧🇯', phone: '+229', placeholder: '97 00 00 00' },
+  { code: 'BK', name: 'Burkina Faso',  flag: '🇧🇫', phone: '+226', placeholder: '70 00 00 00' },
+  { code: 'ML', name: 'Mali',          flag: '🇲🇱', phone: '+223', placeholder: '70 00 00 00' },
+  { code: 'TG', name: 'Togo',          flag: '🇹🇬', phone: '+228', placeholder: '90 00 00 00' },
 ]
 
 interface Props {
@@ -109,15 +113,33 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
         }),
       })
 
+      const data = await response.json() as {
+        checkoutUrl?: string
+        transactionId?: string
+        message?: string
+        error?: string
+      }
+
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || 'Erreur lors de la création du paiement')
       }
 
-      const { checkoutUrl } = await response.json()
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl
+      if (data.checkoutUrl) {
+        // Wave / page générique Bictorys → redirection
+        window.location.href = data.checkoutUrl
+        return
       }
+
+      if (data.transactionId) {
+        // MoMo push (Orange Money OTP, MTN push, Moov push) → paiement traité directement
+        // Stocker txn pour que PaymentVerifier puisse vérifier l'activation du plan
+        sessionStorage.setItem('pending_sub_txn', data.transactionId)
+        sessionStorage.setItem('pending_sub_plan', plan.key)
+        router.push(`/dashboard/upgrade?success=1&plan=${plan.key}`)
+        return
+      }
+
+      throw new Error('Réponse inattendue du serveur de paiement')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
       setLoading(false)

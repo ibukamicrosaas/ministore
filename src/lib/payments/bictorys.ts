@@ -2,7 +2,7 @@ import crypto from 'crypto'
 
 const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
 
-export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money'
+export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov_money'
 export type BictorysMethod = BictorysPaymentType
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
@@ -233,26 +233,31 @@ export type PaymentMethodInfo = {
 export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMethodInfo[] {
   const methods: Record<BictorysCountry, PaymentMethodInfo[]> = {
     SN: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +221 XXX XX XX' },
-      { type: 'orange_money', label: 'Orange Money', requiresOtp: false, description: 'Tapez #144*82# pour autoriser' },
-      { type: 'maxit', label: 'Maxit', requiresOtp: false, description: 'Accès direct depuis votre téléphone' },
+      { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
+      { type: 'orange_money', label: 'Orange Money',  requiresOtp: false, description: 'Tapez #144*82# pour autoriser' },
+      { type: 'maxit',        label: 'MaxIt',         requiresOtp: false, description: 'Paiement direct depuis votre téléphone' },
     ],
     CI: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +225 XXX XXX XXX' },
-      { type: 'orange_money', label: 'Orange Money', requiresOtp: true, description: 'Tapez #144*82#, puis entrez le code OTP' },
+      { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
+      { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Tapez #144*82# puis entrez le code OTP' },
+      { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     BK: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +226 XXXX XXXX' },
-      { type: 'orange_money', label: 'Orange Money', requiresOtp: true, description: 'Tapez #144*82#, puis entrez le code OTP' },
+      { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
+      { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Tapez #144*82# puis entrez le code OTP' },
+      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     ML: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +223 XXXX XXXX' },
+      { type: 'orange_money', label: 'Orange Money',  requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
     ],
     TG: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +228 XXXX XXXX' },
+      { type: 'moov_money',   label: 'Moov Money (Flooz)', requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     BJ: [
-      { type: 'wave_money', label: 'Wave', requiresOtp: false, description: 'Envoyez un message au +229 XXXX XXXX' },
+      { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
   }
   return methods[country] ?? []

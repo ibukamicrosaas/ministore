@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { checkoutUrl, transactionId } = chargeResult
+  const { checkoutUrl, transactionId, message } = chargeResult
 
   // Enregistrer la tentative de paiement pour le webhook
   if (!transactionId || transactionId.trim() === '') {
@@ -215,5 +215,5 @@ export async function POST(req: NextRequest) {
     paymentReference,
   })
 
-  return NextResponse.json({ checkoutUrl, transactionId })
+  return NextResponse.json({ checkoutUrl, transactionId, message })
 }

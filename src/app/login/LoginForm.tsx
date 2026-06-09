@@ -12,8 +12,12 @@ import { ChevronDown } from 'lucide-react'
 type Mode = 'signin' | 'signup'
 
 const COUNTRIES = [
-  { code: 'SN', flag: '🇸🇳', name: 'Sénégal',       dial: '+221', placeholder: '77 000 00 00' },
-  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire", dial: '+225', placeholder: '07 00 00 00 00' },
+  { code: 'SN', flag: '🇸🇳', name: 'Sénégal',          dial: '+221', placeholder: '77 000 00 00' },
+  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",    dial: '+225', placeholder: '07 00 00 00 00' },
+  { code: 'BJ', flag: '🇧🇯', name: 'Bénin',            dial: '+229', placeholder: '97 00 00 00' },
+  { code: 'BK', flag: '🇧🇫', name: 'Burkina Faso',     dial: '+226', placeholder: '70 00 00 00' },
+  { code: 'ML', flag: '🇲🇱', name: 'Mali',             dial: '+223', placeholder: '70 00 00 00' },
+  { code: 'TG', flag: '🇹🇬', name: 'Togo',             dial: '+228', placeholder: '90 00 00 00' },
 ] as const
 
 export function LoginForm() {
@@ -199,7 +203,7 @@ export function LoginForm() {
 
       {mode === 'signup' && (
         <p className="mt-4 text-center text-xs text-gray-500">
-          Paiement par Wave ou Orange Money · Aucune carte bancaire requise
+          Wave, Orange Money, MTN, Moov · Aucune carte bancaire requise
         </p>
       )}
     </Card>
