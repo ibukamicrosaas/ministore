@@ -18,7 +18,7 @@ const PAYMENT_TYPE_MAP: Record<string, BictorysPaymentType> = {
   orange_money: 'orange_money',
   maxit:        'maxit',
   mtn_money:    'mtn_money',
-  moov_money:   'moov_money',
+  moov_money:   'moov',
 }
 
 interface Props {

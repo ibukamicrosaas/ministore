@@ -2,7 +2,7 @@ import crypto from 'crypto'
 
 const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
 
-export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov_money'
+export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov'
 export type BictorysMethod = BictorysPaymentType
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
@@ -241,23 +241,23 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
       { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
       { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Tapez #144*82# puis entrez le code OTP' },
       { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },
-      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',          label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     BK: [
       { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
       { type: 'orange_money', label: 'Orange Money',  requiresOtp: true,  description: 'Tapez #144*82# puis entrez le code OTP' },
-      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',         label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     ML: [
       { type: 'orange_money', label: 'Orange Money',  requiresOtp: false, description: 'Paiement push sur votre téléphone' },
       { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
     ],
     TG: [
-      { type: 'moov_money',   label: 'Moov Money (Flooz)', requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',         label: 'Moov Money (Flooz)', requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     BJ: [
       { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },
-      { type: 'moov_money',   label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',         label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
   }
   return methods[country] ?? []
