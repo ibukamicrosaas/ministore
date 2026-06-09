@@ -4,13 +4,28 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, updateMetaPixelId } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, MapPin, Heart, Music } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
 interface Props {
   shop: Shop
 }
+
+const COUNTRY_OPTIONS = [
+  { value: 'SN', label: '🇸🇳 Sénégal' },
+  { value: 'CI', label: "🇨🇮 Côte d'Ivoire" },
+  { value: 'BJ', label: '🇧🇯 Bénin' },
+  { value: 'BK', label: '🇧🇫 Burkina Faso' },
+  { value: 'TG', label: '🇹🇬 Togo' },
+  { value: 'ML', label: '🇲🇱 Mali' },
+  { value: 'CM', label: '🇨🇲 Cameroun' },
+  { value: 'GN', label: '🇬🇳 Guinée' },
+  { value: 'CD', label: '🇨🇩 RDC' },
+  { value: 'GA', label: '🇬🇦 Gabon' },
+  { value: 'MG', label: '🇲🇬 Madagascar' },
+  { value: 'MA', label: '🇲🇦 Maroc' },
+]
 
 const COLOR_PRESETS = [
   { label: 'Bleu ciel',  value: '#0EA5E9' },
@@ -67,6 +82,8 @@ export function SettingsForm({ shop }: Props) {
   const [openingHours, setOpeningHours]         = useState((shopAny.opening_hours as string | null) ?? '')
   const [savingBusiness, setSavingBusiness]     = useState(false)
   const coverInputRef                           = useRef<HTMLInputElement>(null)
+
+  const [country, setCountry] = useState(shop.country ?? '')
 
   // Meta Pixel
   const metaPixelIdValue = (shop as unknown as Record<string, unknown>).meta_pixel_id
@@ -241,6 +258,7 @@ export function SettingsForm({ shop }: Props) {
     const result = await updateShop({
       name:              (fd.get('name') as string).trim(),
       city:              (fd.get('city') as string).trim(),
+      country:           country || null,
       phone_whatsapp:    (fd.get('phone_whatsapp') as string).trim(),
       address:           (fd.get('address') as string).trim() || undefined,
       description:       (fd.get('description') as string).trim() || undefined,
@@ -373,16 +391,31 @@ export function SettingsForm({ shop }: Props) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Ville <span className="text-red-500">*</span>
-        </label>
-        <input
-          name="city"
-          defaultValue={shop.city ?? ''}
-          required
-          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Ville <span className="text-red-500">*</span>
+          </label>
+          <input
+            name="city"
+            defaultValue={shop.city ?? ''}
+            required
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Pays</label>
+          <select
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] bg-white"
+          >
+            <option value="">— Sélectionner —</option>
+            {COUNTRY_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>

@@ -99,6 +99,7 @@ export interface UpdateShopInput {
   name?: string
   description?: string
   city?: string
+  country?: string | null
   phone_whatsapp?: string
   email?: string
   address?: string
