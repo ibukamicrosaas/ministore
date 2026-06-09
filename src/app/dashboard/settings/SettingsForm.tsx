@@ -35,6 +35,7 @@ export function SettingsForm({ shop }: Props) {
     Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []
   )
   const [slug, setSlug]                         = useState(shop.slug)
+  const [confirmedSlug, setConfirmedSlug]       = useState(shop.slug)
   const [savingSlug, setSavingSlug]             = useState(false)
   const [slugStatus, setSlugStatus]             = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle')
   const slugTimerRef                            = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -76,8 +77,8 @@ export function SettingsForm({ shop }: Props) {
 
   // Debounced slug availability check
   useEffect(() => {
-    if (slug === shop.slug) { setSlugStatus('idle'); return }
-    if (slug.length < 2)   { setSlugStatus('idle'); return }
+    if (slug === confirmedSlug) { setSlugStatus('idle'); return }
+    if (slug.length < 2)       { setSlugStatus('idle'); return }
 
     setSlugStatus('checking')
     if (slugTimerRef.current) clearTimeout(slugTimerRef.current)
@@ -92,7 +93,7 @@ export function SettingsForm({ shop }: Props) {
     }, 500)
 
     return () => { if (slugTimerRef.current) clearTimeout(slugTimerRef.current) }
-  }, [slug, shop.slug])
+  }, [slug, confirmedSlug])
 
   function sanitizeSlugInput(v: string) {
     return v
@@ -188,12 +189,14 @@ export function SettingsForm({ shop }: Props) {
     const result = await updateShopSlug(trimmed)
     if (result.error) {
       toast.error(result.error)
-      setSlug(shop.slug) // remettre l'ancien slug en cas d'erreur
+      setSlug(confirmedSlug) // remettre le slug confirmé en cas d'erreur
     } else {
       toast.success('URL mise à jour ✓')
-      if (result.slug) setSlug(result.slug)
-      // Rafraîchir les composants serveur (ShopLinkCard) pour afficher le nouveau lien
-      router.refresh()
+      const newSlug = result.slug ?? trimmed
+      setSlug(newSlug)
+      setConfirmedSlug(newSlug)
+      setSlugStatus('idle')
+      router.refresh() // met à jour ShopLinkCard + PWAPreviewPanel côté serveur
     }
     setSavingSlug(false)
   }
@@ -863,7 +866,7 @@ export function SettingsForm({ shop }: Props) {
       <button
         type="button"
         onClick={handleSlugSave}
-        disabled={savingSlug || slug === shop.slug || slugStatus === 'taken' || slugStatus === 'checking'}
+        disabled={savingSlug || slug === confirmedSlug || slugStatus === 'taken' || slugStatus === 'checking'}
         className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
       >
         {savingSlug ? 'Enregistrement...' : 'Modifier l\'URL'}
@@ -881,7 +884,7 @@ export function SettingsForm({ shop }: Props) {
             <span className="ml-auto text-[10px] font-bold text-purple-600 bg-purple-100 rounded-full px-2 py-0.5">Pro</span>
           </div>
           <p className="text-xs text-gray-500">
-            Remplace <span className="font-mono">tekki.shop/{shop.slug}</span> par ton propre domaine.
+            Remplace <span className="font-mono">tekki.shop/{confirmedSlug}</span> par ton propre domaine.
           </p>
 
           <div className="flex gap-2">

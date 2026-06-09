@@ -17,7 +17,7 @@ export async function createServerClient(): Promise<SupabaseClient<Database>> {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, maxAge: 30 * 24 * 60 * 60 })
             )
           } catch {
             // Server Component — les cookies sont en read-only, ignoré
