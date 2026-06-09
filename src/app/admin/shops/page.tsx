@@ -5,20 +5,34 @@ import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle, Search, TrendingUp } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X } from 'lucide-react'
 import { COUNTRIES } from '@/constants/countries'
+
+const KNOWN_CODES = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const
+type KnownCode = typeof KNOWN_CODES[number]
+type CountryFilter = 'all' | KnownCode | 'other'
+type PlanFilter = 'all' | 'trial' | 'decouverte' | 'business' | 'pro'
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  SN: '🇸🇳', CI: '🇨🇮', BK: '🇧🇫', ML: '🇲🇱', TG: '🇹🇬', BJ: '🇧🇯',
+}
+
+const PLAN_CONFIG = {
+  trial:      { label: 'Essai',      badge: 'bg-gray-100 text-gray-700',      icon: '📋' },
+  decouverte: { label: 'Découverte', badge: 'bg-emerald-100 text-emerald-700', icon: '🚀' },
+  business:   { label: 'Business',   badge: 'bg-blue-100 text-blue-700',       icon: '💼' },
+  pro:        { label: 'Pro',        badge: 'bg-purple-100 text-purple-700',   icon: '👑' },
+} as const
 
 export default function AdminShopsPage() {
   const supabase = createClient()
   const [shops, setShops] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterPlan, setFilterPlan] = useState<'all' | 'trial' | 'decouverte' | 'business' | 'pro'>('all')
-  const [filterCountry, setFilterCountry] = useState<'all' | 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'>('all')
+  const [filterPlan, setFilterPlan] = useState<PlanFilter>('all')
+  const [filterCountry, setFilterCountry] = useState<CountryFilter>('all')
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   async function loadData() {
     try {
@@ -26,200 +40,348 @@ export default function AdminShopsPage() {
         .from('shops')
         .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
         .order('created_at', { ascending: false })
-
-      if (data) {
-        // Diagnostic: voir les codes pays uniques dans la BD
-        const uniqueCountries = [...new Set(data.map(s => s.country).filter(Boolean))]
-        console.log('🌍 Codes pays dans la BD:', uniqueCountries)
-        console.log('Exemples de shops:', data.slice(0, 3).map(s => ({ name: s.name, country: s.country })))
-      }
-
       setShops(data ?? [])
     } finally {
       setLoading(false)
     }
   }
 
+  // Comptages pour les badges des filtres (calculés sur tout le dataset)
+  const planCounts = useMemo(() => {
+    const c: Record<string, number> = { all: shops.length }
+    for (const s of shops) c[s.plan] = (c[s.plan] ?? 0) + 1
+    return c
+  }, [shops])
+
+  const countryCounts = useMemo(() => {
+    const c: Record<string, number> = { all: shops.length, other: 0 }
+    for (const s of shops) {
+      const code = (s.country ?? '').toUpperCase()
+      if (KNOWN_CODES.includes(code as KnownCode)) {
+        c[code] = (c[code] ?? 0) + 1
+      } else {
+        c.other++
+      }
+    }
+    return c
+  }, [shops])
+
   const filtered = useMemo(() => {
+    // Normalisation du query téléphone — on ne l'utilise que s'il contient des chiffres
+    const phoneQuery = searchQuery.replace(/\D/g, '')
+
     return shops.filter(s => {
-      const matchesPlan = filterPlan === 'all' || s.plan === filterPlan
-      const matchesCountry = filterCountry === 'all' || (s.country?.toUpperCase() === filterCountry?.toUpperCase())
-      const normalizePhone = (phone: string) => phone?.replace(/\D/g, '') || ''
-      const matchesSearch = !searchQuery ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.city?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        normalizePhone(s.phone_whatsapp).includes(searchQuery.replace(/\D/g, ''))
-      return matchesPlan && matchesCountry && matchesSearch
+      // Filtre plan
+      if (filterPlan !== 'all' && s.plan !== filterPlan) return false
+
+      // Filtre pays
+      const code = (s.country ?? '').toUpperCase()
+      if (filterCountry !== 'all') {
+        if (filterCountry === 'other') {
+          if (KNOWN_CODES.includes(code as KnownCode)) return false
+        } else {
+          if (code !== filterCountry) return false
+        }
+      }
+
+      // Recherche texte — bug fix : le match téléphone n'est actif que si la query contient des chiffres
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const nameMatch  = (s.name  ?? '').toLowerCase().includes(q)
+        const cityMatch  = (s.city  ?? '').toLowerCase().includes(q)
+        const phoneMatch = phoneQuery.length > 0 &&
+          (s.phone_whatsapp ?? '').replace(/\D/g, '').includes(phoneQuery)
+        if (!nameMatch && !cityMatch && !phoneMatch) return false
+      }
+
+      return true
     })
   }, [shops, searchQuery, filterPlan, filterCountry])
 
-  const stats = {
-    total: shops.length,
+  const stats = useMemo(() => ({
+    total:  shops.length,
     active: shops.filter(s => s.is_active).length,
-    paid: shops.filter(s => s.plan !== 'trial').length,
-    trial: shops.filter(s => s.plan === 'trial').length,
-  }
+    paid:   shops.filter(s => s.plan !== 'trial').length,
+    trial:  shops.filter(s => s.plan === 'trial').length,
+  }), [shops])
 
-  const planConfig = {
-    trial: { label: 'Essai', color: 'bg-gray-100 text-gray-700', icon: '📋' },
-    decouverte: { label: 'Découverte', color: 'bg-emerald-100 text-emerald-700', icon: '🚀' },
-    business: { label: 'Business', color: 'bg-blue-100 text-blue-700', icon: '💼' },
-    pro: { label: 'Pro', color: 'bg-purple-100 text-purple-700', icon: '👑' },
+  const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || searchQuery.length > 0
+
+  function resetFilters() {
+    setSearchQuery('')
+    setFilterPlan('all')
+    setFilterCountry('all')
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ── Header ── */}
+
+        {/* ── En-tête ── */}
         <div className="mb-8">
           <div className="flex items-end justify-between mb-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Boutiques</h1>
-              <p className="text-gray-500 mt-2">Gère les boutiques et leurs abonnements</p>
+              <p className="text-gray-500 mt-1">Gère les boutiques et leurs abonnements</p>
             </div>
             <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
           </div>
-
-          {/* Stats cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total', value: stats.total, color: 'from-gray-500 to-gray-600' },
-              { label: 'Actives', value: stats.active, color: 'from-emerald-500 to-emerald-600' },
-              { label: 'Payantes', value: stats.paid, color: 'from-blue-500 to-blue-600' },
-              { label: 'Essai', value: stats.trial, color: 'from-amber-500 to-amber-600' },
+              { label: 'Total',    value: stats.total,  color: 'from-gray-500 to-gray-600' },
+              { label: 'Actives',  value: stats.active, color: 'from-emerald-500 to-emerald-600' },
+              { label: 'Payantes', value: stats.paid,   color: 'from-blue-500 to-blue-600' },
+              { label: 'Essai',    value: stats.trial,  color: 'from-amber-500 to-amber-600' },
             ].map((stat) => (
-              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-lg p-4 text-white shadow-sm`}>
-                <p className="text-sm opacity-90 font-medium">{stat.label}</p>
+              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-xl p-4 text-white shadow-sm`}>
+                <p className="text-sm opacity-80 font-medium">{stat.label}</p>
                 <p className="text-3xl font-bold mt-1">{stat.value}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Recherche et filtres ── */}
-        <div className="mb-6 space-y-4">
+        {/* ── Recherche & filtres ── */}
+        <div className="mb-5 space-y-3">
+
+          {/* Champ de recherche */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Chercher par nom, ville ou téléphone..."
+              placeholder="Nom, ville ou numéro de téléphone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all text-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Effacer la recherche"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
-          {/* Plan filters */}
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'trial', 'decouverte', 'business', 'pro'] as const).map((plan) => (
-              <button
-                key={plan}
-                onClick={() => setFilterPlan(plan)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  filterPlan === plan
-                    ? 'bg-sky-500 text-white shadow-md'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {plan === 'all' ? 'Tous les plans' : planConfig[plan as keyof typeof planConfig]?.label}
-              </button>
-            ))}
+          {/* Filtre plan */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider w-8 shrink-0">Plan</span>
+            {(['all', 'trial', 'decouverte', 'business', 'pro'] as const).map((plan) => {
+              const isActive = filterPlan === plan
+              const cfg = plan !== 'all' ? PLAN_CONFIG[plan] : null
+              return (
+                <button
+                  key={plan}
+                  onClick={() => setFilterPlan(plan)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-sky-500 text-white shadow-md ring-2 ring-sky-200'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-sky-300 hover:text-sky-600'
+                  }`}
+                >
+                  {cfg?.icon && <span className="text-xs leading-none">{cfg.icon}</span>}
+                  {plan === 'all' ? 'Tous les plans' : cfg?.label}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[1.25rem] text-center ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {planCounts[plan] ?? 0}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Country filters */}
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const).map((country) => (
-              <button
-                key={country}
-                onClick={() => setFilterCountry(country)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  filterCountry === country
-                    ? 'bg-emerald-500 text-white shadow-md'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {country === 'all' ? 'Tous les pays' : COUNTRIES.find(c => c.code === country)?.label}
-              </button>
-            ))}
+          {/* Filtre pays */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider w-8 shrink-0">Pays</span>
+            {(['all', ...KNOWN_CODES, 'other'] as const).map((country) => {
+              const isActive = filterCountry === country
+              const flag = country !== 'all' && country !== 'other' ? (COUNTRY_FLAGS[country] ?? '') : ''
+              const label = country === 'all' ? 'Tous les pays'
+                : country === 'other' ? 'Autres'
+                : COUNTRIES.find(c => c.code === country)?.label ?? country
+              return (
+                <button
+                  key={country}
+                  onClick={() => setFilterCountry(country as CountryFilter)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-emerald-500 text-white shadow-md ring-2 ring-emerald-200'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
+                  }`}
+                >
+                  {flag && <span className="text-base leading-none">{flag}</span>}
+                  {label}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[1.25rem] text-center ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {countryCounts[country] ?? 0}
+                  </span>
+                </button>
+              )
+            })}
           </div>
+
+          {/* Barre de résultats + reset */}
+          {hasFilters && (
+            <div className="flex items-center justify-between text-sm pt-1">
+              <span className="text-gray-500">
+                <span className="font-semibold text-gray-800">{filtered.length}</span>
+                {' '}résultat{filtered.length !== 1 ? 's' : ''}
+                {filtered.length < shops.length && (
+                  <span className="text-gray-400"> sur {shops.length}</span>
+                )}
+              </span>
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-medium transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                Réinitialiser
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Tableau ── */}
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Chargement...</div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent mb-3" />
+            <p className="text-sm text-gray-400">Chargement des boutiques...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+            <p className="text-4xl mb-3">🔍</p>
+            <p className="font-semibold text-gray-800 mb-1">Aucune boutique trouvée</p>
+            <p className="text-sm text-gray-400 mb-5">
+              {searchQuery
+                ? `Aucun résultat pour « ${searchQuery} »`
+                : 'Essaie d\'autres filtres.'}
+            </p>
+            <button
+              onClick={resetFilters}
+              className="text-sm text-sky-600 hover:underline font-medium"
+            >
+              Réinitialiser les filtres
+            </button>
+          </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Boutique</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Plan</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden md:table-cell">Téléphone</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700">Statut</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700 hidden lg:table-cell">Depuis</th>
-                    <th className="text-right px-6 py-4 font-semibold text-gray-700">Actions</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Boutique</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Plan</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Téléphone</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Statut</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">Inscription</th>
+                    <th className="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filtered.map((shop) => (
-                    <tr key={shop.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-gray-900">{shop.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{shop.city ?? '—'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${planConfig[shop.plan as keyof typeof planConfig]?.color}`}>
-                          <span>{planConfig[shop.plan as keyof typeof planConfig]?.icon}</span>
-                          {planConfig[shop.plan as keyof typeof planConfig]?.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 hidden md:table-cell text-gray-600 text-xs">
-                        {shop.phone_whatsapp ? (
-                          <a href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline font-mono">
-                            {shop.phone_whatsapp}
-                          </a>
-                        ) : '—'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${shop.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                          {shop.is_active ? '✓ Actif' : '✗ Inactif'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 text-xs hidden lg:table-cell">
-                        {format(new Date(shop.created_at), 'd MMM yyyy', { locale: fr })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/admin/shops/${shop.id}`}
-                            className="p-2 rounded-lg hover:bg-sky-100 text-sky-600 transition-colors"
-                            title="Gérer"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Link>
-                          <Link href={`/${shop.slug}`} target="_blank" className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors">
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                          {shop.phone_whatsapp && (
+                  {filtered.map((shop) => {
+                    const code = (shop.country ?? '').toUpperCase()
+                    const flag = COUNTRY_FLAGS[code]
+                    const countryLabel = COUNTRIES.find(c => c.code === code)?.label
+                    const planCfg = PLAN_CONFIG[shop.plan as keyof typeof PLAN_CONFIG]
+
+                    return (
+                      <tr key={shop.id} className="hover:bg-sky-50/40 transition-colors group">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-gray-900 group-hover:text-sky-700 transition-colors">
+                            {shop.name}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                            {flag && <span>{flag}</span>}
+                            {[shop.city, countryLabel].filter(Boolean).join(', ') || '—'}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            planCfg?.badge ?? 'bg-gray-100 text-gray-600'
+                          }`}>
+                            <span className="leading-none">{planCfg?.icon ?? '?'}</span>
+                            {planCfg?.label ?? shop.plan}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 hidden md:table-cell">
+                          {shop.phone_whatsapp ? (
                             <a
                               href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 rounded-lg hover:bg-green-100 text-green-600 transition-colors"
+                              className="font-mono text-xs text-sky-600 hover:underline"
                             >
-                              <MessageCircle className="h-4 w-4" />
+                              {shop.phone_whatsapp}
                             </a>
+                          ) : (
+                            <span className="text-gray-300">—</span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            shop.is_active
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-red-50 text-red-600'
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${
+                              shop.is_active ? 'bg-emerald-500' : 'bg-red-400'
+                            }`} />
+                            {shop.is_active ? 'Actif' : 'Inactif'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-gray-400 hidden lg:table-cell">
+                          {format(new Date(shop.created_at), 'd MMM yyyy', { locale: fr })}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link
+                              href={`/admin/shops/${shop.id}`}
+                              title="Gérer"
+                              className="p-2 rounded-lg text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              href={`/${shop.slug}`}
+                              target="_blank"
+                              title="Voir la boutique"
+                              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Link>
+                            {shop.phone_whatsapp && (
+                              <a
+                                href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="WhatsApp"
+                                className="p-2 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
-              {filtered.length} boutique{filtered.length !== 1 ? 's' : ''} affichée{filtered.length !== 1 ? 's' : ''}
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between">
+              <span>
+                {filtered.length} boutique{filtered.length !== 1 ? 's' : ''}
+                {filtered.length < shops.length && ` sur ${shops.length}`}
+              </span>
+              {hasFilters && (
+                <button onClick={resetFilters} className="text-sky-500 hover:text-sky-700 font-medium transition-colors">
+                  Voir toutes les boutiques
+                </button>
+              )}
             </div>
           </div>
         )}
