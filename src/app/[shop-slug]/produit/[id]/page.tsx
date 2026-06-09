@@ -1,3 +1,4 @@
+import React from 'react'
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -56,19 +57,61 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+// Rendu enrichi de la description pour les boutiques Pro.
+// Syntaxe image : ![texte alternatif](https://url-de-l-image.jpg)
+// Le reste est rendu comme du texte simple avec préservation des sauts de ligne.
+function renderProDescription(text: string) {
+  const IMAGE_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g
+  const parts: React.ReactNode[] = []
+  let last = 0
+  let match: RegExpExecArray | null
+
+  while ((match = IMAGE_REGEX.exec(text)) !== null) {
+    const [full, alt, url] = match
+    if (match.index > last) {
+      const chunk = text.slice(last, match.index).trim()
+      if (chunk) {
+        parts.push(
+          <p key={last} className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{chunk}</p>
+        )
+      }
+    }
+    parts.push(
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={match.index}
+        src={url}
+        alt={alt || 'Image'}
+        className="w-full rounded-2xl object-cover my-3"
+        loading="lazy"
+      />
+    )
+    last = match.index + full.length
+  }
+
+  const tail = text.slice(last).trim()
+  if (tail) {
+    parts.push(
+      <p key={last} className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{tail}</p>
+    )
+  }
+
+  return <div className="space-y-1">{parts}</div>
+}
+
 export default async function ProductDetailPage({ params }: Props) {
   const { 'shop-slug': slug, id } = await params
   const supabase = await createServerClient()
 
   const [shopRes, productRes] = await Promise.all([
     // Pas de filtre is_active sur shop : le layout est le gardien des boutiques inactives
-    supabase.from('shops').select('id, name, primary_color').eq('slug', slug).single(),
+    supabase.from('shops').select('id, name, primary_color, plan').eq('slug', slug).single(),
     supabase.from('products').select('*').eq('id', id).eq('is_active', true).single(),
   ])
 
   if (!shopRes.data || !productRes.data) notFound()
 
-  const shop    = shopRes.data as Pick<Shop, 'id' | 'name' | 'primary_color'>
+  const shop    = shopRes.data as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string }
   const product = productRes.data as Product
   const soldOut = product.stock_count === 0
   const color   = shop.primary_color ?? '#0EA5E9'
@@ -147,17 +190,11 @@ export default async function ProductDetailPage({ params }: Props) {
         {/* Description */}
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Description</p>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
-          </div>
-        )}
-
-        {/* Category badge */}
-        {product.category && (
-          <div className="mt-4">
-            <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-600">
-              {product.category}
-            </span>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
+            {shop.plan === 'pro'
+              ? renderProDescription(product.description)
+              : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+            }
           </div>
         )}
       </div>
