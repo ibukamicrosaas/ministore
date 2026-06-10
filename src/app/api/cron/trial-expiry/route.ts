@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsApp, buildTrialExpiredMessage } from '@/lib/notifications/whatsapp'
+import { recordCronRun } from '@/lib/cron/health'
 import { APP_URL } from '@/constants'
 
 export async function GET(req: NextRequest) {
@@ -52,5 +53,6 @@ export async function GET(req: NextRequest) {
     if (result.success) notified++
   }
 
+  void recordCronRun('trial-expiry', 'ok', { deactivated: shops.length, notified })
   return NextResponse.json({ deactivated: shops.length, notified })
 }

@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Bell } from 'lucide-react'
+import { Menu, Bell, BellRing } from 'lucide-react'
 import { PWAInstallButton } from './PWAInstallButton'
+import { PushEnableButton } from './PushEnableButton'
 
 interface TopBarProps {
   onMenuClick: () => void
@@ -32,6 +33,7 @@ export function TopBar({ onMenuClick, title, unreadCount = 0 }: TopBarProps) {
       </div>
 
       <PWAInstallButton />
+      <PushEnableButton />
 
       <Link
         href="/dashboard/notifications"

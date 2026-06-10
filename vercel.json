@@ -35,6 +35,14 @@
     {
       "path": "/api/cron/process-pending-payouts",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/trial-onboarding",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/cron-health-check",
+      "schedule": "0 11 * * *"
     }
   ]
 }

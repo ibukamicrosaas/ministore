@@ -7,6 +7,7 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { Plus, Package, Tag } from 'lucide-react'
 import { toggleProductActive } from '@/lib/actions/products'
+import { CsvImportButton } from './CsvImportButton'
 import type { Product, Profile } from '@/types'
 
 export const metadata = { title: 'Produits — TekkiShop' }
@@ -52,12 +53,15 @@ export default async function ProductsPage() {
             {products.length} produit{products.length > 1 ? 's' : ''} configuré{products.length > 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/dashboard/products/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4" />
-            Ajouter
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <CsvImportButton />
+          <Link href="/dashboard/products/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4" />
+              Ajouter
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {!products.length ? (

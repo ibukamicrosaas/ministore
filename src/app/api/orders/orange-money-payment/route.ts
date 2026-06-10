@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysCharge } from '@/lib/payments/bictorys'
 import { decryptApiKey } from '@/lib/crypto/encrypt'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, { key: 'payment', maxRequests: 10, windowMs: 60 * 60 * 1000 })
+  if (limited) return limited
+
   try {
     const { orderId, customerPhone, amount } = await req.json() as {
       orderId: string

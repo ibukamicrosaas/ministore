@@ -152,8 +152,34 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
+  // JSON-LD : Product schema pour le SEO Google Shopping
+  const minPrice = variants?.length ? Math.min(...variants.map(v => v.price)) : product.price
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description ?? undefined,
+    image: primaryPhoto ?? undefined,
+    url: publicUrl,
+    sku: product.id,
+    offers: {
+      '@type': 'Offer',
+      price: minPrice,
+      priceCurrency: 'XOF',
+      availability: soldOut
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+      url: publicUrl,
+      seller: { '@type': 'Organization', name: shop.name },
+    },
+  }
+
   return (
     <div className="max-w-lg mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Galerie */}
       <div className="relative">
         <ProductGallery

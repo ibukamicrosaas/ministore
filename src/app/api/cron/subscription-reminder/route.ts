@@ -7,9 +7,10 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 
-// Un seul rappel à J-3 pour limiter la consommation SMS Twilio (J-7 supprimé)
 const REMINDER_WINDOWS = [
+  { days: 7, type: 'sub_reminder_7d' },
   { days: 3, type: 'sub_reminder_3d' },
+  { days: 1, type: 'sub_reminder_1d' },
 ] as const
 
 export async function GET(req: NextRequest) {

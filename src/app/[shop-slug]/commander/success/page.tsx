@@ -153,6 +153,16 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
       {/* Actions */}
       <div className="space-y-3">
+        {/* Lien de suivi */}
+        <Link
+          href={`/${slug}/commande/${token}`}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: color }}
+        >
+          <Home className="h-4 w-4" />
+          Suivre ma commande
+        </Link>
+
         {waShopLink && (
           <a
             href={waShopLink}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys, type BictorysPaymentType } from '@/lib/payments/bictorys'
 import { decryptApiKey } from '@/lib/crypto/encrypt'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
 
 interface RequestBody {
@@ -15,6 +16,9 @@ interface RequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, { key: 'payment', maxRequests: 10, windowMs: 60 * 60 * 1000 })
+  if (limited) return limited
+
   const platformApiKey = process.env.BICTORYS_API_KEY
 
   const body = (await req.json()) as RequestBody

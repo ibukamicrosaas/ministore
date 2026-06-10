@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBictorysCharge } from '@/lib/payments/bictorys'
 import { activatePlan } from '@/lib/billing/activate-plan'
+import { recordCronRun } from '@/lib/cron/health'
 
 const PLAN_PRICES: Record<string, number> = {
   decouverte: 2900,
@@ -149,6 +150,8 @@ export async function GET(req: NextRequest) {
   }
 
   console.log(`[verify-subscription-payments] ✓ Traité: ${processed}, Activé: ${activated}, Échoué: ${failed}`)
+
+  void recordCronRun('verify-subscription-payments', 'ok', { processed, activated, failed })
 
   return NextResponse.json({
     processed,

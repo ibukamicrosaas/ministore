@@ -6,6 +6,7 @@ import {
   buildNewOrderAlertMessage,
   buildLowStockAlertMessage,
 } from '@/lib/notifications/whatsapp'
+import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
 
 interface OrderItemInput {
@@ -274,6 +275,13 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
+
+  // Notification push au marchand (fire-and-forget)
+  void sendPushToShop(shopId, {
+    title: `Nouvelle commande — ${shop.name}`,
+    body:  `${client_first_name} • ${total_price.toLocaleString('fr-FR')} FCFA`,
+    url:   `${APP_URL}/dashboard/orders`,
+  })
 
   // Enregistrer la commande pour le rate limiting
   void supabase.from('login_attempts').insert({

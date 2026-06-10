@@ -99,8 +99,34 @@ export default async function ShopPage({ params }: Props) {
     ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`
     : null
 
+  // JSON-LD : données structurées LocalBusiness pour le SEO Google
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: shop.name,
+    description: shop.description ?? undefined,
+    url: `${APP_URL}/${slug}`,
+    logo: shop.logo_url ?? undefined,
+    image: shop.logo_url ?? undefined,
+    telephone: shop.phone_whatsapp ?? undefined,
+    address: shop.address ? {
+      '@type': 'PostalAddress',
+      streetAddress: shop.address,
+      addressLocality: shop.city ?? undefined,
+    } : undefined,
+    hasOfferCatalog: products.length > 0 ? {
+      '@type': 'OfferCatalog',
+      name: `Produits ${shop.name}`,
+      numberOfItems: products.length,
+    } : undefined,
+  }
+
   return (
     <div className="max-w-lg mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header */}
       <header style={{ backgroundColor: color }} className="relative overflow-hidden">
         {/* Decorative circles */}

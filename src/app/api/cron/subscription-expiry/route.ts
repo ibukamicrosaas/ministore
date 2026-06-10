@@ -5,6 +5,7 @@ import {
   sendWhatsApp,
   buildSubscriptionExpiredMessage,
 } from '@/lib/notifications/whatsapp'
+import { recordCronRun } from '@/lib/cron/health'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 import { revalidatePath } from 'next/cache'
 
@@ -68,5 +69,6 @@ export async function GET(req: NextRequest) {
     console.log(`[cron/subscription-expiry] ${shop.name} (${shop.id}) désactivé`)
   }
 
+  void recordCronRun('subscription-expiry', 'ok', { deactivated: shops.length, notified })
   return NextResponse.json({ deactivated: shops.length, notified })
 }

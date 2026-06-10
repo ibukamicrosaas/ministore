@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
+import { PushNotificationManager } from './PushNotificationManager'
 import type { Shop, Profile } from '@/types'
 
 interface DashboardShellProps {
@@ -36,6 +37,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
         </main>
       </div>
       <BottomNav profile={profile} shop={shop} />
+      <PushNotificationManager />
     </div>
   )
 }
