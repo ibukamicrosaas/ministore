@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X, Download } from 'lucide-react'
 import { COUNTRIES } from '@/constants/countries'
 
 const KNOWN_CODES = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const
@@ -113,6 +113,35 @@ export default function AdminShopsPage() {
     setFilterCountry('all')
   }
 
+  function exportCSV() {
+    const headers = ['Boutique', 'Plan', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Lien boutique']
+    const rows = filtered.map(s => {
+      const code = (s.country ?? '').toUpperCase()
+      const countryLabel = COUNTRIES.find(c => c.code === code)?.label ?? s.country ?? ''
+      const planLabel = PLAN_CONFIG[s.plan as keyof typeof PLAN_CONFIG]?.label ?? s.plan ?? ''
+      const shopUrl = `${window.location.origin}/${s.slug}`
+      const date = s.created_at ? format(new Date(s.created_at), 'd MMM yyyy', { locale: fr }) : ''
+      return [s.name ?? '', planLabel, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, shopUrl]
+    })
+
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+
+    const planPart    = filterPlan    !== 'all' ? filterPlan    : 'tous'
+    const countryPart = filterCountry !== 'all' ? filterCountry.toLowerCase() : ''
+    const datePart    = new Date().toISOString().slice(0, 10)
+    const fileName    = ['boutiques', planPart, countryPart, datePart].filter(Boolean).join('-') + '.csv'
+
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -124,7 +153,21 @@ export default function AdminShopsPage() {
               <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Boutiques</h1>
               <p className="text-gray-500 mt-1">Gère les boutiques et leurs abonnements</p>
             </div>
-            <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={exportCSV}
+                disabled={loading || filtered.length === 0}
+                title={`Exporter ${filtered.length} boutique${filtered.length !== 1 ? 's' : ''} en CSV`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4" />
+                Exporter CSV
+                <span className="bg-gray-100 text-gray-500 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  {filtered.length}
+                </span>
+              </button>
+              <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -224,25 +267,36 @@ export default function AdminShopsPage() {
             })}
           </div>
 
-          {/* Barre de résultats + reset */}
-          {hasFilters && (
-            <div className="flex items-center justify-between text-sm pt-1">
-              <span className="text-gray-500">
-                <span className="font-semibold text-gray-800">{filtered.length}</span>
-                {' '}résultat{filtered.length !== 1 ? 's' : ''}
-                {filtered.length < shops.length && (
-                  <span className="text-gray-400"> sur {shops.length}</span>
-                )}
-              </span>
-              <button
-                onClick={resetFilters}
-                className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-medium transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-                Réinitialiser
-              </button>
+          {/* Barre de résultats + actions */}
+          <div className="flex items-center justify-between text-sm pt-1">
+            <span className="text-gray-500">
+              <span className="font-semibold text-gray-800">{filtered.length}</span>
+              {' '}résultat{filtered.length !== 1 ? 's' : ''}
+              {filtered.length < shops.length && (
+                <span className="text-gray-400"> sur {shops.length}</span>
+              )}
+            </span>
+            <div className="flex items-center gap-3">
+              {filtered.length > 0 && (
+                <button
+                  onClick={exportCSV}
+                  className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Exporter ({filtered.length})
+                </button>
+              )}
+              {hasFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-medium transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Réinitialiser
+                </button>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* ── Tableau ── */}
