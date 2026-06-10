@@ -303,8 +303,21 @@ export async function updateShop(data: UpdateShopInput) {
   // Récupérer le slug pour revalider la page publique
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
 
+  // Whitelist explicite — empêche toute élévation de plan/is_active/etc.
+  const ALLOWED: (keyof UpdateShopInput)[] = [
+    'name', 'description', 'city', 'country', 'phone_whatsapp', 'email', 'address',
+    'delivery_options', 'available_days', 'deposit_percentage', 'primary_color',
+    'logo_url', 'accept_online_payment', 'payout_wave_number', 'payout_om_number',
+    'delivery_zones', 'bictorys_secret_key', 'bictorys_webhook_secret',
+    'accept_cash_on_delivery', 'target_countries',
+  ]
+  const raw = data as Record<string, unknown>
+  const payload: Record<string, unknown> = {}
+  for (const key of ALLOWED) {
+    if (key in raw) payload[key] = raw[key]
+  }
+
   // Chiffrer les clés Bictorys avant de les écrire en DB
-  const payload: Record<string, unknown> = { ...data as Record<string, unknown> }
   if (typeof payload.bictorys_secret_key === 'string' && payload.bictorys_secret_key) {
     payload.bictorys_secret_key = encryptApiKey(payload.bictorys_secret_key)
   }

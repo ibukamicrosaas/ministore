@@ -51,5 +51,14 @@ export async function GET(req: NextRequest) {
     console.error('[cron-health-check] Alertes envoyées:', alerts)
   }
 
-  return NextResponse.json({ checked: CRITICAL_JOBS.length, alerts })
+  // Purge des entrées login_attempts de plus de 7 jours (évite la dégradation silencieuse)
+  const cutoff = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { count: purged } = await admin
+    .from('login_attempts')
+    .delete({ count: 'exact' })
+    .lt('attempted_at', cutoff)
+
+  console.log(`[cron-health-check] Purge login_attempts: ${purged ?? 0} lignes supprimées`)
+
+  return NextResponse.json({ checked: CRITICAL_JOBS.length, alerts, purged: purged ?? 0 })
 }
