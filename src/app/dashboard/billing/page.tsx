@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/Card'
 import Link from 'next/link'
 import { PLAN_LABELS } from '@/constants'
+import { CancelSubscriptionButton } from './CancelSubscriptionButton'
 
 export const metadata = { title: 'Facturation — TekkiShop' }
 
@@ -71,6 +72,15 @@ export default async function BillingPage() {
     trial_ends_at: string | null
     subscription_ends_at: string | null
   }
+
+  const { data: cancelData } = await supabase
+    .from('shops')
+    .select('plan_cancel_at_period_end' as never)
+    .eq('id', shopId)
+    .single()
+  const cancelAtPeriodEnd = cancelData
+    ? Boolean((cancelData as unknown as Record<string, unknown>).plan_cancel_at_period_end)
+    : false
 
   // subscription_transactions n'a pas de politique RLS SELECT pour les owners
   const admin = createAdminClient()
@@ -231,6 +241,13 @@ export default async function BillingPage() {
                 <RefreshCw className="h-4 w-4" />
                 {isExpired ? 'Renouveler maintenant' : 'Renouveler / Changer de plan'}
               </Link>
+
+              {!isExpired && (
+                <CancelSubscriptionButton
+                  cancelAtPeriodEnd={cancelAtPeriodEnd}
+                  expiresAt={shop.subscription_ends_at}
+                />
+              )}
             </div>
           )}
         </div>

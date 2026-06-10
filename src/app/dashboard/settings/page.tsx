@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { SettingsForm } from './SettingsForm'
 import { ChangePinForm } from './ChangePinForm'
+import { DeleteAccountButton } from './DeleteAccountButton'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { PWAPreviewPanel } from '@/components/dashboard/PWAPreviewPanel'
 import { ActivationChecker } from './ActivationChecker'
@@ -111,6 +112,17 @@ export default async function SettingsPage() {
             </div>
             <ChangePinForm />
           </Card>
+
+          {/* Zone de danger */}
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-red-700">Zone de danger</p>
+              <p className="text-xs text-red-500 mt-0.5">
+                La suppression du compte est définitive et irréversible.
+              </p>
+            </div>
+            <DeleteAccountButton shopName={shop.name} />
+          </div>
 
           {/* Logs notifications */}
           <Link
