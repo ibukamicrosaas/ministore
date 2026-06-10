@@ -55,6 +55,9 @@ export function SettingsForm({ shop }: Props) {
   const [primaryColor, setPrimaryColor]         = useState(shop.primary_color ?? '#0EA5E9')
   const [acceptOnlinePayment, setAcceptOnline]  = useState(shop.accept_online_payment ?? true)
   const [acceptCashOnDelivery, setAcceptCash]  = useState(shop.accept_cash_on_delivery ?? true)
+  const initDeliveryOpts = (shop.delivery_options ?? { home_delivery: true, store_pickup: true }) as { home_delivery: boolean; store_pickup: boolean }
+  const [homeDelivery, setHomeDelivery]         = useState(initDeliveryOpts.home_delivery)
+  const [storePickup, setStorePickup]           = useState(initDeliveryOpts.store_pickup)
   const [deliveryZones, setDeliveryZones]       = useState<DeliveryZone[]>(
     Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []
   )
@@ -327,6 +330,7 @@ export function SettingsForm({ shop }: Props) {
       payout_wave_number: waveLocal.trim() ? `${selectedPayoutCountry.dial}${waveLocal.trim()}` : null,
       payout_om_number:  omLocal.trim()   ? `${selectedPayoutCountry.dial}${omLocal.trim()}`   : null,
       target_countries:  targetCountries,
+      delivery_options:  { home_delivery: homeDelivery, store_pickup: storePickup },
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
       ...(shop.plan === 'pro' ? {
         bictorys_secret_key:     bictorysKey,
@@ -619,6 +623,60 @@ export function SettingsForm({ shop }: Props) {
               </div>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Modes de réception */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Modes de réception</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Active les modes de réception que tu proposes à tes clients. Au moins un doit être activé.
+          </p>
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Livraison à domicile</p>
+            <p className="text-xs text-gray-500 mt-0.5">Le client reçoit sa commande chez lui</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (homeDelivery && !storePickup) return // au moins un actif
+              setHomeDelivery(v => !v)
+            }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${homeDelivery ? '' : 'bg-gray-200'}`}
+            style={homeDelivery ? { backgroundColor: primaryColor } : {}}
+            role="switch"
+            aria-checked={homeDelivery}
+          >
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${homeDelivery ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 pt-3 border-t border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Retrait en boutique</p>
+            <p className="text-xs text-gray-500 mt-0.5">Le client vient chercher sa commande sur place</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (storePickup && !homeDelivery) return // au moins un actif
+              setStorePickup(v => !v)
+            }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${storePickup ? '' : 'bg-gray-200'}`}
+            style={storePickup ? { backgroundColor: primaryColor } : {}}
+            role="switch"
+            aria-checked={storePickup}
+          >
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${storePickup ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
+        {!homeDelivery && !storePickup && (
+          <p className="text-[11px] text-amber-600">Au moins un mode de réception doit être activé.</p>
         )}
       </div>
 

@@ -269,6 +269,8 @@ export function OrderForm({
     deliveryOptions.home_delivery ? 'home_delivery' : 'store_pickup',
   )
   const [selectedZoneId, setSelectedZoneId] = useState<string>(deliveryZones[0]?.id ?? '')
+  const [showAllZones, setShowAllZones]     = useState(false)
+  const ZONES_VISIBLE = 5
   const [address, setAddress] = useState(saved.address ?? '')
   const [notes, setNotes] = useState('')
   // Si le cash à la livraison est désactivé, forcer le paiement en ligne
@@ -741,19 +743,38 @@ export function OrderForm({
               {deliveryType === 'home_delivery' && (
                 <div className="mt-3 space-y-2">
                   {deliveryZones.length > 0 && (
-                    <div className="relative">
-                      <select
-                        value={selectedZoneId}
-                        onChange={(e) => setSelectedZoneId(e.target.value)}
-                        className={`${inputCls} appearance-none pr-10`}
-                      >
-                        {deliveryZones.map((z) => (
-                          <option key={z.id} value={z.id}>
-                            {z.name}{z.price > 0 ? ` — ${z.price.toLocaleString('fr-FR')} FCFA` : ' — Gratuit'}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <div className="space-y-2">
+                      {(showAllZones ? deliveryZones : deliveryZones.slice(0, ZONES_VISIBLE)).map((z) => (
+                        <label
+                          key={z.id}
+                          className="block cursor-pointer"
+                          onClick={() => setSelectedZoneId(z.id)}
+                        >
+                          <RadioCard checked={selectedZoneId === z.id} primaryColor={primaryColor}>
+                            <div className="flex w-full items-center justify-between">
+                              <p className="text-sm font-semibold text-gray-900">{z.name}</p>
+                              <p
+                                className="text-sm font-bold shrink-0"
+                                style={{ color: selectedZoneId === z.id ? primaryColor : '#6b7280' }}
+                              >
+                                {z.price > 0 ? `${z.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
+                              </p>
+                            </div>
+                          </RadioCard>
+                        </label>
+                      ))}
+                      {deliveryZones.length > ZONES_VISIBLE && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllZones(v => !v)}
+                          className="mt-1 text-xs font-semibold"
+                          style={{ color: primaryColor }}
+                        >
+                          {showAllZones
+                            ? 'Voir moins'
+                            : `Voir ${deliveryZones.length - ZONES_VISIBLE} zone${deliveryZones.length - ZONES_VISIBLE > 1 ? 's' : ''} de plus`}
+                        </button>
+                      )}
                     </div>
                   )}
                   <div>
