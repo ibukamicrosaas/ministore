@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { Toaster } from 'react-hot-toast'
@@ -37,6 +38,14 @@ export default async function DashboardLayout({
 
   const shop = shopResult.data as Shop | null
   if (shopResult.error || !shop) redirect('/onboarding')
+
+  // Unread notifications count
+  const adminClient = createAdminClient()
+  const { count: unreadCount } = await adminClient
+    .from('shop_notifications' as never)
+    .select('id', { count: 'exact', head: true })
+    .eq('shop_id', shop.id)
+    .is('read_at', null) as unknown as { count: number | null }
 
   const isTrial    = shop.plan === 'trial'
   const isPaid     = !isTrial
@@ -106,7 +115,7 @@ export default async function DashboardLayout({
         </div>
       )}
 
-      <DashboardShell shop={shop} profile={profile}>
+      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0}>
         {children}
       </DashboardShell>
       <Toaster

@@ -8,9 +8,10 @@ import { PWAInstallButton } from './PWAInstallButton'
 interface TopBarProps {
   onMenuClick: () => void
   title?: string
+  unreadCount?: number
 }
 
-export function TopBar({ onMenuClick, title }: TopBarProps) {
+export function TopBar({ onMenuClick, title, unreadCount = 0 }: TopBarProps) {
   const pathname = usePathname()
   const notifActive = pathname === '/dashboard/notifications'
 
@@ -38,6 +39,11 @@ export function TopBar({ onMenuClick, title }: TopBarProps) {
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white leading-none">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </Link>
     </header>
   )

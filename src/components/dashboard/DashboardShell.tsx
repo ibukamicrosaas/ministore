@@ -11,9 +11,10 @@ interface DashboardShellProps {
   profile: Profile
   children: React.ReactNode
   pageTitle?: string
+  unreadNotifications?: number
 }
 
-export function DashboardShell({ shop, profile, children, pageTitle }: DashboardShellProps) {
+export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -28,6 +29,7 @@ export function DashboardShell({ shop, profile, children, pageTitle }: Dashboard
         <TopBar
           onMenuClick={() => setSidebarOpen(true)}
           title={pageTitle}
+          unreadCount={unreadNotifications}
         />
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">
           {children}
