@@ -18,6 +18,7 @@ import { slugify } from '@/lib/utils/slugify'
 interface ProductFormProps {
   product?: Product
   shopSlug?: string
+  shopPlan?: string
 }
 
 function renderDescription(text: string) {
@@ -42,7 +43,8 @@ function renderDescription(text: string) {
   return parts
 }
 
-export function ProductForm({ product, shopSlug }: ProductFormProps) {
+export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
+  const isPro = shopPlan === 'pro'
   const router = useRouter()
   const [loading, setLoading]           = useState(false)
   const [deleting, setDeleting]         = useState(false)
@@ -450,19 +452,30 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-medium text-gray-700">Description</label>
-              <button
-                type="button"
-                onClick={handleDescImageClick}
-                disabled={uploadingDescImage}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50"
-                title="Ajouter une image depuis votre appareil"
-              >
-                {uploadingDescImage
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <ImageIcon className="h-3 w-3" />
-                }
-                Image
-              </button>
+              {isPro ? (
+                <button
+                  type="button"
+                  onClick={handleDescImageClick}
+                  disabled={uploadingDescImage}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50"
+                  title="Ajouter une image dans la description"
+                >
+                  {uploadingDescImage
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <ImageIcon className="h-3 w-3" />
+                  }
+                  Image
+                </button>
+              ) : (
+                <a
+                  href="/dashboard/upgrade"
+                  className="flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-600 hover:bg-amber-100 transition-colors"
+                  title="Passer au plan Pro pour ajouter des images dans la description"
+                >
+                  <ImageIcon className="h-3 w-3" />
+                  Image <span className="font-semibold">Pro</span>
+                </a>
+              )}
             </div>
             <textarea
               ref={descRef}

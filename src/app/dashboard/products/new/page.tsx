@@ -15,9 +15,9 @@ export default async function NewProductPage() {
     .eq('id', user.id)
     .single()
 
-  const shopSlug = profile?.shop_id
-    ? ((await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()).data?.slug as string | undefined)
-    : undefined
+  const shopData = profile?.shop_id
+    ? ((await supabase.from('shops').select('slug, plan').eq('id', profile.shop_id).single()).data as { slug?: string; plan?: string } | null)
+    : null
 
   return (
     <div className="max-w-xl">
@@ -25,7 +25,7 @@ export default async function NewProductPage() {
         <h1 className="text-xl font-bold text-gray-900">Nouveau produit</h1>
         <p className="text-sm text-gray-500 mt-0.5">Remplissez les informations ci-dessous.</p>
       </div>
-      <ProductForm shopSlug={shopSlug} />
+      <ProductForm shopSlug={shopData?.slug} shopPlan={shopData?.plan} />
     </div>
   )
 }
