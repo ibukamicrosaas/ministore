@@ -233,10 +233,7 @@ export default async function ProductDetailPage({ params }: Props) {
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
-            {shop.plan === 'pro'
-              ? renderProDescription(product.description)
-              : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
-            }
+            {renderProDescription(product.description)}
           </div>
         )}
       </div>

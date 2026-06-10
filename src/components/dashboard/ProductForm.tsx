@@ -20,6 +20,28 @@ interface ProductFormProps {
   shopSlug?: string
 }
 
+function renderDescription(text: string) {
+  const IMAGE_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g
+  const parts: React.ReactNode[] = []
+  let last = 0
+  let match: RegExpExecArray | null
+  while ((match = IMAGE_REGEX.exec(text)) !== null) {
+    const [full, , url] = match
+    if (match.index > last) {
+      const chunk = text.slice(last, match.index)
+      if (chunk.trim()) parts.push(<span key={last} className="whitespace-pre-line">{chunk}</span>)
+    }
+    parts.push(
+      // eslint-disable-next-line @next/next/no-img-element
+      <img key={match.index} src={url} alt="" className="w-full rounded-xl object-cover my-2" loading="lazy" />
+    )
+    last = match.index + full.length
+  }
+  const tail = text.slice(last)
+  if (tail.trim()) parts.push(<span key={last} className="whitespace-pre-line">{tail}</span>)
+  return parts
+}
+
 export function ProductForm({ product, shopSlug }: ProductFormProps) {
   const router = useRouter()
   const [loading, setLoading]           = useState(false)
@@ -59,6 +81,7 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
   const [useDeposit, setUseDeposit]     = useState(product?.deposit_percentage != null)
   const [depositPct, setDepositPct]     = useState(product?.deposit_percentage ?? 30)
 
+  const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
   const [isFeatured, setIsFeatured] = useState(
     (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
@@ -184,7 +207,7 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
     const payload = {
       name,
       price,
-      description: (fd.get('description') as string).trim() || undefined,
+      description: description.trim() || undefined,
       category: categoryValue,
       photos,
       video_url: videoUrl.trim() || null,
@@ -215,18 +238,22 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
   }
 
   function insertAtCursor(url: string) {
-    const ta = descRef.current
-    if (!ta) return
-    const snippet = `![image](${url})`
+    const filename = url.split('/').pop() ?? 'image'
+    const snippet  = `![${filename}](${url})`
     const { start, end } = descCursorRef.current
-    const before = ta.value.slice(0, start)
-    const after  = ta.value.slice(end)
-    const newVal = before + snippet + after
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
-    setter?.call(ta, newVal)
-    ta.dispatchEvent(new Event('input', { bubbles: true }))
-    ta.focus()
-    ta.setSelectionRange(start + snippet.length, start + snippet.length)
+    setDescription(prev => {
+      const before = prev.slice(0, start)
+      const after  = prev.slice(end)
+      return before + snippet + after
+    })
+    // Restaurer le curseur après le rendu
+    requestAnimationFrame(() => {
+      const ta = descRef.current
+      if (ta) {
+        ta.focus()
+        ta.setSelectionRange(start + snippet.length, start + snippet.length)
+      }
+    })
   }
 
   function handleDescImageClick() {
@@ -440,7 +467,15 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
             <textarea
               ref={descRef}
               name="description"
-              defaultValue={product?.description ?? ''}
+              value={description}
+              onChange={e => {
+                setDescription(e.target.value)
+                descCursorRef.current = { start: e.target.selectionStart, end: e.target.selectionEnd }
+              }}
+              onSelect={e => {
+                const ta = e.currentTarget
+                descCursorRef.current = { start: ta.selectionStart, end: ta.selectionEnd }
+              }}
               rows={3}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-none"
               placeholder="Décrivez votre produit..."
@@ -452,6 +487,14 @@ export function ProductForm({ product, shopSlug }: ProductFormProps) {
               onChange={handleDescImageUpload}
               className="hidden"
             />
+            {description.trim() && (
+              <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Aperçu</p>
+                <div className="text-sm text-gray-600 leading-relaxed space-y-1">
+                  {renderDescription(description)}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
