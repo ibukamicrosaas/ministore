@@ -168,6 +168,7 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
   const VARIANT_PRESETS = [
     { icon: '⚖️', label: 'Poids',       values: ['250g', '500g', '1 kg', '2 kg', '5 kg'] },
     { icon: '👕', label: 'Taille',      values: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+    { icon: '👟', label: 'Pointure',    values: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] },
     { icon: '📏', label: 'Longueur',    values: ['30 cm', '50 cm', '1 m', '1,5 m', '2 m'] },
     { icon: '📦', label: 'Format',      values: ['Unité', 'Sachet', 'Boîte de 6', 'Boîte de 12', 'Carton'] },
     { icon: '🍽️', label: 'Portion',    values: ['Petite', 'Normale', 'Grande', 'Familiale'] },
