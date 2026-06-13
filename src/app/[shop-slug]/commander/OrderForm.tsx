@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { ProductVariant, DeliveryZone } from '@/types'
+import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
 
 const COUNTRIES = [
   { code: 'SN', flag: '🇸🇳', dial: '+221', name: 'Sénégal' },
@@ -258,6 +259,11 @@ export function OrderForm({
   const [items, setItems] = useState<OrderItem[]>(
     saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined)]
   )
+
+  // InitiateCheckout : déclenché une seule fois à l'ouverture du formulaire
+  useEffect(() => {
+    trackMetaEvent('InitiateCheckout')
+  }, [])
   const [deliveryDate, setDeliveryDate] = useState(deliveryDates[0]?.value ?? '')
   const [firstName, setFirstName] = useState(saved.firstName ?? '')
   const [phoneDial, setPhoneDial] = useState(saved.phoneDial ?? defaultDial)

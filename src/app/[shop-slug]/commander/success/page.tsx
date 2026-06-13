@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, MessageCircle, ShoppingBag, Home, MapPin } from 'lucide-react'
+import { PixelPurchase } from './PixelPurchase'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Shop, OrderItem } from '@/types'
@@ -63,6 +64,15 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-12 text-center">
+      <PixelPurchase
+        orderId={order.id}
+        total={order.total_price}
+        items={order.order_items.map(i => ({
+          productName: i.product_name,
+          unitPrice:   i.unit_price,
+          quantity:    i.quantity,
+        }))}
+      />
 
       {/* Icône succès */}
       <div

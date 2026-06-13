@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import Script from 'next/script'
 
 interface Props {
   pixelId: string
@@ -9,75 +8,46 @@ interface Props {
 
 declare global {
   interface Window {
-    fbq?: (
-      action: string,
-      event: string,
-      data?: Record<string, unknown>
-    ) => void
+    fbq?: (action: string, event: string, data?: Record<string, unknown>) => void
   }
 }
 
 export function MetaPixelProvider({ pixelId }: Props) {
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    // Injecter le script Meta Pixel
-    const script = document.createElement('script')
-    script.async = true
-    script.src = `https://connect.facebook.net/en_US/fbevents.js`
-    document.head.appendChild(script)
-
-    script.onload = () => {
-      // Initialiser le pixel
-      if (window.fbq) {
-        window.fbq('init', pixelId)
-        // Track PageView automatiquement
-        window.fbq('track', 'PageView')
-      }
-    }
-  }, [pixelId])
-
-  // Track ViewContent quand un produit est consulté
-  useEffect(() => {
-    const productId = searchParams?.get('product_id')
-    const productName = searchParams?.get('product_name')
-    const productPrice = searchParams?.get('product_price')
-
-    if (productId && window.fbq) {
-      window.fbq('track', 'ViewContent', {
-        content_ids: [productId],
-        content_name: productName || 'Product',
-        content_type: 'product',
-        value: productPrice ? parseFloat(productPrice) / 100 : 0,
-        currency: 'XOF',
-      })
-    }
-  }, [searchParams])
-
   return (
     <>
-      {/* noscript fallback image */}
+      {/* Script officiel Meta — initialise la queue fbq AVANT le chargement
+          du fichier externe, ce qui évite que les appels fbq() soient perdus */}
+      <Script id="meta-pixel-init" strategy="afterInteractive">{`
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
+        n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window,document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init','${pixelId}');
+        fbq('track','PageView');
+      `}</Script>
       <noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           height="1"
           width="1"
           style={{ display: 'none' }}
           src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-          alt="Facebook Pixel"
+          alt=""
         />
       </noscript>
     </>
   )
 }
 
-/**
- * Utilitaire pour tracker les événements Meta Pixel depuis les composants
- */
+/** Fire a Meta Pixel standard event from any client component */
 export function trackMetaEvent(
-  eventName: 'AddToCart' | 'Purchase' | 'InitiateCheckout' | 'ViewContent',
+  eventName: 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase' | 'PageView',
   data?: Record<string, unknown>
 ) {
   if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', eventName, data || {})
+    window.fbq('track', eventName, data ?? {})
   }
 }

@@ -2,9 +2,10 @@ import React from 'react'
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ShoppingBag } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
+import { PixelViewContent, ProductCtaButton } from './ProductPixelEvents'
 import { APP_URL } from '@/constants'
 
 export const revalidate = 60
@@ -180,6 +181,11 @@ export default async function ProductDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <PixelViewContent
+        productId={product.id}
+        productName={product.name}
+        price={product.price}
+      />
       {/* Galerie */}
       <div className="relative">
         <ProductGallery
@@ -248,14 +254,13 @@ export default async function ProductDetailPage({ params }: Props) {
             Rupture de stock
           </div>
         ) : (
-          <Link
+          <ProductCtaButton
             href={`/${shopSlug}/commander?product=${product.id}`}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
-            style={{ backgroundColor: color }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            Je le prends
-          </Link>
+            color={color}
+            productId={product.id}
+            productName={product.name}
+            price={product.price}
+          />
         )}
       </div>
     </div>
