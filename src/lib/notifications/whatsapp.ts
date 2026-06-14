@@ -53,6 +53,14 @@ export function buildLowStockAlertMessage(params: {
   return `TekkiShop - ${params.shopName}: stock faible pour "${params.productName}" — plus que ${params.stockCount} unite${params.stockCount > 1 ? 's' : ''} disponible${params.stockCount > 1 ? 's' : ''}. Pensez a reapprovisionner.`
 }
 
+export function buildStockBackMessage(params: {
+  shopName: string
+  productName: string
+  productUrl: string
+}): string {
+  return `${params.shopName}: "${params.productName}" est de nouveau disponible ! Commandez ici : ${params.productUrl}`
+}
+
 export function buildOrderStatusMessage(params: {
   shopName: string
   clientName: string

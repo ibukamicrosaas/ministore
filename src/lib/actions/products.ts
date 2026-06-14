@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { CreateProductInput, UpdateProductInput, ProductPhoto } from '@/types'
 import { slugify } from '@/lib/utils/slugify'
+import { sendSMS, buildStockBackMessage } from '@/lib/notifications/whatsapp'
+import { APP_URL } from '@/constants'
 
 async function generateUniqueSlug(
   supabase: Awaited<ReturnType<typeof createServerClient>>,
@@ -102,9 +104,59 @@ export async function createProduct(input: CreateProductInput) {
   return { success: true, id: data?.id }
 }
 
+async function notifyStockAlertSubscribers(
+  productId: string,
+  productName: string,
+  shopName: string,
+  shopSlug: string,
+) {
+  try {
+    const admin = createAdminClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: alerts } = await (admin as any).from('stock_alerts')
+      .select('id, phone')
+      .eq('product_id', productId)
+      .is('notified_at', null)
+
+    if (!alerts || alerts.length === 0) return
+
+    const productUrl = `${APP_URL}/${shopSlug}/produit/${productId}`
+    const message = buildStockBackMessage({ shopName, productName, productUrl })
+
+    const notifiedIds: string[] = []
+    await Promise.allSettled(
+      alerts.map(async (alert: { id: string; phone: string }) => {
+        const result = await sendSMS(alert.phone, message)
+        if (result.success) notifiedIds.push(alert.id)
+      })
+    )
+
+    if (notifiedIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('stock_alerts')
+        .update({ notified_at: new Date().toISOString() })
+        .in('id', notifiedIds)
+    }
+  } catch (err) {
+    console.error('[notifyStockAlertSubscribers]', err)
+  }
+}
+
 export async function updateProduct(id: string, input: UpdateProductInput) {
   const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
+
+  // Snapshot du stock actuel pour détecter un retour en stock
+  let previousStockCount: number | null = null
+  if (input.stock_count !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: current } = await (supabase.from('products') as any)
+      .select('stock_count, name')
+      .eq('id', id)
+      .eq('shop_id', shopId)
+      .single()
+    previousStockCount = current?.stock_count ?? null
+  }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
@@ -160,6 +212,29 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     revalidatePath(`/${shopSlug}/produit/${id}`)
     if (updates.slug) revalidatePath(`/${shopSlug}/produit/${updates.slug}`)
   }
+
+  // Retour en stock : notifier les abonnés aux alertes (fire-and-forget)
+  const newStock = input.stock_count
+  if (
+    previousStockCount === 0 &&
+    typeof newStock === 'number' && newStock > 0 &&
+    shopSlug
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: shopData } = await (supabase.from('shops') as any)
+      .select('name')
+      .eq('id', shopId)
+      .single()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: productData } = await (supabase.from('products') as any)
+      .select('name')
+      .eq('id', id)
+      .single()
+    if (shopData?.name && productData?.name) {
+      void notifyStockAlertSubscribers(id, productData.name, shopData.name, shopSlug)
+    }
+  }
+
   return { success: true }
 }
 

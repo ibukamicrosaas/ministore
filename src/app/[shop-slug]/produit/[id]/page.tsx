@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent, ProductCtaButton } from './ProductPixelEvents'
+import { StockAlertForm } from '@/components/pwa/StockAlertForm'
 import { APP_URL } from '@/constants'
 
 export const revalidate = 60
@@ -250,8 +251,11 @@ export default async function ProductDetailPage({ params }: Props) {
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
         {soldOut ? (
-          <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
-            Rupture de stock
+          <div className="space-y-2">
+            <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
+              Rupture de stock
+            </div>
+            <StockAlertForm productId={product.id} primaryColor={color} />
           </div>
         ) : (
           <ProductCtaButton

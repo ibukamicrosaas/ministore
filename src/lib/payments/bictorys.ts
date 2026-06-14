@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import crypto from 'crypto'
 
 const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
@@ -102,15 +103,19 @@ export async function createBictorysCharge(
     })
   } catch (err) {
     clearTimeout(timeout)
-    if ((err as Error).name === 'AbortError') throw new Error('Bictorys: délai dépassé (10s)')
-    throw err
+    const isAbort = (err as Error).name === 'AbortError'
+    const wrapped = isAbort ? new Error('Bictorys: délai dépassé (10s)') : (err as Error)
+    Sentry.captureException(wrapped, { extra: { merchantReference: payload.merchantReference } })
+    throw wrapped
   } finally {
     clearTimeout(timeout)
   }
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Bictorys error ${res.status}: ${text}`)
+    const err = new Error(`Bictorys error ${res.status}: ${text}`)
+    Sentry.captureException(err, { extra: { status: res.status, merchantReference: payload.merchantReference } })
+    throw err
   }
 
   const json = await res.json() as Record<string, unknown>

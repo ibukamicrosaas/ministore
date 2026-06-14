@@ -11,12 +11,38 @@ import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
 import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup'
 import { FAQAccordion } from '@/components/landing/FAQAccordion'
 import { HeroInput } from '@/components/landing/HeroInput'
+import { PricingSection } from '@/components/landing/PricingSection'
+import { StepsSection } from '@/components/landing/StepsSection'
 import { APP_NAME } from '@/constants'
 
 export const metadata = {
   title: `${APP_NAME} — Crée le site de ton business en 5 minutes`,
   description: "Tu vends quelque chose ? Crée ton site en 5 minutes. Tes clients commandent et paient par Wave ou Orange Money. Tu reçois l'argent directement sur ton téléphone.",
 }
+
+const COUNTRIES = [
+  { flag: '🇸🇳', name: 'Sénégal' },
+  { flag: '🇨🇮', name: "Côte d'Ivoire" },
+  { flag: '🇧🇯', name: 'Bénin' },
+  { flag: '🇹🇬', name: 'Togo' },
+  { flag: '🇲🇱', name: 'Mali' },
+  { flag: '🇧🇫', name: 'Burkina Faso' },
+]
+
+const CATEGORIES = [
+  '🍽️ Alimentation',
+  '👗 Mode & Vêtements',
+  '💄 Beauté & Cosmétiques',
+  '🎨 Artisanat',
+  '📱 Électronique',
+  '🏡 Maison & Déco',
+  '🛵 Livraison & Traiteur',
+  '📚 Formation & Coaching',
+  '🌿 Agriculture & Plants',
+  '👶 Puériculture',
+  '✂️ Couture & Textile',
+  '💊 Pharmacie & Santé',
+]
 
 const FEATURES = [
   {
@@ -28,7 +54,7 @@ const FEATURES = [
   {
     icon: CreditCard,
     title: 'Mobile Money',
-    description: "Tes clients peuvent payer par Wave, Orange Money, ou autres moyens populaires en Afrique. ",
+    description: "Tes clients peuvent payer par Wave, Orange Money, ou autres moyens populaires en Afrique.",
     color: 'bg-emerald-500',
   },
   {
@@ -57,43 +83,14 @@ const FEATURES = [
   },
 ]
 
-const STEPS = [
-  {
-    step: '01',
-    title: 'Crée ton site',
-    description: "Tu donnes le nom de ton business, tu ajoutes tes produits avec description, photo et prix. Tu mets le site en ligne. Ça prend 5 minutes.",
-    color: 'bg-sky-500',
-  },
-  {
-    step: '02',
-    title: 'Active ton site',
-    description: "Active ton site pour que tes clients puissent voir tous tes produits et passer commande. Ils reçoivent une confirmation automatique par WhatsApp.",
-    color: 'bg-violet-500',
-  },
-  {
-    step: '03',
-    title: 'Partage ton lien',
-    description: "Tu envoies ton lien à tes clients, et tu l'ajoutes sur WhatsApp, Instagram ou Facebook. Tes clients cliquent et commandent directement.",
-    color: 'bg-amber-500',
-  },
-  {
-    step: '04',
-    title: 'Reçois tes paiements',
-    description: "Tes clients paient par Wave, Orange Money, ou à la livraison. L'argent arrive directement sur ton téléphone. C'est automatique.",
-    color: 'bg-emerald-500',
-  },
-]
-
 export default async function LandingPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Récupérer le nombre total de boutiques créées
   const { count: totalShopsCount } = await supabase
     .from('shops')
     .select('id', { count: 'exact', head: true })
 
-  // Récupérer les boutiques actives avec Pro & Business en priorité (pour l'affichage)
   const { data: allShops } = await supabase
     .from('shops')
     .select('id, name, slug, plan, city, logo_url, is_active, created_at')
@@ -106,7 +103,6 @@ export default async function LandingPage() {
   const shops = allShops || []
   const shopsCount = totalShopsCount ?? 0
 
-  // Construire les stats dynamiquement
   const STATS = [
     { value: `+${shopsCount}`, label: 'sites actifs', icon: Users },
     { value: '847', label: 'commandes traitées', icon: ShoppingBag },
@@ -174,19 +170,34 @@ export default async function LandingPage() {
               <span className="text-[var(--color-primary)]">en 5 minutes.</span>
             </h1>
 
-            <p className="text-xl text-gray-500 mb-9 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-xl text-gray-500 mb-7 max-w-lg mx-auto lg:mx-0 leading-relaxed">
               Partage le lien à tes clients. Ils commandent, paient par Wave ou Orange Money.
-              L'argent arrive <strong className="text-gray-700">directement sur ton téléphone</strong>.
+              L&apos;argent arrive <strong className="text-gray-700">directement sur ton téléphone</strong>.
               Pas besoin de développeur.
             </p>
+
+            {/* Pays disponibles */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-7">
+              <span className="text-xs text-gray-400 font-medium mr-1">Disponible au</span>
+              {COUNTRIES.map((c) => (
+                <span
+                  key={c.name}
+                  title={c.name}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-1 text-xs text-gray-600 shadow-sm hover:border-gray-200 transition-colors"
+                >
+                  <span className="text-sm">{c.flag}</span>
+                  <span className="hidden sm:inline font-medium">{c.name}</span>
+                </span>
+              ))}
+            </div>
 
             {/* Champ de saisie du nom de business */}
             <div className="mb-8">
               <HeroInput />
             </div>
 
-            {/* Stats - All on same line with consistent style */}
-            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-8 pb-4 px-4 sm:px-0 flex-wrap">
+            {/* Stats */}
+            <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-4 pb-4 px-4 sm:px-0 flex-wrap">
               {STATS.map((s, i) => {
                 const Icon = s.icon
                 return (
@@ -208,16 +219,20 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* Catégories */}
-        <div className="mt-14 flex flex-wrap justify-center gap-2">
-          <p className="w-full text-center text-xs text-gray-400 mb-2 font-medium">Idéal pour :</p>
-          {['🍽️ Alimentation', '👗 Mode & Vêtements', '💄 Beauté', '🎨 Artisanat', '📱 Électronique', '🏡 Maison & Déco'].map(cat => (
-            <span key={cat} className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm hover:border-gray-300 transition-colors">
-              {cat}
-            </span>
-          ))}
+        {/* Catégories — scroll horizontal sur mobile */}
+        <div className="mt-14">
+          <p className="text-center text-xs text-gray-400 mb-3 font-medium">Idéal pour :</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 px-1 sm:flex-wrap sm:justify-center scrollbar-hide">
+            {CATEGORIES.map(cat => (
+              <span
+                key={cat}
+                className="inline-flex shrink-0 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-500 shadow-sm hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors cursor-default"
+              >
+                {cat}
+              </span>
+            ))}
+          </div>
         </div>
-
       </section>
 
       {/* ── Paiements ─────────────────────────────────────────────────────── */}
@@ -228,79 +243,55 @@ export default async function LandingPage() {
         <PaymentScroll />
       </section>
 
-      {/* ── Comment ça marche ─────────────────────────────────────────────── */}
-      <section id="comment" className="mx-auto max-w-6xl px-4 py-20">
-        <div className="text-center mb-14">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">C'est simple</p>
-          <h2
-            className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            Ça marche en 4 étapes
-          </h2>
-          <p className="text-gray-500 max-w-sm mx-auto text-sm">Pas besoin d'un développeur. Pas besoin d'un ordinateur.</p>
-        </div>
+      {/* ── Comment ça marche — StepsSection ──────────────────────────────── */}
+      <StepsSection />
 
-        <div className="grid md:grid-cols-4 gap-6 relative">
-          <div className="hidden md:block absolute top-9 left-[calc(12.5%+2rem)] right-[calc(12.5%+2rem)] h-px bg-gradient-to-r from-sky-200 via-violet-200 via-amber-200 to-emerald-200" />
-
-          {STEPS.map((s, i) => (
-            <div key={i} className="relative flex flex-col items-center md:items-start text-center md:text-left bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${s.color} text-white text-sm font-black mb-5 shadow-md`}>
-                {s.step}
-              </div>
-              <h3 className="text-base font-bold text-gray-900 mb-2">{s.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{s.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Ils font confiance à TekkiShop (vraies boutiques) ─────────────────────── */}
+      {/* ── Ils font confiance à TekkiShop ────────────────────────────────── */}
       {shops && shops.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 py-20">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Nos succès</p>
-            <h2
-              className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Ils font confiance à TekkiShop
-            </h2>
-            <p className="text-gray-500 max-w-sm mx-auto text-sm">Découvre les boutiques qui vendent avec succès via TekkiShop</p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {shops.map((shop) => (
-              <Link
-                key={shop.id}
-                href={`/${shop.slug}`}
-                target="_blank"
-                className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-200 hover:bg-sky-50/50 transition-all group"
+        <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 60%, #f0f9ff 100%)' }}>
+          <div className="mx-auto max-w-6xl">
+            <div className="text-center mb-14">
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Nos succès</p>
+              <h2
+                className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+                style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
               >
-                {/* Logo ou emoji fallback */}
-                <div className="flex items-center justify-center h-12 sm:h-14 mb-2 group-hover:scale-110 transition-transform">
-                  {shop.logo_url ? (
-                    <Image
-                      src={shop.logo_url}
-                      alt={shop.name}
-                      width={56}
-                      height={56}
-                      className="h-12 sm:h-14 w-auto max-w-[90%] object-contain rounded-lg"
-                    />
-                  ) : (
-                    <div className="text-2xl sm:text-3xl">🏪</div>
-                  )}
-                </div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
-                <p className="text-[10px] text-gray-400 mt-1 capitalize">
-                  {shop.city || 'Localité inconnue'}
-                </p>
-              </Link>
-            ))}
-          </div>
+                Ils font confiance à TekkiShop
+              </h2>
+              <p className="text-gray-500 max-w-sm mx-auto text-sm">
+                Découvre les boutiques qui vendent avec succès via TekkiShop
+              </p>
+            </div>
 
-          {shops.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {shops.map((shop) => (
+                <Link
+                  key={shop.id}
+                  href={`/${shop.slug}`}
+                  target="_blank"
+                  className="rounded-2xl border border-white/80 bg-white/70 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-300 hover:bg-white transition-all group"
+                >
+                  <div className="flex items-center justify-center h-12 sm:h-14 mb-2 group-hover:scale-110 transition-transform">
+                    {shop.logo_url ? (
+                      <Image
+                        src={shop.logo_url}
+                        alt={shop.name}
+                        width={56}
+                        height={56}
+                        className="h-12 sm:h-14 w-auto max-w-[90%] object-contain rounded-lg"
+                      />
+                    ) : (
+                      <div className="text-2xl sm:text-3xl">🏪</div>
+                    )}
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 capitalize">
+                    {shop.city || 'Localité inconnue'}
+                  </p>
+                </Link>
+              ))}
+            </div>
+
             <div className="mt-12 text-center">
               <p className="text-sm text-gray-600 mb-4">
                 <strong className="text-gray-900">{shopsCount}+ boutiques</strong> vendent déjà avec TekkiShop
@@ -313,11 +304,11 @@ export default async function LandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          )}
+          </div>
         </section>
       )}
 
-      {/* ── Section "Le moment magique" ── Dark ──────────────────────────── */}
+      {/* ── Section "Le moment magique" — Dark ──────────────────────────── */}
       <section className="bg-[#0F1729] py-20 px-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 pointer-events-none"
           style={{ background: 'radial-gradient(circle, #0EA5E9 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
@@ -326,7 +317,6 @@ export default async function LandingPage() {
 
         <div className="mx-auto max-w-6xl relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-sky-400 mb-4">Le moment qui change tout</p>
               <h2
@@ -337,15 +327,11 @@ export default async function LandingPage() {
                 <span className="text-sky-400">ton client reçoit ça.</span>
               </h2>
               <p className="text-gray-400 text-base leading-relaxed mb-8 max-w-md">
-                Plus de prises de commandes à la main sur WhatsApp. Plus de confusion, plus d'erreurs, plus de non-paiements.
-                Chaque commande est documentée, confirmée, et l'argent arrive directement sur ton téléphone.
+                Plus de prises de commandes à la main sur WhatsApp. Plus de confusion, plus d&apos;erreurs, plus de non-paiements.
+                Chaque commande est documentée, confirmée, et l&apos;argent arrive directement sur ton téléphone.
               </p>
               <div className="flex flex-wrap gap-4">
-                {[
-                  'Confirmation automatique',
-                  'Paiement Wave sécurisé',
-                  'Récap complet',
-                ].map(f => (
+                {['Confirmation automatique', 'Paiement Wave sécurisé', 'Récap complet'].map(f => (
                   <div key={f} className="flex items-center gap-2 text-sm text-gray-300">
                     <div className="h-5 w-5 rounded-full bg-sky-500/20 flex items-center justify-center shrink-0">
                       <CheckCircle2 className="h-3 w-3 text-sky-400" />
@@ -412,36 +398,38 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Features ─────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-4 py-20">
-        <div className="text-center mb-14">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tout est inclus</p>
-          <h2
-            className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            Tout ce dont tu as besoin
-          </h2>
-          <p className="text-gray-500 text-sm max-w-sm mx-auto">Simple. Rapide. Fait pour l'Afrique.</p>
-        </div>
+      <section className="py-20 px-4 bg-gray-50/70">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tout est inclus</p>
+            <h2
+              className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Tout ce dont tu as besoin
+            </h2>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">Simple. Rapide. Fait pour l&apos;Afrique.</p>
+          </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FEATURES.map((f, i) => {
-            const Icon = f.icon
-            return (
-              <div
-                key={i}
-                className="group relative rounded-3xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ background: 'radial-gradient(circle at top right, rgba(14,165,233,0.04) 0%, transparent 60%)' }} />
-                <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${f.color} mb-4 shadow-sm`}>
-                  <Icon className="h-5 w-5 text-white" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map((f, i) => {
+              const Icon = f.icon
+              return (
+                <div
+                  key={i}
+                  className="group relative rounded-3xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle at top right, rgba(14,165,233,0.04) 0%, transparent 60%)' }} />
+                  <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${f.color} mb-4 shadow-sm`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-2">{f.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
                 </div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </section>
 
@@ -464,130 +452,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Tarifs ───────────────────────────────────────────────────────── */}
-      <section id="tarifs" className="mx-auto max-w-5xl px-4 py-20">
-        <div className="text-center mb-14">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tarifs</p>
-          <h2
-            className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            Un tarif simple et honnête
-          </h2>
-          <p className="text-gray-500 text-sm max-w-xs mx-auto">Tu paies par Wave ou Orange Money. Ton site est en ligne en quelques minutes.</p>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-5 items-start">
-
-          {/* Découverte */}
-          <div className="rounded-3xl border border-gray-200 bg-white p-6">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Découverte</p>
-            <div className="flex items-end gap-1.5 mb-1">
-              <p className="text-4xl font-black text-gray-900">2 900</p>
-              <p className="text-gray-500 text-sm mb-1.5">FCFA</p>
-            </div>
-            <p className="text-xs text-gray-400 mb-6">/mois</p>
-
-            <ul className="space-y-2.5 mb-6">
-              {[
-                "Jusqu'à 10 produits",
-                'Ton site en ligne immédiatement',
-                'Paiements Wave & Orange Money',
-                'Paiement à la livraison',
-                '3% de commission sur les paiements en ligne',
-              ].map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/onboarding"
-              className="block w-full rounded-2xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Commencer
-            </Link>
-            <p className="text-center text-gray-400 text-[11px] mt-3">Paiement par Wave ou Orange Money</p>
-          </div>
-
-          {/* Business — highlighted */}
-          <div className="rounded-3xl bg-[var(--color-primary)] p-6 ring-4 ring-sky-200 relative shadow-xl">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black text-amber-900 shadow-sm whitespace-nowrap">
-                🎁 1 MOIS OFFERT — OFFRE DE LANCEMENT
-              </span>
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-wide text-sky-200 mb-1 mt-3">Business</p>
-
-            <div className="flex items-end gap-1.5 mb-1">
-              <p className="text-4xl font-black text-white">4 900</p>
-              <p className="text-white/80 text-sm mb-1.5">FCFA</p>
-            </div>
-            <p className="text-sky-200 text-xs mb-1">pour <strong className="text-white">2 mois</strong> — au lieu de 1</p>
-            <p className="text-sky-300/70 text-[11px] mb-6">Puis 4 900 FCFA/mois</p>
-
-            <ul className="space-y-2.5 mb-6">
-              {[
-                'Produits illimités',
-                'Ton site en ligne immédiatement',
-                'Paiements Wave & Orange Money',
-                'Notifications WhatsApp automatiques',
-                'Dashboard sur ton téléphone',
-                '3% de commission sur les paiements en ligne',
-              ].map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-sky-100">
-                  <CheckCircle2 className="h-4 w-4 text-sky-200 shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/onboarding"
-              className="block w-full rounded-2xl bg-white py-3 text-center text-sm font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity shadow-sm"
-            >
-              Créer mon site — 4 900 FCFA
-            </Link>
-            <p className="text-center text-sky-300/70 text-[11px] mt-3">Paiement par Wave ou Orange Money</p>
-          </div>
-
-          {/* Pro */}
-          <div className="rounded-3xl border border-gray-200 bg-white p-6">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Pro</p>
-            <div className="flex items-end gap-1.5 mb-1">
-              <p className="text-4xl font-black text-gray-900">9 900</p>
-              <p className="text-gray-500 text-sm mb-1.5">FCFA</p>
-            </div>
-            <p className="text-xs text-gray-400 mb-6">/mois</p>
-
-            <ul className="space-y-2.5 mb-6">
-              {[
-                'Tout du plan Business',
-                '0% de commission sur les paiements en ligne',
-                'Domaine personnalisé (monbusiness.com)',
-                'Statistiques avancées',
-                'Export CSV de tes commandes',
-                'Support prioritaire WhatsApp',
-              ].map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/onboarding"
-              className="block w-full rounded-2xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Choisir Pro
-            </Link>
-            <p className="text-center text-gray-400 text-[11px] mt-3">Paiement par Wave ou Orange Money</p>
-          </div>
-        </div>
-      </section>
+      <PricingSection />
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section id="faq" className="bg-gray-50/60 py-20 px-4">
@@ -624,10 +489,17 @@ export default async function LandingPage() {
             Tape le nom de ton business dans le champ ci-dessous. Et crée ton site en 5 minutes.
           </p>
           <p className="text-sky-400 font-bold text-base mb-10">
-            🎁 Offre de lancement : 2 mois pour le prix d'un — 4 900 FCFA
+            🎁 Offre de lancement : 2 mois pour le prix d&apos;un — 4 900 FCFA
           </p>
 
-          {/* Input répété dans le CTA */}
+          {/* Pays disponibles - footer CTA */}
+          <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
+            <span className="text-xs text-gray-500">Disponible au</span>
+            {COUNTRIES.map(c => (
+              <span key={c.name} title={c.name} className="text-lg" aria-label={c.name}>{c.flag}</span>
+            ))}
+          </div>
+
           <div className="max-w-md mx-auto mb-6">
             <HeroInput />
           </div>
@@ -637,23 +509,34 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className="bg-[#0a1020] border-t border-white/5 py-8">
-        <div className="mx-auto max-w-6xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center opacity-70">
-            <Image src="/logo_white.svg" alt="TekkiShop" width={120} height={28} />
+      <footer className="bg-[#0a1020] border-t border-white/5 py-10">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
+            <div className="flex items-center opacity-70">
+              <Image src="/logo_white.svg" alt="TekkiShop" width={120} height={28} />
+            </div>
+            <div className="flex items-center gap-6 text-sm text-white/40">
+              <Link href="/legal/cgu" className="hover:text-white/70 transition-colors">Conditions</Link>
+              <Link href="/legal/privacy" className="hover:text-white/70 transition-colors">Confidentialité</Link>
+              <a
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-white/70 transition-colors"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Support
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-sm text-white/40">
-            <Link href="/legal/cgu" className="hover:text-white/70 transition-colors">Conditions</Link>
-            <Link href="/legal/privacy" className="hover:text-white/70 transition-colors">Confidentialité</Link>
-            <a
-              href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 hover:text-white/70 transition-colors"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Support
-            </a>
+          <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-white/20">© {new Date().getFullYear()} TekkiShop. Tous droits réservés.</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-white/20">Disponible au</span>
+              {COUNTRIES.map(c => (
+                <span key={c.name} title={c.name} className="text-sm opacity-60">{c.flag}</span>
+              ))}
+            </div>
           </div>
         </div>
       </footer>

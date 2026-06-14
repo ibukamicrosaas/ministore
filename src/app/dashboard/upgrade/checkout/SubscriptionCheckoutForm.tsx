@@ -28,6 +28,7 @@ interface Plan {
   name: string
   price: string
   priceInt: number
+  annualPrice: number
 }
 
 const COUNTRIES: Array<{ code: BictorysCountry; name: string; flag: string; phone: string; placeholder: string }> = [
@@ -43,6 +44,7 @@ interface Props {
   plan: Plan
   shopName: string
   primaryColor: string
+  billingCycle: 'monthly' | 'annual'
 }
 
 function StepBadge({ n, color }: { n: number; color: string }) {
@@ -56,7 +58,7 @@ function StepBadge({ n, color }: { n: number; color: string }) {
   )
 }
 
-export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props) {
+export function SubscriptionCheckoutForm({ plan, shopName, primaryColor, billingCycle }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -102,6 +104,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planKey: plan.key,
+          billingCycle,
           paymentType: selectedPaymentType,
           customerPhone: normalizedPhone,
           customerName: customerName.trim(),
@@ -158,9 +161,20 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
           <p className="text-sm font-medium text-white/70 mb-0.5">{shopName}</p>
           <h1 className="text-xl font-bold mb-1">Plan {plan.name}</h1>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-extrabold">{plan.price}</span>
-            <span className="text-sm text-white/70">FCFA/mois</span>
+            <span className="text-3xl font-extrabold">
+              {billingCycle === 'annual'
+                ? plan.annualPrice.toLocaleString('fr-FR')
+                : plan.price}
+            </span>
+            <span className="text-sm text-white/70">
+              {billingCycle === 'annual' ? 'FCFA/an' : 'FCFA/mois'}
+            </span>
           </div>
+          {billingCycle === 'annual' && (
+            <p className="text-xs text-white/80 mt-1">
+              ≈ {Math.round(plan.annualPrice / 12).toLocaleString('fr-FR')} FCFA/mois · 2 mois offerts
+            </p>
+          )}
         </div>
 
         <form onSubmit={handlePayment} className="space-y-3">
@@ -312,7 +326,7 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
                 <h3 className="font-semibold text-gray-900 text-sm">Code OTP</h3>
               </div>
               <p className="text-sm text-amber-800 mb-3">
-                {getOtpInstruction(selectedCountry, plan.priceInt)}
+                {getOtpInstruction(selectedCountry, billingCycle === 'annual' ? plan.annualPrice : plan.priceInt)}
               </p>
               <input
                 type="text"
@@ -344,7 +358,12 @@ export function SubscriptionCheckoutForm({ plan, shopName, primaryColor }: Props
             disabled={!customerName.trim() || !customerPhone.trim() || !selectedPaymentType}
             style={{ backgroundColor: primaryColor }}
           >
-            {loading ? 'Traitement...' : `Payer ${plan.price} FCFA`}
+            {loading
+            ? 'Traitement...'
+            : billingCycle === 'annual'
+              ? `Payer ${plan.annualPrice.toLocaleString('fr-FR')} FCFA`
+              : `Payer ${plan.price} FCFA`
+          }
           </Button>
 
           <p className="text-center text-xs text-gray-400 pb-2">

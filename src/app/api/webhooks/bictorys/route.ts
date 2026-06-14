@@ -133,7 +133,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
   // Essayer d'abord avec charge_id
   let { data: transaction, error: txnError } = await supabase
     .from('subscription_transactions' as never)
-    .select('shop_id, plan_key, merchant_reference, charge_id, status')
+    .select('shop_id, plan_key, merchant_reference, charge_id, status, billing_cycle')
     .eq('charge_id', payload.id)
     .single() as any
 
@@ -165,7 +165,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     console.log('[handleSubscriptionWebhook] Fallback - Recherche par paymentReference:', merchantReference)
     const { data: txnByRef, error: refError } = await supabase
       .from('subscription_transactions' as never)
-      .select('shop_id, plan_key, merchant_reference, charge_id, status')
+      .select('shop_id, plan_key, merchant_reference, charge_id, status, billing_cycle')
       .eq('merchant_reference', merchantReference)
       .single() as any
 
@@ -198,21 +198,26 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     console.log('[handleSubscriptionWebhook] ✅ Transaction trouvée par charge_id:', transaction)
   }
 
-  const { shop_id: shopId, plan_key: planKey } = transaction as any
+  const { shop_id: shopId, plan_key: planKey, billing_cycle: billingCycle = 'monthly' } = transaction as any
 
   // Vérifier montants, activer plan, mettre à jour transaction
-  const planPrices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
-  const expectedAmount = planPrices[planKey] ?? 0
+  const planMonthlyPrices: Record<string, number> = { decouverte: 2900, business: 4900, pro: 9900 }
+  const planAnnualPrices: Record<string, number>  = { decouverte: 29000, business: 49000, pro: 99000 }
+  const expectedAmount = billingCycle === 'annual'
+    ? (planAnnualPrices[planKey] ?? 0)
+    : (planMonthlyPrices[planKey] ?? 0)
 
   if (payload.amount !== expectedAmount) {
     console.error('[handleSubscriptionWebhook] Montant mismatch:', {
       expected: expectedAmount,
       actual: payload.amount,
+      billingCycle,
     })
     return NextResponse.json({ ok: true })
   }
 
-  console.log('[handleSubscriptionWebhook] ✅ Montant correct — activation du plan', { shopId, planKey })
+  const durationDays = billingCycle === 'annual' ? 365 : 31
+  console.log('[handleSubscriptionWebhook] ✅ Montant correct — activation du plan', { shopId, planKey, billingCycle, durationDays })
 
   // Extraire le numéro de téléphone du paiement (Bictorys peut l'inclure)
   const payerPhone =
@@ -223,7 +228,7 @@ async function handleSubscriptionWebhook(merchantReference: string, payload: Bic
     null
 
   // Activer le plan
-  const { error: activationError } = await activatePlan(shopId, planKey)
+  const { error: activationError } = await activatePlan(shopId, planKey, durationDays)
   if (activationError) {
     console.error('[handleSubscriptionWebhook] Erreur activation:', activationError)
     await supabase

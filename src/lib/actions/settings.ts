@@ -344,6 +344,7 @@ export async function updateShop(data: UpdateShopInput) {
 export async function updateBusinessDesign(
   data: {
     cover_image_url?: string | null
+    about_photo_url?: string | null
     business_category?: string | null
     badges?: string[]
     social_links?: {
@@ -382,6 +383,7 @@ export async function updateBusinessDesign(
     .from('shops')
     .update({
       cover_image_url: data.cover_image_url,
+      about_photo_url: data.about_photo_url,
       business_category: data.business_category,
       badges: data.badges ?? [],
       social_links: data.social_links ?? {},
@@ -455,6 +457,71 @@ export async function uploadCoverImage(formData: FormData): Promise<{ error?: st
   if (updateError) {
     console.error('[uploadCoverImage update]', updateError.message)
     return { error: 'Image téléchargée mais mise à jour échouée.' }
+  }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return { url: publicUrl }
+}
+
+export async function uploadAboutPhoto(formData: FormData): Promise<{ error?: string; url?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  const admin = createAdminClient()
+  const { data: shop } = await admin
+    .from('shops')
+    .select('plan')
+    .eq('id', profile.shop_id)
+    .single()
+
+  if (shop?.plan !== 'pro') return { error: 'Plan Pro requis.' }
+
+  const file = formData.get('about_photo') as File | null
+  if (!file || file.size === 0) return { error: 'Aucun fichier sélectionné.' }
+  if (file.size > 5 * 1024 * 1024) return { error: 'Le fichier doit faire moins de 5 Mo.' }
+  if (!file.type.startsWith('image/')) return { error: 'Le fichier doit être une image.' }
+
+  const ALLOWED_MIME: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  }
+  const ext = ALLOWED_MIME[file.type]
+  if (!ext) return { error: 'Format non autorisé. Utilise JPG, PNG ou WebP.' }
+
+  const path = `${profile.shop_id}/about-${Date.now()}.${ext}`
+
+  const { error: uploadError } = await admin.storage
+    .from('shop-covers')
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (uploadError) {
+    console.error('[uploadAboutPhoto]', uploadError.message)
+    return { error: 'Impossible de télécharger la photo.' }
+  }
+
+  const { data: { publicUrl } } = admin.storage.from('shop-covers').getPublicUrl(path)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await supabase
+    .from('shops')
+    .update({ about_photo_url: publicUrl, updated_at: new Date().toISOString() } as any)
+    .eq('id', profile.shop_id)
+
+  if (updateError) {
+    console.error('[uploadAboutPhoto update]', updateError.message)
+    return { error: 'Photo téléchargée mais mise à jour échouée.' }
   }
 
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()

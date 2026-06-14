@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ChevronDown, ChevronUp, Copy, CheckCheck, ArrowRight, Zap } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Copy, CheckCheck, ArrowRight, Zap, X } from 'lucide-react'
 import { APP_URL } from '@/constants'
 
 interface SetupChecklistProps {
@@ -24,15 +24,18 @@ interface Step {
 export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumbers, isActivePlan }: SetupChecklistProps) {
   const [hasShared, setHasShared]   = useState(false)
   const [collapsed, setCollapsed]   = useState(false)
+  const [dismissed, setDismissed]   = useState(false)
   const [copied, setCopied]         = useState(false)
 
-  const sharedKey   = `ts_shared_${shopSlug}`
-  const collapseKey = `ts_checklist_collapsed_${shopSlug}`
+  const sharedKey    = `ts_shared_${shopSlug}`
+  const collapseKey  = `ts_checklist_collapsed_${shopSlug}`
+  const dismissedKey = `ts_checklist_dismissed_${shopSlug}`
 
   useEffect(() => {
     setHasShared(localStorage.getItem(sharedKey) === '1')
     setCollapsed(localStorage.getItem(collapseKey) === '1')
-  }, [sharedKey, collapseKey])
+    setDismissed(localStorage.getItem(dismissedKey) === '1')
+  }, [sharedKey, collapseKey, dismissedKey])
 
   const shopUrl = `${APP_URL}/${shopSlug}`
 
@@ -43,6 +46,11 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
       localStorage.setItem(sharedKey, '1')
       setHasShared(true)
     })
+  }
+
+  function handleDismiss() {
+    localStorage.setItem(dismissedKey, '1')
+    setDismissed(true)
   }
 
   function toggleCollapsed() {
@@ -113,14 +121,16 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
   const doneCount = steps.filter(s => s.done).length
   const allDone   = doneCount === steps.length
 
-  // Auto-dismiss définitivement quand tout est fait
+  // Ferme définitivement la checklist dès que tout est fait
   useEffect(() => {
-    if (allDone) {
-      localStorage.setItem(collapseKey, '1')
+    if (allDone && !dismissed) {
+      localStorage.setItem(dismissedKey, '1')
+      setDismissed(true)
     }
-  }, [allDone, collapseKey])
+  }, [allDone, dismissed, dismissedKey])
 
-  if (allDone) return null
+  // Ne jamais afficher si l'utilisateur a fermé ou si tout est complété
+  if (dismissed || allDone) return null
 
   if (collapsed) {
     return (
@@ -146,14 +156,17 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
         <div>
           <h2 className="text-sm font-bold text-gray-900">🚀 Lance ton site en 4 étapes</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            {allDone
-              ? 'Tout est prêt — tu peux recevoir des commandes !'
-              : `${steps.length - doneCount} étape${steps.length - doneCount > 1 ? 's' : ''} restante${steps.length - doneCount > 1 ? 's' : ''}`}
+            {`${steps.length - doneCount} étape${steps.length - doneCount > 1 ? 's' : ''} restante${steps.length - doneCount > 1 ? 's' : ''}`}
           </p>
         </div>
-        <button onClick={toggleCollapsed} className="text-gray-400 hover:text-gray-600 p-0.5">
-          <ChevronUp className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={toggleCollapsed} className="text-gray-400 hover:text-gray-600 p-0.5 rounded" aria-label="Réduire">
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600 p-0.5 rounded" aria-label="Fermer">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 h-1.5 rounded-full bg-sky-200">
@@ -188,15 +201,6 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
           </div>
         ))}
       </div>
-
-      {allDone && (
-        <button
-          onClick={toggleCollapsed}
-          className="mt-3 w-full text-center text-xs text-gray-400 hover:text-gray-600"
-        >
-          Réduire ↑
-        </button>
-      )}
     </div>
   )
 }

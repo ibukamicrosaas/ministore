@@ -7,35 +7,29 @@ interface Plan {
   name: string
   price: string
   priceInt: number
+  annualPrice: number
 }
 
 const PLANS: Record<string, Plan> = {
-  decouverte: { key: 'decouverte', name: 'Découverte', price: '2 900', priceInt: 2900 },
-  business: { key: 'business', name: 'Business', price: '4 900', priceInt: 4900 },
-  pro: { key: 'pro', name: 'Pro', price: '9 900', priceInt: 9900 },
+  decouverte: { key: 'decouverte', name: 'Découverte', price: '2 900', priceInt: 2900, annualPrice: 29000 },
+  business:   { key: 'business',   name: 'Business',   price: '4 900', priceInt: 4900, annualPrice: 49000 },
+  pro:        { key: 'pro',        name: 'Pro',         price: '9 900', priceInt: 9900, annualPrice: 99000 },
 }
 
 type Props = {
-  searchParams: Promise<{ plan?: string }>
+  searchParams: Promise<{ plan?: string; billing?: string }>
 }
 
 export default async function SubscriptionCheckoutPage({ searchParams }: Props) {
-  const { plan: planKey } = await searchParams
+  const { plan: planKey, billing } = await searchParams
+  const billingCycle = billing === 'annual' ? 'annual' : 'monthly'
 
-  // Backward compatibility: map 'decouverte' to 'decouverte'
-  const normalizedKey = planKey === 'decouverte' ? 'decouverte' : planKey
-  const plan = normalizedKey && PLANS[normalizedKey] ? PLANS[normalizedKey] : null
-
-  if (!plan) {
-    notFound()
-  }
+  const plan = planKey && PLANS[planKey] ? PLANS[planKey] : null
+  if (!plan) notFound()
 
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    notFound()
-  }
+  if (!user) notFound()
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -43,9 +37,7 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
     .eq('id', user.id)
     .single()
 
-  if (!profile?.shop_id) {
-    notFound()
-  }
+  if (!profile?.shop_id) notFound()
 
   const { data: shop } = await supabase
     .from('shops')
@@ -53,15 +45,14 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
     .eq('id', profile.shop_id)
     .single()
 
-  if (!shop) {
-    notFound()
-  }
+  if (!shop) notFound()
 
   return (
     <SubscriptionCheckoutForm
       plan={plan}
       shopName={shop.name}
       primaryColor={shop.primary_color ?? '#0EA5E9'}
+      billingCycle={billingCycle}
     />
   )
 }

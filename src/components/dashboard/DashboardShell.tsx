@@ -32,6 +32,8 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
           title={pageTitle}
           unreadCount={unreadNotifications}
         />
+        {/* Spacer pour le header fixe sur mobile (lg:hidden car en desktop le header est dans le flux) */}
+        <div className="h-14 shrink-0 lg:hidden" aria-hidden />
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">
           {children}
         </main>

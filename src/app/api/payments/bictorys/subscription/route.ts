@@ -10,6 +10,12 @@ const PLAN_PRICES: Record<string, number> = {
   pro:        9900,
 }
 
+const PLAN_ANNUAL_PRICES: Record<string, number> = {
+  decouverte: 29000,
+  business:   49000,
+  pro:        99000,
+}
+
 const PLAN_LABELS: Record<string, string> = {
   decouverte: 'Découverte',
   business:   'Business',
@@ -28,15 +34,19 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as {
     planKey?: string
+    billingCycle?: 'monthly' | 'annual'
     paymentType?: BictorysPaymentType | null
     customerPhone?: string
     customerName?: string
     otp?: string
   }
-  const { planKey, paymentType, customerPhone, customerName, otp } = body
+  const { planKey, billingCycle = 'monthly', paymentType, customerPhone, customerName, otp } = body
 
   if (!planKey || !PLAN_PRICES[planKey]) {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
+  }
+  if (billingCycle !== 'monthly' && billingCycle !== 'annual') {
+    return NextResponse.json({ error: 'Cycle de facturation invalide' }, { status: 400 })
   }
   // paymentType null/undefined = page Bictorys générique (tous opérateurs)
 
@@ -82,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const amount = PLAN_PRICES[planKey]
+  const amount = billingCycle === 'annual' ? PLAN_ANNUAL_PRICES[planKey] : PLAN_PRICES[planKey]
   const paymentReference = `ts-sub-${shopId.slice(0, 8)}`
 
   let chargeResult
@@ -98,7 +108,9 @@ export async function POST(req: NextRequest) {
         errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
         webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
         orderDetails: [{
-          name:     `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
+          name:     billingCycle === 'annual'
+              ? `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]} (annuel)`
+              : `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
           price:    amount,
           quantity: 1,
           taxRate:  0,
@@ -132,7 +144,9 @@ export async function POST(req: NextRequest) {
             errorRedirectUrl:   `${APP_URL}/dashboard/upgrade?error=1`,
             webhookUrl: `${APP_URL}/api/webhooks/bictorys`,
             orderDetails: [{
-              name:     `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
+              name:     billingCycle === 'annual'
+                ? `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]} (annuel)`
+                : `Abonnement TekkiShop — Plan ${PLAN_LABELS[planKey]}`,
               price:    amount,
               quantity: 1,
               taxRate:  0,
@@ -188,6 +202,7 @@ export async function POST(req: NextRequest) {
       plan_key: planKey,
       charge_id: transactionId,
       merchant_reference: paymentReference,
+      billing_cycle: billingCycle,
       status: 'pending',
     } as never)
     .select()

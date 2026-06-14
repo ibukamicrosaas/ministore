@@ -36,7 +36,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/clients',       label: 'Clients',         icon: UserCircle },
   { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet },
   { href: '/dashboard/billing',       label: 'Facturation',     icon: CreditCard },
-  { href: '/dashboard/rapports',      label: 'Rapports',        icon: BarChart2 },
+  { href: '/dashboard/rapports',      label: 'Statistiques',    icon: BarChart2 },
   { href: '/dashboard/affiliation',   label: 'Affiliation',     icon: Gift },
   { href: '/dashboard/promo-codes',   label: 'Codes promo',     icon: Tag },
   { href: '/dashboard/settings',      label: 'Paramètres',      icon: Settings },

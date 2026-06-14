@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, updateMetaPixelId } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check } from 'lucide-react'
 import type { Shop, DeliveryZone } from '@/types'
@@ -84,6 +84,8 @@ export function SettingsForm({ shop }: Props) {
   const shopAny = shop as unknown as Record<string, unknown>
   const [coverImageUrl, setCoverImageUrl]       = useState<string | null>((shopAny.cover_image_url as string | null) ?? null)
   const [uploadingCover, setUploadingCover]     = useState(false)
+  const [aboutPhotoUrl, setAboutPhotoUrl]       = useState<string | null>((shopAny.about_photo_url as string | null) ?? null)
+  const [uploadingAbout, setUploadingAbout]     = useState(false)
   const [businessCategory, setBusinessCategory] = useState((shopAny.business_category as string | null) ?? '')
   const [badges, setBadges]                     = useState<string[]>(
     Array.isArray(shopAny.badges) ? (shopAny.badges as unknown as string[]) : []
@@ -94,6 +96,7 @@ export function SettingsForm({ shop }: Props) {
   const [openingHours, setOpeningHours]         = useState((shopAny.opening_hours as string | null) ?? '')
   const [savingBusiness, setSavingBusiness]     = useState(false)
   const coverInputRef                           = useRef<HTMLInputElement>(null)
+  const aboutInputRef                           = useRef<HTMLInputElement>(null)
 
   const [country, setCountry] = useState(shop.country ?? '')
 
@@ -227,6 +230,24 @@ export function SettingsForm({ shop }: Props) {
     }
     setUploadingCover(false)
     if (coverInputRef.current) coverInputRef.current.value = ''
+  }
+
+  async function handleAboutPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAbout(true)
+    const fd = new FormData()
+    fd.append('about_photo', file)
+    const result = await uploadAboutPhoto(fd)
+    if ('error' in result) {
+      toast.error(result.error ?? 'Erreur')
+    } else {
+      setAboutPhotoUrl(result.url ?? null)
+      toast.success('Photo À propos mise à jour ✓')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setUploadingAbout(false)
+    if (aboutInputRef.current) aboutInputRef.current.value = ''
   }
 
   async function handleBusinessSave() {
@@ -901,6 +922,54 @@ export function SettingsForm({ shop }: Props) {
             accept="image/*"
             className="hidden"
             onChange={handleCoverImageChange}
+          />
+        </div>
+
+        {/* Photo À propos */}
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-sm font-medium text-gray-900">Photo &laquo;&nbsp;À propos&nbsp;&raquo;</p>
+            <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 rounded-full px-2 py-0.5">Pro</span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Photo de ton équipe, de ta boutique ou de toi — visible dans la section &laquo;&nbsp;À propos&nbsp;&raquo;
+          </p>
+
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 h-32 border border-amber-200">
+            {aboutPhotoUrl ? (
+              <img
+                src={aboutPhotoUrl}
+                alt="À propos"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <span className="text-sm text-gray-400">Aucune photo</span>
+              </div>
+            )}
+            {uploadingAbout && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => aboutInputRef.current?.click()}
+            disabled={uploadingAbout}
+            className="w-full flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          >
+            <Camera className="h-3.5 w-3.5" />
+            {uploadingAbout ? 'Upload...' : 'Choisir une photo'}
+          </button>
+          <input
+            ref={aboutInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAboutPhotoChange}
           />
         </div>
 

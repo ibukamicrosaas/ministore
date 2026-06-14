@@ -115,39 +115,42 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 
 ---
 
-### MP-02 — Page produit : "Me prévenir quand disponible" ⬜
+### MP-02 — Page produit : "Me prévenir quand disponible" ✅
 **Contexte :** Produit en rupture → client repart sans laisser de trace. Perte de vente et de données.
 **Solution :** Sur la page produit quand `stock_count === 0`, afficher un formulaire minimal (nom + téléphone) qui insère dans une table `stock_alerts`. Quand le stock est remis à jour, SMS automatique aux inscrits.
 **Migration :** `supabase/migrations/023_stock_alerts_subscribers.sql`
+**Fichiers :** `src/lib/actions/stockAlerts.ts` · `src/components/pwa/StockAlertForm.tsx` · `src/app/[shop-slug]/produit/[id]/page.tsx` · `src/lib/actions/products.ts` (trigger SMS dans `updateProduct`)
 
 ---
 
-### MP-03 — Analytics avancées dashboard (Business + Pro) ⬜
+### MP-03 — Analytics avancées dashboard (Business + Pro) ✅
 **Contexte :** La page Rapports montre le CA et les commandes. Les marchands demandent : meilleur jour/heure, produit avec le plus de ventes, évolution mensuelle, taux de livraison.
-**Solution :** Page `/dashboard/analytics` (déjà spécifiée dans l'ancien IMPROVEMENTS.md — voir spec complète ci-dessous).
-**Voir :** Section "Spécifications détaillées — Analytics" en bas de ce fichier.
+**Solution :** Implémentée sous `/dashboard/rapports` (CA aujourd'hui/semaine/mois, comparaison mois précédent, top 5 produits, graphique 30 jours SVG, activité par jour, taux livraison/annulation).
+**Fichiers :** `src/app/dashboard/rapports/page.tsx` · `src/app/dashboard/rapports/RapportsClient.tsx`
 
 ---
 
-### MP-04 — Image de couverture boutique (Plan Pro) ⬜
+### MP-04 — Image de couverture boutique (Plan Pro) ✅
 **Contexte :** La home de la boutique n'a qu'une couleur de fond. Une bannière photo valorise le marchand.
-**Solution :** Colonne `cover_url` sur `shops`, upload dans les Paramètres (Pro uniquement), affichage en haut du mini-site.
-**Migration :** `supabase/migrations/024_cover_about_featured.sql`
-**Voir :** Section "Spécifications détaillées — Cover & About" en bas de ce fichier.
+**Solution :** Colonne `cover_image_url` sur `shops`, upload dans les Paramètres (Pro uniquement), bannière 16:9 affichée en haut du mini-site Pro.
+**Migrations :** `027_business_design_fields.sql` · `028_storage_shop_covers.sql`
+**Fichiers :** `src/app/dashboard/settings/SettingsForm.tsx` · `src/lib/actions/settings.ts` · `src/components/pwa/ShopBusinessLayout.tsx`
 
 ---
 
-### MP-05 — Section "À propos" enrichie (Business + Pro) ⬜
+### MP-05 — Section "À propos" enrichie (Plan Pro) ✅
 **Contexte :** Aucune présentation de la boutique au-delà du nom et de la description courte.
-**Solution :** Champ `about_text` (500 chars) + `about_photo_url`, affichés en bas du mini-site.
-**Migration :** Incluse dans `024_cover_about_featured.sql`
+**Solution :** Colonne `about_photo_url` sur `shops`, upload Pro dans les Paramètres. Section "À propos" stylée dans ShopBusinessLayout (card gris, header, photo landscape + description).
+**Migration :** `supabase/migrations/037_about_section.sql`
+**Fichiers :** `src/lib/actions/settings.ts` (`uploadAboutPhoto`, `updateBusinessDesign`) · `src/app/dashboard/settings/SettingsForm.tsx` · `src/components/pwa/ShopBusinessLayout.tsx` · `src/app/[shop-slug]/page.tsx`
 
 ---
 
-### MP-06 — Produit mis en avant "Coup de cœur" (Business + Pro) ⬜
+### MP-06 — Produit mis en avant "Coup de cœur" ✅
 **Contexte :** Tous les produits ont le même poids visuel. Le marchand ne peut pas mettre en avant son bestseller.
-**Solution :** Colonne `is_featured` sur `products`, toggle dans le dashboard, bloc spécial en haut du catalogue.
-**Migration :** Incluse dans `024_cover_about_featured.sql`
+**Solution :** Colonne `is_featured` sur `products`, toggle dans ProductForm, section "Coups de cœur" (scroll horizontal) en haut du catalogue.
+**Migration :** `010_cover_and_featured.sql`
+**Fichiers :** `src/components/dashboard/ProductForm.tsx` · `src/components/pwa/ProductGrid.tsx` · `src/lib/actions/products.ts`
 
 ---
 
@@ -211,6 +214,12 @@ Ajouter les domaines Supabase Storage dans `next.config.ts` → `images.domains`
 | ✅ | Variantes produit avec presets (7 templates) | Mai 2026 |
 | ✅ | Toggle paiement à la livraison (accept_cash_on_delivery) | Mai 2026 |
 | ✅ | Flux paiement amélioré : logos réels, redirection directe, Bictorys complet | Juin 2026 |
+| ✅ | Landing page : 6 drapeaux pays, 12 catégories scroll horizontal, sections différenciées | Juin 2026 |
+| ✅ | Landing page : StepsSection avec illustrations SVG, PricingSection toggle mensuel/annuel | Juin 2026 |
+| ✅ | Landing page : avantages et différences plans détaillés, tableau comparatif, plan "Découverte" | Juin 2026 |
+| ✅ | Page login redesignée : panneau gauche dark (bénéfices, pays, témoignage), proof bar mobile | Juin 2026 |
+| ✅ | MP-02 : "Me prévenir quand disponible" — stock_alerts table, StockAlertForm, SMS trigger | Juin 2026 |
+| ✅ | MP-04/05/06 : Cover image, À propos + photo, Coup de cœur — migrations + Settings + PWA | Juin 2026 |
 
 ---
 

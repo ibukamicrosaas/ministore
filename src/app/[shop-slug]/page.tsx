@@ -59,7 +59,7 @@ export default async function ShopPage({ params }: Props) {
   // des boutiques inactives (retourne la page de suspension avant le rendu de children)
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, cover_image_url, business_category, badges, social_links')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, cover_image_url, about_photo_url, business_category, badges, social_links')
     .eq('slug', slug)
     .single()
 

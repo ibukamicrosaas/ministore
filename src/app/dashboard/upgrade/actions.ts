@@ -1,5 +1,6 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBictorysCharge } from '@/lib/payments/bictorys'
@@ -105,6 +106,7 @@ export async function verifySubscriptionPayment(
     return { success: true }
   } catch (e) {
     console.error('[verifySubscriptionPayment] Erreur API Bictorys:', e instanceof Error ? e.message : e)
+    Sentry.captureException(e, { extra: { txn: txn?.slice(0, 8), planKey } })
     return { success: false, error: 'Vérification Bictorys échouée — le webhook devrait activer très bientôt' }
   }
 }

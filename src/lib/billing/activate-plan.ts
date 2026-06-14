@@ -1,6 +1,7 @@
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { SUBSCRIPTION_DAYS, APP_URL, PLAN_LABELS } from '@/constants'
+import { APP_URL, PLAN_LABELS } from '@/constants'
 import { sendWhatsApp, buildPlanActivatedMessage } from '@/lib/notifications/whatsapp'
 
 /**
@@ -12,11 +13,12 @@ import { sendWhatsApp, buildPlanActivatedMessage } from '@/lib/notifications/wha
 export async function activatePlan(
   shopId: string,
   planKey: string,
+  durationDays = 31,
 ): Promise<{ error?: string }> {
   const supabase = createAdminClient()
 
   const subscriptionEndsAt = new Date(
-    Date.now() + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000
+    Date.now() + durationDays * 24 * 60 * 60 * 1000
   ).toISOString()
 
   const { error, data } = await supabase
@@ -33,6 +35,7 @@ export async function activatePlan(
 
   if (error) {
     console.error('[activatePlan]', error.message)
+    Sentry.captureException(error, { extra: { shopId, planKey, durationDays } })
     return { error: 'Erreur lors de l\'activation du plan.' }
   }
 

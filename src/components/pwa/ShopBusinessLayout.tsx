@@ -60,6 +60,7 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
     : {}
   const businessCategory = typeof shopAny.business_category === 'string' ? shopAny.business_category : null
   const coverImageUrl = typeof shopAny.cover_image_url === 'string' ? shopAny.cover_image_url : null
+  const aboutPhotoUrl = typeof shopAny.about_photo_url === 'string' ? shopAny.about_photo_url : null
 
   const openingHours = typeof shopAny.opening_hours === 'string' ? shopAny.opening_hours : null
 
@@ -128,11 +129,6 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
           />
         </div>
 
-        {/* Description */}
-        {shop.description && (
-          <p className="text-sm text-gray-700 leading-relaxed">{shop.description}</p>
-        )}
-
         {/* Badges de confiance (remplacement des étoiles fictives) */}
         {badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -158,6 +154,24 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── À propos ── */}
+      {(shop.description || aboutPhotoUrl) && (
+        <div className="mx-4 mb-4 rounded-2xl border border-gray-100 bg-gray-50 overflow-hidden">
+          {aboutPhotoUrl && (
+            <div className="relative w-full h-40">
+              <img src={aboutPhotoUrl} alt={`À propos de ${shop.name}`} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+          )}
+          <div className="px-4 py-3.5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">À propos</p>
+            {shop.description && (
+              <p className="text-sm text-gray-700 leading-relaxed">{shop.description}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Réseaux sociaux + boutons d'action ── */}
       {(hasSocial || actionButtons.some(b => b.show)) && (
