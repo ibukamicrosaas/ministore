@@ -26,6 +26,12 @@ const PLAN_PRICES: Record<string, number> = {
   pro:        9900,
 }
 
+const PLAN_ANNUAL_PRICES: Record<string, number> = {
+  decouverte: 29000,
+  business:   49000,
+  pro:        99000,
+}
+
 const PLAN_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   trial:      { bg: 'bg-gray-100',   text: 'text-gray-700',   border: 'border-gray-200' },
   decouverte: { bg: 'bg-blue-50',    text: 'text-blue-700',   border: 'border-blue-200' },
@@ -39,6 +45,7 @@ type SubscriptionTransaction = {
   id: string
   plan_key: string
   status: string
+  billing_cycle: 'monthly' | 'annual' | null
   activated_at: string | null
   created_at: string
   payer_phone: string | null
@@ -86,7 +93,7 @@ export default async function BillingPage() {
   const admin = createAdminClient()
   const { data: txData } = await admin
     .from('subscription_transactions' as never)
-    .select('id, plan_key, status, activated_at, created_at, payer_phone')
+    .select('id, plan_key, status, billing_cycle, activated_at, created_at, payer_phone')
     .eq('shop_id', shopId)
     .order('created_at', { ascending: false })
 
@@ -131,15 +138,26 @@ export default async function BillingPage() {
               </span>
             </div>
           </div>
-          {!isTrial && PLAN_PRICES[shop.plan] && (
-            <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-gray-900">
-                {PLAN_PRICES[shop.plan].toLocaleString('fr-FR')}
-                <span className="text-sm font-normal text-gray-400 ml-1">FCFA</span>
-              </p>
-              <p className="text-xs text-gray-400">/ mois</p>
-            </div>
-          )}
+          {!isTrial && PLAN_PRICES[shop.plan] && (() => {
+            const isAnnual = lastActivated?.billing_cycle === 'annual'
+            const displayPrice = isAnnual
+              ? PLAN_ANNUAL_PRICES[shop.plan]
+              : PLAN_PRICES[shop.plan]
+            return (
+              <div className="text-right shrink-0">
+                <p className="text-lg font-bold text-gray-900">
+                  {displayPrice?.toLocaleString('fr-FR')}
+                  <span className="text-sm font-normal text-gray-400 ml-1">FCFA</span>
+                </p>
+                <p className="text-xs text-gray-400">/ {isAnnual ? 'an' : 'mois'}</p>
+                {isAnnual && (
+                  <span className="inline-block mt-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    2 mois offerts
+                  </span>
+                )}
+              </div>
+            )
+          })()}
         </div>
 
         <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
@@ -269,16 +287,26 @@ export default async function BillingPage() {
               const statusColor = isActivated ? 'text-green-600' : isFailed ? 'text-red-500' : 'text-amber-500'
               const statusLabel = isActivated ? 'Activé' : isFailed ? 'Échoué' : 'En attente'
               const iconBg      = isActivated ? 'bg-green-100' : isFailed ? 'bg-red-100' : 'bg-amber-100'
-              const price       = PLAN_PRICES[tx.plan_key] ?? 0
+              const isAnnualTx = tx.billing_cycle === 'annual'
+              const price = isAnnualTx
+                ? (PLAN_ANNUAL_PRICES[tx.plan_key] ?? 0)
+                : (PLAN_PRICES[tx.plan_key] ?? 0)
               return (
                 <div key={tx.id} className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${iconBg}`}>
                     <StatusIcon className={`h-4 w-4 ${statusColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Plan {PLAN_LABELS[tx.plan_key] ?? tx.plan_key}
-                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Plan {PLAN_LABELS[tx.plan_key] ?? tx.plan_key}
+                      </p>
+                      {isAnnualTx && (
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 uppercase tracking-wide">
+                          Annuel
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">
                       {format(new Date(tx.created_at), 'd MMMM yyyy', { locale: fr })}
                     </p>

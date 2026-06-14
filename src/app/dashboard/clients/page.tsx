@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { UserCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserCircle, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
@@ -14,6 +14,19 @@ const PAGE_SIZE = 50
 
 interface Props {
   searchParams: Promise<{ q?: string; page?: string }>
+}
+
+type LoyaltyTier = { label: string; emoji: string; color: string; bg: string; minOrders: number }
+
+const LOYALTY_TIERS: LoyaltyTier[] = [
+  { label: 'Or',     emoji: '🥇', color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200',  minOrders: 10 },
+  { label: 'Argent', emoji: '🥈', color: 'text-slate-600',  bg: 'bg-slate-50 border-slate-200',  minOrders: 3  },
+  { label: 'Bronze', emoji: '🥉', color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200', minOrders: 1  },
+]
+
+function getLoyaltyTier(totalOrders: number): LoyaltyTier | null {
+  if (totalOrders < 1) return null
+  return LOYALTY_TIERS.find(t => totalOrders >= t.minOrders) ?? null
 }
 
 export default async function ClientsPage({ searchParams }: Props) {
@@ -39,6 +52,7 @@ export default async function ClientsPage({ searchParams }: Props) {
     .from('clients')
     .select('*', { count: 'exact' })
     .eq('shop_id', profile.shop_id)
+    .order('total_orders', { ascending: false, nullsFirst: false })
     .order('last_order_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
 
@@ -47,9 +61,33 @@ export default async function ClientsPage({ searchParams }: Props) {
   }
 
   const { data: clientsData, count } = await query.range(from, to)
-  const clients   = (clientsData ?? []) as Client[]
-  const total     = count ?? 0
+  const clients    = (clientsData ?? []) as Client[]
+  const total      = count ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  // Dépenses totales par client (pour les clients affichés)
+  const clientIds = clients.map(c => c.id)
+  let totalSpentMap: Record<string, number> = {}
+  if (clientIds.length > 0) {
+    const { data: spendData } = await supabase
+      .from('orders')
+      .select('client_id, total_price')
+      .eq('shop_id', profile.shop_id)
+      .in('client_id', clientIds)
+      .not('status', 'eq', 'cancelled')
+    if (spendData) {
+      totalSpentMap = spendData.reduce((acc, o) => {
+        if (o.client_id) {
+          acc[o.client_id] = (acc[o.client_id] ?? 0) + (o.total_price ?? 0)
+        }
+        return acc
+      }, {} as Record<string, number>)
+    }
+  }
+
+  // Statistiques globales
+  const goldCount   = clients.filter(c => (c.total_orders ?? 0) >= 10).length
+  const silverCount = clients.filter(c => (c.total_orders ?? 0) >= 3 && (c.total_orders ?? 0) < 10).length
 
   function pageUrl(p: number) {
     const params = new URLSearchParams()
@@ -67,6 +105,30 @@ export default async function ClientsPage({ searchParams }: Props) {
           {total} client{total > 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* Résumé fidélité */}
+      {!q && total > 0 && (goldCount > 0 || silverCount > 0) && (
+        <div className="flex gap-2">
+          {goldCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+              <span className="text-sm">🥇</span>
+              <div>
+                <p className="text-xs font-bold text-amber-800">{goldCount} client{goldCount > 1 ? 's' : ''} Or</p>
+                <p className="text-[10px] text-amber-600">10+ commandes</p>
+              </div>
+            </div>
+          )}
+          {silverCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <span className="text-sm">🥈</span>
+              <div>
+                <p className="text-xs font-bold text-slate-700">{silverCount} client{silverCount > 1 ? 's' : ''} Argent</p>
+                <p className="text-[10px] text-slate-500">3-9 commandes</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Recherche */}
       <form method="GET">
@@ -89,32 +151,75 @@ export default async function ClientsPage({ searchParams }: Props) {
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {clients.map((client) => (
-              <div key={client.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 shrink-0">
-                  <span className="text-sm font-semibold text-[var(--color-primary)]">
-                    {client.first_name[0]?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {client.first_name} {client.last_name ?? ''}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{client.phone}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-medium text-gray-700">{client.total_orders ?? 0} commande{(client.total_orders ?? 0) > 1 ? 's' : ''}</p>
-                  {client.last_order_at && (
-                    <p className="text-xs text-gray-400">
-                      {format(new Date(client.last_order_at), 'd MMM', { locale: fr })}
+            {clients.map((client) => {
+              const orders     = client.total_orders ?? 0
+              const tier       = getLoyaltyTier(orders)
+              const totalSpent = totalSpentMap[client.id] ?? 0
+
+              return (
+                <div key={client.id} className="flex items-center gap-3 px-4 py-3">
+                  {/* Avatar + tier */}
+                  <div className="relative shrink-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100">
+                      <span className="text-sm font-semibold text-[var(--color-primary)]">
+                        {client.first_name[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    {tier && (
+                      <span className="absolute -bottom-0.5 -right-0.5 text-[11px] leading-none">
+                        {tier.emoji}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-medium text-gray-900">
+                        {client.first_name} {client.last_name ?? ''}
+                      </p>
+                      {tier && (
+                        <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${tier.color} ${tier.bg}`}>
+                          {tier.label}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{client.phone}</p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-medium text-gray-700">
+                      {orders} commande{orders > 1 ? 's' : ''}
                     </p>
-                  )}
+                    {totalSpent > 0 ? (
+                      <p className="text-xs text-gray-400">
+                        {totalSpent.toLocaleString('fr-FR')} F
+                      </p>
+                    ) : client.last_order_at ? (
+                      <p className="text-xs text-gray-400">
+                        {format(new Date(client.last_order_at), 'd MMM', { locale: fr })}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </Card>
+
+      {/* Légende fidélité */}
+      {total > 0 && (
+        <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+          <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" /> Programme de fidélité
+          </p>
+          <div className="flex gap-4 text-xs text-gray-500">
+            <span>🥉 Bronze = 1-2 commandes</span>
+            <span>🥈 Argent = 3-9 commandes</span>
+            <span>🥇 Or = 10+ commandes</span>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

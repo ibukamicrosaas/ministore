@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale'
 import type { Profile } from '@/types'
 import { RapportsClient } from './RapportsClient'
 
-export const metadata = { title: 'Rapports — TekkiShop' }
+export const metadata = { title: 'Statistiques — TekkiShop' }
 
 export default async function RapportsPage() {
   const supabase = await createServerClient()
