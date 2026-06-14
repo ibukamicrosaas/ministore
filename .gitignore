@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Dossiers de specs hors projet
 ministore/
+
+# Documentation et specs (usage local uniquement)
+*.md
