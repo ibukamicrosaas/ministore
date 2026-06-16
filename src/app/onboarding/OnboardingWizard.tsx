@@ -15,6 +15,7 @@ import {
 import { uploadShopLogo } from '@/lib/actions/settings'
 import { uploadProductPhoto } from '@/lib/actions/products'
 import { APP_URL } from '@/constants'
+import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
 
 // ── Données métier ────────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ export function OnboardingWizard({ initialStep, userPhone, salon, initialName }:
     setSaving(false)
     if (result.error) { toast.error(result.error); return }
     if (result.slug) setShopSlug(result.slug)
+    trackMetaEvent('Lead', undefined, result.metaEventId)
     setStep(2)
   }
 
@@ -174,13 +176,15 @@ export function OnboardingWizard({ initialStep, userPhone, salon, initialName }:
 
   async function handleFinish() {
     setSaving(true)
-    await completeOnboarding()
+    const result = await completeOnboarding()
+    trackMetaEvent('CompleteRegistration', undefined, result.metaEventId)
     router.push('/dashboard')
   }
 
   async function handleActivate() {
     setSaving(true)
-    await completeOnboarding()
+    const result = await completeOnboarding()
+    trackMetaEvent('CompleteRegistration', undefined, result.metaEventId)
     router.push('/dashboard/upgrade')
   }
 

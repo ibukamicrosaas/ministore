@@ -4,6 +4,7 @@ import { DM_Sans } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 import { APP_NAME, APP_URL } from '@/constants'
+import { TekkiShopMetaPixel } from '@/components/marketing/TekkiShopMetaPixel'
 
 const outfit = Outfit({
   variable: '--font-display',
@@ -75,6 +76,9 @@ export default function RootLayout({
       <body className="h-full bg-gray-50 text-gray-900 font-sans">
         {children}
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+        {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
+          <TekkiShopMetaPixel pixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
+        )}
       </body>
     </html>
   )

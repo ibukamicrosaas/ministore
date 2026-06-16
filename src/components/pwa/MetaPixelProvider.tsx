@@ -8,7 +8,7 @@ interface Props {
 
 declare global {
   interface Window {
-    fbq?: (action: string, event: string, data?: Record<string, unknown>) => void
+    fbq?: (action: string, event: string, data?: Record<string, unknown>, options?: { eventID?: string }) => void
   }
 }
 
@@ -42,12 +42,17 @@ export function MetaPixelProvider({ pixelId }: Props) {
   )
 }
 
-/** Fire a Meta Pixel standard event from any client component */
+/**
+ * Fire a Meta Pixel standard event from any client component.
+ * Pass `eventId` to deduplicate against the matching server-side
+ * Conversions API event (see src/lib/meta/conversions-api.ts).
+ */
 export function trackMetaEvent(
-  eventName: 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase' | 'PageView',
-  data?: Record<string, unknown>
+  eventName: 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase' | 'PageView' | 'Lead' | 'CompleteRegistration',
+  data?: Record<string, unknown>,
+  eventId?: string
 ) {
   if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', eventName, data ?? {})
+    window.fbq('track', eventName, data ?? {}, eventId ? { eventID: eventId } : undefined)
   }
 }

@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { TRIAL_DAYS } from '@/constants'
+import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
 
 async function getOwnerContext() {
   const supabase = await createServerClient()
@@ -21,7 +22,7 @@ async function getOwnerShopId() {
 
 // ── ÉTAPE 1 — Créer la boutique avec le nom ──────────────────────────────────
 
-export async function startOnboarding(name: string): Promise<{ error?: string; slug?: string }> {
+export async function startOnboarding(name: string): Promise<{ error?: string; slug?: string; metaEventId?: string }> {
   const supabase = await createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Non authentifié.' }
@@ -81,7 +82,15 @@ export async function startOnboarding(name: string): Promise<{ error?: string; s
     return { error: 'Boutique créée mais liaison échouée.' }
   }
 
-  return { slug: shop.slug }
+  const metaEventId = generateMetaEventId()
+  await sendMetaConversionEvent({
+    eventName: 'Lead',
+    eventId: metaEventId,
+    phone: user.user_metadata?.phone,
+    externalId: user.id,
+  })
+
+  return { slug: shop.slug, metaEventId }
 }
 
 // ── ÉTAPE 2 — Type d'activité + spécialité ────────────────────────────────────
@@ -217,13 +226,13 @@ export async function saveOnboardingProduct(input: {
 
 // ── COMPLÉTION ────────────────────────────────────────────────────────────────
 
-export async function completeOnboarding(): Promise<void> {
+export async function completeOnboarding(): Promise<{ metaEventId?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+  if (!user) return {}
 
   const { data: profile } = await supabase.from('profiles').select('shop_id').eq('id', user.id).single()
-  if (!profile?.shop_id) return
+  if (!profile?.shop_id) return {}
 
   const now = new Date().toISOString()
   await Promise.all([
@@ -237,7 +246,16 @@ export async function completeOnboarding(): Promise<void> {
       .eq('id', user.id),
   ])
 
+  const metaEventId = generateMetaEventId()
+  await sendMetaConversionEvent({
+    eventName: 'CompleteRegistration',
+    eventId: metaEventId,
+    phone: user.user_metadata?.phone,
+    externalId: user.id,
+  })
+
   revalidatePath('/dashboard')
+  return { metaEventId }
 }
 
 // ── SKIP une étape ────────────────────────────────────────────────────────────
