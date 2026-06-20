@@ -9,12 +9,20 @@ const FAQS = [
     a: "Non. Tes clients commandent directement depuis ton lien, dans leur navigateur. Aucune application à télécharger. C'est aussi simple que d'ouvrir un lien WhatsApp.",
   },
   {
+    q: "Est-ce que c'est gratuit pour commencer ?",
+    a: "Il n'y a pas de plan 100% gratuit, mais le plan Découverte démarre à 2 900 FCFA / mois (ou son équivalent en euros selon ton pays). C'est moins cher qu'un abonnement téléphonique. Et tu peux annuler à tout moment, sans engagement.",
+  },
+  {
     q: "Quels sont exactement les frais ?",
-    a: "TekkiShop est transparent. Plan Découverte & Business : 3% de commission uniquement sur les paiements en ligne (Wave, Orange Money). Le paiement à la livraison est gratuit. Plan Pro : 0% de commission partout. Aucun frais caché, aucun frais de paiement, aucun frais d'annulation.",
+    a: "TekkiShop est transparent. Plan Découverte & Business : 3% de commission uniquement sur les paiements en ligne (Wave, Orange Money, carte bancaire). Le paiement à la livraison est gratuit. Plan Pro : 0% de commission partout. Aucun frais caché, aucun frais d'annulation.",
   },
   {
     q: "Comment je reçois mon argent ?",
-    a: "Tes clients paient par Wave ou Orange Money et l'argent arrive directement sur ton numéro. Pour le paiement à la livraison, tu encaisses toi-même. Ton argent te revient après déduction de la commission (sauf plan Pro où il n'y a pas de commission).",
+    a: "En Afrique : tes clients paient par Wave ou Orange Money et l'argent arrive directement sur ton numéro. En Europe & Canada : les paiements par carte sont gérés via Stripe et virés sur ton compte bancaire automatiquement. Pour le paiement à la livraison, tu encaisses toi-même.",
+  },
+  {
+    q: "Je suis en France / Belgique / Canada — ça marche pour moi ?",
+    a: "Oui ! TEKKIShop est désormais disponible en Europe francophone (France, Belgique, Luxembourg, Suisse) et au Canada. Ta boutique affiche les prix en euros (€) ou en dollars canadiens (CAD), et tes clients paient par carte bancaire via Stripe. L'inscription se fait de la même manière que pour l'Afrique.",
   },
   {
     q: "Est-ce que je dois être une entreprise enregistrée ?",

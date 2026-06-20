@@ -104,9 +104,9 @@ export default async function LandingPage() {
   const shopsCount = totalShopsCount ?? 0
 
   const STATS = [
-    { value: `+${shopsCount}`, label: 'sites actifs', icon: Users },
-    { value: '847', label: 'commandes traitées', icon: ShoppingBag },
-    { value: '4.9 ★', label: 'satisfaction', icon: Star },
+    { value: `+${shopsCount}`, label: 'boutiques actives', icon: Users },
+    { value: '11',             label: 'pays couverts',     icon: ShoppingBag },
+    { value: '4.9 ★',         label: 'satisfaction',      icon: Star },
   ]
 
   return (
@@ -171,14 +171,14 @@ export default async function LandingPage() {
             </h1>
 
             <p className="text-xl text-gray-500 mb-7 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Partage le lien à tes clients. Ils commandent, paient par Wave ou Orange Money.
-              L&apos;argent arrive <strong className="text-gray-700">directement sur ton téléphone</strong>.
-              Pas besoin de développeur.
+              Fini les commandes à la main sur WhatsApp. Tes clients commandent sur <strong className="text-gray-700">ton propre site</strong>,
+              paient en ligne, et tu reçois l&apos;argent directement.{' '}
+              <strong className="text-gray-700">Pas besoin de développeur.</strong>
             </p>
 
             {/* Pays disponibles */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-7">
-              <span className="text-xs text-gray-400 font-medium mr-1">Disponible au</span>
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-3">
+              <span className="text-xs text-gray-400 font-medium mr-1">Afrique :</span>
               {COUNTRIES.map((c) => (
                 <span
                   key={c.name}
@@ -190,11 +190,33 @@ export default async function LandingPage() {
                 </span>
               ))}
             </div>
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-7">
+              <span className="text-xs text-gray-400 font-medium mr-1">Europe & Canada :</span>
+              {[
+                { flag: '🇫🇷', name: 'France' },
+                { flag: '🇧🇪', name: 'Belgique' },
+                { flag: '🇱🇺', name: 'Luxembourg' },
+                { flag: '🇨🇭', name: 'Suisse' },
+                { flag: '🇨🇦', name: 'Canada' },
+              ].map((c) => (
+                <span
+                  key={c.name}
+                  title={c.name}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs text-indigo-600 shadow-sm hover:border-indigo-200 transition-colors"
+                >
+                  <span className="text-sm">{c.flag}</span>
+                  <span className="hidden sm:inline font-medium">{c.name}</span>
+                </span>
+              ))}
+            </div>
 
             {/* Champ de saisie du nom de business */}
-            <div className="mb-8">
+            <div className="mb-3">
               <HeroInput />
             </div>
+            <p className="text-xs text-gray-400 text-center lg:text-left mb-6">
+              ✓ Sans engagement &nbsp;·&nbsp; ✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Opérationnel en 5 min
+            </p>
 
             {/* Stats */}
             <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-8 pt-4 pb-4 px-4 sm:px-0 flex-wrap">
@@ -245,6 +267,64 @@ export default async function LandingPage() {
 
       {/* ── Comment ça marche — StepsSection ──────────────────────────────── */}
       <StepsSection />
+
+      {/* ── Avant / Après ─────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-white">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Le problème résolu</p>
+            <h2
+              className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Fini le chaos des commandes WhatsApp
+            </h2>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+              Tu passes des heures à gérer les commandes manuellement ? Voilà ce que ça change.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {/* Sans TekkiShop */}
+            <div className="rounded-3xl border border-red-100 bg-red-50/60 p-6 space-y-3">
+              <p className="text-sm font-bold text-red-600 mb-5 flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-500 text-xs">✕</span>
+                Sans TekkiShop
+              </p>
+              {[
+                'Tu prends les commandes à la main sur WhatsApp',
+                'Tu confonds les clients ou tu oublies des commandes',
+                'Des clients paient le mauvais montant ou n\'envoient jamais l\'argent',
+                'Tu ne sais pas combien tu as gagné ce mois-ci',
+                'Chaque commande te prend 10 minutes de gestion',
+              ].map(t => (
+                <div key={t} className="flex items-start gap-2.5">
+                  <span className="text-red-300 text-xs mt-1 shrink-0">✕</span>
+                  <p className="text-sm text-red-700 leading-snug">{t}</p>
+                </div>
+              ))}
+            </div>
+            {/* Avec TekkiShop */}
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50/60 p-6 space-y-3">
+              <p className="text-sm font-bold text-emerald-700 mb-5 flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xs">✓</span>
+                Avec TekkiShop
+              </p>
+              {[
+                'Chaque commande est enregistrée automatiquement',
+                'Zéro oubli — tout est dans ton tableau de bord',
+                'Tes clients paient en ligne avant de recevoir leur commande',
+                'Tu vois tes revenus en temps réel, jour par jour',
+                'Tes clients reçoivent un récap WhatsApp automatique',
+              ].map(t => (
+                <div key={t} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-emerald-700 leading-snug">{t}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── Ils font confiance à TekkiShop ────────────────────────────────── */}
       {shops && shops.length > 0 && (
@@ -433,6 +513,90 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ── Section Europe & Canada ───────────────────────────────────────── */}
+      <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%)' }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-5 flex-wrap">
+                {['🇫🇷', '🇧🇪', '🇱🇺', '🇨🇭', '🇨🇦'].map(flag => (
+                  <span key={flag} className="text-3xl">{flag}</span>
+                ))}
+              </div>
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Nouveau · Europe & Canada</p>
+              <h2
+                className="text-3xl sm:text-4xl font-black text-gray-900 mb-4 leading-tight"
+                style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+              >
+                Vous vendez depuis<br />
+                <span className="text-indigo-600">la France ou le Canada ?</span>
+              </h2>
+              <p className="text-gray-600 leading-relaxed mb-7 max-w-md">
+                TEKKIShop est désormais disponible en Europe francophone et au Canada. Créez votre boutique en euros ou en dollars canadiens, et acceptez les paiements par carte bancaire via Stripe.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  { icon: '💳', text: 'Paiements sécurisés par carte Visa / Mastercard via Stripe' },
+                  { icon: '🏦', text: 'Virements vers votre compte bancaire — automatiques' },
+                  { icon: '€', text: 'Boutique en euros (€) ou en dollars canadiens (CAD)' },
+                  { icon: '🌍', text: 'Vendez aussi bien en Afrique qu\'en Europe depuis la même boutique' },
+                ].map(f => (
+                  <li key={f.text} className="flex items-start gap-3 text-sm text-gray-700">
+                    <span className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">{f.icon}</span>
+                    {f.text}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-md"
+              >
+                Créer ma boutique en Europe
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Mockup carte bancaire + boutique EUR */}
+            <div className="flex-shrink-0 w-full max-w-xs">
+              <div className="rounded-3xl border border-indigo-100 bg-white shadow-xl shadow-indigo-100 overflow-hidden">
+                {/* Header boutique */}
+                <div className="bg-gradient-to-r from-indigo-600 to-sky-600 px-5 py-4">
+                  <p className="text-white/80 text-[10px] font-semibold uppercase tracking-wide mb-1">Boutique en ligne</p>
+                  <p className="text-white font-black text-base">Créations Amina Paris</p>
+                  <p className="text-white/60 text-[10px]">tekki.shop/amina-paris</p>
+                </div>
+                {/* Produit */}
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 p-3">
+                    <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-lg shrink-0">👗</div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-gray-900">Robe wax premium</p>
+                      <p className="text-[11px] text-indigo-600 font-bold">89,00 €</p>
+                    </div>
+                    <button className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-white">Ajouter</button>
+                  </div>
+                  {/* Paiement Stripe */}
+                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-2">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Paiement sécurisé</p>
+                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      <span className="text-sm">💳</span>
+                      <span className="text-[11px] text-gray-400">4242 4242 4242 4242</span>
+                    </div>
+                    <button className="w-full rounded-lg bg-indigo-600 py-2 text-[11px] font-bold text-white">
+                      Payer 89,00 € par carte
+                    </button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-[9px] text-gray-400">🔒 Sécurisé par</span>
+                      <span className="text-[10px] font-bold text-indigo-500">Stripe</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Témoignages ──────────────────────────────────────────────────── */}
       <section className="py-16 bg-[#0F1729] relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-5"
@@ -486,27 +650,51 @@ export default async function LandingPage() {
             Prêt à avoir ton site ?
           </h2>
           <p className="text-gray-400 text-lg mb-4 max-w-md mx-auto leading-relaxed">
-            Tape le nom de ton business dans le champ ci-dessous. Et crée ton site en 5 minutes.
+            Ton site prêt en 5 minutes. Tes clients commandent et paient directement en ligne.
           </p>
-          <p className="text-sky-400 font-bold text-base mb-10">
-            🎁 Offre de lancement : 2 mois pour le prix d&apos;un — 4 900 FCFA
+          <p className="text-sky-400 font-bold text-base mb-8">
+            🎁 Plan Business : 1 mois offert sur la facturation annuelle
           </p>
 
           {/* Pays disponibles - footer CTA */}
-          <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
-            <span className="text-xs text-gray-500">Disponible au</span>
-            {COUNTRIES.map(c => (
-              <span key={c.name} title={c.name} className="text-lg" aria-label={c.name}>{c.flag}</span>
-            ))}
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+              <span className="text-xs text-gray-500">Afrique :</span>
+              {COUNTRIES.map(c => (
+                <span key={c.name} title={c.name} className="text-lg" aria-label={c.name}>{c.flag}</span>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+              <span className="text-xs text-gray-500">Europe & Canada :</span>
+              {['🇫🇷', '🇧🇪', '🇱🇺', '🇨🇭', '🇨🇦'].map(flag => (
+                <span key={flag} className="text-lg" aria-label={flag}>{flag}</span>
+              ))}
+            </div>
           </div>
 
           <div className="max-w-md mx-auto mb-6">
             <HeroInput />
           </div>
 
-          <p className="text-sm text-gray-500">Paiement par Wave ou Orange Money · Annulation à tout moment</p>
+          <p className="text-xs text-gray-500">
+            ✓ Sans engagement &nbsp;·&nbsp; ✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Annulation à tout moment
+          </p>
         </div>
       </section>
+
+      {/* ── Bouton WhatsApp flottant ─────────────────────────────────────── */}
+      {process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP && (
+        <a
+          href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour, j\'ai une question sur TEKKIShop 👋')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-5 z-50 flex items-center gap-2.5 rounded-full bg-[#25D366] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-green-900/30 hover:opacity-90 active:scale-95 transition-all"
+          aria-label="Nous contacter sur WhatsApp"
+        >
+          <svg className="h-5 w-5 fill-white shrink-0" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span className="hidden sm:inline">Une question ?</span>
+        </a>
+      )}
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="bg-[#0a1020] border-t border-white/5 py-10">
