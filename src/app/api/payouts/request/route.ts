@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
+import { getPayoutMethods } from '@/lib/utils/country-groups'
+import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -17,20 +19,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
-  const body = await req.json() as { method: 'wave' | 'orange_money'; amount: number }
+  const body = await req.json() as { method: string; amount: number }
   const { method, amount } = body
 
   if (!method || !amount || amount < PAYOUT_MIN_AMOUNT) {
-    return NextResponse.json({ error: `Montant minimum : ${PAYOUT_MIN_AMOUNT} FCFA` }, { status: 400 })
+    return NextResponse.json({ error: `Montant minimum : ${PAYOUT_MIN_AMOUNT}` }, { status: 400 })
   }
 
   const { data: shop } = await supabase
     .from('shops')
-    .select('payout_wave_number, payout_om_number')
+    .select('country, payout_wave_number, payout_om_number')
     .eq('id', profile.shop_id)
     .single()
 
-  const payoutNumber = method === 'wave' ? shop?.payout_wave_number : shop?.payout_om_number
+  // Résoudre le numéro depuis le bon slot DB selon la méthode et le pays
+  const methodDef = getPayoutMethods(shop?.country ?? null).find(m => m.key === method)
+  if (!methodDef) {
+    return NextResponse.json({ error: 'Méthode de payout non reconnue' }, { status: 400 })
+  }
+  const payoutNumber = methodDef.col === 'payout_wave_number'
+    ? shop?.payout_wave_number
+    : shop?.payout_om_number
   if (!payoutNumber) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
   }
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   if (amount > availableBalance) {
     return NextResponse.json({
-      error: `Solde insuffisant. Disponible : ${availableBalance.toLocaleString('fr-FR')} FCFA.`,
+      error: `Solde insuffisant. Disponible : ${availableBalance.toLocaleString('fr-FR')}.`,
     }, { status: 400 })
   }
 
@@ -78,7 +87,7 @@ export async function POST(req: NextRequest) {
     gross_amount:     grossAmount,
     commission_amount: commissionAmount,
     net_amount:       netAmount,
-    payout_method:    method,
+    payout_method:    method as PayoutMethodKey,
     payout_number:    payoutNumber,
     status:           'pending',
   })

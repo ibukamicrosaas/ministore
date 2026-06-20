@@ -70,7 +70,7 @@ export default function PrivacyPage() {
           <li><strong>Supabase</strong> (hébergement base de données, UE)</li>
           <li><strong>Vercel</strong> (hébergement application, UE)</li>
           <li><strong>Bictorys</strong> (traitement des paiements, Sénégal)</li>
-          <li><strong>Twilio</strong> (envoi de notifications WhatsApp, USA)</li>
+          <li><strong>Lafricamobile</strong> (envoi de notifications SMS, Sénégal)</li>
           <li><strong>Sentry</strong> (monitoring erreurs, USA)</li>
         </ul>
         <p>Ces prestataires sont soumis à des engagements contractuels de protection des données. Aucune donnée n'est vendue à des tiers.</p>

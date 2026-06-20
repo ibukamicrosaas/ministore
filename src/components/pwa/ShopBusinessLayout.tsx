@@ -5,6 +5,7 @@ import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
 import { APP_URL } from '@/constants'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 interface Props {
   shop: Shop
@@ -214,7 +215,7 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
       {/* ── Catalogue ── */}
       {/* Pas de px-4 ici : ProductGrid gère ses propres marges internes */}
       <div className="border-t border-gray-100 flex-1">
-        <ProductGrid products={products} shopSlug={shopSlug} primaryColor={shop.primary_color} />
+        <ProductGrid products={products} shopSlug={shopSlug} primaryColor={shop.primary_color} currency={(shop as unknown as { currency?: string }).currency as ShopCurrency | undefined} />
       </div>
 
       {/* ── CTA sticky ── */}

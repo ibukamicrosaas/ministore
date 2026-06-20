@@ -7,23 +7,37 @@ import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag } 
 import toast from 'react-hot-toast'
 import type { ProductVariant, DeliveryZone } from '@/types'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 const COUNTRIES = [
+  // Afrique
   { code: 'SN', flag: '🇸🇳', dial: '+221', name: 'Sénégal' },
   { code: 'CI', flag: '🇨🇮', dial: '+225', name: "Côte d'Ivoire" },
   { code: 'TG', flag: '🇹🇬', dial: '+228', name: 'Togo' },
   { code: 'BJ', flag: '🇧🇯', dial: '+229', name: 'Bénin' },
   { code: 'BF', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso' },
   { code: 'ML', flag: '🇲🇱', dial: '+223', name: 'Mali' },
+  // Europe & Canada
+  { code: 'FR', flag: '🇫🇷', dial: '+33',  name: 'France' },
+  { code: 'BE', flag: '🇧🇪', dial: '+32',  name: 'Belgique' },
+  { code: 'LU', flag: '🇱🇺', dial: '+352', name: 'Luxembourg' },
+  { code: 'CH', flag: '🇨🇭', dial: '+41',  name: 'Suisse' },
+  { code: 'CA', flag: '🇨🇦', dial: '+1',   name: 'Canada' },
 ]
 
 const PHONE_PLACEHOLDERS: Record<string, string> = {
   '+221': '77 000 00 00',    // SN — 8 chiffres
-  '+225': '07 00 00 00 00',  // CI — 10 chiffres avec 0 initial
+  '+225': '07 00 00 00 00',  // CI — 10 chiffres
   '+228': '90 00 00 00',     // TG — 8 chiffres
   '+229': '97 00 00 00',     // BJ — 8 chiffres
   '+226': '70 00 00 00',     // BF — 8 chiffres
   '+223': '70 00 00 00',     // ML — 8 chiffres
+  '+33':  '6 00 00 00 00',   // FR — mobile 9 chiffres
+  '+32':  '470 00 00 00',    // BE — mobile 9 chiffres
+  '+352': '621 000 000',     // LU — mobile
+  '+41':  '76 000 00 00',    // CH — mobile 9 chiffres
+  '+1':   '514 000 0000',    // CA — 10 chiffres
 }
 
 function SectionLabel({
@@ -177,6 +191,7 @@ interface Props {
   shopLogoUrl: string | null
   shopCity: string | null
   shopCountry: string
+  shopCurrency: ShopCurrency
   primaryColor: string
   products: ProductOption[]
   deliveryDates: { value: string; label: string }[]
@@ -196,6 +211,7 @@ export function OrderForm({
   shopLogoUrl,
   shopCity,
   shopCountry,
+  shopCurrency,
   primaryColor,
   products,
   deliveryDates,
@@ -573,7 +589,7 @@ export function OrderForm({
                         <option value="">— Choisir une variante —</option>
                         {p.variants.map((v, vi) => (
                           <option key={vi} value={v.label}>
-                            {v.label} — {v.price.toLocaleString('fr-FR')} FCFA
+                            {v.label} — {formatPrice(v.price, shopCurrency)}
                           </option>
                         ))}
                       </select>
@@ -763,7 +779,7 @@ export function OrderForm({
                                 className="text-sm font-bold shrink-0"
                                 style={{ color: selectedZoneId === z.id ? primaryColor : '#6b7280' }}
                               >
-                                {z.price > 0 ? `${z.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
+                                {z.price > 0 ? formatPrice(z.price, shopCurrency) : 'Gratuit'}
                               </p>
                             </div>
                           </RadioCard>
@@ -849,7 +865,7 @@ export function OrderForm({
           </div>
           {promoStatus === 'valid' && (
             <p className="mt-1 text-xs text-green-600 font-medium">
-              ✓ Code valide — {promoDiscount}% de réduction ({promoAmount.toLocaleString('fr-FR')} FCFA)
+              ✓ Code valide — {promoDiscount}% de réduction ({formatPrice(promoAmount, shopCurrency)})
             </p>
           )}
           {promoStatus === 'invalid' && (
@@ -871,12 +887,12 @@ export function OrderForm({
                     <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
                     {paymentType === 'online' && hasDeposit && (
                       <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                        Acompte : {deposit.toLocaleString('fr-FR')} FCFA
+                        Acompte : {formatPrice(deposit, shopCurrency)}
                       </p>
                     )}
                     {paymentType === 'online' && !hasDeposit && total > 0 && (
                       <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                        Total : {total.toLocaleString('fr-FR')} FCFA
+                        Total : {formatPrice(total, shopCurrency)}
                       </p>
                     )}
                   </div>
@@ -906,18 +922,18 @@ export function OrderForm({
             {deliveryPrice > 0 && (
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>Livraison ({selectedZone?.name})</span>
-                <span>+{deliveryPrice.toLocaleString('fr-FR')} FCFA</span>
+                <span>+{formatPrice(deliveryPrice, shopCurrency)}</span>
               </div>
             )}
             {promoAmount > 0 && (
               <div className="flex items-center justify-between text-xs text-green-600 font-medium">
                 <span>Réduction ({promoDiscount}%)</span>
-                <span>-{promoAmount.toLocaleString('fr-FR')} FCFA</span>
+                <span>-{formatPrice(promoAmount, shopCurrency)}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-sm font-bold text-gray-900">
               <span>Total commande</span>
-              <span>{total.toLocaleString('fr-FR')} FCFA</span>
+              <span>{formatPrice(total, shopCurrency)}</span>
             </div>
           </div>
         )}

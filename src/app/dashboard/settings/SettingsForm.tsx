@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard } from 'lucide-react'
+import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -21,11 +23,29 @@ const PAYOUT_COUNTRIES = [
   { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '70 00 00 00' },
 ]
 
+const MARKET_COUNTRIES_AFRICA = [
+  { code: 'SN', flag: '🇸🇳', name: 'Sénégal' },
+  { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire" },
+  { code: 'BJ', flag: '🇧🇯', name: 'Bénin' },
+  { code: 'TG', flag: '🇹🇬', name: 'Togo' },
+  { code: 'ML', flag: '🇲🇱', name: 'Mali' },
+  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso' },
+]
+
+const MARKET_COUNTRIES_EU_CA = [
+  { code: 'FR', flag: '🇫🇷', name: 'France' },
+  { code: 'BE', flag: '🇧🇪', name: 'Belgique' },
+  { code: 'LU', flag: '🇱🇺', name: 'Luxembourg' },
+  { code: 'CH', flag: '🇨🇭', name: 'Suisse' },
+  { code: 'CA', flag: '🇨🇦', name: 'Canada' },
+]
+
 const COUNTRY_OPTIONS = [
+  // Afrique
   { value: 'SN', label: '🇸🇳 Sénégal' },
   { value: 'CI', label: "🇨🇮 Côte d'Ivoire" },
   { value: 'BJ', label: '🇧🇯 Bénin' },
-  { value: 'BK', label: '🇧🇫 Burkina Faso' },
+  { value: 'BF', label: '🇧🇫 Burkina Faso' },
   { value: 'TG', label: '🇹🇬 Togo' },
   { value: 'ML', label: '🇲🇱 Mali' },
   { value: 'CM', label: '🇨🇲 Cameroun' },
@@ -34,6 +54,12 @@ const COUNTRY_OPTIONS = [
   { value: 'GA', label: '🇬🇦 Gabon' },
   { value: 'MG', label: '🇲🇬 Madagascar' },
   { value: 'MA', label: '🇲🇦 Maroc' },
+  // Europe & Canada
+  { value: 'FR', label: '🇫🇷 France' },
+  { value: 'BE', label: '🇧🇪 Belgique' },
+  { value: 'LU', label: '🇱🇺 Luxembourg' },
+  { value: 'CH', label: '🇨🇭 Suisse' },
+  { value: 'CA', label: '🇨🇦 Canada' },
 ]
 
 const COLOR_PRESETS = [
@@ -101,7 +127,7 @@ export function SettingsForm({ shop }: Props) {
   const [country, setCountry] = useState(shop.country ?? '')
 
   // Marchés cibles — pays depuis lesquels les clients peuvent commander
-  const ALL_MARKET_COUNTRIES = ['SN', 'CI', 'BJ', 'TG', 'ML', 'BF']
+  const ALL_MARKET_COUNTRIES = MARKET_COUNTRIES_AFRICA.map(c => c.code)
   const shopAnyMarkets = shop as unknown as Record<string, unknown>
   const [targetCountries, setTargetCountries] = useState<string[]>(() => {
     const val = shopAnyMarkets.target_countries
@@ -150,12 +176,61 @@ export function SettingsForm({ shop }: Props) {
   const [waveLocal, setWaveLocal] = useState(() => stripDial(shop.payout_wave_number ?? null))
   const [omLocal,   setOmLocal]   = useState(() => stripDial(shop.payout_om_number   ?? null))
 
+  // Stripe Connect (EU/CA Pro uniquement)
+  const isEuCa                              = isEuCaCountry(shop.country ?? null)
+  const stripeConnectId                     = (shopAny.stripe_account_id as string | null) ?? null
+  const stripeConnectEnabled                = (shopAny.stripe_connect_enabled as boolean | null) ?? false
+  const [loadingConnect, setLoadingConnect] = useState(false)
+  const [connectError, setConnectError]     = useState<string | null>(null)
+
+  const stripeConnectParam = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('stripe_connect')
+    : null
+  const stripeConnectErrorParam = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('stripe_error')
+    : null
+
+  async function handleStripeConnect() {
+    setLoadingConnect(true)
+    setConnectError(null)
+    try {
+      const res  = await fetch('/api/stripe/connect/create-link', { method: 'POST' })
+      const data = await res.json() as { url?: string; error?: string }
+      if (!res.ok || !data.url) {
+        setConnectError(data.error ?? 'Erreur lors de la connexion Stripe')
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      setConnectError('Erreur réseau. Réessayez.')
+    } finally {
+      setLoadingConnect(false)
+    }
+  }
+
   // Meta Pixel
   const metaPixelIdValue = (shop as unknown as Record<string, unknown>).meta_pixel_id
   const [metaPixelId, setMetaPixelId]           = useState<string>(
     typeof metaPixelIdValue === 'string' ? metaPixelIdValue : ''
   )
   const [savingPixel, setSavingPixel]           = useState(false)
+
+  // Devise du shop
+  const [shopCurrency, setShopCurrency]         = useState<ShopCurrency>(
+    (shopAny.currency as ShopCurrency | null) ?? 'XOF'
+  )
+  const [savingCurrency, setSavingCurrency]     = useState(false)
+
+  async function handleSaveCurrency() {
+    setSavingCurrency(true)
+    const result = await updateShopCurrency(shopCurrency)
+    setSavingCurrency(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('Devise mise à jour ✓')
+    }
+  }
 
   // Debounced slug availability check
   useEffect(() => {
@@ -582,13 +657,18 @@ export function SettingsForm({ shop }: Props) {
           </button>
         </div>
 
-        {acceptOnlinePayment && (
+        {acceptOnlinePayment && !isEuCa && (
           <div className="space-y-3 pt-1 border-t border-gray-100">
             <p className="text-xs font-medium text-gray-500">Numéros de reversement</p>
+            <p className="text-[11px] text-gray-400">
+              Ces numéros servent à recevoir tes reversements de la part de TEKKIShop.
+            </p>
 
-            {/* Wave — avec sélecteur inline */}
+            {/* Champ 1 — méthode principale selon pays */}
             <div ref={payoutDialRef}>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Wave</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Numéro {getPayoutMethods(shop.country ?? null)[0]?.label ?? 'Mobile Money principal'}
+              </label>
               <div className="relative flex rounded-xl border border-gray-200 bg-white focus-within:border-[var(--color-primary)] transition-colors">
                 <button
                   type="button"
@@ -626,23 +706,34 @@ export function SettingsForm({ shop }: Props) {
               </div>
             </div>
 
-            {/* Orange Money — badge statique, même indicatif */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Numéro Orange Money</label>
-              <div className="flex rounded-xl border border-gray-200 bg-white focus-within:border-[var(--color-primary)] transition-colors">
-                <div className="flex shrink-0 h-full items-center gap-1 bg-gray-50 px-3 border-r border-gray-200 text-sm font-medium text-gray-700 rounded-l-xl select-none">
-                  <span>{selectedPayoutCountry.flag}</span>
-                  <span className="font-mono">{selectedPayoutCountry.dial}</span>
+            {/* Champ 2 — méthode secondaire si disponible dans le pays */}
+            {getPayoutMethods(shop.country ?? null)[1] && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Numéro {getPayoutMethods(shop.country ?? null)[1]!.label} (optionnel)
+                </label>
+                <div className="flex rounded-xl border border-gray-200 bg-white focus-within:border-[var(--color-primary)] transition-colors">
+                  <div className="flex shrink-0 h-full items-center gap-1 bg-gray-50 px-3 border-r border-gray-200 text-sm font-medium text-gray-700 rounded-l-xl select-none">
+                    <span>{selectedPayoutCountry.flag}</span>
+                    <span className="font-mono">{selectedPayoutCountry.dial}</span>
+                  </div>
+                  <input
+                    type="tel"
+                    value={omLocal}
+                    onChange={e => setOmLocal(e.target.value)}
+                    placeholder={selectedPayoutCountry.placeholder}
+                    className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent"
+                  />
                 </div>
-                <input
-                  type="tel"
-                  value={omLocal}
-                  onChange={e => setOmLocal(e.target.value)}
-                  placeholder={selectedPayoutCountry.placeholder}
-                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent"
-                />
               </div>
-            </div>
+            )}
+          </div>
+        )}
+        {acceptOnlinePayment && isEuCa && (
+          <div className="pt-1 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
+              Les paiements clients sont gérés directement via ton compte Stripe Connect — les fonds arrivent dans ton compte bancaire automatiquement. TEKKIShop ne collecte pas les paiements EU/CA.
+            </p>
           </div>
         )}
       </div>
@@ -758,38 +849,74 @@ export function SettingsForm({ shop }: Props) {
       </div>
 
       {/* Marchés cibles */}
-      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 p-4 space-y-4">
         <div>
           <p className="text-sm font-medium text-gray-900">Marchés cibles</p>
           <p className="text-xs text-gray-500 mt-0.5">
             Choisis les pays depuis lesquels tes clients peuvent passer commande. Seuls les indicatifs sélectionnés apparaîtront sur ton site.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {PAYOUT_COUNTRIES.map(c => {
-            const active = targetCountries.includes(c.code)
-            return (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => toggleMarket(c.code)}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors text-left ${
-                  active
-                    ? 'border-[var(--color-primary)] bg-sky-50 text-gray-900'
-                    : 'border-gray-200 bg-white text-gray-500'
-                }`}
-              >
-                <div className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
-                  active ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-gray-300'
-                }`}>
-                  {active && <Check className="h-2.5 w-2.5 text-white" />}
-                </div>
-                <span>{c.flag}</span>
-                <span className="text-xs font-medium truncate">{c.name}</span>
-              </button>
-            )
-          })}
+
+        {/* Afrique */}
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Afrique</p>
+          <div className="grid grid-cols-2 gap-2">
+            {MARKET_COUNTRIES_AFRICA.map(c => {
+              const active = targetCountries.includes(c.code)
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => toggleMarket(c.code)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors text-left ${
+                    active
+                      ? 'border-[var(--color-primary)] bg-sky-50 text-gray-900'
+                      : 'border-gray-200 bg-white text-gray-500'
+                  }`}
+                >
+                  <div className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                    active ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-gray-300'
+                  }`}>
+                    {active && <Check className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                  <span>{c.flag}</span>
+                  <span className="text-xs font-medium truncate">{c.name}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
+
+        {/* Europe & Canada */}
+        <div className="space-y-2 pt-1 border-t border-gray-100">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Europe & Canada</p>
+          <div className="grid grid-cols-2 gap-2">
+            {MARKET_COUNTRIES_EU_CA.map(c => {
+              const active = targetCountries.includes(c.code)
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => toggleMarket(c.code)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors text-left ${
+                    active
+                      ? 'border-[var(--color-primary)] bg-sky-50 text-gray-900'
+                      : 'border-gray-200 bg-white text-gray-500'
+                  }`}
+                >
+                  <div className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                    active ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : 'border-gray-300'
+                  }`}>
+                    {active && <Check className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                  <span>{c.flag}</span>
+                  <span className="text-xs font-medium truncate">{c.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {targetCountries.length === 1 && (
           <p className="text-[11px] text-amber-600">Au moins 1 marché doit rester actif.</p>
         )}
@@ -1378,6 +1505,108 @@ export function SettingsForm({ shop }: Props) {
         💡 Besoin d'aide ? Consulte la <a href="https://developers.facebook.com/docs/facebook-pixel" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">documentation Meta Pixel</a>
       </p>
     </div>
+
+    {/* ── Devise du shop ─────────────────────────────────────────────────── */}
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+      <h3 className="text-sm font-bold text-gray-900">Devise de la boutique</h3>
+      <p className="text-xs text-gray-500">
+        Choisissez la devise dans laquelle vos prix seront affichés pour vos clients.
+        Un marchand en France souhaitant vendre sur les marchés africains peut choisir FCFA.
+      </p>
+      <div className="flex gap-3">
+        <select
+          value={shopCurrency}
+          onChange={e => setShopCurrency(e.target.value as ShopCurrency)}
+          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+        >
+          {(Object.entries(CURRENCY_LABEL) as [ShopCurrency, string][]).map(([code, label]) => (
+            <option key={code} value={code}>{label}</option>
+          ))}
+        </select>
+        <button
+          onClick={() => { void handleSaveCurrency() }}
+          disabled={savingCurrency}
+          className="shrink-0 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {savingCurrency ? 'Enregistrement...' : 'Enregistrer'}
+        </button>
+      </div>
+    </div>
+
+    {/* ── Stripe Connect — EU/CA Pro uniquement ─────────────────────────── */}
+    {isEuCa && isPro && (
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5 text-sky-500" />
+          <h3 className="text-sm font-bold text-gray-900">Paiements par carte bancaire</h3>
+        </div>
+        <p className="text-xs text-gray-500">
+          Connectez votre compte Stripe pour recevoir les paiements par carte de vos clients directement.
+          TEKKIShop ne prélève aucune commission sur les paiements Stripe.
+        </p>
+
+        {stripeConnectParam === 'connected' && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <p className="text-sm font-semibold text-emerald-700">Compte Stripe connecté ! Vos clients peuvent payer par carte.</p>
+          </div>
+        )}
+
+        {stripeConnectParam === 'pending' && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <Loader2 className="h-4 w-4 text-amber-500 mt-0.5 animate-spin" />
+            <p className="text-xs text-amber-700">Votre compte Stripe est en cours de validation. Revenez dans quelques heures.</p>
+          </div>
+        )}
+
+        {stripeConnectParam === 'incomplete' && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <XCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+            <p className="text-xs text-amber-700">Vérification incomplète. Cliquez sur le bouton pour finaliser votre compte Stripe.</p>
+          </div>
+        )}
+
+        {stripeConnectErrorParam && (
+          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <XCircle className="h-4 w-4 text-red-500" />
+            <p className="text-sm text-red-600">Erreur lors de la connexion Stripe. Réessayez ou contactez le support.</p>
+          </div>
+        )}
+
+        {connectError && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">{connectError}</p>
+        )}
+
+        <div className="flex items-center gap-3">
+          <div className={`flex h-2.5 w-2.5 rounded-full ${stripeConnectEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+          <span className="text-xs text-gray-600">
+            {stripeConnectEnabled
+              ? 'Compte Stripe actif — paiements par carte activés'
+              : stripeConnectId
+                ? 'Compte Stripe créé, en attente de validation'
+                : 'Compte Stripe non connecté'
+            }
+          </span>
+        </div>
+
+        <button
+          onClick={() => { void handleStripeConnect() }}
+          disabled={loadingConnect}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {loadingConnect
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <CreditCard className="h-4 w-4" />
+          }
+          {loadingConnect
+            ? 'Redirection...'
+            : stripeConnectId
+              ? 'Gérer mon compte Stripe'
+              : 'Connecter mon compte Stripe'
+          }
+        </button>
+      </div>
+    )}
     </>
   )
 }

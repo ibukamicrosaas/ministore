@@ -1,7 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { PaymentMethodSelector } from './PaymentMethodSelector'
+import { isEuCaCountry, formatPrice } from '@/lib/utils/country-groups'
 import type { Shop } from '@/types'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -73,17 +75,28 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, slug, primary_color, logo_url')
+    .select('name, slug, primary_color, logo_url, country, currency, stripe_connect_enabled')
     .eq('id', order.shop_id)
     .eq('slug', slug)  // Vérifie que la commande appartient bien à cette boutique
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'slug' | 'primary_color' | 'logo_url'> | null
+  const shop = shopData as (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'logo_url'> & {
+    country?: string | null
+    currency?: string | null
+    stripe_connect_enabled?: boolean | null
+  }) | null
   if (!shop) notFound()
 
-  const isDeposit = order.payment_type === 'online_deposit' && order.deposit_amount > 0
-  const amount    = isDeposit ? order.deposit_amount : order.total_price
-  const color     = shop.primary_color ?? '#0EA5E9'
+  const isDeposit          = order.payment_type === 'online_deposit' && order.deposit_amount > 0
+  const amount             = isDeposit ? order.deposit_amount : order.total_price
+  const color              = shop.primary_color ?? '#0EA5E9'
+  const shopCountry        = shop.country ?? null
+  const isEuCa             = isEuCaCountry(shopCountry)
+  const currency           = (shop.currency ?? 'XOF') as ShopCurrency
+  const stripeEnabled      = shop.stripe_connect_enabled ?? false
+
+  // Les montants sont stockés en unités d'affichage (pas en centimes)
+  const formattedAmount    = formatPrice(amount, currency)
 
   return (
     <div className="max-w-lg mx-auto min-h-screen px-4 pt-6 pb-10">
@@ -125,7 +138,7 @@ export default async function PayPage({ params, searchParams }: Props) {
           className="inline-block mt-3 rounded-full px-4 py-1.5 text-sm font-bold text-white"
           style={{ backgroundColor: color }}
         >
-          {amount.toLocaleString('fr-FR')} FCFA
+          {formattedAmount}
         </div>
       </div>
 
@@ -135,9 +148,12 @@ export default async function PayPage({ params, searchParams }: Props) {
         customerFirstName={order.clients?.first_name ?? ''}
         customerPhone={order.clients?.phone ?? ''}
         amount={amount}
+        formattedAmount={formattedAmount}
         primaryColor={color}
         isDeposit={isDeposit}
         clientToken={order.client_token}
+        stripeConnectEnabled={stripeEnabled}
+        isEuCa={isEuCa}
       />
     </div>
   )

@@ -14,6 +14,10 @@ const COUNTRIES = [
   { flag: '🇹🇬', name: 'Togo' },
   { flag: '🇲🇱', name: 'Mali' },
   { flag: '🇧🇫', name: 'Burkina Faso' },
+  { flag: '🇫🇷', name: 'France' },
+  { flag: '🇧🇪', name: 'Belgique' },
+  { flag: '🇨🇭', name: 'Suisse' },
+  { flag: '🇨🇦', name: 'Canada' },
 ]
 
 const BENEFITS = [
@@ -67,7 +71,7 @@ export default function LoginPage() {
 
           {/* Pays */}
           <div>
-            <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider font-medium">Disponible dans 6 pays</p>
+            <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider font-medium">Disponible dans 10 pays</p>
             <div className="flex flex-wrap gap-2">
               {COUNTRIES.map((c) => (
                 <span

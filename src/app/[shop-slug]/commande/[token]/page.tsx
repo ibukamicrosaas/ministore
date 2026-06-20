@@ -4,6 +4,8 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, Phone, MessageCircle } from 'lucide-react'
 import type { Shop, OrderItem } from '@/types'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export const revalidate = 30
 
@@ -41,7 +43,7 @@ export default async function OrderTrackingPage({ params }: Props) {
       payment_type, total_price, notes, created_at,
       clients(first_name, phone),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
-      shops(name, slug, primary_color, phone_whatsapp, logo_url)
+      shops(name, slug, primary_color, phone_whatsapp, logo_url, currency)
     `)
     .eq('client_token', token)
     .single()
@@ -61,13 +63,14 @@ export default async function OrderTrackingPage({ params }: Props) {
     created_at: string
     clients: { first_name: string; phone: string } | null
     order_items: OrderItem[]
-    shops: Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp' | 'logo_url'> | null
+    shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp' | 'logo_url'> & { currency?: string | null }) | null
   }
 
   const shop  = order.shops
   if (!shop || shop.slug !== slug) notFound()
 
   const color    = shop.primary_color ?? '#0EA5E9'
+  const currency = (shop.currency ?? 'XOF') as ShopCurrency
   const isCancelled = order.status === 'cancelled'
   const statusInfo  = STATUS_STEPS[order.status] ?? STATUS_STEPS.pending
   const currentStep = statusInfo.step
@@ -208,14 +211,14 @@ export default async function OrderTrackingPage({ params }: Props) {
                   {item.quantity > 1 && <p className="text-xs text-gray-400">× {item.quantity}</p>}
                 </div>
                 <p className="font-semibold text-gray-900 shrink-0 ml-3">
-                  {item.line_total.toLocaleString('fr-FR')} FCFA
+                  {formatPrice(item.line_total, currency)}
                 </p>
               </div>
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-sm font-bold text-gray-900">Total</span>
-            <span className="text-base font-bold text-gray-900">{order.total_price.toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-base font-bold text-gray-900">{formatPrice(order.total_price, currency)}</span>
           </div>
         </div>
 

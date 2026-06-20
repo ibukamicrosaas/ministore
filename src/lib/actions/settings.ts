@@ -195,6 +195,9 @@ export async function createShop(formData: FormData) {
     slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
   }
 
+  const { getCurrencyForCountry } = await import('@/lib/utils/country-groups')
+  const currency = getCurrencyForCountry(country)
+
   const admin = createAdminClient()
   const { data: shop, error } = await admin
     .from('shops')
@@ -203,6 +206,7 @@ export async function createShop(formData: FormData) {
       name,
       city,
       country,
+      currency,
       phone_whatsapp: phoneWhatsapp,
       trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
     })
@@ -559,6 +563,37 @@ export async function updateMetaPixelId(
     .eq('id', profile.shop_id)
 
   if (error) return { error: 'Impossible de mettre à jour le Pixel ID.' }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}
+
+export async function updateShopCurrency(currency: string): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
+
+  const allowed = ['XOF', 'EUR', 'CAD']
+  if (!allowed.includes(currency)) return { error: 'Devise invalide.' }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await admin
+    .from('shops')
+    .update({ currency, updated_at: new Date().toISOString() } as any)
+    .eq('id', profile.shop_id)
+
+  if (error) return { error: 'Impossible de mettre à jour la devise.' }
 
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
   revalidatePath('/dashboard/settings')

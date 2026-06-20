@@ -89,6 +89,7 @@ export interface CreateProductInput {
   slug?: string | null
   meta_title?: string | null
   meta_description?: string | null
+  delivery_delay?: string | null
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {

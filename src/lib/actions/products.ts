@@ -92,6 +92,7 @@ export async function createProduct(input: CreateProductInput) {
     slug:               productSlug || null,
     meta_title:         input.meta_title?.trim() || null,
     meta_description:   input.meta_description?.trim() || null,
+    delivery_delay:     input.delivery_delay?.trim() || null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -177,6 +178,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.is_featured !== undefined)        updates.is_featured        = input.is_featured
   if (input.meta_title !== undefined)         updates.meta_title         = input.meta_title?.trim() || null
   if (input.meta_description !== undefined)   updates.meta_description   = input.meta_description?.trim() || null
+  if (input.delivery_delay !== undefined)     updates.delivery_delay     = input.delivery_delay?.trim() || null
 
   if (input.slug !== undefined) {
     const newSlug = input.slug?.trim() || null

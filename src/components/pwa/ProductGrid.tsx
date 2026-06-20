@@ -5,11 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { LayoutList, LayoutGrid, Search, Package, Star, Tag, X } from 'lucide-react'
 import type { Product, ProductPhoto, ProductVariant } from '@/types'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 interface ProductGridProps {
   products: Product[]
   shopSlug: string
   primaryColor: string
+  currency?: ShopCurrency
 }
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
@@ -28,21 +31,21 @@ function getPrimaryPhoto(product: Product): string | null {
   return product.photo_url
 }
 
-function getPrice(product: Product): string {
+function getPrice(product: Product, currency: ShopCurrency): string {
   const variants = product.variants as ProductVariant[] | null
   if (variants && variants.length > 0) {
     const prices = variants.map(v => v.price).filter(p => p > 0)
     if (prices.length > 0) {
       const min = Math.min(...prices)
-      return `À partir de ${min.toLocaleString('fr-FR')} FCFA`
+      return `À partir de ${formatPrice(min, currency)}`
     }
   }
-  return `${product.price.toLocaleString('fr-FR')} FCFA`
+  return formatPrice(product.price, currency)
 }
 
-function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
+function FeaturedCard({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
   const photo = getPrimaryPhoto(product)
-  const price = getPrice(product)
+  const price = getPrice(product, currency)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const soldOut = product.stock_count === 0
   const newProduct = isNew(product)
@@ -86,9 +89,9 @@ function FeaturedCard({ product, shopSlug, primaryColor }: { product: Product; s
   )
 }
 
-function ProductCardList({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
+function ProductCardList({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
   const photo = getPrimaryPhoto(product)
-  const price = getPrice(product)
+  const price = getPrice(product, currency)
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
   const newProduct = isNew(product)
@@ -155,9 +158,9 @@ function ProductCardList({ product, shopSlug, primaryColor }: { product: Product
   )
 }
 
-function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product; shopSlug: string; primaryColor: string }) {
+function ProductCardGrid({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
   const photo = getPrimaryPhoto(product)
-  const price = getPrice(product)
+  const price = getPrice(product, currency)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
   const soldOut = product.stock_count === 0
@@ -204,7 +207,7 @@ function ProductCardGrid({ product, shopSlug, primaryColor }: { product: Product
   )
 }
 
-export function ProductGrid({ products, shopSlug, primaryColor }: ProductGridProps) {
+export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF' }: ProductGridProps) {
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -258,7 +261,7 @@ export function ProductGrid({ products, shopSlug, primaryColor }: ProductGridPro
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
             {featured.map(p => (
-              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} />
+              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
             ))}
           </div>
         </div>
@@ -357,13 +360,13 @@ export function ProductGrid({ products, shopSlug, primaryColor }: ProductGridPro
             {view === 'list' ? (
               <div className="space-y-2.5">
                 {byCategory[category].map(p => (
-                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} />
+                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
                 ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {byCategory[category].map(p => (
-                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} />
+                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
                 ))}
               </div>
             )}

@@ -1,12 +1,14 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { SubscriptionCheckoutForm } from './SubscriptionCheckoutForm'
+import { StripeSubscriptionCheckoutForm } from './StripeSubscriptionCheckoutForm'
+import { isEuCaCountry, getCurrencyForCountry } from '@/lib/utils/country-groups'
 
 interface Plan {
-  key: string
-  name: string
-  price: string
-  priceInt: number
+  key:         string
+  name:        string
+  price:       string
+  priceInt:    number
   annualPrice: number
 }
 
@@ -14,6 +16,12 @@ const PLANS: Record<string, Plan> = {
   decouverte: { key: 'decouverte', name: 'Découverte', price: '2 900', priceInt: 2900, annualPrice: 29000 },
   business:   { key: 'business',   name: 'Business',   price: '4 900', priceInt: 4900, annualPrice: 49000 },
   pro:        { key: 'pro',        name: 'Pro',         price: '9 900', priceInt: 9900, annualPrice: 99000 },
+}
+
+// Prix Stripe pour EU/CA (en centimes)
+const EU_CA_PRO_PRICES = {
+  EUR: { monthly: 1490, annual: 14900 },
+  CAD: { monthly: 1990, annual: 19900 },
 }
 
 type Props = {
@@ -41,11 +49,37 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
 
   const { data: shop } = await supabase
     .from('shops')
-    .select('name, primary_color')
+    .select('name, primary_color, country, email')
     .eq('id', profile.shop_id)
     .single()
 
   if (!shop) notFound()
+
+  const shopCountry  = (shop as typeof shop & { country?: string; email?: string }).country ?? null
+  const shopEmail    = (shop as typeof shop & { country?: string; email?: string }).email ?? undefined
+  const shopEuCa     = isEuCaCountry(shopCountry)
+  const currency     = getCurrencyForCountry(shopCountry)
+
+  // EU/CA : uniquement Pro via Stripe
+  if (shopEuCa && plan.key !== 'pro') notFound()
+
+  if (shopEuCa) {
+    const prices = EU_CA_PRO_PRICES[currency as 'EUR' | 'CAD'] ?? EU_CA_PRO_PRICES.EUR
+    const amountCents = billingCycle === 'annual' ? prices.annual : prices.monthly
+
+    return (
+      <StripeSubscriptionCheckoutForm
+        planKey="pro"
+        planName="Pro"
+        amountCents={amountCents}
+        currency={currency as 'EUR' | 'CAD'}
+        billingCycle={billingCycle}
+        shopName={shop.name}
+        primaryColor={shop.primary_color ?? '#0EA5E9'}
+        customerEmail={shopEmail}
+      />
+    )
+  }
 
   return (
     <SubscriptionCheckoutForm

@@ -6,6 +6,8 @@ import { PixelPurchase } from './PixelPurchase'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Shop, OrderItem } from '@/types'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -29,7 +31,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       payment_type, deposit_amount, total_price, notes,
       clients(first_name, phone, whatsapp),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
-      shops(name, slug, primary_color, phone_whatsapp)
+      shops(name, slug, primary_color, phone_whatsapp, currency)
     `)
     .eq('id', order_id)
     .eq('client_token', token)
@@ -49,11 +51,12 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     notes: string | null
     clients: { first_name: string; phone: string; whatsapp: string | null } | null
     order_items: OrderItem[]
-    shops: Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> | null
+    shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
   }
 
-  const shop  = order.shops
-  const color = shop?.primary_color ?? '#0EA5E9'
+  const shop     = order.shops
+  const color    = shop?.primary_color ?? '#0EA5E9'
+  const currency = (shop?.currency ?? 'XOF') as ShopCurrency
 
   const isOnline   = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
   const isPaid     = order.status === 'confirmed'
@@ -116,14 +119,14 @@ export default async function SuccessPage({ params, searchParams }: Props) {
                   {item.quantity > 1 && <span className="text-gray-500 ml-1">×{item.quantity}</span>}
                 </div>
                 <span className="font-medium text-gray-900 shrink-0">
-                  {item.line_total.toLocaleString('fr-FR')} F
+                  {formatPrice(item.line_total, currency)}
                 </span>
               </div>
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-sm font-bold text-gray-900">Total</span>
-            <span className="text-base font-bold" style={{ color }}>{order.total_price.toLocaleString('fr-FR')} FCFA</span>
+            <span className="text-base font-bold" style={{ color }}>{formatPrice(order.total_price, currency)}</span>
           </div>
         </div>
 
@@ -154,9 +157,9 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           ) : isOnline ? (
             <p className="text-sm text-amber-600">Paiement en attente de confirmation</p>
           ) : order.payment_type === 'on_delivery' ? (
-            <p className="text-sm text-gray-700">À la livraison — {order.total_price.toLocaleString('fr-FR')} FCFA</p>
+            <p className="text-sm text-gray-700">À la livraison — {formatPrice(order.total_price, currency)}</p>
           ) : (
-            <p className="text-sm text-gray-700">En boutique — {order.total_price.toLocaleString('fr-FR')} FCFA</p>
+            <p className="text-sm text-gray-700">En boutique — {formatPrice(order.total_price, currency)}</p>
           )}
         </div>
       </div>

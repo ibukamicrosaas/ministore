@@ -3,14 +3,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processPayout } from '@/lib/actions/payouts'
 
-const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+const ADMIN_USER_IDS  = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+const BICTORYS_METHODS = new Set(['wave', 'orange_money'])
 
-/**
- * Admin endpoint to manually process a payout immediately.
- * Calls Bictorys Payout API to send the money.
- *
- * This is used when admin wants to process a payout outside of the scheduled cron.
- */
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +20,6 @@ export async function POST(
 
   const admin = createAdminClient()
 
-  // ✅ Récupérer le payout
   const { data: payout, error: fetchError } = await admin
     .from('payouts')
     .select('id, shop_id, gross_amount, payout_method, status')
@@ -33,31 +27,47 @@ export async function POST(
     .single()
 
   if (fetchError || !payout) {
-    console.error('[admin/payouts/complete] Payout not found:', id)
     return NextResponse.json({ error: 'Payout non trouvé' }, { status: 404 })
   }
 
   if (payout.status !== 'pending') {
-    console.warn(`[admin/payouts/complete] Payout ${id} is not pending (status: ${payout.status})`)
-    return NextResponse.json({
-      error: `Payout n'est pas en attente (statut: ${payout.status})`,
-    }, { status: 400 })
+    return NextResponse.json({ error: `Payout non en attente (statut: ${payout.status})` }, { status: 400 })
   }
 
-  // ✅ Appeler processPayout() pour faire l'appel Bictorys!
-  console.log(`[admin/payouts/complete] Processing payout ${id} for shop ${payout.shop_id}`)
-  const result = await processPayout(
-    payout.id,
-    payout.shop_id,
-    payout.gross_amount,
-    payout.payout_method as 'wave' | 'orange_money'
-  )
+  const isAuto = BICTORYS_METHODS.has(payout.payout_method)
 
-  if (result.error) {
-    console.error(`[admin/payouts/complete] Payout ${id} failed:`, result.error)
-    return NextResponse.json({ error: result.error }, { status: 500 })
+  if (isAuto) {
+    // Déclencher via l'API Bictorys
+    console.log(`[admin/payouts/complete] Auto Bictorys: ${id}`)
+    const result = await processPayout(
+      payout.id,
+      payout.shop_id,
+      payout.gross_amount,
+      payout.payout_method as 'wave' | 'orange_money',
+    )
+    if (result.error) {
+      console.error(`[admin/payouts/complete] Bictorys failed: ${result.error}`)
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
+  } else {
+    // Méthode manuelle (MTN, Moov, TMoney, Flooz…) — l'admin confirme avoir envoyé l'argent
+    console.log(`[admin/payouts/complete] Manuel confirmé par admin ${user.id}: ${id}`)
+    const { error } = await admin
+      .from('payouts')
+      .update({
+        status:       'completed',
+        completed_at: new Date().toISOString(),
+        updated_at:   new Date().toISOString(),
+        notes:        `Traité manuellement par l'admin le ${new Date().toLocaleDateString('fr-FR')}`,
+      })
+      .eq('id', id)
+
+    if (error) {
+      console.error('[admin/payouts/complete] DB update failed:', error.message)
+      return NextResponse.json({ error: 'Impossible de mettre à jour le payout' }, { status: 500 })
+    }
   }
 
-  console.log(`[admin/payouts/complete] ✅ Payout ${id} completed by admin ${user.id}`)
+  console.log(`[admin/payouts/complete] ✅ ${id} terminé`)
   return NextResponse.json({ success: true })
 }

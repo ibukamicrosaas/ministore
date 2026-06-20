@@ -12,13 +12,20 @@ import { ChevronDown } from 'lucide-react'
 type Mode = 'signin' | 'signup'
 
 const COUNTRIES = [
+  // Afrique
   { code: 'SN', flag: '🇸🇳', name: 'Sénégal',          dial: '+221', placeholder: '77 000 00 00' },
   { code: 'CI', flag: '🇨🇮', name: "Côte d'Ivoire",    dial: '+225', placeholder: '07 00 00 00 00' },
   { code: 'BJ', flag: '🇧🇯', name: 'Bénin',            dial: '+229', placeholder: '97 00 00 00' },
-  { code: 'BK', flag: '🇧🇫', name: 'Burkina Faso',     dial: '+226', placeholder: '70 00 00 00' },
+  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',     dial: '+226', placeholder: '70 00 00 00' },
   { code: 'ML', flag: '🇲🇱', name: 'Mali',             dial: '+223', placeholder: '70 00 00 00' },
   { code: 'TG', flag: '🇹🇬', name: 'Togo',             dial: '+228', placeholder: '90 00 00 00' },
-] as const
+  // Europe & Canada
+  { code: 'FR', flag: '🇫🇷', name: 'France',           dial: '+33',  placeholder: '6 00 00 00 00' },
+  { code: 'BE', flag: '🇧🇪', name: 'Belgique',         dial: '+32',  placeholder: '470 00 00 00' },
+  { code: 'LU', flag: '🇱🇺', name: 'Luxembourg',       dial: '+352', placeholder: '621 000 000' },
+  { code: 'CH', flag: '🇨🇭', name: 'Suisse',           dial: '+41',  placeholder: '76 000 00 00' },
+  { code: 'CA', flag: '🇨🇦', name: 'Canada',           dial: '+1',   placeholder: '514 000 0000' },
+]
 
 export function LoginForm() {
   const [mode, setMode] = useState<Mode>('signin')

@@ -35,7 +35,7 @@ export default async function EditProductPage({
       .single(),
     supabase
       .from('shops')
-      .select('slug, plan')
+      .select('slug, plan, currency')
       .eq('id', profile.shop_id)
       .single(),
   ])
@@ -43,9 +43,10 @@ export default async function EditProductPage({
   if (productRes.error || !productRes.data) notFound()
 
   const product   = productRes.data as Product
-  const shopData  = shopRes.data as { slug?: string; plan?: string } | null
-  const shopSlug  = shopData?.slug
-  const shopPlan  = shopData?.plan
+  const shopData      = shopRes.data as { slug?: string; plan?: string; currency?: string | null } | null
+  const shopSlug      = shopData?.slug
+  const shopPlan      = shopData?.plan
+  const shopCurrency  = shopData?.currency ?? 'XOF'
 
   // Build the public URL — use slug if available, otherwise UUID
   const productIdentifier = (product as Product & { slug?: string | null }).slug ?? product.id
@@ -67,7 +68,7 @@ export default async function EditProductPage({
         </div>
       )}
 
-      <ProductForm product={product} shopSlug={shopSlug} shopPlan={shopPlan} />
+      <ProductForm product={product} shopSlug={shopSlug} shopPlan={shopPlan} shopCurrency={shopCurrency} />
     </div>
   )
 }

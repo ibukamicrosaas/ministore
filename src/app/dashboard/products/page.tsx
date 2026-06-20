@@ -8,6 +8,8 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { Plus, Package, Tag } from 'lucide-react'
 import { toggleProductActive } from '@/lib/actions/products'
 import { CsvImportButton } from './CsvImportButton'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Product, Profile } from '@/types'
 
 export const metadata = { title: 'Produits — TekkiShop' }
@@ -26,12 +28,21 @@ export default async function ProductsPage() {
   const profile = profileData as Pick<Profile, 'shop_id'> | null
   if (!profile?.shop_id) redirect('/onboarding')
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('shop_id', profile.shop_id)
-    .order('display_order', { ascending: true })
-    .order('created_at', { ascending: true })
+  const [{ data, error }, { data: shopData }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*')
+      .eq('shop_id', profile.shop_id)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('shops')
+      .select('currency')
+      .eq('id', profile.shop_id)
+      .single(),
+  ])
+
+  const currency = ((shopData as { currency?: string | null } | null)?.currency ?? 'XOF') as ShopCurrency
 
   if (error) return <ErrorState message="Impossible de charger les produits." />
 
@@ -121,7 +132,7 @@ export default async function ProductsPage() {
                         <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Tag className="h-3 w-3" />
-                            {product.price.toLocaleString('fr-FR')} FCFA
+                            {formatPrice(product.price, currency)}
                           </span>
                           {Array.isArray(product.variants) && product.variants.length > 0 && (
                             <span className="text-gray-400">{product.variants.length} variante{product.variants.length > 1 ? 's' : ''}</span>

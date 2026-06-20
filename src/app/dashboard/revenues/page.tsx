@@ -2,11 +2,14 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import Link from 'next/link'
 import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { RequestPayoutButton } from './RequestPayoutButton'
 import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
 import type { Profile, Payout } from '@/types'
+import { isEuCaCountry, getPayoutMethods, formatPrice, PAYOUT_METHODS_BY_COUNTRY } from '@/lib/utils/country-groups'
+import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 
 export const metadata = { title: 'Revenus — TekkiShop' }
 
@@ -28,12 +31,31 @@ export default async function RevenuesPage() {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, payout_wave_number, payout_om_number')
+    .select('name, country, currency, payout_wave_number, payout_om_number')
     .eq('id', shopId)
     .single()
 
-  const shop = shopData as { name: string; payout_wave_number: string | null; payout_om_number: string | null } | null
+  const shop = shopData as {
+    name: string
+    country: string | null
+    currency: string | null
+    payout_wave_number: string | null
+    payout_om_number: string | null
+  } | null
   if (!shop) redirect('/dashboard')
+
+  const shopCurrency = (shop.currency ?? 'XOF') as import('@/lib/utils/country-groups').ShopCurrency
+  const euCa = isEuCaCountry(shop.country)
+
+  // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis les slots DB
+  const rawMethods = getPayoutMethods(shop.country)
+  const payoutMethodsWithNumbers = rawMethods
+    .map(m => ({
+      label:  m.label,
+      key:    m.key,
+      number: m.col === 'payout_wave_number' ? shop.payout_wave_number : shop.payout_om_number,
+    }))
+    .filter((m): m is { label: string; key: PayoutMethodKey; number: string } => !!m.number)
 
   // Total collecté via paiements en ligne (status completed)
   const { data: paymentsData } = await supabase
@@ -65,8 +87,12 @@ export default async function RevenuesPage() {
 
   const availableBalance = totalNet - totalPaidOut - totalPending
 
-  const hasPayoutMethod = !!(shop.payout_wave_number || shop.payout_om_number)
-  const canRequestPayout = availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod
+  const hasPayoutMethod = payoutMethodsWithNumbers.length > 0
+  const canRequestPayout = !euCa && availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod
+
+  // Label lisible pour une méthode de payout (recherche dans toutes les définitions)
+  const allMethods = Object.values(PAYOUT_METHODS_BY_COUNTRY).flat()
+  const getMethodLabel = (key: string) => allMethods.find(m => m.key === key)?.label ?? key
 
   return (
     <div className="space-y-5 pb-8">
@@ -84,34 +110,39 @@ export default async function RevenuesPage() {
               <p className="text-xs text-gray-500">Solde disponible</p>
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              {Math.max(0, availableBalance).toLocaleString('fr-FR')}
-              <span className="text-base font-normal text-gray-500 ml-1">FCFA</span>
+              {formatPrice(Math.max(0, availableBalance), shopCurrency)}
             </p>
           </div>
-          <RequestPayoutButton
-            shopId={shopId}
-            availableBalance={Math.max(0, availableBalance)}
-            waveNumber={shop.payout_wave_number}
-            omNumber={shop.payout_om_number}
-            canRequest={canRequestPayout}
-            minAmount={PAYOUT_MIN_AMOUNT}
-          />
+          {euCa ? (
+            <span className="text-xs text-gray-400 max-w-[160px] text-right leading-relaxed">
+              Paiements gérés via Stripe Connect — les fonds arrivent directement sur ton compte bancaire.
+            </span>
+          ) : (
+            <RequestPayoutButton
+              shopId={shopId}
+              availableBalance={Math.max(0, availableBalance)}
+              payoutMethods={payoutMethodsWithNumbers}
+              currency={shopCurrency}
+              canRequest={canRequestPayout}
+              minAmount={PAYOUT_MIN_AMOUNT}
+            />
+          )}
         </div>
 
-        {!hasPayoutMethod && (
+        {!euCa && !hasPayoutMethod && (
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
             <LinkIcon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700">
-              Ajoute un numéro Wave ou Orange Money dans tes{' '}
-              <a href="/dashboard/settings" className="font-semibold underline">Paramètres</a>{' '}
+              Ajoute un numéro mobile money dans tes{' '}
+              <Link href="/dashboard/settings" className="font-semibold underline">Paramètres</Link>{' '}
               pour pouvoir retirer tes fonds.
             </p>
           </div>
         )}
 
-        {hasPayoutMethod && availableBalance < PAYOUT_MIN_AMOUNT && availableBalance > 0 && (
+        {!euCa && hasPayoutMethod && availableBalance < PAYOUT_MIN_AMOUNT && availableBalance > 0 && (
           <p className="mt-3 text-xs text-gray-400">
-            Minimum {PAYOUT_MIN_AMOUNT.toLocaleString('fr-FR')} FCFA requis pour effectuer un retrait.
+            Minimum {formatPrice(PAYOUT_MIN_AMOUNT, shopCurrency)} requis pour effectuer un retrait.
           </p>
         )}
       </Card>
@@ -123,8 +154,7 @@ export default async function RevenuesPage() {
             <TrendingUp className="h-3.5 w-3.5 text-green-500" />
             <p className="text-xs text-gray-500">Total net gagné</p>
           </div>
-          <p className="text-lg font-bold text-gray-900">{totalNet.toLocaleString('fr-FR')}</p>
-          <p className="text-xs text-gray-400">FCFA</p>
+          <p className="text-lg font-bold text-gray-900">{formatPrice(totalNet, shopCurrency)}</p>
         </Card>
 
         <Card padding="md">
@@ -132,8 +162,7 @@ export default async function RevenuesPage() {
             <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
             <p className="text-xs text-gray-500">Total retiré</p>
           </div>
-          <p className="text-lg font-bold text-gray-900">{totalPaidOut.toLocaleString('fr-FR')}</p>
-          <p className="text-xs text-gray-400">FCFA</p>
+          <p className="text-lg font-bold text-gray-900">{formatPrice(totalPaidOut, shopCurrency)}</p>
         </Card>
 
         <Card padding="md">
@@ -141,8 +170,7 @@ export default async function RevenuesPage() {
             <Clock className="h-3.5 w-3.5 text-amber-500" />
             <p className="text-xs text-gray-500">En attente</p>
           </div>
-          <p className="text-lg font-bold text-amber-600">{totalPending.toLocaleString('fr-FR')}</p>
-          <p className="text-xs text-gray-400">FCFA</p>
+          <p className="text-lg font-bold text-amber-600">{formatPrice(totalPending, shopCurrency)}</p>
         </Card>
 
         <Card padding="md">
@@ -150,7 +178,7 @@ export default async function RevenuesPage() {
             <p className="text-xs text-gray-500">Commission TekkiShop</p>
           </div>
           <p className="text-lg font-bold text-gray-900">{TEKKISHOP_COMMISSION_RATE}%</p>
-          <p className="text-xs text-gray-400">{commissionTotal.toLocaleString('fr-FR')} FCFA déduits</p>
+          <p className="text-xs text-gray-400">{formatPrice(commissionTotal, shopCurrency)} déduits</p>
         </Card>
       </div>
 
@@ -161,15 +189,15 @@ export default async function RevenuesPage() {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Collecté en ligne</span>
-              <span className="font-medium text-gray-900">{totalCollected.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-medium text-gray-900">{formatPrice(totalCollected, shopCurrency)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Commission TekkiShop ({TEKKISHOP_COMMISSION_RATE}%)</span>
-              <span className="font-medium text-red-500">− {commissionTotal.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-medium text-red-500">− {formatPrice(commissionTotal, shopCurrency)}</span>
             </div>
             <div className="border-t border-gray-100 pt-2 flex justify-between text-sm">
               <span className="font-semibold text-gray-900">Net disponible</span>
-              <span className="font-bold text-gray-900">{totalNet.toLocaleString('fr-FR')} FCFA</span>
+              <span className="font-bold text-gray-900">{formatPrice(totalNet, shopCurrency)}</span>
             </div>
           </div>
         </Card>
@@ -200,10 +228,10 @@ export default async function RevenuesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">
-                    {payout.net_amount.toLocaleString('fr-FR')} FCFA
+                    {formatPrice(payout.net_amount, shopCurrency)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {payout.payout_method === 'wave' ? 'Wave' : 'Orange Money'} · {payout.payout_number}
+                    {getMethodLabel(payout.payout_method)} · {payout.payout_number}
                   </p>
                   <p className="text-xs text-gray-400">
                     {format(new Date(payout.requested_at), 'd MMMM yyyy', { locale: fr })}

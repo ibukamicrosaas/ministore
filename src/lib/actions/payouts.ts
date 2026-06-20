@@ -1,6 +1,5 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysPayout } from '@/lib/payments/bictorys'
 import { revalidatePath } from 'next/cache'
@@ -11,26 +10,17 @@ const COMMISSION_RATES: Record<string, number> = {
   pro:        0,
 }
 
-// Déclenche un reversement Bictorys pour une boutique.
-// payoutId doit être un UUID déjà créé côté client (idempotency key).
+/**
+ * Déclenche un reversement Bictorys (Wave ou Orange Money) pour une boutique.
+ * Appelé par le cron ou l'admin — la vérification d'accès est à la charge du appelant.
+ * payoutId sert de clé d'idempotence Bictorys.
+ */
 export async function processPayout(
   payoutId: string,
   shopId: string,
   grossAmount: number,
   payoutMethod: 'wave' | 'orange_money',
 ): Promise<{ error?: string }> {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifié.' }
-
-  // Seul un admin peut déclencher un reversement
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  if (profile?.role !== 'admin' && profile?.role !== 'owner') return { error: 'Accès refusé.' }
-
   const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey) return { error: 'Bictorys non configuré.' }
 

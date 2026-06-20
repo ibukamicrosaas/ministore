@@ -11,8 +11,9 @@ import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
 const COUNTRY_OPTIONS = [
+  // Afrique
   { value: 'SN', label: '🇸🇳 Sénégal' },
-  { value: 'CI', label: '🇨🇮 Côte d\'Ivoire' },
+  { value: 'CI', label: "🇨🇮 Côte d'Ivoire" },
   { value: 'CM', label: '🇨🇲 Cameroun' },
   { value: 'BJ', label: '🇧🇯 Bénin' },
   { value: 'TG', label: '🇹🇬 Togo' },
@@ -23,7 +24,31 @@ const COUNTRY_OPTIONS = [
   { value: 'GA', label: '🇬🇦 Gabon' },
   { value: 'MG', label: '🇲🇬 Madagascar' },
   { value: 'MA', label: '🇲🇦 Maroc' },
+  // Europe & Canada
+  { value: 'FR', label: '🇫🇷 France' },
+  { value: 'BE', label: '🇧🇪 Belgique' },
+  { value: 'LU', label: '🇱🇺 Luxembourg' },
+  { value: 'CH', label: '🇨🇭 Suisse' },
+  { value: 'CA', label: '🇨🇦 Canada' },
 ]
+
+const EU_CA_DIAL_PREFIXES: { prefix: string; code: string }[] = [
+  { prefix: '+33',  code: 'FR' },
+  { prefix: '+32',  code: 'BE' },
+  { prefix: '+352', code: 'LU' },
+  { prefix: '+41',  code: 'CH' },
+  { prefix: '+1',   code: 'CA' },
+]
+
+function detectEuCaCountryFromPhone(phone: string): string | null {
+  const normalized = phone.startsWith('+') ? phone : `+${phone}`
+  // Tester +352 avant +32 (préfixe plus long en premier)
+  const sorted = [...EU_CA_DIAL_PREFIXES].sort((a, b) => b.prefix.length - a.prefix.length)
+  for (const { prefix, code } of sorted) {
+    if (normalized.startsWith(prefix)) return code
+  }
+  return null
+}
 
 export function OnboardingForm() {
   const [loading, setLoading] = useState(false)
@@ -44,8 +69,14 @@ export function OnboardingForm() {
         .single()
 
       if (profile?.phone) {
-        const detected = detectCountryFromPhone(profile.phone)
-        setDetectedCountry(detected)
+        // Essayer EU/CA d'abord (detectCountryFromPhone ne couvre que l'Afrique)
+        const euCa = detectEuCaCountryFromPhone(profile.phone)
+        if (euCa) {
+          setDetectedCountry(euCa)
+        } else {
+          const detected = detectCountryFromPhone(profile.phone)
+          setDetectedCountry(detected)
+        }
       }
     }
 

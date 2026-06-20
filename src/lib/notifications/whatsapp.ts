@@ -1,18 +1,9 @@
-// Notifications SMS via Twilio (anciennement WhatsApp).
+// Notifications SMS via Lafricamobile (anciennement Twilio — coût trop élevé
+// pour l'Afrique de l'Ouest, ~300 FCFA/SMS).
 // Messages volontairement courts : 1 segment SMS = 160 chars GSM-7 (sans emoji).
 // sendWhatsApp est conservé comme alias pour la compatibilité avec les appelants existants.
 
-import twilio from 'twilio'
-
-function getClient() {
-  const sid   = process.env.TWILIO_ACCOUNT_SID
-  const token = process.env.TWILIO_AUTH_TOKEN
-  if (!sid || !token) throw new Error('Twilio credentials not configured')
-  return twilio(sid, token)
-}
-
-// Numéro SMS Twilio (format E.164, ex: +14155551234)
-const FROM_SMS = process.env.TWILIO_PHONE_NUMBER ?? ''
+import { sendLafricamobileSms } from './lafricamobile'
 
 function normalizePhone(phone: string): string {
   const cleaned = phone.replace(/\s+/g, '')
@@ -23,19 +14,12 @@ export async function sendSMS(
   to: string,
   message: string,
 ): Promise<{ success: boolean; sid?: string; error?: string }> {
-  try {
-    const client = getClient()
-    const msg = await client.messages.create({
-      from: FROM_SMS,
-      to:   normalizePhone(to),
-      body: message,
-    })
-    return { success: true, sid: msg.sid }
-  } catch (err) {
-    const error = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[sms]', error)
-    return { success: false, error }
+  const result = await sendLafricamobileSms({ to: normalizePhone(to), text: message })
+  if (!result.success) {
+    console.error('[sms]', result.error)
+    return { success: false, error: result.error }
   }
+  return { success: true, sid: result.rawResponse }
 }
 
 // Alias de compatibilité — tous les appelants existants continuent de fonctionner

@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
 import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone } from '@/types'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -19,7 +20,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
   // Pas de filtre is_active : le layout est le gardien des boutiques inactives
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, city, country, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
+    .select('id, name, logo_url, primary_color, city, country, currency, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
     .eq('slug', slug)
     .single()
 
@@ -52,7 +53,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
     'available_days' | 'delivery_options' | 'deposit_percentage' | 'accept_online_payment' |
     'delivery_zones'
-  >
+  > & { currency?: string | null }
 
   const { data: productsData } = await supabase
     .from('products')
@@ -121,6 +122,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         deliveryOptions={deliveryOptions}
         shopDepositPct={shop.deposit_percentage ?? 0}
         shopCountry={shop.country ?? 'SN'}
+        shopCurrency={(shop.currency ?? 'XOF') as ShopCurrency}
         acceptOnlinePayment={shop.accept_online_payment ?? true}
         acceptCashOnDelivery={acceptCashOnDelivery}
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}

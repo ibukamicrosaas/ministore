@@ -2,34 +2,53 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Zap } from 'lucide-react'
+import { CheckCircle2, Zap, CreditCard } from 'lucide-react'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export interface Plan {
-  key: string
-  name: string
-  price: string
-  priceInt: number
+  key:         string
+  name:        string
+  price:       string
+  priceInt:    number
   annualPrice: number
   description: string
-  promo: string | null
-  features: string[]
+  promo:       string | null
+  currency:    ShopCurrency
+  features:    string[]
   highlighted: boolean
 }
 
 interface UpgradePlansProps {
-  plans: Plan[]
+  plans:       Plan[]
   currentPlan: string
+  isEuCa:      boolean
 }
 
-export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
-  const router = useRouter()
+const CURRENCY_SYMBOL: Record<ShopCurrency, string> = {
+  XOF: 'FCFA',
+  EUR: '€',
+  CAD: 'CAD',
+}
+
+function formatAnnualPrice(plan: Plan): string {
+  if (plan.currency === 'EUR') return `${(plan.annualPrice / 100).toFixed(0)} €`
+  if (plan.currency === 'CAD') return `${(plan.annualPrice / 100).toFixed(0)} CAD`
+  return `${plan.annualPrice.toLocaleString('fr-FR')} FCFA`
+}
+
+function formatMonthlyEquiv(plan: Plan): string {
+  if (plan.currency === 'EUR') return `≈ ${(plan.annualPrice / 100 / 12).toFixed(2)} €/mois`
+  if (plan.currency === 'CAD') return `≈ ${(plan.annualPrice / 100 / 12).toFixed(2)} CAD/mois`
+  return `≈ ${Math.round(plan.annualPrice / 12).toLocaleString('fr-FR')} FCFA/mois`
+}
+
+export function UpgradePlans({ plans, currentPlan, isEuCa }: UpgradePlansProps) {
+  const router  = useRouter()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
 
-  function handleActivatePlan(planKey: string) {
-    const url = billing === 'annual'
-      ? `/dashboard/upgrade/checkout?plan=${planKey}&billing=annual`
-      : `/dashboard/upgrade/checkout?plan=${planKey}`
-    router.push(url)
+  function handleActivatePlan(plan: Plan) {
+    const query = billing === 'annual' ? `?plan=${plan.key}&billing=annual` : `?plan=${plan.key}`
+    router.push(`/dashboard/upgrade/checkout${query}`)
   }
 
   return (
@@ -48,11 +67,9 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
             billing === 'annual' ? 'bg-[var(--color-primary)]' : 'bg-gray-200'
           }`}
         >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-              billing === 'annual' ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            billing === 'annual' ? 'translate-x-6' : 'translate-x-1'
+          }`} />
         </button>
         <span className={`text-sm font-medium ${billing === 'annual' ? 'text-gray-900' : 'text-gray-400'}`}>
           Annuel
@@ -64,17 +81,37 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
         )}
       </div>
 
+      {/* Info EU/CA */}
+      {isEuCa && (
+        <div className="flex items-start gap-3 rounded-xl border border-sky-100 bg-sky-50 p-4">
+          <CreditCard className="h-5 w-5 text-sky-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-sky-900">Paiement par carte bancaire</p>
+            <p className="text-xs text-sky-700 mt-0.5">
+              Les marchands en Europe et au Canada accèdent uniquement au plan Pro,
+              avec paiement sécurisé par carte bancaire via Stripe.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Grille des plans */}
       <div className="space-y-3">
         {plans.map(plan => {
           const isCurrentPlan = plan.key === currentPlan
-          const displayPrice = billing === 'annual'
-            ? plan.annualPrice.toLocaleString('fr-FR')
-            : plan.price
-          const displayUnit = billing === 'annual' ? 'FCFA/an' : 'FCFA/mois'
-          const monthlyEquiv = billing === 'annual'
-            ? Math.round(plan.annualPrice / 12).toLocaleString('fr-FR')
-            : null
+          const sym  = CURRENCY_SYMBOL[plan.currency]
+
+          let displayPrice: string
+          let displayUnit: string
+          if (billing === 'annual') {
+            displayPrice = formatAnnualPrice(plan)
+            displayUnit  = `${sym}/an`
+          } else {
+            displayPrice = plan.currency === 'XOF' ? plan.price : (plan.priceInt / 100).toFixed(2).replace('.', ',')
+            displayUnit  = `${sym}/mois`
+          }
+
+          const monthlyEquiv = billing === 'annual' ? formatMonthlyEquiv(plan) : null
 
           return (
             <div
@@ -91,14 +128,7 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
               {plan.highlighted && !plan.promo && (
                 <div className="mb-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-semibold text-white">
-                    <Zap className="h-3 w-3" /> Recommandé
-                  </span>
-                </div>
-              )}
-              {plan.highlighted && plan.promo && billing === 'annual' && (
-                <div className="mb-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-semibold text-white">
-                    <Zap className="h-3 w-3" /> Recommandé
+                    <Zap className="h-3 w-3" /> {isEuCa ? 'Plan unique' : 'Recommandé'}
                   </span>
                 </div>
               )}
@@ -112,7 +142,7 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
                   <p className="text-lg font-bold text-gray-900">{displayPrice}</p>
                   <p className="text-xs text-gray-500">{displayUnit}</p>
                   {monthlyEquiv && (
-                    <p className="text-[10px] text-emerald-600 font-medium">≈ {monthlyEquiv} FCFA/mois</p>
+                    <p className="text-[10px] text-emerald-600 font-medium">{monthlyEquiv}</p>
                   )}
                 </div>
               </div>
@@ -132,15 +162,15 @@ export function UpgradePlans({ plans, currentPlan }: UpgradePlansProps) {
                 </div>
               ) : (
                 <button
-                  onClick={() => handleActivatePlan(plan.key)}
+                  onClick={() => handleActivatePlan(plan)}
                   className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity active:opacity-80 ${
                     plan.highlighted
                       ? 'bg-[var(--color-primary)] text-white'
                       : 'border border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <Zap className="h-4 w-4" />
-                  Activer ce plan
+                  {isEuCa ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                  {isEuCa ? 'Payer par carte bancaire' : 'Activer ce plan'}
                 </button>
               )}
             </div>

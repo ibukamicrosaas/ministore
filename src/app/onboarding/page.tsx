@@ -33,12 +33,14 @@ export default async function OnboardingPage({ searchParams }: Props) {
     slug: string
     business_type: string | null
     specialty: string | null
+    country: string | null
+    currency: string | null
   } | null = null
 
   if (profile?.shop_id) {
     const { data: shop } = await supabase
       .from('shops')
-      .select('name, slug, business_type, specialty, onboarding_completed')
+      .select('name, slug, business_type, specialty, country, currency, onboarding_completed')
       .eq('id', profile.shop_id)
       .single()
 

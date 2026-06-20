@@ -3,31 +3,39 @@
 import { useState } from 'react'
 import { ArrowDownToLine, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
-interface Props {
-  shopId: string
-  availableBalance: number
-  waveNumber: string | null
-  omNumber: string | null
-  canRequest: boolean
-  minAmount: number
+export interface PayoutOption {
+  label:  string
+  key:    string
+  number: string
 }
 
-export function RequestPayoutButton({ shopId, availableBalance, waveNumber, omNumber, canRequest, minAmount }: Props) {
-  const [open, setOpen] = useState(false)
-  const [method, setMethod] = useState<'wave' | 'orange_money'>(waveNumber ? 'wave' : 'orange_money')
+interface Props {
+  shopId:          string
+  availableBalance: number
+  payoutMethods:   PayoutOption[]
+  currency:        ShopCurrency
+  canRequest:      boolean
+  minAmount:       number
+}
+
+export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, currency, canRequest, minAmount }: Props) {
+  const [open, setOpen]     = useState(false)
+  const [method, setMethod] = useState<string>(payoutMethods[0]?.key ?? '')
   const [loading, setLoading] = useState(false)
 
-  const selectedNumber = method === 'wave' ? waveNumber : omNumber
+  const selected = payoutMethods.find(m => m.key === method) ?? payoutMethods[0]
 
   async function handleRequest() {
-    if (!selectedNumber) return
+    if (!selected?.number) return
     setLoading(true)
     try {
       const res = await fetch('/api/payouts/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopId, method, amount: availableBalance }),
+        body: JSON.stringify({ shopId, method: selected.key, amount: availableBalance }),
       })
       const data = await res.json() as { success?: boolean; error?: string }
       if (!res.ok || !data.success) {
@@ -68,49 +76,34 @@ export function RequestPayoutButton({ shopId, availableBalance, waveNumber, omNu
             <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 text-center">
               <p className="text-xs text-gray-500">Montant à retirer</p>
               <p className="text-2xl font-bold text-gray-900 mt-0.5">
-                {availableBalance.toLocaleString('fr-FR')} FCFA
+                {formatPrice(availableBalance, currency)}
               </p>
             </div>
 
             <div className="space-y-2">
               <p className="text-xs font-semibold text-gray-700">Méthode de retrait</p>
-              {waveNumber && (
+              {payoutMethods.map(m => (
                 <button
-                  onClick={() => setMethod('wave')}
-                  className={`w-full flex items-center justify-between rounded-xl border p-3 text-left transition-colors ${method === 'wave' ? 'border-[var(--color-primary)] bg-orange-50' : 'border-gray-200'}`}
+                  key={m.key}
+                  onClick={() => setMethod(m.key)}
+                  className={`w-full flex items-center justify-between rounded-xl border p-3 text-left transition-colors ${method === m.key ? 'border-[var(--color-primary)] bg-orange-50' : 'border-gray-200'}`}
                 >
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Wave</p>
-                    <p className="text-xs text-gray-500">{waveNumber}</p>
+                    <p className="text-sm font-semibold text-gray-900">{m.label}</p>
+                    <p className="text-xs text-gray-500">{m.number}</p>
                   </div>
-                  {method === 'wave' && (
+                  {method === m.key && (
                     <div className="h-5 w-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
                       <span className="text-white text-xs">✓</span>
                     </div>
                   )}
                 </button>
-              )}
-              {omNumber && (
-                <button
-                  onClick={() => setMethod('orange_money')}
-                  className={`w-full flex items-center justify-between rounded-xl border p-3 text-left transition-colors ${method === 'orange_money' ? 'border-[var(--color-primary)] bg-orange-50' : 'border-gray-200'}`}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Orange Money</p>
-                    <p className="text-xs text-gray-500">{omNumber}</p>
-                  </div>
-                  {method === 'orange_money' && (
-                    <div className="h-5 w-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                </button>
-              )}
+              ))}
             </div>
 
             <button
               onClick={handleRequest}
-              disabled={loading || !selectedNumber}
+              disabled={loading || !selected?.number}
               className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 active:opacity-80 transition-opacity"
             >
               {loading ? 'Traitement...' : 'Confirmer le retrait'}

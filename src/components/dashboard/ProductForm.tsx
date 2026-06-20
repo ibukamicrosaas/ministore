@@ -19,6 +19,7 @@ interface ProductFormProps {
   product?: Product
   shopSlug?: string
   shopPlan?: string
+  shopCurrency?: string
 }
 
 function renderDescription(text: string) {
@@ -43,7 +44,8 @@ function renderDescription(text: string) {
   return parts
 }
 
-export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
+export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' }: ProductFormProps) {
+  const currencySymbol = shopCurrency === 'EUR' ? '€' : shopCurrency === 'CAD' ? 'CAD' : 'FCFA'
   const isPro = shopPlan === 'pro'
   const router = useRouter()
   const [loading, setLoading]           = useState(false)
@@ -85,6 +87,9 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
 
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(product?.category ?? '')
+  const [deliveryDelay, setDeliveryDelay] = useState(
+    (product as Product & { delivery_delay?: string | null })?.delivery_delay ?? ''
+  )
   const [isFeatured, setIsFeatured] = useState(
     (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
   )
@@ -113,39 +118,51 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
   }, [productName, slugEdited])
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
 
-    // Validation côté client
-    if (photos.length >= 5) {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+    const remaining = 5 - photos.length
+    if (remaining <= 0) {
       toast.error('Maximum 5 photos par produit.')
-      return
-    }
-
-    // Vérifier la taille du fichier (5 MB max)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`L'image est trop volumineuse (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum 5 MB.`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
-    // Vérifier le type de fichier
-    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error('Format non autorisé. Utilise JPG, PNG, WebP ou GIF.')
+    const candidates = files.slice(0, remaining)
+    if (files.length > remaining) {
+      toast(`Seules ${remaining} photo(s) ajoutée(s) — maximum 5 par produit.`)
+    }
+
+    const valid = candidates.filter(f => {
+      if (f.size > MAX_FILE_SIZE) {
+        toast.error(`${f.name} : trop volumineux (max 5 Mo).`)
+        return false
+      }
+      if (!ALLOWED_TYPES.includes(f.type)) {
+        toast.error(`${f.name} : format non autorisé (JPG, PNG, WebP, GIF).`)
+        return false
+      }
+      return true
+    })
+
+    if (!valid.length) {
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
     setUploadingPhoto(true)
-    const fd = new FormData()
-    fd.append('photo', file)
-    const result = await uploadProductPhoto(fd)
-    if (result.error) {
-      toast.error(result.error)
-    } else if (result.url) {
-      setPhotos(prev => [...prev, { url: result.url!, is_primary: prev.length === 0 }])
+    for (const file of valid) {
+      const fd = new FormData()
+      fd.append('photo', file)
+      const result = await uploadProductPhoto(fd)
+      if (result.error) {
+        toast.error(result.error)
+      } else if (result.url) {
+        setPhotos(prev => [...prev, { url: result.url!, is_primary: prev.length === 0 }])
+      }
     }
     setUploadingPhoto(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -212,6 +229,7 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
       price,
       description: description.trim() || undefined,
       category: categoryValue,
+      delivery_delay: deliveryDelay.trim() || null,
       photos,
       video_url: videoUrl.trim() || null,
       image_ratio: imageRatio,
@@ -348,8 +366,8 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
             </button>
           )}
         </div>
-        <p className="mt-2 text-xs text-gray-400">Max 5 photos · JPG, PNG · 5 Mo. Cliquez sur une photo pour la définir comme principale.</p>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+        <p className="mt-2 text-xs text-gray-400">Max 5 photos · JPG, PNG, WebP · 5 Mo chacune · Sélectionnez plusieurs photos en une fois. Cliquez sur une photo pour la définir comme principale.</p>
+        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
 
         {/* Format d'affichage */}
         <div className="mt-4 pt-4 border-t border-gray-100">
@@ -522,6 +540,22 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
             />
           </div>
 
+          {/* Délai de livraison */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Délai de livraison estimé
+              <span className="ml-1.5 font-normal text-gray-400">(optionnel)</span>
+            </label>
+            <input
+              value={deliveryDelay}
+              onChange={e => setDeliveryDelay(e.target.value)}
+              placeholder="Ex : 24h, 2 à 3 jours, 10 à 15 jours..."
+              maxLength={60}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+            />
+            <p className="mt-1 text-[10px] text-gray-400">Affiché sur la page produit avant que le client passe commande.</p>
+          </div>
+
           {/* Produit en vedette */}
           <div className="flex items-center justify-between">
             <div>
@@ -550,7 +584,7 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Prix de base (FCFA) <span className="text-red-500">*</span>
+              Prix de base ({currencySymbol}) <span className="text-red-500">*</span>
             </label>
             <input
               name="price"
@@ -620,7 +654,7 @@ export function ProductForm({ product, shopSlug, shopPlan }: ProductFormProps) {
                         placeholder="Prix"
                         className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:border-[var(--color-primary)]"
                       />
-                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">F</span>
+                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currencySymbol}</span>
                     </div>
                     <button type="button" onClick={() => removeVariant(i)} className="p-1 text-gray-400 hover:text-red-500">
                       <X className="h-4 w-4" />

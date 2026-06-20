@@ -2,12 +2,14 @@ import React from 'react'
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Clock } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent, ProductCtaButton } from './ProductPixelEvents'
 import { StockAlertForm } from '@/components/pwa/StockAlertForm'
 import { APP_URL } from '@/constants'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -23,7 +25,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   const shopRes = await supabase
     .from('shops')
-    .select('id, name, primary_color, plan')
+    .select('id, name, primary_color, plan, currency')
     .eq('slug', shopSlug)
     .single()
 
@@ -125,7 +127,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!shopData || !productData) notFound()
 
-  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string }
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string; currency?: string | null }
   const product = productData as Product & { slug?: string | null }
 
   // 308 permanent redirect: UUID in URL but product now has a slug
@@ -133,8 +135,10 @@ export default async function ProductDetailPage({ params }: Props) {
     permanentRedirect(`/${shopSlug}/produit/${product.slug}`)
   }
 
-  const soldOut = product.stock_count === 0
-  const color   = shop.primary_color ?? '#0EA5E9'
+  const soldOut       = product.stock_count === 0
+  const color         = shop.primary_color ?? '#0EA5E9'
+  const currency      = (shop.currency ?? 'XOF') as ShopCurrency
+  const deliveryDelay = (product as Product & { delivery_delay?: string | null }).delivery_delay ?? null
 
   const photos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
     ? (product.photos as unknown as ProductPhoto[])
@@ -149,8 +153,8 @@ export default async function ProductDetailPage({ params }: Props) {
   const isPortrait   = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
 
   const displayPrice = variants && variants.length > 0
-    ? `À partir de ${Math.min(...variants.map(v => v.price)).toLocaleString('fr-FR')} FCFA`
-    : `${product.price.toLocaleString('fr-FR')} FCFA`
+    ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
+    : formatPrice(product.price, currency)
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
@@ -167,7 +171,7 @@ export default async function ProductDetailPage({ params }: Props) {
     offers: {
       '@type': 'Offer',
       price: minPrice,
-      priceCurrency: 'XOF',
+      priceCurrency: currency,
       availability: soldOut
         ? 'https://schema.org/OutOfStock'
         : 'https://schema.org/InStock',
@@ -229,12 +233,21 @@ export default async function ProductDetailPage({ params }: Props) {
                 style={{ backgroundColor: `${color}12` }}
               >
                 <span className="text-sm font-medium text-gray-800">{v.label}</span>
-                <span className="text-sm font-bold" style={{ color }}>{v.price.toLocaleString('fr-FR')} FCFA</span>
+                <span className="text-sm font-bold" style={{ color }}>{formatPrice(v.price, currency)}</span>
               </div>
             ))}
           </div>
         ) : (
           <p className="mt-3 text-2xl font-bold" style={{ color }}>{displayPrice}</p>
+        )}
+
+        {deliveryDelay && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}12` }}>
+            <Clock className="h-4 w-4 shrink-0" style={{ color }} />
+            <p className="text-sm font-medium text-gray-700">
+              Livraison estimée : <span className="font-bold" style={{ color }}>{deliveryDelay}</span>
+            </p>
+          </div>
         )}
 
         {product.description && (

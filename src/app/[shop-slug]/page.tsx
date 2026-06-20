@@ -6,6 +6,7 @@ import { ShareButton } from '@/components/pwa/ShareButton'
 import { ShopBusinessLayout } from '@/components/pwa/ShopBusinessLayout'
 import type { Shop, Product } from '@/types'
 import { APP_URL } from '@/constants'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -59,15 +60,16 @@ export default async function ShopPage({ params }: Props) {
   // des boutiques inactives (retourne la page de suspension avant le rendu de children)
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, cover_image_url, about_photo_url, business_category, badges, social_links')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links')
     .eq('slug', slug)
     .single()
 
   if (!shopData) notFound()
   // TypeScript peut râler ici si les migrations Business ne sont pas appliquées sur Supabase
   // C'est normal et disparaîtra après l'application des migrations
-  const shop = shopData as unknown as Shop
-  const color = shop.primary_color ?? '#0EA5E9'
+  const shop     = shopData as unknown as Shop & { currency?: string | null }
+  const color    = shop.primary_color ?? '#0EA5E9'
+  const currency = (shop.currency ?? 'XOF') as ShopCurrency
 
   // Plan Pro : utiliser le layout spécialisé avec design personnalisé
   if (shop.plan === 'pro') {
@@ -222,6 +224,7 @@ export default async function ShopPage({ params }: Props) {
             products={products}
             shopSlug={slug}
             primaryColor={color}
+            currency={currency}
           />
         )}
       </div>

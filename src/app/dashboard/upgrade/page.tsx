@@ -5,10 +5,11 @@ import { cookies } from 'next/headers'
 import type { Profile, Shop } from '@/types'
 import { UpgradePlans, type Plan } from './UpgradePlans'
 import { PaymentVerifier } from './PaymentVerifier'
+import { isEuCaCountry, getCurrencyForCountry } from '@/lib/utils/country-groups'
 
 export const metadata = { title: 'Choisir un plan — TekkiShop' }
 
-const PLANS: Plan[] = [
+const AFRICA_PLANS: Plan[] = [
   {
     key:          'decouverte',
     name:         'Découverte',
@@ -17,6 +18,7 @@ const PLANS: Plan[] = [
     annualPrice:  29000,
     description:  'Pour commencer simplement',
     promo:        null,
+    currency:     'XOF',
     features: [
       'Boutique en ligne immédiatement',
       "Jusqu'à 10 produits actifs",
@@ -35,6 +37,7 @@ const PLANS: Plan[] = [
     annualPrice:  49000,
     description:  'Le plus populaire',
     promo:        '🎁 1 MOIS OFFERT — OFFRE DE LANCEMENT',
+    currency:     'XOF',
     features: [
       'Tout du plan Découverte',
       'Produits illimités',
@@ -55,6 +58,7 @@ const PLANS: Plan[] = [
     annualPrice:  99000,
     description:  'Pour les boutiques ambitieuses',
     promo:        null,
+    currency:     'XOF',
     features: [
       'Tout du plan Business',
       '0% de commission sur paiements en ligne',
@@ -63,11 +67,45 @@ const PLANS: Plan[] = [
       'Statistiques avancées & analyses',
       'Export CSV de tes commandes',
       'Meta Pixel (suivi Facebook/Instagram Ads)',
+      'Paiement par carte bancaire (Stripe Connect)',
       'Support prioritaire WhatsApp',
     ],
     highlighted: false,
   },
 ]
+
+const EU_CA_PRO_PLAN_EUR: Plan = {
+  key:          'pro',
+  name:         'Pro',
+  price:        '14,90',
+  priceInt:     1490,
+  annualPrice:  14900,
+  description:  'Le seul plan disponible pour votre marché',
+  promo:        null,
+  currency:     'EUR',
+  features: [
+    'Boutique en ligne immédiatement',
+    'Produits illimités',
+    'Paiement par carte bancaire (Stripe)',
+    'Domaine personnalisé (tonsite.com)',
+    'Section "À propos" avec photo de boutique',
+    'Stripe Connect — recevez les paiements directement',
+    'Statistiques avancées & export CSV',
+    'Notifications automatiques à vos clients',
+    'Meta Pixel (Facebook/Instagram Ads)',
+    '0% de commission sur vos ventes',
+    'Support prioritaire WhatsApp',
+  ],
+  highlighted: true,
+}
+
+const EU_CA_PRO_PLAN_CAD: Plan = {
+  ...EU_CA_PRO_PLAN_EUR,
+  price:       '19,90',
+  priceInt:    1990,
+  annualPrice: 19900,
+  currency:    'CAD',
+}
 
 export default async function UpgradePage({
   searchParams,
@@ -89,20 +127,28 @@ export default async function UpgradePage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, plan, is_active')
+    .select('name, plan, is_active, country')
     .eq('id', profile.shop_id)
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'plan' | 'is_active'> | null
+  const shop = shopData as Pick<Shop, 'name' | 'plan' | 'is_active'> & { country?: string } | null
   if (!shop) redirect('/dashboard')
 
   const { success, plan: activatedPlan, error } = await searchParams
 
-  // Lire le txn depuis le cookie (fallback si sessionStorage perdu après redirection mobile)
   const cookieStore = await cookies()
   const cookieTxn   = cookieStore.get('pending_sub_txn')?.value ?? null
   const cookiePlan  = cookieStore.get('pending_sub_plan')?.value ?? null
   const serverTxn   = (success && activatedPlan && cookiePlan === activatedPlan) ? cookieTxn : null
+
+  // Détecter EU/CA et sélectionner les plans appropriés
+  const shopCountry = shop.country ?? null
+  const isEuCa      = isEuCaCountry(shopCountry)
+  const currency     = getCurrencyForCountry(shopCountry)
+
+  const plans = isEuCa
+    ? [currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR]
+    : AFRICA_PLANS
 
   return (
     <div className="space-y-6 pb-8">
@@ -111,7 +157,6 @@ export default async function UpgradePage({
         <p className="text-sm text-gray-500 mt-0.5">Active ton site pour recevoir des commandes</p>
       </div>
 
-      {/* Vérification + activation au retour du paiement */}
       {success && activatedPlan && (
         <PaymentVerifier
           activatedPlan={activatedPlan}
@@ -120,7 +165,6 @@ export default async function UpgradePage({
         />
       )}
 
-      {/* Erreur de paiement */}
       {error && !success && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4">
           <p className="text-sm font-semibold text-red-700">Paiement annulé ou échoué.</p>
@@ -128,10 +172,13 @@ export default async function UpgradePage({
         </div>
       )}
 
-      <UpgradePlans plans={PLANS} currentPlan={shop.plan} />
+      <UpgradePlans plans={plans} currentPlan={shop.plan} isEuCa={isEuCa} />
 
       <p className="text-xs text-gray-400 text-center">
-        Sans carte bancaire · Paiement sécurisé par Bictorys · Wave, Orange Money, MaxIt
+        {isEuCa
+          ? 'Paiement sécurisé par carte bancaire via Stripe · Sans engagement'
+          : 'Sans carte bancaire · Paiement sécurisé par Bictorys · Wave, Orange Money, MaxIt'
+        }
       </p>
 
       <Link href="/dashboard/settings" className="block text-center text-xs text-gray-500 hover:text-gray-700">

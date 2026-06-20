@@ -16,7 +16,7 @@ export default async function NewProductPage() {
     .single()
 
   const shopData = profile?.shop_id
-    ? ((await supabase.from('shops').select('slug, plan').eq('id', profile.shop_id).single()).data as { slug?: string; plan?: string } | null)
+    ? ((await supabase.from('shops').select('slug, plan, currency').eq('id', profile.shop_id).single()).data as { slug?: string; plan?: string; currency?: string | null } | null)
     : null
 
   return (
@@ -25,7 +25,7 @@ export default async function NewProductPage() {
         <h1 className="text-xl font-bold text-gray-900">Nouveau produit</h1>
         <p className="text-sm text-gray-500 mt-0.5">Remplissez les informations ci-dessous.</p>
       </div>
-      <ProductForm shopSlug={shopData?.slug} shopPlan={shopData?.plan} />
+      <ProductForm shopSlug={shopData?.slug} shopPlan={shopData?.plan} shopCurrency={shopData?.currency ?? 'XOF'} />
     </div>
   )
 }

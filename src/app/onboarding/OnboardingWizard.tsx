@@ -57,11 +57,17 @@ const DESC_PLACEHOLDERS: Record<Specialty, string> = {
 interface WizardProps {
   initialStep: 1 | 2 | 3 | 4 | 5
   userPhone: string | null
-  salon: { name: string; slug: string; business_type: string | null; specialty: string | null } | null
+  salon: { name: string; slug: string; business_type: string | null; specialty: string | null; country?: string | null; currency?: string | null } | null
   initialName?: string
 }
 
 export function OnboardingWizard({ initialStep, userPhone, salon, initialName }: WizardProps) {
+  const shopCurrencySymbol = (() => {
+    const c = salon?.currency
+    if (c === 'EUR') return '€'
+    if (c === 'CAD') return 'CAD'
+    return 'FCFA'
+  })()
   const router = useRouter()
 
   const [step, setStep]     = useState<1 | 2 | 3 | 4 | 5>(initialStep)
@@ -471,7 +477,7 @@ export function OnboardingWizard({ initialStep, userPhone, salon, initialName }:
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Prix (FCFA) *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Prix ({shopCurrencySymbol}) *</label>
             <input
               type="number"
               min="0"
