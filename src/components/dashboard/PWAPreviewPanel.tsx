@@ -9,10 +9,10 @@ interface Props {
 }
 
 export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
-  // URL relative pour l'iframe (évite les problèmes mixed-content http/https)
-  // URL absolue HTTPS pour le lien "ouvrir dans un onglet"
-  const iframeUrl = `/${shopSlug}`
-  const externalUrl = `${appUrl.replace(/^http:\/\//, 'https://')}/${shopSlug}`
+  // Pointe vers /preview/[slug] pour contourner le filtre is_active et permettre
+  // à l'utilisateur de voir son site même pendant la période de configuration
+  const iframeUrl = `/preview/${shopSlug}`
+  const externalUrl = `${appUrl.replace(/^http:\/\//, 'https://')}/preview/${shopSlug}`
   const [iframeKey, setIframeKey] = useState(0)
   const reload = useCallback(() => setIframeKey(k => k + 1), [])
 
@@ -28,7 +28,7 @@ export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
     <div className="flex flex-col items-center gap-3">
       {/* Label + controls */}
       <div className="flex items-center justify-between w-full">
-        <p className="text-sm font-semibold text-gray-700">Aperçu client</p>
+        <p className="text-sm font-semibold text-gray-700">Aperçu de votre site</p>
         <div className="flex items-center gap-1">
           <button
             onClick={reload}
@@ -103,7 +103,7 @@ export function PWAPreviewPanel({ shopSlug, appUrl }: Props) {
       </div>
 
       <p className="text-xs text-gray-400 text-center">
-        Vue en temps réel · {externalUrl.replace('https://', '')}
+        Aperçu privé — visible uniquement par vous
       </p>
     </div>
   )
