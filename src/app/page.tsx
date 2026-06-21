@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -87,7 +88,9 @@ export default async function LandingPage() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { count: totalShopsCount } = await supabase
+  // createAdminClient pour bypasser le RLS et obtenir le vrai total (790 vs 717)
+  const admin = createAdminClient()
+  const { count: totalShopsCount } = await admin
     .from('shops')
     .select('id', { count: 'exact', head: true })
 
@@ -104,7 +107,7 @@ export default async function LandingPage() {
   const shopsCount = totalShopsCount ?? 0
 
   const STATS = [
-    { value: `+${shopsCount}`, label: 'boutiques actives', icon: Users },
+    { value: `+${shopsCount}`, label: 'boutiques créées', icon: Users },
     { value: '11',             label: 'pays couverts',     icon: ShoppingBag },
     { value: '4.9 ★',         label: 'satisfaction',      icon: Star },
   ]
