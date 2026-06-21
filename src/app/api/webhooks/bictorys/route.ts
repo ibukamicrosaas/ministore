@@ -62,7 +62,10 @@ export async function POST(req: NextRequest) {
     return handleSubscriptionWebhook(reference, payload)
   }
 
-  const merchantReference = reference
+  // Pour les commandes, payload.paymentReference = 'tekkishop-{8chars}' (sert au routage)
+  // mais payload.merchantReference contient le vrai UUID de la commande.
+  // Si on utilise paymentReference comme orderId, toutes les requêtes par order_id échouent.
+  const merchantReference = payload.merchantReference ?? reference
 
   // ── PAIEMENT DE COMMANDE ──────────────────────────────────────────────
   // Pour les commandes : vérifier la signature (plus critique car plus de surface d'attaque)

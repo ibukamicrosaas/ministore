@@ -91,6 +91,8 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       <p className="text-sm text-gray-500 mb-3">
         {isOnline && isPaid
           ? 'Votre paiement a été reçu. La boutique prépare votre commande.'
+          : isOnline
+          ? 'Votre paiement mobile money est en cours de vérification.'
           : order.payment_type === 'on_delivery'
           ? 'Vous payerez à la livraison. La boutique a été notifiée.'
           : 'Vous payerez en boutique. La boutique a été notifiée.'}
