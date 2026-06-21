@@ -45,32 +45,28 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Validation du solde disponible ───────────────────────────────────
-  // Revenus collectés : acomptes en ligne payés + commandes livrées (paiement à la réception)
-  const { data: ordersData } = await supabase
-    .from('orders')
-    .select('total_price, deposit_amount, deposit_paid, payment_type, status')
+  // Utiliser la même source que la page Revenus : table payments (status = completed).
+  // L'ancienne logique via orders.deposit_paid était désynchronisée quand le webhook
+  // Bictorys n'avait pas pu mettre à jour deposit_paid (bug corrigé par ailleurs).
+  const { data: paymentsData } = await supabase
+    .from('payments')
+    .select('amount')
     .eq('shop_id', profile.shop_id)
-    .in('status', ['confirmed', 'preparing', 'ready', 'delivered'])
+    .eq('status', 'completed')
 
-  const totalRevenue = (ordersData ?? []).reduce((sum, o) => {
-    if (o.payment_type === 'online_full' || o.payment_type === 'online_deposit') {
-      return sum + (o.deposit_paid ? (o.deposit_amount ?? 0) : 0)
-    }
-    if (o.status === 'delivered') {
-      return sum + (o.total_price ?? 0)
-    }
-    return sum
-  }, 0)
+  const totalCollected   = (paymentsData ?? []).reduce((s, p) => s + (p.amount ?? 0), 0)
+  const commissionTotal  = Math.floor(totalCollected * (TEKKISHOP_COMMISSION_RATE / 100))
+  const totalNet         = totalCollected - commissionTotal
 
-  // Payouts déjà effectués ou en cours
+  // Payouts déjà effectués ou en cours (net_amount, comme la page Revenus)
   const { data: existingPayouts } = await supabase
     .from('payouts')
-    .select('gross_amount')
+    .select('net_amount')
     .eq('shop_id', profile.shop_id)
     .in('status', ['pending', 'processing', 'completed'])
 
-  const totalPayouts = (existingPayouts ?? []).reduce((sum, p) => sum + (p.gross_amount ?? 0), 0)
-  const availableBalance = Math.max(0, totalRevenue - totalPayouts)
+  const totalAlreadyOut  = (existingPayouts ?? []).reduce((s, p) => s + (p.net_amount ?? 0), 0)
+  const availableBalance = Math.max(0, totalNet - totalAlreadyOut)
 
   if (amount > availableBalance) {
     return NextResponse.json({
