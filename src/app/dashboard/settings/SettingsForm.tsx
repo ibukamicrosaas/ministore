@@ -1533,8 +1533,8 @@ export function SettingsForm({ shop }: Props) {
       </div>
     </div>
 
-    {/* ── Stripe Connect — EU/CA Pro uniquement ─────────────────────────── */}
-    {isEuCa && isPro && (
+    {/* ── Stripe Connect — disponible pour tous les plans EU/CA ──────────── */}
+    {isEuCa && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-sky-500" />
