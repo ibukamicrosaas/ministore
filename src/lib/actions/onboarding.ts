@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { TRIAL_DAYS } from '@/constants'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
+import { getCurrencyForCountry } from '@/lib/utils/country-groups'
 
 async function getOwnerContext() {
   const supabase = await createServerClient()
@@ -22,7 +23,7 @@ async function getOwnerShopId() {
 
 // ── ÉTAPE 1 — Créer la boutique avec le nom ──────────────────────────────────
 
-export async function startOnboarding(name: string): Promise<{ error?: string; slug?: string; metaEventId?: string }> {
+export async function startOnboarding(name: string, country?: string): Promise<{ error?: string; slug?: string; metaEventId?: string }> {
   const supabase = await createServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Non authentifié.' }
@@ -57,12 +58,14 @@ export async function startOnboarding(name: string): Promise<{ error?: string; s
   }
 
   const admin = createAdminClient()
+  const currency = country ? getCurrencyForCountry(country) : undefined
   const { data: shop, error: shopError } = await admin
     .from('shops')
     .insert({
       slug,
       name: trimmed,
       trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+      ...(country ? { country, currency } : {}),
     })
     .select('id, slug')
     .single()

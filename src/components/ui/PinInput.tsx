@@ -66,8 +66,9 @@ export function PinInput({ name, length = 6, onChange }: Props) {
           <input
             key={i}
             ref={el => { inputs.current[i] = el }}
-            type="tel"
+            type="password"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={1}
             value={digits[i]}
             onChange={e => handleChange(i, e.target.value)}
