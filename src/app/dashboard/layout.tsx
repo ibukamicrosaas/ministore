@@ -9,6 +9,8 @@ import Link from 'next/link'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
+const ADMIN_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -47,6 +49,7 @@ export default async function DashboardLayout({
     .eq('shop_id', shop.id)
     .is('read_at', null) as unknown as { count: number | null }
 
+  const isAdmin    = ADMIN_IDS.includes(user.id)
   const isTrial    = shop.plan === 'trial'
   const isPaid     = !isTrial
 
@@ -115,7 +118,7 @@ export default async function DashboardLayout({
         </div>
       )}
 
-      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0}>
+      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin}>
         {children}
       </DashboardShell>
       <Toaster

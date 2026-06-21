@@ -14,6 +14,11 @@ const PLAN_PRICES: Record<string, number> = {
   business:   4900,
   pro:        9900,
 }
+const ANNUAL_PLAN_PRICES: Record<string, number> = {
+  decouverte: 29000,
+  business:   49000,
+  pro:        99000,
+}
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient()
@@ -37,6 +42,7 @@ export default async function AdminOverviewPage() {
     recentShopsRes,
     activeShopsRes,
     shopsWithProductsRes,
+    annualSubsRes,
   ] = await Promise.all([
     supabase.from('shops').select('id, plan, is_active'),
     supabase.from('orders').select('id', { count: 'exact' })
@@ -58,11 +64,19 @@ export default async function AdminOverviewPage() {
       .order('created_at', { ascending: false }).limit(8),
     supabase.from('orders').select('shop_id').gte('created_at', thirtyDaysAgo),
     supabase.from('products').select('shop_id').eq('is_active', true),
+    (supabase.from('subscription_transactions' as never)
+      .select('shop_id, plan_key')
+      .eq('status', 'completed')
+      .eq('billing_cycle', 'annual')) as unknown as Promise<{ data: Array<{ shop_id: string; plan_key: string }> | null }>,
   ])
 
   const allShops = (shopsRes.data ?? []) as { id: string; plan: string; is_active: boolean }[]
   const totalShops   = allShops.length
   const activeShops  = allShops.filter(s => s.is_active).length
+
+  // Abonnements annuels — shop_ids distincts ayant une transaction annuelle complétée
+  const annualRaw = (annualSubsRes as unknown as { data: Array<{ shop_id: string; plan_key: string }> | null }).data ?? []
+  const annualShopIds = new Set(annualRaw.map(t => t.shop_id))
   const ordersThisMonth = ordersMonthRes.count ?? 0
   const ordersPrevMonth = ordersPrevMonthRes.count ?? 0
   const ordersGrowth = ordersPrevMonth > 0
@@ -76,9 +90,21 @@ export default async function AdminOverviewPage() {
     .reduce((s, p) => s + p.amount, 0)
   const tekkishopCommission = Math.floor(totalRevenue * 0.03)
 
-  const mrr = allShops
-    .filter(s => s.is_active && s.plan !== 'trial')
-    .reduce((sum, s) => sum + (PLAN_PRICES[s.plan] ?? 0), 0)
+  const paidShops = allShops.filter(s => s.is_active && s.plan !== 'trial')
+  const monthlyCount = paidShops.filter(s => !annualShopIds.has(s.id)).length
+  const annualCount  = annualShopIds.size
+
+  // MRR : mensuels au prix mensuel + annuels ramenés au mois (annual/12)
+  const mrr = paidShops.reduce((sum, s) => {
+    if (annualShopIds.has(s.id)) return sum + Math.round((ANNUAL_PLAN_PRICES[s.plan] ?? 0) / 12)
+    return sum + (PLAN_PRICES[s.plan] ?? 0)
+  }, 0)
+
+  // ARR : mensuels × 12 + annuels au prix exact
+  const arr = paidShops.reduce((sum, s) => {
+    if (annualShopIds.has(s.id)) return sum + (ANNUAL_PLAN_PRICES[s.plan] ?? 0)
+    return sum + (PLAN_PRICES[s.plan] ?? 0) * 12
+  }, 0)
 
   const planCounts = allShops.reduce<Record<string, number>>((acc, s) => {
     acc[s.plan] = (acc[s.plan] ?? 0) + 1
@@ -196,30 +222,29 @@ export default async function AdminOverviewPage() {
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-8">
-          <KPI icon={Building2}  label="Boutiques inscrites" value={totalShops}    sub={`${activeShops} actives`}             color="text-blue-600"   bg="bg-blue-50" />
-          <KPI icon={TrendingUp} label="MRR"                 value={`${mrr.toLocaleString('fr-FR')} F`} sub="abonnements actifs" color="text-sky-600"  bg="bg-sky-50" />
-          <KPI icon={ShoppingBag} label="Commandes ce mois"  value={ordersThisMonth} sub={ordersGrowth !== null ? `${ordersGrowth > 0 ? '+' : ''}${ordersGrowth}% vs mois dernier` : undefined} color="text-green-600" bg="bg-green-50" />
+          <KPI icon={Building2}   label="Boutiques inscrites"  value={totalShops}    sub={`${activeShops} actives · ${activeShopsCount} avec commandes`} color="text-blue-600"   bg="bg-blue-50" />
+          <KPI icon={TrendingUp}  label="MRR"                  value={`${mrr.toLocaleString('fr-FR')} F`} sub={`dont ${annualCount} annuel${annualCount > 1 ? 's' : ''}, ${monthlyCount} mensuel${monthlyCount > 1 ? 's' : ''}`} color="text-sky-600"  bg="bg-sky-50" />
+          <KPI icon={TrendingUp}  label="ARR"                  value={`${arr.toLocaleString('fr-FR')} F`} sub="revenu annuel récurrent" color="text-indigo-600" bg="bg-indigo-50" />
           <KPI icon={Wallet}      label="Commission TekkiShop" value={`${tekkishopCommission.toLocaleString('fr-FR')} F`} sub="cumulé" color="text-purple-600" bg="bg-purple-50" />
         </div>
-
         {/* Métriques SaaS */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-8">
-          <KPI icon={Zap}        label="Taux de conversion"  value={`${conversionRate}%`}   sub="trial → payant"                          color="text-green-600" bg="bg-green-50" />
-          <KPI icon={UserCheck}  label="Taux d'activation"   value={`${activationRate}%`}   sub="boutiques avec ≥1 produit"               color="text-blue-600"  bg="bg-blue-50" />
-          <KPI icon={ShoppingBag} label="Boutiques actives"  value={activeShopsCount}        sub="avec commandes dans 30j"                  color="text-indigo-600" bg="bg-indigo-50" />
-          <KPI icon={TrendingUp} label="Revenus (mois)"      value={`${revenueThisMonth.toLocaleString('fr-FR')} F`} sub="paiements clients" color="text-sky-600" bg="bg-sky-50" />
+          <KPI icon={ShoppingBag} label="Commandes ce mois"  value={ordersThisMonth} sub={ordersGrowth !== null ? `${ordersGrowth > 0 ? '+' : ''}${ordersGrowth}% vs mois dernier` : undefined} color="text-green-600" bg="bg-green-50" />
+          <KPI icon={Zap}         label="Taux de conversion"  value={`${conversionRate}%`}  sub="trial → payant"               color="text-green-600"  bg="bg-green-50" />
+          <KPI icon={UserCheck}   label="Taux d'activation"   value={`${activationRate}%`}  sub="boutiques avec ≥1 produit"    color="text-blue-600"   bg="bg-blue-50" />
+          <KPI icon={TrendingUp}  label="Revenus (mois)"      value={`${revenueThisMonth.toLocaleString('fr-FR')} F`} sub="paiements clients" color="text-sky-600" bg="bg-sky-50" />
         </div>
 
         {/* Plans + revenus + conversion par pays */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-bold text-gray-900 mb-6 uppercase tracking-wide">Répartition des plans</p>
-            <div className="space-y-4">
+            <p className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wide">Répartition des plans</p>
+            <div className="space-y-3">
               {[
-                { key: 'trial',      label: 'Essai gratuit', price: '0 F/mois', color: 'bg-gray-100' },
-                { key: 'decouverte', label: 'Découverte',    price: '2 900 F/mois', color: 'bg-emerald-100' },
-                { key: 'business',   label: 'Business',      price: '4 900 F/mois', color: 'bg-blue-100' },
-                { key: 'pro',        label: 'Pro',           price: '9 900 F/mois', color: 'bg-purple-100' },
+                { key: 'trial',      label: 'Essai gratuit', price: '0 F/mois',      color: 'bg-gray-100' },
+                { key: 'decouverte', label: 'Découverte',    price: '2 900 F/mois',  color: 'bg-emerald-100' },
+                { key: 'business',   label: 'Business',      price: '4 900 F/mois',  color: 'bg-blue-100' },
+                { key: 'pro',        label: 'Pro',           price: '9 900 F/mois',  color: 'bg-purple-100' },
               ].map(({ key, label, price, color }) => (
                 <div key={key} className={`${color} rounded-lg p-3 flex items-center justify-between`}>
                   <div>
@@ -229,9 +254,23 @@ export default async function AdminOverviewPage() {
                   <span className="font-bold text-lg text-gray-900">{planCounts[key] ?? 0}</span>
                 </div>
               ))}
-              <div className="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
-                <span className="text-sm font-semibold text-gray-700">MRR total</span>
-                <span className="text-xl font-bold text-sky-600">{mrr.toLocaleString('fr-FR')} FCFA</span>
+              <div className="border-t border-gray-200 pt-3 mt-2 space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Mensuels</span>
+                  <span className="text-sm font-semibold text-gray-700">{monthlyCount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Annuels</span>
+                  <span className="text-sm font-semibold text-indigo-700">{annualCount}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-gray-100">
+                  <span className="text-sm font-semibold text-gray-700">MRR</span>
+                  <span className="text-base font-bold text-sky-600">{mrr.toLocaleString('fr-FR')} F</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-gray-700">ARR</span>
+                  <span className="text-base font-bold text-indigo-600">{arr.toLocaleString('fr-FR')} F</span>
+                </div>
               </div>
             </div>
           </div>

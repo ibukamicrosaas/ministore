@@ -13,9 +13,10 @@ interface DashboardShellProps {
   children: React.ReactNode
   pageTitle?: string
   unreadNotifications?: number
+  isAdmin?: boolean
 }
 
-export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0 }: DashboardShellProps) {
+export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -25,6 +26,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
         profile={profile}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isAdmin={isAdmin}
       />
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-0">
         <TopBar

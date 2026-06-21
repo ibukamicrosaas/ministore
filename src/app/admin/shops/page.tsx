@@ -36,11 +36,19 @@ export default function AdminShopsPage() {
 
   async function loadData() {
     try {
-      const { data } = await supabase
-        .from('shops')
-        .select('id, name, slug, plan, trial_ends_at, city, country, is_active, created_at, phone_whatsapp')
-        .order('created_at', { ascending: false })
-      setShops(data ?? [])
+      const [{ data: shopsData }, { data: annualData }] = await Promise.all([
+        supabase
+          .from('shops')
+          .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, city, country, is_active, created_at, phone_whatsapp')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('subscription_transactions' as never)
+          .select('shop_id')
+          .eq('status', 'completed')
+          .eq('billing_cycle', 'annual') as unknown as Promise<{ data: Array<{ shop_id: string }> | null }>,
+      ])
+      const annualIds = new Set((annualData ?? []).map((t: { shop_id: string }) => t.shop_id))
+      setShops((shopsData ?? []).map((s: Record<string, unknown>) => ({ ...s, is_annual: annualIds.has(s.id as string) })))
     } finally {
       setLoading(false)
     }
@@ -114,14 +122,16 @@ export default function AdminShopsPage() {
   }
 
   function exportCSV() {
-    const headers = ['Boutique', 'Plan', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Lien boutique']
+    const headers = ['Boutique', 'Plan', 'Cycle', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Expiration abonnement', 'Lien boutique']
     const rows = filtered.map(s => {
       const code = (s.country ?? '').toUpperCase()
       const countryLabel = COUNTRIES.find(c => c.code === code)?.label ?? s.country ?? ''
       const planLabel = PLAN_CONFIG[s.plan as keyof typeof PLAN_CONFIG]?.label ?? s.plan ?? ''
       const shopUrl = `${window.location.origin}/${s.slug}`
       const date = s.created_at ? format(new Date(s.created_at), 'd MMM yyyy', { locale: fr }) : ''
-      return [s.name ?? '', planLabel, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, shopUrl]
+      const expiry = s.subscription_ends_at ? format(new Date(s.subscription_ends_at), 'd MMM yyyy', { locale: fr }) : ''
+      const cycle = s.is_annual ? 'Annuel' : s.plan !== 'trial' ? 'Mensuel' : ''
+      return [s.name ?? '', planLabel, cycle, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, expiry, shopUrl]
     })
 
     const csv = [headers, ...rows]
@@ -332,6 +342,7 @@ export default function AdminShopsPage() {
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Téléphone</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600">Statut</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">Inscription</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Abonnement</th>
                     <th className="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
                   </tr>
                 </thead>
@@ -389,6 +400,32 @@ export default function AdminShopsPage() {
                         </td>
                         <td className="px-6 py-4 text-xs text-gray-400 hidden lg:table-cell">
                           {format(new Date(shop.created_at), 'd MMM yyyy', { locale: fr })}
+                        </td>
+                        <td className="px-6 py-4 hidden xl:table-cell">
+                          {shop.plan === 'trial' ? (
+                            <span className="text-xs text-gray-400">—</span>
+                          ) : shop.subscription_ends_at ? (
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5">
+                                {shop.is_annual && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                    ANNUEL
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-xs font-medium ${
+                                new Date(shop.subscription_ends_at) < new Date()
+                                  ? 'text-red-600'
+                                  : new Date(shop.subscription_ends_at) < new Date(Date.now() + 7 * 86400000)
+                                    ? 'text-amber-600'
+                                    : 'text-gray-600'
+                              }`}>
+                                Exp. {format(new Date(shop.subscription_ends_at), 'd MMM yyyy', { locale: fr })}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-1">

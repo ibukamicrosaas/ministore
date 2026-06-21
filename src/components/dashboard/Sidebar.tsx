@@ -18,6 +18,7 @@ import {
   Gift,
   Tag,
   CreditCard,
+  Shield,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -47,9 +48,10 @@ interface SidebarProps {
   profile: Profile
   open?: boolean
   onClose?: () => void
+  isAdmin?: boolean
 }
 
-export function Sidebar({ shop, profile, open, onClose }: SidebarProps) {
+export function Sidebar({ shop, profile, open, onClose, isAdmin = false }: SidebarProps) {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
@@ -143,6 +145,18 @@ export function Sidebar({ shop, profile, open, onClose }: SidebarProps) {
               <p className="text-xs text-gray-500">Propriétaire</p>
             </div>
           </Link>
+
+          {/* Admin only */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+            >
+              <Shield className="h-4 w-4 shrink-0" />
+              Espace Admin
+            </Link>
+          )}
 
           {/* Support WhatsApp */}
           <a
