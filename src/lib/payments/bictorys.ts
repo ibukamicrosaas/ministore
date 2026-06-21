@@ -180,7 +180,7 @@ export async function getBictorysCharge(
   return res.json() as Promise<BictorysWebhookPayload>
 }
 
-// Format de l'API Bictorys Payout (doc officielle)
+// Format de l'API Bictorys Payout
 export interface BictorysPayoutPayload {
   amount: number
   currency: string
@@ -188,15 +188,12 @@ export interface BictorysPayoutPayload {
   customerObject: {
     name: string
     phone: string
-    country: string
-    locale: string
+    country?: string
+    locale?: string
   }
-  transactionType: 'payment'
-  paymentReason: string
-  merchantReference: string
-  merchant: {
-    secretCode: string
-  }
+  paymentReason?: string
+  merchantReference?: string
+  merchant?: { secretCode: string }  // optionnel — non requis par l'API
 }
 
 export type BictorysPayoutPaymentType = 'wave_money' | 'orange_money' | 'mtn_money' | 'moov'

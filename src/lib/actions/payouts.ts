@@ -35,9 +35,8 @@ export async function processPayout(
   payoutMethod: string,
 ): Promise<{ error?: string }> {
   const privateKey         = process.env.BICTORYS_PRIVATE_KEY
-  const merchantSecretCode = process.env.BICTORYS_MERCHANT_SECRET_CODE
-  if (!privateKey)         return { error: 'BICTORYS_PRIVATE_KEY non configuré.' }
-  if (!merchantSecretCode) return { error: 'BICTORYS_MERCHANT_SECRET_CODE non configuré.' }
+  const merchantSecretCode = process.env.BICTORYS_MERCHANT_SECRET_CODE  // optionnel
+  if (!privateKey) return { error: 'BICTORYS_PRIVATE_KEY non configuré.' }
 
   const admin = createAdminClient()
 
@@ -113,12 +112,9 @@ export async function processPayout(
           country,
           locale:  'fr-FR',
         },
-        transactionType:   'payment',
         paymentReason:     'Reversement TekkiShop',
         merchantReference: `payout-${payoutId.slice(0, 8)}`,
-        merchant: {
-          secretCode: merchantSecretCode,
-        },
+        ...(merchantSecretCode ? { merchant: { secretCode: merchantSecretCode } } : {}),
       },
       bictorysPaymentType,
       payoutId, // idempotency key = payout UUID
