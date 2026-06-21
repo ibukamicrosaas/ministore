@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
 import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
@@ -78,14 +79,17 @@ export async function POST(req: NextRequest) {
   const commissionAmount = Math.floor(grossAmount * (TEKKISHOP_COMMISSION_RATE / 100))
   const netAmount        = grossAmount - commissionAmount
 
-  const { error } = await supabase.from('payouts').insert({
-    shop_id:          profile.shop_id,
-    gross_amount:     grossAmount,
+  // Utiliser le client admin pour l'insert : RLS bloque les inserts de l'utilisateur
+  // connecté sur la table payouts (lecture OK, écriture réservée au service role).
+  const admin = createAdminClient()
+  const { error } = await admin.from('payouts').insert({
+    shop_id:           profile.shop_id,
+    gross_amount:      grossAmount,
     commission_amount: commissionAmount,
-    net_amount:       netAmount,
-    payout_method:    method as PayoutMethodKey,
-    payout_number:    payoutNumber,
-    status:           'pending',
+    net_amount:        netAmount,
+    payout_method:     method as PayoutMethodKey,
+    payout_number:     payoutNumber,
+    status:            'pending',
   })
 
   if (error) {

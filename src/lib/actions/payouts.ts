@@ -2,7 +2,20 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysPayout } from '@/lib/payments/bictorys'
+import type { BictorysPayoutPaymentType } from '@/lib/payments/bictorys'
+import { getPayoutMethods } from '@/lib/utils/country-groups'
+import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { revalidatePath } from 'next/cache'
+
+// Mapping clé interne → payment_type Bictorys
+const PAYOUT_METHOD_MAP: Record<string, BictorysPayoutPaymentType> = {
+  wave:         'wave_money',
+  orange_money: 'orange_money',
+  mtn:          'mtn_money',
+  moov:         'moov',
+  tmoney:       'moov',  // Togocel/Flooz non nativement supportés → moov fallback
+  flooz:        'moov',
+}
 
 const COMMISSION_RATES: Record<string, number> = {
   decouverte: 0.03,
@@ -19,10 +32,12 @@ export async function processPayout(
   payoutId: string,
   shopId: string,
   grossAmount: number,
-  payoutMethod: 'wave' | 'orange_money',
+  payoutMethod: string,
 ): Promise<{ error?: string }> {
-  const apiKey = process.env.BICTORYS_API_KEY
-  if (!apiKey) return { error: 'Bictorys non configuré.' }
+  const privateKey         = process.env.BICTORYS_PRIVATE_KEY
+  const merchantSecretCode = process.env.BICTORYS_MERCHANT_SECRET_CODE
+  if (!privateKey)         return { error: 'BICTORYS_PRIVATE_KEY non configuré.' }
+  if (!merchantSecretCode) return { error: 'BICTORYS_MERCHANT_SECRET_CODE non configuré.' }
 
   const admin = createAdminClient()
 
@@ -41,25 +56,30 @@ export async function processPayout(
   // Récupérer les infos de la boutique
   const { data: shop } = await admin
     .from('shops')
-    .select('plan, payout_wave_number, payout_om_number')
+    .select('plan, payout_wave_number, payout_om_number, country, name')
     .eq('id', shopId)
     .single()
 
   if (!shop) return { error: 'Boutique introuvable.' }
 
-  const recipientPhone = payoutMethod === 'wave'
+  const country = (shop as any).country as string | null ?? 'SN'
+  const shopName = (shop as any).name as string | null ?? 'Marchand TekkiShop'
+
+  // Résoudre le numéro de réception depuis le bon slot DB selon pays + méthode
+  const methodDef = getPayoutMethods(country).find(m => m.key === payoutMethod)
+  const recipientPhone = methodDef?.col === 'payout_wave_number'
     ? shop.payout_wave_number
     : shop.payout_om_number
 
   if (!recipientPhone) {
-    return { error: `Numéro de reversement ${payoutMethod === 'wave' ? 'Wave' : 'Orange Money'} non configuré.` }
+    return { error: `Numéro de reversement "${payoutMethod}" non configuré.` }
   }
 
   const commissionRate = COMMISSION_RATES[shop.plan ?? 'decouverte'] ?? 0.03
   const commissionAmount = Math.round(grossAmount * commissionRate)
   const netAmount = grossAmount - commissionAmount
 
-  const bictorysPaymentType = payoutMethod === 'wave' ? 'wave_money' : 'orange_money'
+  const bictorysPaymentType: BictorysPayoutPaymentType = PAYOUT_METHOD_MAP[payoutMethod] ?? 'wave_money'
 
   // Créer ou mettre à jour le payout en DB
   if (!existing) {
@@ -69,7 +89,7 @@ export async function processPayout(
       gross_amount:      grossAmount,
       commission_amount: commissionAmount,
       net_amount:        netAmount,
-      payout_method:     payoutMethod,
+      payout_method:     payoutMethod as PayoutMethodKey,
       payout_number:     recipientPhone,
       status:            'processing',
     })
@@ -82,13 +102,23 @@ export async function processPayout(
 
   try {
     const { transactionId } = await createBictorysPayout(
-      apiKey,
+      privateKey,
       {
         amount:           netAmount,
         currency:         'XOF',
-        paymentReference: `payout-${payoutId.slice(0, 8)}`,
-        recipientPhone,
-        description:      `Reversement TekkiShop — boutique ${shopId.slice(0, 8)}`,
+        country,
+        customerObject: {
+          name:    shopName,
+          phone:   recipientPhone,
+          country,
+          locale:  'fr-FR',
+        },
+        transactionType:   'payment',
+        paymentReason:     'Reversement TekkiShop',
+        merchantReference: `payout-${payoutId.slice(0, 8)}`,
+        merchant: {
+          secretCode: merchantSecretCode,
+        },
       },
       bictorysPaymentType,
       payoutId, // idempotency key = payout UUID

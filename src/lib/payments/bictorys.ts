@@ -180,40 +180,56 @@ export async function getBictorysCharge(
   return res.json() as Promise<BictorysWebhookPayload>
 }
 
+// Format de l'API Bictorys Payout (doc officielle)
 export interface BictorysPayoutPayload {
   amount: number
   currency: string
-  paymentReference: string
-  recipientPhone: string
-  recipientName?: string
-  description?: string
+  country: string
+  customerObject: {
+    name: string
+    phone: string
+    country: string
+    locale: string
+  }
+  transactionType: 'payment'
+  paymentReason: string
+  merchantReference: string
+  merchant: {
+    secretCode: string
+  }
 }
 
+export type BictorysPayoutPaymentType = 'wave_money' | 'orange_money' | 'mtn_money' | 'moov'
+
 export async function createBictorysPayout(
-  apiKey: string,
+  privateKey: string,  // BICTORYS_PRIVATE_KEY — la clé publique retourne 401 sur les payouts
   payload: BictorysPayoutPayload,
-  paymentType: 'wave_money' | 'orange_money',
+  paymentType: BictorysPayoutPaymentType,
   idempotencyKey: string,
 ): Promise<{ transactionId: string; status: string }> {
   const res = await fetch(`${BICTORYS_BASE_URL}/payouts?payment_type=${paymentType}`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
+      'Content-Type':   'application/json',
+      'accept':         'application/json',
+      'X-API-Key':      privateKey,
       'idempotency-key': idempotencyKey,
     },
     body: JSON.stringify(payload),
   })
 
+  const rawText = await res.text()
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Bictorys payout error ${res.status}: ${text}`)
+    throw new Error(`Bictorys payout error ${res.status}: ${rawText}`)
   }
 
-  const json = await res.json() as Record<string, unknown>
+  let json: Record<string, unknown> = {}
+  try { json = JSON.parse(rawText) as Record<string, unknown> } catch { /* WAF peut renvoyer du HTML */ }
+
+  // Bictorys docs : status 0 = succès ; 'id' = transaction ID du payout
   return {
-    transactionId: (json.transactionId ?? json.id ?? '') as string,
-    status: (json.status ?? 'pending') as string,
+    transactionId: (json.id ?? json.transactionId ?? '') as string,
+    status: String(json.status ?? 'pending'),
   }
 }
 
