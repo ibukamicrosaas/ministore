@@ -78,8 +78,7 @@ export default function AdminNotificationsPage() {
   const selectedTypeCfg = TYPE_OPTIONS.find(t => t.value === type) ?? TYPE_OPTIONS[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+    <div className="max-w-2xl space-y-6">
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
@@ -226,7 +225,6 @@ export default function AdminNotificationsPage() {
             Aucune boutique trouvée pour les plans sélectionnés.
           </div>
         )}
-      </div>
     </div>
   )
 }

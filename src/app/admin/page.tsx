@@ -144,12 +144,11 @@ export default async function AdminOverviewPage() {
   }[]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Vue d&apos;ensemble</h1>
-          <p className="text-gray-500 mt-2 capitalize">{format(now, 'EEEE d MMMM yyyy', { locale: fr })}</p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Vue d&apos;ensemble</h1>
+          <p className="text-gray-500 mt-1 text-sm capitalize">{format(now, 'EEEE d MMMM yyyy', { locale: fr })}</p>
         </div>
 
         {/* 🚨 Actions urgentes */}
@@ -383,7 +382,6 @@ export default async function AdminOverviewPage() {
             ))}
           </div>
         </div>
-      </div>
     </div>
   )
 }

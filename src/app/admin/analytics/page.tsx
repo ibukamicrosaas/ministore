@@ -93,11 +93,10 @@ export default function DetailedAnalyticsPage() {
   const now = new Date()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Analytics détaillées</h1>
-          <p className="text-gray-500 mt-1 capitalize">
+    <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Analytics détaillées</h1>
+          <p className="text-gray-500 mt-0.5 text-sm capitalize">
             {format(now, 'EEEE d MMMM yyyy', { locale: fr })}
           </p>
         </div>
@@ -316,7 +315,6 @@ export default function DetailedAnalyticsPage() {
             </div>
           </>
         )}
-      </div>
     </div>
   )
 }

@@ -81,14 +81,13 @@ export default async function AdminPaymentsPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-end justify-between mb-6">
+        <div className="mb-6">
+          <div className="flex items-end justify-between mb-5">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Paiements Bictorys</h1>
-              <p className="text-gray-500 mt-2">Suivi des paiements d'abonnement et activations de plans</p>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Paiements Bictorys</h1>
+              <p className="text-gray-500 mt-0.5 text-sm">Suivi des paiements d'abonnement et activations de plans</p>
             </div>
             <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
           </div>
@@ -267,7 +266,6 @@ export default async function AdminPaymentsPage() {
             </p>
           </div>
         </div>
-      </div>
     </div>
   )
 }
