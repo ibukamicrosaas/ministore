@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Bell, BellRing } from 'lucide-react'
+import { Menu, Bell, BellRing, Eye } from 'lucide-react'
 import { PWAInstallButton } from './PWAInstallButton'
 
 interface TopBarProps {
   onMenuClick: () => void
   title?: string
   unreadCount?: number
+  shopSlug?: string
 }
 
-export function TopBar({ onMenuClick, title, unreadCount = 0 }: TopBarProps) {
+export function TopBar({ onMenuClick, title, unreadCount = 0, shopSlug }: TopBarProps) {
   const pathname = usePathname()
   const notifActive = pathname === '/dashboard/notifications'
 
@@ -32,6 +33,19 @@ export function TopBar({ onMenuClick, title, unreadCount = 0 }: TopBarProps) {
       </div>
 
       <PWAInstallButton />
+
+      {shopSlug && (
+        <Link
+          href={`/preview/${shopSlug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="Prévisualiser mon site"
+          title="Prévisualiser mon site"
+        >
+          <Eye className="h-5 w-5" />
+        </Link>
+      )}
 
       <Link
         href="/dashboard/notifications"

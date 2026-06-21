@@ -33,6 +33,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
           onMenuClick={() => setSidebarOpen(true)}
           title={pageTitle}
           unreadCount={unreadNotifications}
+          shopSlug={shop.slug}
         />
         {/* Spacer pour le header fixe sur mobile (lg:hidden car en desktop le header est dans le flux) */}
         <div className="h-14 shrink-0 lg:hidden" aria-hidden />

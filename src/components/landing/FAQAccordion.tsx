@@ -10,7 +10,7 @@ const FAQS = [
   },
   {
     q: "Est-ce que c'est gratuit pour commencer ?",
-    a: "Il n'y a pas de plan 100% gratuit, mais le plan Découverte démarre à 2 900 FCFA / mois (ou son équivalent en euros selon ton pays). C'est moins cher qu'un abonnement téléphonique. Et tu peux annuler à tout moment, sans engagement.",
+    a: "Tu as 30 jours pour créer ta boutique, ajouter tes produits et voir à quoi elle ressemble — gratuitement, sans carte bancaire. Quand tu es prêt à recevoir tes premières commandes, tu choisis un plan à partir de 2 900 FCFA / mois. Tu peux annuler à tout moment, sans engagement.",
   },
   {
     q: "Quels sont exactement les frais ?",

@@ -12,7 +12,7 @@ export const TEKKISHOP_COMMISSION_RATE   = 3    // % prélevé sur les paiements
 export const PAYOUT_MIN_AMOUNT           = 2000 // montant minimum pour déclencher un retrait (FCFA)
 
 // Plans
-export const TRIAL_DAYS            = 14
+export const TRIAL_DAYS            = 30
 export const SUBSCRIPTION_DAYS     = 31 // durée d'un abonnement mensuel (en jours)
 export const PLAN_LIMITS = {
   trial:      { maxProducts: 10  },

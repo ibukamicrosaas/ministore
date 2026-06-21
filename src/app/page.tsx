@@ -215,7 +215,7 @@ export default async function LandingPage() {
               <HeroInput />
             </div>
             <p className="text-xs text-gray-400 text-center lg:text-left mb-6">
-              ✓ Sans engagement &nbsp;·&nbsp; ✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Opérationnel en 5 min
+              ✓ 30 jours pour tout configurer &nbsp;·&nbsp; ✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Actif quand tu es prêt
             </p>
 
             {/* Stats */}
@@ -677,7 +677,7 @@ export default async function LandingPage() {
           </div>
 
           <p className="text-xs text-gray-500">
-            ✓ Sans engagement &nbsp;·&nbsp; ✓ Aucune carte bancaire requise &nbsp;·&nbsp; ✓ Annulation à tout moment
+            ✓ 30 jours pour tout configurer &nbsp;·&nbsp; ✓ Actif quand tu es prêt &nbsp;·&nbsp; ✓ Annulation à tout moment
           </p>
         </div>
       </section>
