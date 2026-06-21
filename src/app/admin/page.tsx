@@ -66,7 +66,7 @@ export default async function AdminOverviewPage() {
     supabase.from('products').select('shop_id').eq('is_active', true),
     (supabase.from('subscription_transactions' as never)
       .select('shop_id, plan_key')
-      .eq('status', 'completed')
+      .eq('status', 'activated')
       .eq('billing_cycle', 'annual')) as unknown as Promise<{ data: Array<{ shop_id: string; plan_key: string }> | null }>,
   ])
 

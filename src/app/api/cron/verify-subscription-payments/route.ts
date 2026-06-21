@@ -4,17 +4,22 @@ import { getBictorysCharge } from '@/lib/payments/bictorys'
 import { activatePlan } from '@/lib/billing/activate-plan'
 import { recordCronRun } from '@/lib/cron/health'
 
-const PLAN_PRICES: Record<string, number> = {
+const PLAN_PRICES_MONTHLY: Record<string, number> = {
   decouverte: 2900,
   business:   4900,
   pro:        9900,
 }
 
+const PLAN_PRICES_ANNUAL: Record<string, number> = {
+  decouverte: 29000,
+  business:   49000,
+  pro:        99000,
+}
+
 /**
  * Cron job : Vérifie les transactions d'abonnement "pending"
  * auprès de Bictorys et les active si le paiement a réussi.
- *
- * Déclenché toutes les minutes par Vercel Cron.
+ * Gère les plans mensuels ET annuels.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization') ?? ''
@@ -36,7 +41,7 @@ export async function GET(req: NextRequest) {
   // Retrouver toutes les transactions pending depuis moins de 24h
   const { data: pendingTransactions, error: queryError } = await supabase
     .from('subscription_transactions' as never)
-    .select('id, shop_id, plan_key, charge_id, created_at')
+    .select('id, shop_id, plan_key, charge_id, billing_cycle, created_at')
     .eq('status', 'pending')
     .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
     .limit(50) as any
@@ -58,13 +63,19 @@ export async function GET(req: NextRequest) {
   let failed = 0
 
   for (const txn of pendingTransactions) {
-    const { id: txnId, shop_id: shopId, plan_key: planKey, charge_id: chargeId } = txn
+    const {
+      id: txnId,
+      shop_id: shopId,
+      plan_key: planKey,
+      charge_id: chargeId,
+      billing_cycle: billingCycle = 'monthly',
+    } = txn
 
     try {
       // Vérifier le statut chez Bictorys
       const charge = await getBictorysCharge(apiKey, chargeId)
 
-      console.log(`[verify-subscription-payments] Charge ${chargeId.slice(0, 8)}... status: ${charge.status}`)
+      console.log(`[verify-subscription-payments] Charge ${chargeId.slice(0, 8)}... status: ${charge.status}, cycle: ${billingCycle}`)
 
       // Si paiement échoué, marquer comme failed
       if (charge.status === 'failed') {
@@ -88,18 +99,22 @@ export async function GET(req: NextRequest) {
         continue
       }
 
-      // ✅ Paiement réussi — vérifier le montant
-      const expectedAmount = PLAN_PRICES[planKey] ?? 0
+      // ✅ Paiement réussi — vérifier le montant selon le cycle de facturation
+      const expectedAmount = billingCycle === 'annual'
+        ? (PLAN_PRICES_ANNUAL[planKey] ?? 0)
+        : (PLAN_PRICES_MONTHLY[planKey] ?? 0)
+
       if (charge.amount !== expectedAmount) {
         console.error(`[verify-subscription-payments] Montant mismatch pour ${txnId}:`, {
           expected: expectedAmount,
           actual: charge.amount,
+          billingCycle,
         })
         await supabase
           .from('subscription_transactions' as never)
           .update({
             status: 'failed',
-            error_message: `Montant invalide: ${charge.amount} XOF au lieu de ${expectedAmount}`,
+            error_message: `Montant invalide: ${charge.amount} XOF au lieu de ${expectedAmount} (cycle: ${billingCycle})`,
             updated_at: new Date().toISOString(),
           } as never)
           .eq('id', txnId)
@@ -109,9 +124,10 @@ export async function GET(req: NextRequest) {
         continue
       }
 
-      // ✅ Activer le plan
-      console.log(`[verify-subscription-payments] ✅ Activation du plan ${planKey} pour boutique ${shopId}`)
-      const { error: activationError } = await activatePlan(shopId, planKey)
+      // ✅ Activer le plan — durée adaptée au cycle de facturation
+      const durationDays = billingCycle === 'annual' ? 365 : 31
+      console.log(`[verify-subscription-payments] ✅ Activation ${planKey}/${billingCycle} (${durationDays}j) pour ${shopId}`)
+      const { error: activationError } = await activatePlan(shopId, planKey, durationDays)
 
       if (activationError) {
         console.error(`[verify-subscription-payments] Erreur activation plan:`, activationError)

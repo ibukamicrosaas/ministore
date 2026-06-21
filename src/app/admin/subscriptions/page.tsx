@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
+import { activateSubscriptionManually } from '@/lib/actions/admin-shops'
 import { CheckCircle2, Clock, AlertCircle, Zap, Search, TrendingUp } from 'lucide-react'
 
 export default function AdminSubscriptionsPage() {
@@ -50,18 +51,11 @@ export default function AdminSubscriptionsPage() {
   async function activateManually(txnId: string, shopId: string, planKey: string) {
     setActivating(txnId)
     try {
-      const response = await fetch('/api/admin/activate-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txnId, shopId, planKey }),
-      })
-
-      if (!response.ok) {
-        const err = await response.json()
-        alert('Erreur: ' + (err.error || 'Activation échouée'))
+      const result = await activateSubscriptionManually(txnId, shopId, planKey)
+      if (result.error) {
+        alert('Erreur: ' + result.error)
         return
       }
-
       await loadData()
       alert('✅ Plan activé avec succès!')
     } catch (err) {

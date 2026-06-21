@@ -67,65 +67,109 @@ export async function getChurnRate() {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const { data: activeStartMonth } = await supabase
-    .from('shops')
-    .select('id')
-    .eq('is_active', true)
-    .lt('created_at', monthStart.toISOString())
-
-  const { data: churned } = await supabase
+  // Abonnements payants expirés ce mois sans renouvellement (vrais churns)
+  // Ne compte PAS les trials : plan doit avoir été != 'trial' (subscription_ends_at est null pour les trials)
+  const { data: churnedShops } = await supabase
     .from('shops')
     .select('id')
     .eq('is_active', false)
-    .gte('updated_at', monthStart.toISOString())
+    .not('subscription_ends_at', 'is', null)
+    .gte('subscription_ends_at', monthStart.toISOString())
+    .lt('subscription_ends_at', now.toISOString())
 
-  const startCount = activeStartMonth?.length ?? 1
-  const churnCount = churned?.length ?? 0
+  // Base = abonnés payants actifs actuellement + ceux qui ont churné ce mois
+  const { data: activePaying } = await supabase
+    .from('shops')
+    .select('id')
+    .neq('plan', 'trial')
+    .eq('is_active', true)
+
+  const churnCount = churnedShops?.length ?? 0
+  const activeCount = activePaying?.length ?? 0
+  const baseCount = activeCount + churnCount
 
   return {
-    churnRate: Math.round((churnCount / startCount) * 100),
+    churnRate: baseCount > 0 ? Math.round((churnCount / baseCount) * 100) : 0,
     churned: churnCount,
-    activeStartMonth: startCount,
+    activeStartMonth: baseCount,
   }
+}
+
+const PLAN_PRICES_ANNUAL: Record<string, number> = {
+  decouverte: 29000,
+  business:   49000,
+  pro:        99000,
 }
 
 export async function getMRRBreakdown() {
   const supabase = createAdminClient()
   const now = new Date()
-  const thirtyDaysAgo = subDays(now, 30).toISOString()
+  const thirtyDaysAgo = subDays(now, 30)
 
-  const { data: allActiveShops } = await supabase
-    .from('shops')
-    .select('id, plan')
-    .eq('is_active', true)
+  const [activeShopsResult, annualSubsResult, newPaymentsResult, churnedShopsResult] = await Promise.all([
+    supabase.from('shops').select('id, plan').eq('is_active', true).neq('plan', 'trial'),
+    (supabase
+      .from('subscription_transactions' as never)
+      .select('shop_id')
+      .eq('status', 'activated')
+      .eq('billing_cycle', 'annual')) as unknown as Promise<{ data: Array<{ shop_id: string }> | null }>,
+    (supabase
+      .from('subscription_transactions' as never)
+      .select('plan_key, billing_cycle, activated_at')
+      .eq('status', 'activated')
+      .gte('activated_at', thirtyDaysAgo.toISOString())) as unknown as Promise<{
+        data: Array<{ plan_key: string; billing_cycle: string; activated_at: string }> | null
+      }>,
+    supabase
+      .from('shops')
+      .select('plan')
+      .neq('plan', 'trial')
+      .eq('is_active', false)
+      .not('subscription_ends_at', 'is', null)
+      .gte('subscription_ends_at', thirtyDaysAgo.toISOString())
+      .lt('subscription_ends_at', now.toISOString()),
+  ])
 
-  const activeShops = allActiveShops?.filter(s => s.plan !== 'trial') ?? []
+  const activeShops = activeShopsResult.data ?? []
+  const annualShopIds = new Set(
+    ((annualSubsResult as { data: Array<{ shop_id: string }> | null }).data ?? []).map(t => t.shop_id)
+  )
 
-  const totalMRR = activeShops.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] ?? 0), 0)
+  // MRR total : annuels normalisés en mensuel, mensuels au prix mensuel
+  const totalMRR = activeShops.reduce((sum, s) => {
+    if (annualShopIds.has(s.id)) return sum + Math.round((PLAN_PRICES_ANNUAL[s.plan] ?? 0) / 12)
+    return sum + (PLAN_PRICES[s.plan] ?? 0)
+  }, 0)
 
-  const { data: newPayments } = (await supabase
-    .from('subscription_transactions' as never)
-    .select('plan_key, activated_at')
-    .eq('status', 'activated')
-    .gte('activated_at', thirtyDaysAgo)) as unknown as { data: Array<{ plan_key: string; activated_at: string }> | null }
+  // New MRR (30j) — prend en compte le cycle de facturation
+  const newPayments = (newPaymentsResult as { data: Array<{ plan_key: string; billing_cycle: string }> | null }).data ?? []
+  const newMRR = newPayments.reduce((sum, p) => {
+    if (p.billing_cycle === 'annual') return sum + Math.round((PLAN_PRICES_ANNUAL[p.plan_key] ?? 0) / 12)
+    return sum + (PLAN_PRICES[p.plan_key] ?? 0)
+  }, 0)
 
-  const newMRR = newPayments?.reduce((sum, p) => sum + (PLAN_PRICES[p.plan_key] ?? 0), 0) ?? 0
+  // Churned MRR (30j) — abonnements payants expirés ce mois sans renouvellement
+  const churnedShops = churnedShopsResult.data ?? []
+  const churnedMRR = churnedShops.reduce((sum, s) => sum + (PLAN_PRICES[s.plan] ?? 0), 0)
 
-  const planCounts = activeShops.reduce((acc, s) => {
-    acc[s.plan] = (acc[s.plan] ?? 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  // MRR par plan
+  const planMRR = { decouverte: 0, business: 0, pro: 0 }
+  for (const s of activeShops) {
+    const plan = s.plan as keyof typeof planMRR
+    if (!(plan in planMRR)) continue
+    if (annualShopIds.has(s.id)) {
+      planMRR[plan] += Math.round((PLAN_PRICES_ANNUAL[plan] ?? 0) / 12)
+    } else {
+      planMRR[plan] += PLAN_PRICES[plan] ?? 0
+    }
+  }
 
   return {
     totalMRR,
     newMRR,
-    churnedMRR: 0,
-    netMRR: newMRR,
-    byPlan: {
-      decouverte: (planCounts['decouverte'] ?? 0) * PLAN_PRICES.decouverte,
-      business: (planCounts['business'] ?? 0) * PLAN_PRICES.business,
-      pro: (planCounts['pro'] ?? 0) * PLAN_PRICES.pro,
-    },
+    churnedMRR,
+    netMRR: newMRR - churnedMRR,
+    byPlan: planMRR,
   }
 }
 

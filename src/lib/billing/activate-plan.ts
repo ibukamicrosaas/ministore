@@ -4,10 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 import { sendWhatsApp, buildPlanActivatedMessage } from '@/lib/notifications/whatsapp'
 
+const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * Active ou renouvelle un plan payant pour une boutique.
- * - Met à jour plan, is_active et subscription_ends_at
- * - Revalide tous les chemins concernés
+ * - Si la boutique a déjà un abonnement actif, l'échéance est prolongée à partir
+ *   de la date de fin existante (pas de now()) pour ne pas pénaliser les renouvellements anticipés.
+ * - Revalide tous les chemins concernés.
  * Utilisé par le webhook Bictorys, verifySubscriptionPayment et l'admin.
  */
 export async function activatePlan(
@@ -15,11 +19,29 @@ export async function activatePlan(
   planKey: string,
   durationDays = 31,
 ): Promise<{ error?: string }> {
+  // Validation des entrées pour éviter les injections / mauvaises données
+  if (!UUID_RE.test(shopId)) return { error: 'shopId invalide' }
+  if (!VALID_PLAN_KEYS.has(planKey)) return { error: 'planKey invalide' }
+  if (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 400) {
+    return { error: 'durationDays invalide' }
+  }
+
   const supabase = createAdminClient()
 
-  const subscriptionEndsAt = new Date(
-    Date.now() + durationDays * 24 * 60 * 60 * 1000
-  ).toISOString()
+  // Récupérer la date de fin actuelle pour ne pas pénaliser les renouvellements anticipés
+  const { data: currentShop } = await supabase
+    .from('shops')
+    .select('subscription_ends_at')
+    .eq('id', shopId)
+    .single()
+
+  const now = Date.now()
+  const currentEnd = currentShop?.subscription_ends_at
+    ? new Date(currentShop.subscription_ends_at).getTime()
+    : 0
+  // Si l'abonnement est encore actif, on prolonge depuis la fin actuelle (pas depuis maintenant)
+  const baseTs = currentEnd > now ? currentEnd : now
+  const subscriptionEndsAt = new Date(baseTs + durationDays * 24 * 60 * 60 * 1000).toISOString()
 
   const { error, data } = await supabase
     .from('shops')

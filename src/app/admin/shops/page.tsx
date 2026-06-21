@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getAllShopsForAdmin } from '@/lib/actions/admin-shops'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
@@ -25,7 +25,6 @@ const PLAN_CONFIG = {
 } as const
 
 export default function AdminShopsPage() {
-  const supabase = createClient()
   const [shops, setShops] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -36,19 +35,10 @@ export default function AdminShopsPage() {
 
   async function loadData() {
     try {
-      const [{ data: shopsData }, { data: annualData }] = await Promise.all([
-        supabase
-          .from('shops')
-          .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, city, country, is_active, created_at, phone_whatsapp')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('subscription_transactions' as never)
-          .select('shop_id')
-          .eq('status', 'completed')
-          .eq('billing_cycle', 'annual') as unknown as Promise<{ data: Array<{ shop_id: string }> | null }>,
-      ])
-      const annualIds = new Set((annualData ?? []).map((t: { shop_id: string }) => t.shop_id))
-      setShops((shopsData ?? []).map((s: Record<string, unknown>) => ({ ...s, is_annual: annualIds.has(s.id as string) })))
+      const data = await getAllShopsForAdmin()
+      setShops(data)
+    } catch (err) {
+      console.error('[admin/shops] loadData:', err)
     } finally {
       setLoading(false)
     }
