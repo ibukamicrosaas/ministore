@@ -99,48 +99,46 @@ export async function processPayout(
       .eq('id', payoutId)
   }
 
-  try {
-    const { transactionId } = await createBictorysPayout(
-      privateKey,
-      {
-        amount:           netAmount,
-        currency:         'XOF',
-        country,
-        customerObject: {
-          name:    shopName,
-          phone:   recipientPhone,
-          country,
-          locale:  'fr-FR',
-        },
-        paymentReason:     'Reversement TekkiShop',
-        merchantReference: `payout-${payoutId.slice(0, 8)}`,
-        ...(merchantSecretCode ? { merchant: { secretCode: merchantSecretCode } } : {}),
+  const result = await createBictorysPayout(
+    privateKey,
+    {
+      amount:   netAmount,
+      currency: 'XOF',
+      country,
+      customerObject: {
+        name:  shopName,
+        phone: recipientPhone,
       },
-      bictorysPaymentType,
-      payoutId, // idempotency key = payout UUID
-    )
+      paymentReason:     'Reversement TekkiShop',
+      merchantReference: `payout-${payoutId.slice(0, 8)}`,
+      ...(merchantSecretCode ? { merchant: { secretCode: merchantSecretCode } } : {}),
+    },
+    bictorysPaymentType,
+    payoutId,
+  )
 
+  if (result.success) {
     await admin
       .from('payouts')
       .update({
         status:               'completed',
-        bictorys_transfer_id: transactionId || null,
+        bictorys_transfer_id: result.transactionId ?? null,
         completed_at:         new Date().toISOString(),
         updated_at:           new Date().toISOString(),
       })
       .eq('id', payoutId)
 
-    revalidatePath('/dashboard/payouts')
+    revalidatePath('/dashboard/revenues')
     return {}
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
-    console.error('[processPayout]', message)
-
-    await admin
-      .from('payouts')
-      .update({ status: 'failed', updated_at: new Date().toISOString() })
-      .eq('id', payoutId)
-
-    return { error: message }
   }
+
+  const message = result.error ?? 'Erreur Bictorys inconnue'
+  console.error('[processPayout]', message)
+
+  await admin
+    .from('payouts')
+    .update({ status: 'failed', updated_at: new Date().toISOString() })
+    .eq('id', payoutId)
+
+  return { error: message }
 }

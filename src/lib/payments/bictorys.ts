@@ -203,30 +203,38 @@ export async function createBictorysPayout(
   payload: BictorysPayoutPayload,
   paymentType: BictorysPayoutPaymentType,
   idempotencyKey: string,
-): Promise<{ transactionId: string; status: string }> {
-  const res = await fetch(`${BICTORYS_BASE_URL}/payouts?payment_type=${paymentType}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type':   'application/json',
-      'accept':         'application/json',
-      'X-API-Key':      privateKey,
-      'idempotency-key': idempotencyKey,
-    },
-    body: JSON.stringify(payload),
-  })
+): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30_000)
 
-  const rawText = await res.text()
-  if (!res.ok) {
-    throw new Error(`Bictorys payout error ${res.status}: ${rawText}`)
-  }
+  try {
+    const res = await fetch(`${BICTORYS_BASE_URL}/payouts?payment_type=${encodeURIComponent(paymentType)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':    'application/json',
+        'accept':          'application/json',
+        'X-API-Key':       privateKey,
+        'idempotency-key': idempotencyKey,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
 
-  let json: Record<string, unknown> = {}
-  try { json = JSON.parse(rawText) as Record<string, unknown> } catch { /* WAF peut renvoyer du HTML */ }
+    const rawText = await res.text()
+    let json: Record<string, unknown> = {}
+    try { json = JSON.parse(rawText) as Record<string, unknown> } catch { /* HTML WAF response */ }
 
-  // Bictorys docs : status 0 = succès ; 'id' = transaction ID du payout
-  return {
-    transactionId: (json.id ?? json.transactionId ?? '') as string,
-    status: String(json.status ?? 'pending'),
+    if (res.ok || res.status === 201) {
+      return {
+        success:       true,
+        transactionId: (json.id ?? json.transactionId) as string | undefined,
+      }
+    }
+    return { success: false, error: `Bictorys payout ${res.status}: ${rawText}` }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Erreur inconnue' }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

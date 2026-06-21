@@ -35,14 +35,14 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
       const res = await fetch('/api/payouts/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopId, method: selected.key, amount: availableBalance }),
+        body: JSON.stringify({ method: selected.key }),
       })
-      const data = await res.json() as { success?: boolean; error?: string }
+      const data = await res.json() as { success?: boolean; auto?: boolean; error?: string }
       if (!res.ok || !data.success) {
         toast.error(data.error ?? 'Erreur lors de la demande')
         return
       }
-      toast.success('Demande de retrait envoyée ✓')
+      toast.success(data.auto ? 'Retrait effectué ✓' : 'Demande de retrait envoyée ✓')
       setOpen(false)
       window.location.reload()
     } catch {
@@ -110,7 +110,7 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
             </button>
 
             <p className="text-xs text-gray-400 text-center">
-              Le transfert sera effectué dans les 24 à 48 heures ouvrables.
+              Le transfert mobile money est généralement instantané.
             </p>
           </div>
         </div>

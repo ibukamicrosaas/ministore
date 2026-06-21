@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createBictorysPayout } from '@/lib/payments/bictorys'
+import type { BictorysPayoutPaymentType } from '@/lib/payments/bictorys'
 import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
 import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
+
+const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
+  wave:         'wave_money',
+  orange_money: 'orange_money',
+  mtn:          'mtn_money',
+  moov:         'moov',
+  tmoney:       'moov',
+  flooz:        'moov',
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -20,23 +31,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
-  const body = await req.json() as { method: string; amount: number }
-  const { method, amount } = body
+  const body = await req.json() as { method: string }
+  const { method } = body
 
-  if (!method || !amount || amount < PAYOUT_MIN_AMOUNT) {
-    return NextResponse.json({ error: `Montant minimum : ${PAYOUT_MIN_AMOUNT}` }, { status: 400 })
+  if (!method) {
+    return NextResponse.json({ error: 'Méthode de retrait manquante' }, { status: 400 })
   }
 
-  const { data: shop } = await supabase
+  const admin = createAdminClient()
+
+  const { data: shop } = await admin
     .from('shops')
-    .select('country, payout_wave_number, payout_om_number')
+    .select('name, country, payout_wave_number, payout_om_number')
     .eq('id', profile.shop_id)
     .single()
 
-  // Résoudre le numéro depuis le bon slot DB selon la méthode et le pays
+  // Résoudre le numéro selon pays + méthode
   const methodDef = getPayoutMethods(shop?.country ?? null).find(m => m.key === method)
   if (!methodDef) {
-    return NextResponse.json({ error: 'Méthode de payout non reconnue' }, { status: 400 })
+    return NextResponse.json({ error: 'Méthode de retrait non reconnue' }, { status: 400 })
   }
   const payoutNumber = methodDef.col === 'payout_wave_number'
     ? shop?.payout_wave_number
@@ -45,57 +58,93 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
   }
 
-  // ── Validation du solde disponible ───────────────────────────────────
-  // Utiliser la même source que la page Revenus : table payments (status = completed).
-  // L'ancienne logique via orders.deposit_paid était désynchronisée quand le webhook
-  // Bictorys n'avait pas pu mettre à jour deposit_paid (bug corrigé par ailleurs).
-  const { data: paymentsData } = await supabase
-    .from('payments')
-    .select('amount')
-    .eq('shop_id', profile.shop_id)
-    .eq('status', 'completed')
+  // Calcul serveur-side (ne pas faire confiance au montant envoyé par le client)
+  // grossBalance = total collecté − total déjà sorti (gross_amount des payouts actifs)
+  const [paymentsResult, payoutsResult] = await Promise.all([
+    supabase
+      .from('payments')
+      .select('amount')
+      .eq('shop_id', profile.shop_id)
+      .eq('status', 'completed'),
+    admin
+      .from('payouts')
+      .select('gross_amount')
+      .eq('shop_id', profile.shop_id)
+      .in('status', ['pending', 'processing', 'completed']),
+  ])
 
-  const totalCollected   = (paymentsData ?? []).reduce((s, p) => s + (p.amount ?? 0), 0)
-  const commissionTotal  = Math.floor(totalCollected * (TEKKISHOP_COMMISSION_RATE / 100))
-  const totalNet         = totalCollected - commissionTotal
+  const totalCollected   = (paymentsResult.data ?? []).reduce((s, p) => s + p.amount, 0)
+  const totalPaidOutGross = (payoutsResult.data ?? []).reduce((s, p) => s + p.gross_amount, 0)
+  const grossBalance     = totalCollected - totalPaidOutGross
 
-  // Payouts déjà effectués ou en cours (net_amount, comme la page Revenus)
-  const { data: existingPayouts } = await supabase
-    .from('payouts')
-    .select('net_amount')
-    .eq('shop_id', profile.shop_id)
-    .in('status', ['pending', 'processing', 'completed'])
+  const commissionAmount = Math.floor(grossBalance * (TEKKISHOP_COMMISSION_RATE / 100))
+  const netAmount        = grossBalance - commissionAmount
 
-  const totalAlreadyOut  = (existingPayouts ?? []).reduce((s, p) => s + (p.net_amount ?? 0), 0)
-  const availableBalance = Math.max(0, totalNet - totalAlreadyOut)
-
-  if (amount > availableBalance) {
+  if (netAmount < PAYOUT_MIN_AMOUNT) {
     return NextResponse.json({
-      error: `Solde insuffisant. Disponible : ${availableBalance.toLocaleString('fr-FR')}.`,
+      error: `Solde insuffisant. Disponible : ${netAmount.toLocaleString('fr-FR')} FCFA (minimum : ${PAYOUT_MIN_AMOUNT} FCFA).`,
     }, { status: 400 })
   }
 
-  const grossAmount      = amount
-  const commissionAmount = Math.floor(grossAmount * (TEKKISHOP_COMMISSION_RATE / 100))
-  const netAmount        = grossAmount - commissionAmount
+  // Insérer en "processing" immédiatement, puis appeler Bictorys
+  const { data: payoutRecord, error: insertError } = await admin
+    .from('payouts')
+    .insert({
+      shop_id:           profile.shop_id,
+      gross_amount:      grossBalance,
+      commission_amount: commissionAmount,
+      net_amount:        netAmount,
+      payout_method:     method as PayoutMethodKey,
+      payout_number:     payoutNumber,
+      status:            'processing',
+    })
+    .select('id')
+    .single()
 
-  // Utiliser le client admin pour l'insert : RLS bloque les inserts de l'utilisateur
-  // connecté sur la table payouts (lecture OK, écriture réservée au service role).
-  const admin = createAdminClient()
-  const { error } = await admin.from('payouts').insert({
-    shop_id:           profile.shop_id,
-    gross_amount:      grossAmount,
-    commission_amount: commissionAmount,
-    net_amount:        netAmount,
-    payout_method:     method as PayoutMethodKey,
-    payout_number:     payoutNumber,
-    status:            'pending',
-  })
-
-  if (error) {
-    console.error('[payouts/request]', error.message)
+  if (insertError || !payoutRecord) {
+    console.error('[payouts/request] insert error:', insertError?.message, insertError?.code)
     return NextResponse.json({ error: 'Impossible de créer la demande' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  // Appel Bictorys immédiat — retrait automatique
+  const privateKey         = process.env.BICTORYS_PRIVATE_KEY
+  const bictorysPaymentType = PAYOUT_METHOD_BICTORYS[method] ?? 'wave_money'
+
+  if (privateKey) {
+    const result = await createBictorysPayout(
+      privateKey,
+      {
+        amount:   netAmount,
+        currency: 'XOF',
+        country:  shop?.country ?? 'SN',
+        customerObject: {
+          name:  shop?.name ?? 'Boutique TekkiShop',
+          phone: payoutNumber,
+        },
+        paymentReason:     `Reversement TEKKIShop — ${shop?.name ?? 'Boutique'}`,
+        merchantReference: payoutRecord.id,
+      },
+      bictorysPaymentType,
+      payoutRecord.id, // idempotency key — évite les doubles virements
+    )
+
+    if (result.success) {
+      await admin.from('payouts').update({
+        status:               'completed',
+        bictorys_transfer_id: result.transactionId ?? null,
+        completed_at:         new Date().toISOString(),
+      }).eq('id', payoutRecord.id)
+
+      return NextResponse.json({ success: true, auto: true })
+    }
+
+    // Échec Bictorys : repasse en "pending" pour traitement manuel admin
+    console.error('[payouts/request] Bictorys payout failed:', result.error)
+    await admin.from('payouts').update({ status: 'pending' }).eq('id', payoutRecord.id)
+  } else {
+    // Pas de clé privée configurée : traitement manuel
+    await admin.from('payouts').update({ status: 'pending' }).eq('id', payoutRecord.id)
+  }
+
+  return NextResponse.json({ success: true, auto: false })
 }
