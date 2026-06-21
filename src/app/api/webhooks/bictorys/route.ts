@@ -268,37 +268,90 @@ async function handleOrderWebhook(
   supabase: ReturnType<typeof createAdminClient>,
 ) {
   const orderId = merchantReference
-  console.log('[handleOrderWebhook] Début — orderId:', orderId, 'status:', payload.status)
+  console.log('[handleOrderWebhook] Début — orderId:', orderId, 'status:', payload.status, 'chargeId:', payload.id)
 
-  // Idempotence : vérifier si le paiement a déjà été traité
-  const { data: existingPayment } = await supabase
+  // ── Idempotence ──────────────────────────────────────────────────────────────
+  // Chercher d'abord par provider_payment_id (cas normal).
+  // Fallback par order_id : quand Bictorys ne retourne pas de chargeId lors de la
+  // création du paiement, on stocke un placeholder 'bictorys-{orderId}' qui ne
+  // matche pas le payload.id du webhook → on retrouve le record via order_id.
+  const { data: existingByCharge } = await supabase
     .from('payments')
-    .select('status')
+    .select('id, status')
     .eq('provider_payment_id', payload.id)
-    .single()
+    .maybeSingle()
 
-  if (existingPayment?.status === 'completed') {
-    console.log('[handleOrderWebhook] Paiement déjà traité (idempotence)')
+  if (existingByCharge?.status === 'completed') {
+    console.log('[handleOrderWebhook] Déjà traité (idempotence chargeId)')
     return NextResponse.json({ ok: true, skipped: true })
   }
 
-  // Ignorer les paiements non réussis (Bictorys retourne 'succeed' ou 'succeeded')
+  const { data: existingByOrder } = await supabase
+    .from('payments')
+    .select('id, status, shop_id, amount, currency, payment_method, payment_type')
+    .eq('order_id', orderId)
+    .maybeSingle()
+
+  if (existingByOrder?.status === 'completed') {
+    console.log('[handleOrderWebhook] Déjà traité (idempotence orderId)')
+    return NextResponse.json({ ok: true, skipped: true })
+  }
+
+  // ── Paiement échoué ──────────────────────────────────────────────────────────
   if (payload.status !== 'succeed' && payload.status !== 'succeeded') {
     console.log('[handleOrderWebhook] Paiement échoué — status:', payload.status)
-    await supabase
-      .from('payments')
-      .update({ status: 'failed' })
-      .eq('provider_payment_id', payload.id)
-
+    const failTarget = existingByCharge ?? existingByOrder
+    if (failTarget) {
+      await supabase.from('payments').update({ status: 'failed' }).eq('id', failTarget.id)
+    }
     return NextResponse.json({ ok: true })
   }
 
-  // Marquer le paiement comme complété
-  console.log('[handleOrderWebhook] Marquage du paiement comme complété')
-  await supabase
-    .from('payments')
-    .update({ status: 'completed', paid_at: new Date().toISOString() })
-    .eq('provider_payment_id', payload.id)
+  // ── Marquer le paiement comme complété ──────────────────────────────────────
+  const now = new Date().toISOString()
+
+  if (existingByCharge) {
+    // Cas normal : provider_payment_id correct
+    console.log('[handleOrderWebhook] Mise à jour paiement par chargeId')
+    await supabase
+      .from('payments')
+      .update({ status: 'completed', paid_at: now })
+      .eq('id', existingByCharge.id)
+
+  } else if (existingByOrder) {
+    // Cas fallback : provider_payment_id était un placeholder ('bictorys-{orderId}')
+    // On corrige l'ID et on marque complété en une seule opération
+    console.log('[handleOrderWebhook] ⚠️ Fallback order_id — correction provider_payment_id et marquage complété')
+    await supabase
+      .from('payments')
+      .update({ status: 'completed', paid_at: now, provider_payment_id: payload.id })
+      .eq('id', existingByOrder.id)
+
+  } else {
+    // Aucun record de paiement (ne devrait pas arriver, mais defensive coding)
+    console.warn('[handleOrderWebhook] ⚠️ Aucun record payments trouvé — création à la volée')
+    const { data: orderForPayment } = await supabase
+      .from('orders')
+      .select('shop_id, total_price, deposit_amount, payment_type')
+      .eq('id', orderId)
+      .single()
+
+    if (orderForPayment) {
+      const o = orderForPayment as { shop_id: string; total_price: number; deposit_amount: number; payment_type: string }
+      const isDeposit = o.payment_type === 'online_deposit' && (o.deposit_amount ?? 0) > 0
+      await supabase.from('payments').insert({
+        order_id:            orderId,
+        shop_id:             o.shop_id,
+        amount:              isDeposit ? o.deposit_amount : o.total_price,
+        currency:            'XOF',
+        payment_method:      'bictorys',
+        payment_type:        isDeposit ? 'deposit' : 'full',
+        provider_payment_id: payload.id,
+        status:              'completed',
+        paid_at:             now,
+      })
+    }
+  }
 
   // Confirmer la commande
   const { data: orderData } = await supabase
