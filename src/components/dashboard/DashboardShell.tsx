@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { PushNotificationManager } from './PushNotificationManager'
+import { ChatWidget } from '@/components/ai/ChatWidget'
 import type { Shop, Profile } from '@/types'
 
 interface DashboardShellProps {
@@ -18,6 +19,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -35,13 +37,24 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
           unreadCount={unreadNotifications}
           shopSlug={shop.slug}
         />
-        {/* Spacer pour le header fixe sur mobile (lg:hidden car en desktop le header est dans le flux) */}
+        {/* Spacer pour le header fixe sur mobile */}
         <div className="h-14 shrink-0 lg:hidden" aria-hidden />
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">
           {children}
         </main>
       </div>
-      <BottomNav profile={profile} shop={shop} />
+      <BottomNav
+        profile={profile}
+        shop={shop}
+        onChatOpen={() => setChatOpen(true)}
+        isChatOpen={chatOpen}
+      />
+      <ChatWidget
+        shopName={shop.name}
+        isOpen={chatOpen}
+        onOpen={() => setChatOpen(true)}
+        onClose={() => setChatOpen(false)}
+      />
       <PushNotificationManager />
     </div>
   )
