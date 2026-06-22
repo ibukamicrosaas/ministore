@@ -1,7 +1,6 @@
-// Client SMS Lafricamobile (API LAMPUSH — envoi via XML/HTTP POST).
-// Doc : https://developers.lafricamobile.com/docs/sms
-// Remplace Twilio (~300 FCFA/SMS) par un agrégateur local interconnecté
-// directement aux opérateurs ouest-africains — coût et delivrabilité bien meilleurs.
+// Client SMS Lafricamobile (API LAMSMS — GET request, XML encodé en query string).
+// Doc : https://lamsms.lafricamobile.com/api
+// Format : GET /api?xml=<push accountid="X" password="Y" sender="Z"><message><text>MSG</text><to>PHONE</to></message></push>
 
 function escapeXml(value: string): string {
   return value
@@ -26,28 +25,32 @@ interface SendLafricamobileSmsResult {
 export async function sendLafricamobileSms(
   { to, text }: SendLafricamobileSmsParams
 ): Promise<SendLafricamobileSmsResult> {
-  const baseUrl   = process.env.LAFRICAMOBILE_SMS_BASE_URL
   const accountId = process.env.LAFRICAMOBILE_ACCOUNT_ID
   const password  = process.env.LAFRICAMOBILE_PASSWORD
   const sender    = process.env.LAFRICAMOBILE_SENDER_ID
 
-  if (!baseUrl || !accountId || !password || !sender) {
-    return { success: false, rawResponse: '', error: 'Lafricamobile SMS non configuré (variables d\'environnement manquantes).' }
+  if (!accountId || !password || !sender) {
+    return {
+      success: false,
+      rawResponse: '',
+      error: 'Lafricamobile SMS non configuré (variables d\'environnement manquantes).',
+    }
   }
 
-  const xml = `<push>`
-    + `<accountid>${escapeXml(accountId)}</accountid>`
-    + `<password>${escapeXml(password)}</password>`
-    + `<sender>${escapeXml(sender)}</sender>`
-    + `<text>${escapeXml(text)}</text>`
-    + `<to>${escapeXml(to)}</to>`
-    + `</push>`
+  // Format attendu par l'API : attributs sur <push>, contenu dans <message>
+  const xml =
+    `<push accountid="${escapeXml(accountId)}" password="${escapeXml(password)}" sender="${escapeXml(sender)}">` +
+    `<message>` +
+    `<text>${escapeXml(text)}</text>` +
+    `<to>${escapeXml(to)}</to>` +
+    `</message>` +
+    `</push>`
+
+  const endpoint = `https://lamsms.lafricamobile.com/api?xml=${encodeURIComponent(xml)}`
 
   try {
-    const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/Send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/xml' },
-      body: xml,
+    const res = await fetch(endpoint, {
+      method: 'GET',
       signal: AbortSignal.timeout(20000),
     })
 
@@ -57,12 +60,6 @@ export async function sendLafricamobileSms(
       return { success: false, rawResponse, error: `Lafricamobile HTTP ${res.status}` }
     }
 
-    // La doc publique Lafricamobile ne précise pas le format exact de la
-    // réponse synchrone (elle décrit surtout les statuts du callback DLR
-    // ret_url : SENT/DELIVRD/EXPIRED/REJECTD/UNDELIVERED). On considère ici
-    // qu'un HTTP 200 vaut accusé de réception par la passerelle ; la
-    // confirmation de livraison réelle nécessitera d'implémenter ret_url
-    // si besoin de fiabilité accrue plus tard.
     return { success: true, rawResponse }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur réseau inconnue'
