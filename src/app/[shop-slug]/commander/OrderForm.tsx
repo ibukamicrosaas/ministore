@@ -377,7 +377,7 @@ export function OrderForm({
   }
 
   function computeDeposit() {
-    return items.reduce((sum, it) => {
+    const rawDeposit = items.reduce((sum, it) => {
       const p = getProduct(it.product_id)
       if (!p) return sum
       const pct = p.deposit_percentage != null ? p.deposit_percentage : shopDepositPct
@@ -389,11 +389,24 @@ export function OrderForm({
       }
       return sum + Math.floor((price * it.quantity * pct) / 100)
     }, 0)
+    // Appliquer la remise promo à l'acompte (cohérent avec le serveur)
+    return promoDiscount > 0 ? Math.floor(rawDeposit * (100 - promoDiscount) / 100) : rawDeposit
   }
 
-  const subtotal       = computeTotal()
-  const promoAmount    = promoDiscount > 0 ? Math.floor(subtotal * promoDiscount / 100) : 0
-  const total          = subtotal - promoAmount
+  const itemsSubtotal  = items.reduce((sum, it) => {
+    const p = getProduct(it.product_id)
+    if (!p) return sum
+    let price = p.price
+    if (it.variant_label && p.variants) {
+      const v = p.variants.find(v => v.label === it.variant_label)
+      if (v) price = v.price
+    }
+    return sum + price * it.quantity
+  }, 0)
+  const promoAmount    = promoDiscount > 0 ? Math.floor(itemsSubtotal * promoDiscount / 100) : 0
+  const total          = itemsSubtotal - promoAmount + deliveryPrice
+  const subtotal       = itemsSubtotal + deliveryPrice  // pour l'affichage du sous-total si besoin
+  void subtotal
   const deposit = paymentType === 'online' ? computeDeposit() : 0
   const hasDeposit = deposit > 0 && deposit < total
 
@@ -931,10 +944,23 @@ export function OrderForm({
                 <span>-{formatPrice(promoAmount, shopCurrency)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-              <span>Total commande</span>
-              <span>{formatPrice(total, shopCurrency)}</span>
-            </div>
+            {hasDeposit && paymentType === 'online' ? (
+              <>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Total commande</span>
+                  <span>{formatPrice(total, shopCurrency)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+                  <span>Acompte à payer maintenant</span>
+                  <span>{formatPrice(deposit, shopCurrency)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+                <span>Total commande</span>
+                <span>{formatPrice(total, shopCurrency)}</span>
+              </div>
+            )}
           </div>
         )}
         <button

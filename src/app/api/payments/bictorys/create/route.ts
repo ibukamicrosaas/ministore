@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       paymentType,
     )
 
-    await supabase.from('payments').insert({
+    const { error: insertError } = await supabase.from('payments').insert({
       order_id:           orderId,
       shop_id:            order.shop_id,
       amount:             amountToCharge,
@@ -127,6 +127,10 @@ export async function POST(req: NextRequest) {
       provider_payment_id: transactionId || `bictorys-${orderId}`,
       status:             'pending',
     })
+    if (insertError) {
+      // Le webhook créera le record à la volée si besoin — on ne bloque pas le paiement
+      console.error('[bictorys/create] ⚠️ Erreur insert payments:', insertError.message, insertError.code)
+    }
 
     if (checkoutUrl) {
       return NextResponse.json({ checkoutUrl, transactionId })

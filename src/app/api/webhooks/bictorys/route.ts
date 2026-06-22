@@ -122,8 +122,9 @@ export async function POST(req: NextRequest) {
 async function handleSubscriptionWebhook(merchantReference: string, payload: BictorysWebhookPayload) {
   console.log('[handleSubscriptionWebhook] Début — chargeId:', payload.id, 'status:', payload.status)
 
-  // Ignorer les paiements non réussis (Bictorys retourne 'succeed' ou 'succeeded')
-  if (payload.status !== 'succeed' && payload.status !== 'succeeded') {
+  // Bictorys retourne 'succeed', 'succeeded' ou 'authorized' selon le moyen de paiement
+  const isSuccess = payload.status === 'succeed' || payload.status === 'succeeded' || payload.status === 'authorized'
+  if (!isSuccess) {
     console.log('[handleSubscriptionWebhook] Paiement non réussi — status:', payload.status)
     return NextResponse.json({ ok: true })
   }
@@ -301,7 +302,8 @@ async function handleOrderWebhook(
   }
 
   // ── Paiement échoué ──────────────────────────────────────────────────────────
-  if (payload.status !== 'succeed' && payload.status !== 'succeeded') {
+  // Bictorys retourne 'succeed', 'succeeded' ou 'authorized' selon le moyen de paiement (Orange Money)
+  if (payload.status !== 'succeed' && payload.status !== 'succeeded' && payload.status !== 'authorized') {
     console.log('[handleOrderWebhook] Paiement échoué — status:', payload.status)
     const failTarget = existingByCharge ?? existingByOrder
     if (failTarget) {

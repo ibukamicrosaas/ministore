@@ -187,13 +187,15 @@ export async function POST(req: NextRequest) {
   const total_price   = itemsTotal - discountAmount + serverDeliveryPrice
 
   // Calculer l'acompte si paiement en ligne
+  // La remise promo s'applique aussi à l'acompte (X% d'un total déjà réduit)
   let deposit_amount = 0
   if (payment_type === 'online_deposit') {
-    deposit_amount = serverItems.reduce((sum, it) => {
+    const rawDeposit = serverItems.reduce((sum, it) => {
       const p = productMap.get(it.product_id)
       const pct = p?.deposit_percentage ?? shop.deposit_percentage ?? 0
       return sum + Math.floor(it.unit_price * it.quantity * pct / 100)
     }, 0)
+    deposit_amount = discountPct > 0 ? Math.floor(rawDeposit * (100 - discountPct) / 100) : rawDeposit
   } else if (payment_type === 'online_full') {
     deposit_amount = total_price
   }
