@@ -19,6 +19,8 @@ const PAYMENT_LOGOS: Record<string, string> = {
   maxit:        '/logo-payments/maxit.webp',
   mtn_money:    '/logo-payments/mtn_1.svg',
   moov:         '/logo-payments/moov_1.svg',
+  mobicash:     '/logo-payments/mobicash.png',
+  togocell:     '/logo-payments/togocell.jpg',
 }
 
 interface Props {

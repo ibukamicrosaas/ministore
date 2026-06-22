@@ -3,7 +3,7 @@ import crypto from 'crypto'
 
 const BICTORYS_BASE_URL = process.env.BICTORYS_API_URL ?? 'https://api.bictorys.com/pay/v1'
 
-export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov'
+export type BictorysPaymentType = 'wave_money' | 'orange_money' | 'maxit' | 'mtn_money' | 'moov' | 'mobicash' | 'togocell'
 export type BictorysMethod = BictorysPaymentType
 export type BictorysCountry = 'SN' | 'CI' | 'BK' | 'ML' | 'TG' | 'BJ'
 
@@ -260,7 +260,6 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
   const methods: Record<BictorysCountry, PaymentMethodInfo[]> = {
     SN: [
       { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
-      { type: 'orange_money', label: 'Orange Money',  requiresOtp: false, description: 'Tapez #144*82# pour autoriser' },
       { type: 'maxit',        label: 'MaxIt',         requiresOtp: false, description: 'Paiement direct depuis votre téléphone' },
     ],
     CI: [
@@ -276,10 +275,11 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
     ],
     ML: [
       { type: 'orange_money', label: 'Orange Money',  requiresOtp: false, description: 'Paiement push sur votre téléphone' },
-      { type: 'wave_money',   label: 'Wave',          requiresOtp: false, description: 'Paiement instantané via Wave' },
+      { type: 'mobicash',     label: 'Mobicash',      requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     TG: [
-      { type: 'moov',         label: 'Moov Money (Flooz)', requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',         label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'togocell',     label: 'Togocell',      requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     BJ: [
       { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },
