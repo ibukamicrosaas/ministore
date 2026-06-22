@@ -342,7 +342,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
               <button
                 type="button"
                 onClick={() => removePhoto(i)}
-                className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
+                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
               >
                 <X className="h-3 w-3" />
               </button>

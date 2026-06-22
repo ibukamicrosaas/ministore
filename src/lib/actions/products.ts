@@ -72,6 +72,11 @@ export async function createProduct(input: CreateProductInput) {
     ? input.slug.trim()
     : await generateUniqueSlug(supabase, shopId, input.name)
 
+  // Photo principale en tête de tableau — la galerie affiche photos[0] en premier
+  const sortedPhotos = [...(input.photos ?? [])].sort((a, b) =>
+    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+  )
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from('products') as any).insert({
     shop_id:            shopId,
@@ -79,8 +84,8 @@ export async function createProduct(input: CreateProductInput) {
     description:        input.description?.trim() || null,
     price:              input.price,
     category:           input.category?.trim() || null,
-    photos:             input.photos ?? [],
-    photo_url:          input.photos?.[0]?.url ?? null,
+    photos:             sortedPhotos,
+    photo_url:          sortedPhotos.find(p => p.is_primary)?.url ?? sortedPhotos[0]?.url ?? null,
     video_url:          input.video_url ?? null,
     image_ratio:        input.image_ratio ?? 'square',
     deposit_percentage: input.deposit_percentage ?? null,
@@ -166,8 +171,12 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.price !== undefined)              updates.price              = input.price
   if (input.category !== undefined)           updates.category           = input.category?.trim() || null
   if (input.photos !== undefined) {
-    updates.photos    = input.photos
-    updates.photo_url = input.photos[0]?.url ?? null
+    // Photo principale en tête — la galerie affiche photos[0] en premier
+    const sortedPhotos = [...input.photos].sort((a, b) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+    )
+    updates.photos    = sortedPhotos
+    updates.photo_url = sortedPhotos.find(p => p.is_primary)?.url ?? sortedPhotos[0]?.url ?? null
   }
   if (input.video_url !== undefined)          updates.video_url          = input.video_url ?? null
   if (input.image_ratio !== undefined)        updates.image_ratio        = input.image_ratio ?? 'square'

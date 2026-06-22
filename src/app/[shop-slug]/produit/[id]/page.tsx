@@ -140,11 +140,13 @@ export default async function ProductDetailPage({ params }: Props) {
   const currency      = (shop.currency ?? 'XOF') as ShopCurrency
   const deliveryDelay = (product as Product & { delivery_delay?: string | null }).delivery_delay ?? null
 
-  const photos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
+  const rawPhotos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
     ? (product.photos as unknown as ProductPhoto[])
     : product.photo_url
     ? [{ url: product.photo_url, is_primary: true }]
     : []
+  // La photo principale doit toujours apparaître en premier dans la galerie
+  const photos = [...rawPhotos].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
   const primaryPhoto = photos.find(p => p.is_primary)?.url ?? photos[0]?.url ?? null
   const variants     = product.variants as ProductVariant[] | null
