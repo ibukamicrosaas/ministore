@@ -118,7 +118,10 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
               <VerifiedBadge />
             </div>
             {businessCategory && (
-              <p className="text-sm text-gray-500 mt-0.5">{businessCategory}</p>
+              <p className="text-sm text-gray-500 mt-0.5 truncate">{businessCategory}</p>
+            )}
+            {shop.description && (
+              <p className="text-sm text-gray-600 leading-relaxed mt-1">{shop.description}</p>
             )}
           </div>
           <ShareButton
