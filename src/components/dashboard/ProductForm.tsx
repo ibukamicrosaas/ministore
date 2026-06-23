@@ -93,6 +93,12 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [isFeatured, setIsFeatured] = useState(
     (product as Product & { is_featured?: boolean | null })?.is_featured ?? false
   )
+  const [customizationEnabled, setCustomizationEnabled] = useState(
+    (product as Product & { customization_enabled?: boolean })?.customization_enabled ?? false
+  )
+  const [customizationLabel, setCustomizationLabel] = useState(
+    (product as Product & { customization_label?: string | null })?.customization_label ?? ''
+  )
   const descRef           = useRef<HTMLTextAreaElement>(null)
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
@@ -237,6 +243,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       variants: validVariants.length > 0 ? validVariants : null,
       stock_count: fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null,
       is_featured: isFeatured,
+      customization_enabled: customizationEnabled,
+      customization_label: customizationEnabled ? (customizationLabel.trim() || null) : null,
       slug: slug.trim() || null,
       meta_title: metaTitle.trim() || null,
       meta_description: metaDescription.trim() || null,
@@ -574,6 +582,34 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             >
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${isFeatured ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Produit personnalisable</p>
+                <p className="text-xs text-gray-500">Le client pourra saisir un texte de personnalisation</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustomizationEnabled(v => !v)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                  customizationEnabled ? 'bg-[var(--color-primary)]' : 'bg-gray-200'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${customizationEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+            {customizationEnabled && (
+              <input
+                type="text"
+                value={customizationLabel}
+                onChange={e => setCustomizationLabel(e.target.value)}
+                placeholder="Ex : Prénom à broder, Texte à graver..."
+                maxLength={100}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              />
+            )}
           </div>
         </div>
       </Card>

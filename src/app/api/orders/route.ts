@@ -15,6 +15,7 @@ interface OrderItemInput {
   variant_label: string | null
   unit_price: number
   quantity: number
+  customization_note?: string | null
 }
 
 interface CreateOrderBody {
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
   const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
 
   // Stock check + calcul des prix serveur
-  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number }
+  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number; customization_note: string | null }
   const serverItems: ServerItem[] = []
 
   for (const it of items) {
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
       const variant = (p.variants as { label: string; price: number }[]).find(v => v.label === it.variant_label)
       if (variant) unit_price = variant.price
     }
-    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity })
+    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null })
   }
 
   // Prix de livraison depuis la DB — ignorer delivery_price envoyé par le client
@@ -298,15 +299,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Créer les lignes (avec les prix serveur — jamais les prix client)
-  const { error: itemsError } = await supabase.from('order_items').insert(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: itemsError } = await (supabase.from('order_items') as any).insert(
     serverItems.map(it => ({
-      order_id:      order.id,
-      product_id:    it.product_id || null,
-      product_name:  it.product_name,
-      variant_label: it.variant_label,
-      unit_price:    it.unit_price,
-      quantity:      it.quantity,
-      line_total:    it.unit_price * it.quantity,
+      order_id:           order.id,
+      product_id:         it.product_id || null,
+      product_name:       it.product_name,
+      variant_label:      it.variant_label,
+      unit_price:         it.unit_price,
+      quantity:           it.quantity,
+      line_total:         it.unit_price * it.quantity,
+      customization_note: it.customization_note,
     }))
   )
 

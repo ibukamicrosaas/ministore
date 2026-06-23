@@ -57,14 +57,14 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: productsData } = await supabase
     .from('products')
-    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count')
+    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count, customization_enabled, customization_label' as never)
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
 
-  const products = (productsData ?? []) as (Pick<Product,
+  const products = (productsData ?? []) as unknown as (Pick<Product,
     'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category' | 'stock_count'
-  >)[]
+  > & { customization_enabled?: boolean; customization_label?: string | null })[]
 
   // Générer les dates disponibles sur 14 jours
   const availableDays = Array.isArray(shop.available_days) ? shop.available_days as string[] : []
@@ -117,6 +117,8 @@ export default async function CommanderPage({ params, searchParams }: Props) {
           variants: (p.variants as ProductVariant[] | null) ?? null,
           deposit_percentage: p.deposit_percentage,
           stock_count: p.stock_count ?? null,
+          customization_enabled: p.customization_enabled ?? false,
+          customization_label: p.customization_label ?? null,
         }))}
         deliveryDates={dates}
         deliveryOptions={deliveryOptions}

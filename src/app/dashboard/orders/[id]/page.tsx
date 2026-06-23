@@ -41,7 +41,7 @@ type OrderRow = {
     id: string; first_name: string; last_name: string | null
     phone: string; whatsapp: string | null
   } | null
-  order_items: (OrderItem & { products: { name: string } | null })[]
+  order_items: (OrderItem & { products: { name: string } | null; customization_note?: string | null })[]
 }
 
 export default async function OrderDetailPage({
@@ -70,7 +70,7 @@ export default async function OrderDetailPage({
       payment_type, payment_method, deposit_amount, deposit_paid,
       total_price, notes, internal_notes, created_at,
       clients(id, first_name, last_name, phone, whatsapp),
-      order_items(id, product_name, variant_label, unit_price, quantity, line_total, products(name))
+      order_items(id, product_name, variant_label, unit_price, quantity, line_total, customization_note, products(name))
     `)
     .eq('id', id)
     .eq('shop_id', profile.shop_id)
@@ -173,6 +173,9 @@ export default async function OrderDetailPage({
                 <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
                 {item.variant_label && (
                   <p className="text-xs text-gray-500">{item.variant_label}</p>
+                )}
+                {item.customization_note && (
+                  <p className="text-xs text-indigo-600 font-medium">✏ {item.customization_note}</p>
                 )}
                 <p className="text-xs text-gray-400">
                   {item.unit_price.toLocaleString('fr-FR')} FCFA × {item.quantity}

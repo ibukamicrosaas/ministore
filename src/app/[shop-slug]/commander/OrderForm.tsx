@@ -176,12 +176,15 @@ interface ProductOption {
   variants: ProductVariant[] | null
   deposit_percentage: number | null
   stock_count: number | null
+  customization_enabled: boolean
+  customization_label: string | null
 }
 
 interface OrderItem {
   product_id: string
   variant_label: string | null
   quantity: number
+  customization_note: string
 }
 
 interface Props {
@@ -243,6 +246,7 @@ export function OrderForm({
     product_id: productId ?? products[0]?.id ?? '',
     variant_label: null,
     quantity: 1,
+    customization_note: '',
   })
 
   type SavedCart = { items?: OrderItem[]; firstName?: string; phoneNum?: string; phoneDial?: string; address?: string; _ts?: number }
@@ -438,6 +442,11 @@ export function OrderForm({
         toast.error(`Stock insuffisant pour ${p.name} (max ${p.stock_count}).`)
         return
       }
+      if (p?.customization_enabled && !it.customization_note.trim()) {
+        const label = p.customization_label || 'personnalisation'
+        toast.error(`Veuillez saisir le texte de ${label.toLowerCase()} pour "${p.name}".`)
+        return
+      }
     }
 
     const body = {
@@ -455,6 +464,7 @@ export function OrderForm({
           variant_label: it.variant_label ?? null,
           unit_price: price,
           quantity: it.quantity,
+          customization_note: it.customization_note.trim() || null,
         }
       }),
       delivery_date: deliveryDate || null,
@@ -607,6 +617,22 @@ export function OrderForm({
                         ))}
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  )}
+
+                  {p?.customization_enabled && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        {p.customization_label || 'Personnalisation'} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={item.customization_note}
+                        onChange={(e) => updateItem(i, { customization_note: e.target.value })}
+                        placeholder={p.customization_label ? `Ex : votre ${p.customization_label.toLowerCase()}` : 'Votre texte de personnalisation'}
+                        maxLength={200}
+                        className={inputCls}
+                      />
                     </div>
                   )}
 
