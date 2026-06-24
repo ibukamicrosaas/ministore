@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -240,14 +241,15 @@ export default async function SuccessPage({ params, searchParams }: Props) {
               const href = `${basePath}/produit/${(p as Product & { slug?: string | null }).slug ?? p.id}`
               return (
                 <a key={p.id} href={href} className="shrink-0 w-32 group">
-                  <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                  <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
                     {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={photo}
                         alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        loading="lazy"
+                        fill
+                        sizes="128px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-200"
+                        quality={80}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>

@@ -50,6 +50,12 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        // Supabase Image Transforms (redimensionnement et optimisation côté serveur)
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/render/image/public/**',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
     // Durée de cache CDN Next.js pour les images optimisées (7 jours)

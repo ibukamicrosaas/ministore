@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Package, Play, X } from 'lucide-react'
 
 interface Photo {
@@ -28,12 +29,17 @@ export function ProductGallery({ photos, videoEmbedUrl, productName, primaryColo
       {/* Hero photo */}
       <div className="relative">
         {activePhoto ? (
-          <img
-            src={activePhoto.url}
-            alt={`${productName} ${activeIndex + 1}`}
-            className={`w-full object-cover ${aspectClass}`}
-            style={{ maxHeight: 480 }}
-          />
+          <div className={`relative w-full ${aspectClass}`} style={{ maxHeight: 480 }}>
+            <Image
+              src={activePhoto.url}
+              alt={`${productName} ${activeIndex + 1}`}
+              fill
+              sizes="(max-width: 512px) 100vw, 512px"
+              className="object-cover"
+              priority={activeIndex === 0}
+              quality={85}
+            />
+          </div>
         ) : (
           <div className={`flex w-full ${aspectClass} items-center justify-center bg-gray-100`} style={{ maxHeight: 480 }}>
             <Package className="h-20 w-20 text-gray-300" />
@@ -66,7 +72,16 @@ export function ProductGallery({ photos, videoEmbedUrl, productName, primaryColo
                 outlineOffset: 2,
               }}
             >
-              <img src={photo.url} alt={`${productName} ${i + 1}`} className="h-full w-full object-cover" />
+              <div className="relative h-full w-full">
+                <Image
+                  src={photo.url}
+                  alt={`${productName} ${i + 1}`}
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                  quality={70}
+                />
+              </div>
             </button>
           ))}
         </div>

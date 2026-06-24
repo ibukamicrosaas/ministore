@@ -10,7 +10,9 @@ import {
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
 import { CancelOrderButton } from './CancelOrderButton'
+import { CopyReviewLinkButton } from './CopyReviewLinkButton'
 import type { Profile, OrderItem } from '@/types'
+import { APP_URL } from '@/constants'
 
 export const metadata = { title: 'Commande — TekkiShop' }
 
@@ -26,6 +28,7 @@ const NEXT_ACTION_LABEL: Record<string, string> = {
 type OrderRow = {
   id: string
   status: string
+  client_token: string
   delivery_type: 'home_delivery' | 'store_pickup'
   delivery_address: string | null
   delivery_date: string | null
@@ -66,7 +69,7 @@ export default async function OrderDetailPage({
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, status, delivery_type, delivery_address, delivery_date,
+      id, status, client_token, delivery_type, delivery_address, delivery_date,
       payment_type, payment_method, deposit_amount, deposit_paid,
       total_price, notes, internal_notes, created_at,
       clients(id, first_name, last_name, phone, whatsapp),
@@ -77,6 +80,13 @@ export default async function OrderDetailPage({
     .single()
 
   if (error || !data) notFound()
+
+  const { data: shopData } = await supabase
+    .from('shops')
+    .select('slug')
+    .eq('id', profile.shop_id)
+    .single()
+  const shopSlug = (shopData as { slug?: string } | null)?.slug ?? ''
 
   const order = data as unknown as OrderRow
   const canAdvance = NEXT_ACTION_LABEL[order.status] !== undefined
@@ -229,8 +239,8 @@ export default async function OrderDetailPage({
 
       {/* Client */}
       {order.clients && (
-        <Card>
-          <p className="text-sm font-semibold text-gray-900 mb-3">Client</p>
+        <Card className="space-y-3">
+          <p className="text-sm font-semibold text-gray-900">Client</p>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">
@@ -250,6 +260,13 @@ export default async function OrderDetailPage({
               </a>
             )}
           </div>
+          {shopSlug && order.client_token && ['confirmed', 'preparing', 'ready', 'delivered'].includes(order.status) && (
+            <CopyReviewLinkButton
+              reviewUrl={`${APP_URL}/${shopSlug}/avis/${order.client_token}`}
+              clientName={order.clients.first_name}
+              waNumber={order.clients.whatsapp ?? order.clients.phone}
+            />
+          )}
         </Card>
       )}
     </div>

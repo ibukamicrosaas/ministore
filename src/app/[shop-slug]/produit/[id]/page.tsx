@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
@@ -419,14 +420,15 @@ export default async function ProductDetailPage({ params }: Props) {
                 const rpHref = `${basePath}/produit/${rpSlug ?? rp.id}`
                 return (
                   <a key={rp.id} href={rpHref} className="shrink-0 w-32 group">
-                    <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                    <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
                       {rpPhoto ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={rpPhoto}
                           alt={rp.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                          loading="lazy"
+                          fill
+                          sizes="128px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-200"
+                          quality={80}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
