@@ -84,8 +84,7 @@ export default async function ShopPage({ params }: Props) {
       .order('created_at', { ascending: true })
 
     const products = (productsData ?? []) as Product[]
-    const basePath = await getShopBasePath(slug)
-    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} basePath={basePath} />
+    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} />
   }
 
   const { data: productsData } = await supabase

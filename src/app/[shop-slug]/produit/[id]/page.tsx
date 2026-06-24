@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { ChevronLeft, Clock } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
-import { PixelViewContent, ProductCtaButton } from './ProductPixelEvents'
+import { PixelViewContent } from './ProductPixelEvents'
+import { ProductInlineCta, ProductStickyCta } from '@/components/pwa/ProductStickyCtaManager'
 import { StockAlertForm } from '@/components/pwa/StockAlertForm'
 import { APP_URL } from '@/constants'
 import { formatPrice } from '@/lib/utils/country-groups'
@@ -285,7 +286,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {!soldOut && (
           <div className="mt-4">
-            <ProductCtaButton
+            <ProductInlineCta
               href={`${basePath}/commander?product=${product.id}`}
               color={color}
               productId={product.id}
@@ -298,7 +299,6 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
             {shop.plan === 'pro'
               ? renderProDescription(product.description)
               : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
@@ -346,26 +346,29 @@ export default async function ProductDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
-        {soldOut ? (
+      {/* Sticky CTA — rupture de stock (toujours visible) */}
+      {soldOut && (
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
           <div className="space-y-2">
             <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
               Rupture de stock
             </div>
             <StockAlertForm productId={product.id} primaryColor={color} />
           </div>
-        ) : (
-          <ProductCtaButton
-            href={`${basePath}/commander?product=${product.id}`}
-            color={color}
-            productId={product.id}
-            productName={product.name}
-            price={product.price}
-            displayPrice={displayPrice}
-          />
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Sticky CTA — n'apparaît que quand le bouton inline est hors du viewport */}
+      {!soldOut && (
+        <ProductStickyCta
+          href={`${basePath}/commander?product=${product.id}`}
+          color={color}
+          productId={product.id}
+          productName={product.name}
+          price={product.price}
+          displayPrice={displayPrice}
+        />
+      )}
     </div>
   )
 }

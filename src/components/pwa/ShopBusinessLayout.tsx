@@ -1,6 +1,6 @@
 'use client'
 
-import { Phone, MessageSquare, MessageCircle, Clock } from 'lucide-react'
+import { Phone, MessageCircle, Clock } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
@@ -11,7 +11,6 @@ interface Props {
   shop: Shop
   products: Product[]
   shopSlug: string
-  basePath?: string
 }
 
 // Badge "compte vérifié" bleu, style Instagram/X
@@ -54,8 +53,7 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 
-export function ShopBusinessLayout({ shop, products, shopSlug, basePath }: Props) {
-  const commanderHref = `${basePath ?? `/${shopSlug}`}/commander`
+export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
   const shopAny = shop as unknown as Record<string, unknown>
   const badges = Array.isArray(shopAny.badges) ? (shopAny.badges as string[]) : []
   const socialLinks = shopAny.social_links && typeof shopAny.social_links === 'object'
@@ -223,17 +221,6 @@ export function ShopBusinessLayout({ shop, products, shopSlug, basePath }: Props
         <ProductGrid products={products} shopSlug={shopSlug} primaryColor={shop.primary_color} currency={(shop as unknown as { currency?: string }).currency as ShopCurrency | undefined} />
       </div>
 
-      {/* ── CTA sticky ── */}
-      <div className="sticky bottom-0 px-4 py-3 border-t border-gray-100 bg-white">
-        <a
-          href={commanderHref}
-          className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: shop.primary_color ?? '#0EA5E9' }}
-        >
-          <MessageSquare className="h-4 w-4" />
-          Commander maintenant
-        </a>
-      </div>
     </div>
   )
 }
