@@ -40,13 +40,14 @@ export function LoginForm() {
   const currentCountry = COUNTRIES.find(c => c.dial === dialCode) ?? COUNTRIES[0]
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: Event) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setCountryOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    // pointerdown couvre souris + tactile avec le bon target sur iOS/iPadOS
+    document.addEventListener('pointerdown', handleClickOutside)
+    return () => document.removeEventListener('pointerdown', handleClickOutside)
   }, [])
 
   const switchMode = (next: Mode) => {

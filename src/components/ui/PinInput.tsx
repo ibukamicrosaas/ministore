@@ -68,10 +68,11 @@ export function PinInput({ name, length = 6, onChange }: Props) {
             ref={el => { inputs.current[i] = el }}
             type="password"
             inputMode="numeric"
-            autoComplete="one-time-code"
+            autoComplete="off"
             maxLength={1}
             value={digits[i]}
             onChange={e => handleChange(i, e.target.value)}
+            onInput={e => handleChange(i, (e.target as HTMLInputElement).value)}
             onKeyDown={e => handleKeyDown(i, e)}
             onPaste={handlePaste}
             onFocus={e => e.target.select()}
