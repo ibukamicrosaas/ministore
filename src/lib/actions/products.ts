@@ -100,6 +100,8 @@ export async function createProduct(input: CreateProductInput) {
     meta_title:            input.meta_title?.trim() || null,
     meta_description:      input.meta_description?.trim() || null,
     delivery_delay:        input.delivery_delay?.trim() || null,
+    badges:                (input.badges ?? []).filter(Boolean),
+    original_price:        input.original_price ?? null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -192,6 +194,8 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.meta_title !== undefined)              updates.meta_title              = input.meta_title?.trim() || null
   if (input.meta_description !== undefined)        updates.meta_description        = input.meta_description?.trim() || null
   if (input.delivery_delay !== undefined)     updates.delivery_delay     = input.delivery_delay?.trim() || null
+  if (input.badges !== undefined)             updates.badges             = (input.badges ?? []).filter(Boolean)
+  if (input.original_price !== undefined)     updates.original_price     = input.original_price ?? null
 
   if (input.slug !== undefined) {
     const newSlug = input.slug?.trim() || null

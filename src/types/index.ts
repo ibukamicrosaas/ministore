@@ -92,10 +92,23 @@ export interface CreateProductInput {
   delivery_delay?: string | null
   customization_enabled?: boolean
   customization_label?: string | null
+  badges?: string[] | null
+  original_price?: number | null
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {
   is_active?: boolean
+}
+
+export interface ProductReview {
+  id: string
+  product_id: string
+  shop_id: string
+  order_id: string | null
+  client_name: string
+  rating: number
+  comment: string | null
+  created_at: string
 }
 
 export interface UpdateShopInput {

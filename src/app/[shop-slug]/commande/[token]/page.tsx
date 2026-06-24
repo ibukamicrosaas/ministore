@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { format, differenceInCalendarDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, Store, CreditCard } from 'lucide-react'
+import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, Store, CreditCard, Star } from 'lucide-react'
 import type { Shop, OrderItem } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -309,6 +309,18 @@ export default async function OrderTrackingPage({ params }: Props) {
             <p className="text-xs font-semibold text-amber-700 mb-1">Votre note</p>
             <p className="text-sm text-amber-900">"{order.notes}"</p>
           </div>
+        )}
+
+        {/* Laisser un avis — commandes confirmées ou livrées */}
+        {['confirmed', 'preparing', 'ready', 'delivered'].includes(order.status) && (
+          <a
+            href={`/${slug}/avis/${token}`}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 py-3.5 text-sm font-semibold transition-colors"
+            style={{ borderColor: color, color }}
+          >
+            <Star className="h-4 w-4" />
+            Laisser un avis
+          </a>
         )}
 
         {/* Contact boutique */}

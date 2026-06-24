@@ -99,6 +99,17 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [customizationLabel, setCustomizationLabel] = useState(
     (product as Product & { customization_label?: string | null })?.customization_label ?? ''
   )
+
+  const initialBadges = (product as Product & { badges?: string[] | null })?.badges ?? []
+  const [badges, setBadges] = useState<string[]>([
+    initialBadges[0] ?? '',
+    initialBadges[1] ?? '',
+    initialBadges[2] ?? '',
+    initialBadges[3] ?? '',
+  ])
+  const [originalPrice, setOriginalPrice] = useState<string>(
+    String((product as Product & { original_price?: number | null })?.original_price ?? '')
+  )
   const descRef           = useRef<HTMLTextAreaElement>(null)
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
@@ -245,6 +256,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       is_featured: isFeatured,
       customization_enabled: customizationEnabled,
       customization_label: customizationEnabled ? (customizationLabel.trim() || null) : null,
+      badges: badges.map(b => b.trim()).filter(Boolean),
+      original_price: originalPrice.trim() ? (parseInt(originalPrice, 10) || null) : null,
       slug: slug.trim() || null,
       meta_title: metaTitle.trim() || null,
       meta_description: metaDescription.trim() || null,
@@ -633,6 +646,22 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             />
           </div>
 
+          {/* Prix barré */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Prix avant réduction <span className="ml-1.5 font-normal text-gray-400">(optionnel)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={originalPrice}
+              onChange={e => setOriginalPrice(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+              placeholder="Ex : 18 000 (affiché barré à côté du prix)"
+            />
+            <p className="mt-1 text-[10px] text-gray-400">S'affiche barré en gris à côté du prix actuel pour montrer la réduction.</p>
+          </div>
+
           {/* Variantes */}
           <div className="flex items-center justify-between">
             <div>
@@ -741,6 +770,25 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             </div>
           )}
         </div>
+      </Card>
+
+      {/* Badges produit */}
+      <Card>
+        <p className="text-sm font-semibold text-gray-900 mb-1">Badges produit</p>
+        <p className="text-xs text-gray-500 mb-3">Jusqu'à 4 bénéfices ou caractéristiques clés affichés sur la page produit.</p>
+        <div className="grid grid-cols-2 gap-2">
+          {badges.map((badge, i) => (
+            <input
+              key={i}
+              value={badge}
+              onChange={e => setBadges(prev => prev.map((b, j) => j === i ? e.target.value : b))}
+              maxLength={30}
+              placeholder={['Ex : 150 cartes', 'Ex : +18 ans', 'Ex : Livraison 24h', 'Ex : Garanti 1 an'][i]}
+              className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+            />
+          ))}
+        </div>
+        <p className="mt-2 text-[10px] text-gray-400">Laissez vide les badges que vous ne voulez pas afficher.</p>
       </Card>
 
       {/* Stock (optionnel) */}

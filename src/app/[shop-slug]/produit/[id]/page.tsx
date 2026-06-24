@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Clock } from 'lucide-react'
+import { ChevronLeft, Clock, Star, ShieldCheck } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -13,6 +13,8 @@ import { APP_URL } from '@/constants'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
+import { PAYMENT_METHODS_BY_COUNTRY } from '@/lib/payments/payment-methods'
+import type { BictorysCountry } from '@/lib/payments/payment-methods'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -28,7 +30,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   const shopRes = await supabase
     .from('shops')
-    .select('id, name, primary_color, plan, currency')
+    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled')
     .eq('slug', shopSlug)
     .single()
 
@@ -130,7 +132,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!shopData || !productData) notFound()
 
-  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & { plan?: string; currency?: string | null }
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & {
+    plan?: string; currency?: string | null
+    country?: string | null
+    accept_cash_on_delivery?: boolean | null
+    bictorys_secret_key?: string | null
+    stripe_connect_enabled?: boolean | null
+  }
   const product = productData as Product & { slug?: string | null }
 
   // 308 permanent redirect: UUID in URL but product now has a slug
@@ -165,7 +173,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   // Compteur de ventes — preuve sociale (server-side, admin client)
   const admin = createAdminClient()
-  const [{ count: rawSalesCount }, relatedResult] = await Promise.all([
+  const [{ count: rawSalesCount }, relatedResult, reviewsResult] = await Promise.all([
     admin
       .from('order_items')
       .select('id', { count: 'exact', head: true })
@@ -180,9 +188,27 @@ export default async function ProductDetailPage({ params }: Props) {
         .order('display_order', { ascending: true })
         .limit(4)
     ),
+    admin
+      .from('product_reviews' as never)
+      .select('rating')
+      .eq('product_id', product.id) as unknown as Promise<{ data: { rating: number }[] | null }>,
   ])
   const salesCount      = rawSalesCount ?? 0
   const relatedProducts = (relatedResult.data ?? []) as Product[]
+
+  const reviews     = reviewsResult.data ?? []
+  const reviewCount = reviews.length
+  const reviewAvg   = reviewCount > 0
+    ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10
+    : 0
+
+  // Méthodes de paiement pour affichage discret sous le CTA
+  const shopCountry = shop.country as BictorysCountry | null
+  const onlineMethods = shopCountry && PAYMENT_METHODS_BY_COUNTRY[shopCountry]
+    ? PAYMENT_METHODS_BY_COUNTRY[shopCountry]
+    : []
+  const hasOnlinePayment = onlineMethods.length > 0 || shop.bictorys_secret_key || shop.stripe_connect_enabled
+  const acceptCash = shop.accept_cash_on_delivery ?? true
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
@@ -248,8 +274,26 @@ export default async function ProductDetailPage({ params }: Props) {
       </div>
 
       {/* Info card */}
-      <div className="bg-white px-5 pt-5 pb-36">
+      <div className="bg-white px-5 pt-5 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
+
+        {/* Avis agrégat */}
+        {reviewCount > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              {[1,2,3,4,5].map(s => (
+                <Star
+                  key={s}
+                  className="h-3.5 w-3.5"
+                  fill={s <= Math.round(reviewAvg) ? '#F59E0B' : 'none'}
+                  stroke={s <= Math.round(reviewAvg) ? '#F59E0B' : '#D1D5DB'}
+                />
+              ))}
+            </div>
+            <span className="text-xs font-semibold text-gray-700">{reviewAvg}</span>
+            <span className="text-xs text-gray-400">({reviewCount} avis)</span>
+          </div>
+        )}
 
         {salesCount >= 3 && (
           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${color}15`, color }}>
@@ -272,8 +316,36 @@ export default async function ProductDetailPage({ params }: Props) {
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-2xl font-bold" style={{ color }}>{displayPrice}</p>
+          <div className="mt-3 flex items-baseline gap-3">
+            <p className="text-2xl font-bold" style={{ color }}>{displayPrice}</p>
+            {(() => {
+              const op = (product as Product & { original_price?: number | null }).original_price
+              return op && op > product.price ? (
+                <p className="text-base text-gray-400 line-through">{formatPrice(op, currency)}</p>
+              ) : null
+            })()}
+          </div>
         )}
+
+        {/* Badges produit */}
+        {(() => {
+          const b = (product as Product & { badges?: string[] | null }).badges ?? []
+          const filled = b.filter(Boolean)
+          return filled.length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              {filled.map((badge, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold"
+                  style={{ backgroundColor: `${color}12`, color }}
+                >
+                  <span className="text-[10px]">✓</span>
+                  {badge}
+                </div>
+              ))}
+            </div>
+          ) : null
+        })()}
 
         {deliveryDelay && (
           <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}12` }}>
@@ -294,6 +366,30 @@ export default async function ProductDetailPage({ params }: Props) {
               price={product.price}
               displayPrice={displayPrice}
             />
+            {/* Méthodes de paiement — discret, informatif */}
+            {(hasOnlinePayment || acceptCash) && (
+              <div className="mt-3 flex items-center gap-2 opacity-50">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-gray-400">Paiement accepté :</span>
+                  {onlineMethods.map(m => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={m.id} src={m.icon} alt={m.label} className="h-4 object-contain" title={m.label} />
+                  ))}
+                  {(shop.bictorys_secret_key || shop.stripe_connect_enabled) && onlineMethods.length === 0 && (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/logo-payments/visa.svg" alt="Visa" className="h-4 object-contain" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" className="h-4 object-contain" />
+                    </>
+                  )}
+                  {acceptCash && (
+                    <span className="text-[10px] text-gray-400 font-medium">À la livraison</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
