@@ -40,6 +40,13 @@ export async function DELETE(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.shop_id) return NextResponse.json({ error: 'Boutique introuvable.' }, { status: 404 })
+
   const { endpoint } = await req.json() as { endpoint: string }
   if (!endpoint) return NextResponse.json({ error: 'Endpoint requis.' }, { status: 400 })
 
@@ -48,6 +55,7 @@ export async function DELETE(req: NextRequest) {
     .from('push_subscriptions' as never)
     .delete()
     .eq('endpoint', endpoint)
+    .eq('shop_id', profile.shop_id)
 
   return NextResponse.json({ ok: true })
 }

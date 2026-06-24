@@ -38,8 +38,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function POST(req: NextRequest) {
   // ── Rate limiting par IP : max 20 commandes / heure ──────────────────
-  const ip = (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? req.headers.get('x-real-ip')
+  // x-real-ip est injecté par Vercel (fiable) ; x-forwarded-for peut être spoofé côté client
+  const ip = (req.headers.get('x-real-ip')
+    ?? req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim()
     ?? 'unknown').slice(0, 64)
 
   const supabase = createAdminClient()
@@ -159,26 +160,18 @@ export async function POST(req: NextRequest) {
     serverDeliveryPrice = zone?.price ?? 0
   }
 
-  // Valider le code promo côté serveur (jamais faire confiance au client)
-  let promoId:      string | null = null
-  let discountPct:  number        = 0
+  // Réserver le code promo de façon atomique : UPDATE conditionnel en une seule instruction SQL.
+  // Élimine la race condition du pattern SELECT-then-UPDATE.
+  let promoId:     string | null = null
+  let discountPct: number        = 0
   if (promo_code) {
-    const promoCode = promo_code.trim().toUpperCase()
-    const { data: promo } = await supabase
-      .from('promo_codes')
-      .select('id, discount_pct, max_uses, used_count, expires_at')
-      .eq('shop_id', shopId)
-      .eq('is_active', true)
-      .ilike('code', promoCode)
-      .single()
+    const { data: promoRows } = await (supabase.rpc as unknown as
+      (fn: string, args: Record<string, unknown>) => Promise<{ data: { promo_id: string; discount_pct: number }[] | null }>
+    )('reserve_promo_code', { p_code: promo_code.trim(), p_shop_id: shopId })
 
-    if (promo) {
-      const expired    = promo.expires_at ? new Date(promo.expires_at) < new Date() : false
-      const exhausted  = promo.max_uses !== null && promo.used_count >= promo.max_uses
-      if (!expired && !exhausted) {
-        promoId     = promo.id
-        discountPct = promo.discount_pct
-      }
+    if (promoRows && promoRows.length > 0) {
+      promoId     = promoRows[0].promo_id
+      discountPct = promoRows[0].discount_pct
     }
   }
 
@@ -219,7 +212,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!ok) {
-      // Décrément échoué (course entre deux requêtes simultanées) : on rollback
+      // Décrément échoué : rollback stock + libérer le code promo réservé
       for (const prev of decrementedItems) {
         await supabase.rpc('increment_product_stock', {
           p_product_id: prev.product_id,
@@ -227,6 +220,7 @@ export async function POST(req: NextRequest) {
           p_quantity:   prev.quantity,
         })
       }
+      if (promoId) void (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)('release_promo_code', { p_promo_id: promoId })
       return NextResponse.json(
         { error: `Stock insuffisant pour ${p?.name ?? it.product_id}. Veuillez actualiser et réessayer.` },
         { status: 409 }
@@ -268,7 +262,7 @@ export async function POST(req: NextRequest) {
 
   if (orderError || !order) {
     console.error('[api/orders]', orderError?.message)
-    // Création échouée → restaurer le stock réservé
+    // Création échouée → restaurer le stock réservé + libérer le code promo
     for (const item of decrementedItems) {
       await supabase.rpc('increment_product_stock', {
         p_product_id: item.product_id,
@@ -276,6 +270,7 @@ export async function POST(req: NextRequest) {
         p_quantity:   item.quantity,
       })
     }
+    if (promoId) void (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)('release_promo_code', { p_promo_id: promoId })
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
 
@@ -292,11 +287,6 @@ export async function POST(req: NextRequest) {
     attempt_type: 'order',
     success:      true,
   })
-
-  // Incrémenter l'utilisation du code promo de façon fire-and-forget
-  if (promoId) {
-    void supabase.rpc('increment_promo_used_count', { p_promo_id: promoId })
-  }
 
   // Créer les lignes (avec les prix serveur — jamais les prix client)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

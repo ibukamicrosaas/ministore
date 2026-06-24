@@ -7,13 +7,11 @@ import {
   buildNewOrderAlertMessage,
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
-import { decryptApiKey } from '@/lib/crypto/encrypt'
 import { activatePlan } from '@/lib/billing/activate-plan'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
 const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function POST(req: NextRequest) {
   // LOG ULTRA PRÉCOCE : vérifier que la route est atteinte
@@ -54,62 +52,31 @@ export async function POST(req: NextRequest) {
 
   console.log('[webhook] Webhook reçu — reference:', reference, 'status:', payload.status, 'id:', payload.id)
 
-  // ── PAIEMENT D'ABONNEMENT ─────────────────────────────────────────────
-  // Format: "ts-sub-{shop-id-start}" ou "sub-{36-char-uuid}-{planKey}"
-  // Stratégie : TOUJOURS vérifier l'API Bictorys directement pour les abonnements
-  // (élimine la dépendance aux clés secrètes, qui peuvent être mal configurées)
-  if (reference.startsWith('ts-sub-') || reference.startsWith('sub-')) {
-    return handleSubscriptionWebhook(reference, payload)
-  }
-
-  // Pour les commandes, payload.paymentReference = 'tekkishop-{8chars}' (sert au routage)
-  // mais payload.merchantReference contient le vrai UUID de la commande.
-  // Si on utilise paymentReference comme orderId, toutes les requêtes par order_id échouent.
-  const merchantReference = payload.merchantReference ?? reference
-
-  // ── PAIEMENT DE COMMANDE ──────────────────────────────────────────────
-  // Pour les commandes : vérifier la signature (plus critique car plus de surface d'attaque)
+  // Vérification de signature unique — s'applique aux commandes ET aux abonnements
   const headerSecret   = req.headers.get('x-secret-key') ?? ''
   const platformSecret = process.env.BICTORYS_WEBHOOK_SECRET ?? ''
 
   if (!platformSecret) {
-    console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré — webhook de commande rejeté')
+    console.error('[webhook] BICTORYS_WEBHOOK_SECRET non configuré')
     return NextResponse.json({ error: 'Webhook non configuré' }, { status: 500 })
   }
 
-  const platformVerified = verifyBictorysSignature(headerSecret, platformSecret)
-  const supabase = createAdminClient()
-  let effectiveSecret = platformSecret
-
-  if (!platformVerified) {
-    // Tentative avec le secret du shop Pro (commandes uniquement)
-    if (UUID_REGEX.test(merchantReference)) {
-      const { data: order } = await supabase
-        .from('orders')
-        .select('shop_id')
-        .eq('id', merchantReference)
-        .single()
-
-      if (order?.shop_id) {
-        const { data: shopSecrets } = await supabase
-          .from('shops')
-          .select('plan, bictorys_webhook_secret')
-          .eq('id', order.shop_id)
-          .single()
-
-        if (shopSecrets?.plan === 'pro' && shopSecrets.bictorys_webhook_secret) {
-          effectiveSecret = decryptApiKey(shopSecrets.bictorys_webhook_secret)
-          console.log('[webhook] Tentative vérif avec secret shop Pro')
-        }
-      }
-    }
-
-    if (!verifyBictorysSignature(headerSecret, effectiveSecret)) {
-      console.error('[webhook] Signature invalide — webhook de commande rejeté', merchantReference)
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+  if (!verifyBictorysSignature(headerSecret, platformSecret)) {
+    console.error('[webhook] Signature invalide — webhook rejeté', reference)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
+  // ── PAIEMENT D'ABONNEMENT ─────────────────────────────────────────────
+  if (reference.startsWith('ts-sub-') || reference.startsWith('sub-')) {
+    return handleSubscriptionWebhook(reference, payload)
+  }
+
+  // payload.paymentReference = 'tekkishop-{8chars}' (routage)
+  // payload.merchantReference = vrai UUID de la commande
+  const merchantReference = payload.merchantReference ?? reference
+
+  // ── PAIEMENT DE COMMANDE ──────────────────────────────────────────────
+  const supabase = createAdminClient()
   return handleOrderWebhook(merchantReference, payload, supabase)
 
 }
