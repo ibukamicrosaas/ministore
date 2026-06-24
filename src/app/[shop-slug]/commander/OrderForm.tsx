@@ -432,6 +432,8 @@ export function OrderForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Ghost-click guard : ignorer tout submit tant qu'on n'est pas à l'étape 3
+    if (step !== 3) return
 
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
