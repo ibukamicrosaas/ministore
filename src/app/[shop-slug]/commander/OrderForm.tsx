@@ -299,6 +299,8 @@ export function OrderForm({
   const ZONES_VISIBLE = 5
   const [address, setAddress] = useState(saved.address ?? '')
   const [notes, setNotes] = useState('')
+  // Premier article en mode "carte confirmée" si arrivé depuis une page produit
+  const [firstItemLocked, setFirstItemLocked] = useState(!!preselectedProductId)
   // Si le cash à la livraison est désactivé, forcer le paiement en ligne
   const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>(
     acceptCashOnDelivery ? 'on_delivery' : 'online'
@@ -571,33 +573,63 @@ export function OrderForm({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {p?.photo ? (
-                      <img
-                        src={p.photo}
-                        alt={p.name}
-                        className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
-                        <Package className="h-5 w-5 text-gray-300" />
+                  {/* Premier article pré-sélectionné : carte confirmée (pas de dropdown) */}
+                  {i === 0 && firstItemLocked && p ? (
+                    <div className="flex items-center gap-3">
+                      {p.photo ? (
+                        <img
+                          src={p.photo}
+                          alt={p.name}
+                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                          <Package className="h-5 w-5 text-gray-300" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                        <p className="text-xs font-bold mt-0.5" style={{ color: primaryColor }}>
+                          {formatPrice(p.price, shopCurrency)}
+                        </p>
                       </div>
-                    )}
-                    <div className="relative flex-1">
-                      <select
-                        value={item.product_id}
-                        onChange={(e) => updateItem(i, { product_id: e.target.value })}
-                        className={`${inputCls} appearance-none py-2.5 pr-10`}
+                      <button
+                        type="button"
+                        onClick={() => setFirstItemLocked(false)}
+                        className="shrink-0 text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
                       >
-                        {products.map((prod) => (
-                          <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
-                            {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        Changer
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {p?.photo ? (
+                        <img
+                          src={p.photo}
+                          alt={p.name}
+                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                          <Package className="h-5 w-5 text-gray-300" />
+                        </div>
+                      )}
+                      <div className="relative flex-1">
+                        <select
+                          value={item.product_id}
+                          onChange={(e) => updateItem(i, { product_id: e.target.value })}
+                          className={`${inputCls} appearance-none py-2.5 pr-10`}
+                        >
+                          {products.map((prod) => (
+                            <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
+                              {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      </div>
+                    </div>
+                  )}
                   {p?.stock_count === 0 && (
                     <p className="text-xs font-semibold text-red-500">Ce produit est en rupture de stock.</p>
                   )}
@@ -998,6 +1030,13 @@ export function OrderForm({
           <ShoppingBag className="h-5 w-5" />
           {submitting ? 'Envoi en cours...' : 'Confirmer la commande'}
         </button>
+        <p className="flex items-center justify-center gap-3 text-[10px] text-gray-400 pt-0.5">
+          <span>🔒 Commande sécurisée</span>
+          <span>·</span>
+          <span>✅ Satisfaction garantie</span>
+          <span>·</span>
+          <span>💬 Support WhatsApp</span>
+        </p>
       </div>
     </form>
   )

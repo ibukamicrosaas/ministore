@@ -10,8 +10,8 @@ export const metadata = { title: 'Affiliation — TekkiShop' }
 // Commissions par plan (FCFA)
 export const AFFILIATION_COMMISSIONS: Record<string, number> = {
   decouverte: 1000,
-  business:   2500,
-  pro:        5000,
+  business:   2000,
+  pro:        4000,
 }
 
 export default async function AffiliationPage() {

@@ -106,7 +106,7 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
       id:          'share',
       label:       'Partage le lien de ton site',
       description: `Envoie ${shopUrl} sur WhatsApp, Facebook ou Instagram pour recevoir tes premières commandes.`,
-      done:        hasShared,
+      done:        hasShared || (hasProduct && hasPayoutNumbers && isActivePlan),
       action: (
         <button
           onClick={handleShare}

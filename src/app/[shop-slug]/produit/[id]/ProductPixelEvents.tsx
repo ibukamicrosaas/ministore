@@ -33,10 +33,11 @@ interface CtaButtonProps {
   productId: string
   productName: string
   price: number
+  displayPrice: string
 }
 
-/** Bouton "Je le prends" — déclenche AddToCart puis navigue */
-export function ProductCtaButton({ href, color, productId, productName, price }: CtaButtonProps) {
+/** Bouton "Je le prends — X FCFA" — déclenche AddToCart puis navigue */
+export function ProductCtaButton({ href, color, productId, productName, price, displayPrice }: CtaButtonProps) {
   const router = useRouter()
 
   function handleClick() {
@@ -58,7 +59,7 @@ export function ProductCtaButton({ href, color, productId, productName, price }:
       style={{ backgroundColor: color }}
     >
       <ShoppingBag className="h-5 w-5" />
-      Je le prends
+      Je le prends — {displayPrice}
     </button>
   )
 }

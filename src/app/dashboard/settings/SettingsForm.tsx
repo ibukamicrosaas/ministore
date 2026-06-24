@@ -1332,29 +1332,44 @@ export function SettingsForm({ shop }: Props) {
           </div>
 
           {/* Instructions DNS */}
-          <div className="rounded-xl border border-purple-200 bg-white p-3 space-y-2">
-            <p className="text-xs font-semibold text-gray-700">📋 Configuration DNS requise</p>
-            <div className="space-y-2 text-xs text-gray-500">
-              <p>
-                <span className="font-semibold text-gray-700">1. Ajoute ce CNAME</span> chez ton registrar (OVH, Namecheap, Cloudflare…) :
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-1 text-xs font-mono bg-gray-50 rounded-lg p-2">
-              <span className="text-gray-600 font-semibold">Type</span>
-              <span className="text-gray-800 font-semibold">CNAME</span>
-              <span className="text-gray-600">Nom / Hôte</span>
-              <span className="text-gray-800 break-all font-semibold">
-                {customDomain ? customDomain.split('.')[0] : 'boutique'}
-              </span>
-              <span className="text-gray-600">Valeur / Cible</span>
-              <span className="text-gray-800 break-all font-semibold">cname.vercel-dns.com</span>
-            </div>
-            <div className="space-y-1 text-xs text-gray-500 pt-1 border-t border-gray-200">
-              <p><span className="font-semibold text-gray-700">2. Attends la propagation DNS</span> (5 min à 48h selon le registrar)</p>
-              <p><span className="font-semibold text-gray-700">3. Clique sur "Vérifier le CNAME"</span> pour confirmer la connexion</p>
-              <p><span className="text-gray-400">💡 Besoin d'aide ? Contact support@tekki.shop ou WhatsApp 📞</span></p>
-            </div>
-          </div>
+          {(() => {
+            const d = customDomain.trim().toLowerCase()
+            const parts = d.split('.')
+            // Apex domain : seulement 2 parties (ex: viensonsconnait.com)
+            const isApex = parts.length === 2
+            const isWww  = d.startsWith('www.') && parts.length === 3
+            const dnsType  = isApex ? 'A' : 'CNAME'
+            const dnsHost  = isApex ? '@' : (isWww ? 'www' : parts[0])
+            const dnsValue = isApex ? '76.76.21.21' : 'cname.vercel-dns.com'
+            return (
+              <div className="rounded-xl border border-purple-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-700">📋 Configuration DNS requise</p>
+                <div className="space-y-2 text-xs text-gray-500">
+                  <p>
+                    <span className="font-semibold text-gray-700">1. Ajoute cet enregistrement DNS</span> chez ton registrar (OVH, Namecheap, Cloudflare, LWS…) :
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs font-mono bg-gray-50 rounded-lg p-2">
+                  <span className="text-gray-600 font-semibold">Type</span>
+                  <span className="text-gray-800 font-semibold">{dnsType}</span>
+                  <span className="text-gray-600">Nom / Hôte</span>
+                  <span className="text-gray-800 break-all font-semibold">{d ? dnsHost : 'exemple'}</span>
+                  <span className="text-gray-600">Valeur / Cible</span>
+                  <span className="text-gray-800 break-all font-semibold">{dnsValue}</span>
+                </div>
+                {isApex && (
+                  <p className="text-[10px] text-orange-600 bg-orange-50 rounded-lg px-2 py-1.5">
+                    ℹ️ Domaine racine détecté — utilise un enregistrement <strong>A</strong> (pas CNAME). Certains registrars l'appellent <strong>&quot;@&quot;</strong> ou <strong>laissent le champ Hôte vide</strong>.
+                  </p>
+                )}
+                <div className="space-y-1 text-xs text-gray-500 pt-1 border-t border-gray-200">
+                  <p><span className="font-semibold text-gray-700">2. Attends la propagation DNS</span> (5 min à 48h selon le registrar)</p>
+                  <p><span className="font-semibold text-gray-700">3. Clique sur &quot;Vérifier le CNAME&quot;</span> pour confirmer la connexion</p>
+                  <p><span className="text-gray-400">💡 Besoin d'aide ? Contact support@tekki.shop ou WhatsApp 📞</span></p>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Vérification CNAME */}
           {shop.custom_domain && (

@@ -1,5 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { ProductForm } from '@/components/dashboard/ProductForm'
 import { CopyProductLinkButton } from '@/components/dashboard/CopyProductLinkButton'
 import type { Product, Profile } from '@/types'
@@ -56,6 +58,13 @@ export default async function EditProductPage({
 
   return (
     <div className="max-w-xl">
+      <Link
+        href="/dashboard/products"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Produits
+      </Link>
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Modifier le produit</h1>
         <p className="text-sm text-gray-500 mt-0.5">{product.name}</p>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
-import { Plus, Package, Tag } from 'lucide-react'
+import { Plus, Package, Tag, ShoppingCart, AlertTriangle } from 'lucide-react'
 import { toggleProductActive } from '@/lib/actions/products'
 import { CsvImportButton } from './CsvImportButton'
 import { formatPrice } from '@/lib/utils/country-groups'
@@ -28,7 +28,7 @@ export default async function ProductsPage() {
   const profile = profileData as Pick<Profile, 'shop_id'> | null
   if (!profile?.shop_id) redirect('/onboarding')
 
-  const [{ data, error }, { data: shopData }] = await Promise.all([
+  const [{ data, error }, { data: shopData }, { data: ordersData }] = await Promise.all([
     supabase
       .from('products')
       .select('*')
@@ -40,6 +40,11 @@ export default async function ProductsPage() {
       .select('currency')
       .eq('id', profile.shop_id)
       .single(),
+    supabase
+      .from('orders')
+      .select('id')
+      .eq('shop_id', profile.shop_id)
+      .not('status', 'eq', 'cancelled'),
   ])
 
   const currency = ((shopData as { currency?: string | null } | null)?.currency ?? 'XOF') as ShopCurrency
@@ -47,6 +52,21 @@ export default async function ProductsPage() {
   if (error) return <ErrorState message="Impossible de charger les produits." />
 
   const products = (data ?? []) as Product[]
+
+  // Agrégation des ventes par produit
+  const salesMap: Record<string, number> = {}
+  const orderIds = (ordersData ?? []).map(o => o.id)
+  if (orderIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from('order_items')
+      .select('product_id, quantity')
+      .in('order_id', orderIds)
+    for (const item of itemsData ?? []) {
+      const pid = (item as { product_id: string; quantity: number }).product_id
+      const qty = (item as { product_id: string; quantity: number }).quantity
+      salesMap[pid] = (salesMap[pid] ?? 0) + qty
+    }
+  }
 
   const byCategory = products.reduce<Record<string, Product[]>>((acc, product) => {
     const cat = product.category ?? 'Autre'
@@ -107,6 +127,11 @@ export default async function ProductsPage() {
                       ?? (product.photos as { url: string }[])[0]?.url
                     : product.photo_url
 
+                  const sales = salesMap[product.id] ?? 0
+                  const stock = (product as Product & { stock_count?: number | null }).stock_count
+                  const stockLow = stock !== null && stock !== undefined && stock <= 3
+                  const stockOut = stock === 0
+
                   return (
                     <div key={product.id} className="flex items-center gap-4 px-4 py-3">
                       {primaryPhoto ? (
@@ -136,6 +161,18 @@ export default async function ProductsPage() {
                           </span>
                           {Array.isArray(product.variants) && product.variants.length > 0 && (
                             <span className="text-gray-400">{product.variants.length} variante{product.variants.length > 1 ? 's' : ''}</span>
+                          )}
+                          {sales > 0 && (
+                            <span className="flex items-center gap-1 text-green-600">
+                              <ShoppingCart className="h-3 w-3" />
+                              {sales} vendu{sales > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {stock !== null && stock !== undefined && (
+                            <span className={`flex items-center gap-1 ${stockOut ? 'text-red-500' : stockLow ? 'text-orange-500' : 'text-gray-400'}`}>
+                              {(stockOut || stockLow) && <AlertTriangle className="h-3 w-3" />}
+                              {stockOut ? 'Rupture' : `${stock} en stock`}
+                            </span>
                           )}
                         </div>
                       </Link>
