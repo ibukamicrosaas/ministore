@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronLeft, ChevronRight, Package, MapPin, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { ProductVariant, DeliveryZone } from '@/types'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
@@ -227,12 +227,37 @@ export function OrderForm({
   preselectedProductId,
 }: Props) {
   const router = useRouter()
+  const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{
     firstName?: string
     phone?: string
     address?: string
   }>({})
+
+  function scrollTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function goToStep2() {
+    scrollTop()
+    setStep(2)
+  }
+
+  function goToStep3() {
+    const newErrors: typeof errors = {}
+    if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
+    if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
+    if (deliveryType === 'home_delivery' && !address.trim())
+      newErrors.address = "L'adresse de livraison est obligatoire."
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
+    scrollTop()
+    setStep(3)
+  }
 
   // Filtrer les pays selon les marchés cibles de la boutique
   const availableCountries = targetCountries && targetCountries.length > 0
@@ -367,20 +392,6 @@ export function OrderForm({
   const deliveryPrice = (deliveryType === 'home_delivery' && deliveryZones.length > 0 && selectedZone)
     ? selectedZone.price
     : 0
-
-  function computeTotal() {
-    const itemsTotal = items.reduce((sum, it) => {
-      const p = getProduct(it.product_id)
-      if (!p) return sum
-      let price = p.price
-      if (it.variant_label && p.variants) {
-        const v = p.variants.find((v) => v.label === it.variant_label)
-        if (v) price = v.price
-      }
-      return sum + price * it.quantity
-    }, 0)
-    return itemsTotal + deliveryPrice
-  }
 
   function computeDeposit() {
     const rawDeposit = items.reduce((sum, it) => {
@@ -525,9 +536,19 @@ export function OrderForm({
     <form onSubmit={handleSubmit} className="pb-32">
       {/* Shop header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 bg-white">
-        <Link href={`/${shopSlug}`} className="shrink-0 text-gray-400 hover:text-gray-600">
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
+        {step > 1 ? (
+          <button
+            type="button"
+            onClick={() => { setStep(s => s - 1); scrollTop() }}
+            className="shrink-0 text-gray-400 hover:text-gray-600"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        ) : (
+          <Link href={`/${shopSlug}`} className="shrink-0 text-gray-400 hover:text-gray-600">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+        )}
         {shopLogoUrl ? (
           <img src={shopLogoUrl} alt={shopName} className="h-10 w-10 shrink-0 rounded-xl object-cover" />
         ) : (
@@ -549,7 +570,43 @@ export function OrderForm({
         <p className="ml-auto shrink-0 text-xs font-semibold text-gray-500">Commander</p>
       </div>
 
-      <div className="space-y-6 px-4 pt-5">
+      {/* Indicateur de progression */}
+      <div className="flex items-center px-5 pt-4 pb-1 gap-0">
+        {[
+          { n: 1, label: 'Commande' },
+          { n: 2, label: 'Infos' },
+          { n: 3, label: 'Paiement' },
+        ].map(({ n, label }, i) => (
+          <div key={n} className={`flex items-center ${i < 2 ? 'flex-1' : ''}`}>
+            <div className="flex flex-col items-center">
+              <div
+                className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors"
+                style={step >= n
+                  ? { backgroundColor: primaryColor, color: 'white' }
+                  : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+              >
+                {step > n ? '✓' : n}
+              </div>
+              <span
+                className="mt-0.5 text-[10px] font-medium"
+                style={{ color: step >= n ? primaryColor : '#9ca3af' }}
+              >
+                {label}
+              </span>
+            </div>
+            {i < 2 && (
+              <div
+                className="flex-1 h-px mx-1 mb-3.5 transition-colors"
+                style={{ backgroundColor: step > n ? primaryColor : '#e5e7eb' }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6 px-4 pt-4">
+        {/* ── ÉTAPE 1 : Articles + Date ── */}
+        {step === 1 && <>
         {/* 1 — Articles */}
         <section>
           <SectionLabel n={1} label="Votre commande" primaryColor={primaryColor} />
@@ -737,10 +794,14 @@ export function OrderForm({
             <div className="border-t border-gray-100" />
           </>
         )}
+        </>}
 
-        {/* 3 — Coordonnées */}
+        {/* ── ÉTAPE 2 : Coordonnées + Livraison ── */}
+        {step === 2 && <>
+
+        {/* 1 — Coordonnées */}
         <section>
-          <SectionLabel n={3} label="Vos coordonnées" primaryColor={primaryColor} />
+          <SectionLabel n={1} label="Vos coordonnées" primaryColor={primaryColor} />
           <div className="space-y-3">
             <div>
               <input
@@ -800,11 +861,11 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 4 — Livraison */}
+        {/* 2 — Livraison */}
         {(deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
           <>
             <section>
-              <SectionLabel n={4} label="Mode de réception" primaryColor={primaryColor} />
+              <SectionLabel n={2} label="Mode de réception" primaryColor={primaryColor} />
               <div className="space-y-2">
                 {deliveryOptions.home_delivery && (
                   <label
@@ -891,9 +952,14 @@ export function OrderForm({
           </>
         )}
 
-        {/* 5 — Notes */}
+        </>}
+
+        {/* ── ÉTAPE 3 : Notes + Code promo + Paiement ── */}
+        {step === 3 && <>
+
+        {/* 1 — Notes */}
         <section>
-          <SectionLabel n={5} label="Notes (optionnel)" primaryColor={primaryColor} />
+          <SectionLabel n={1} label="Notes (optionnel)" primaryColor={primaryColor} />
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -905,9 +971,9 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 6 — Code promo */}
+        {/* 2 — Code promo */}
         <section>
-          <SectionLabel n={6} label="Code promo (optionnel)" primaryColor={primaryColor} />
+          <SectionLabel n={2} label="Code promo (optionnel)" primaryColor={primaryColor} />
           <div className="flex gap-2">
             <input
               value={promoCode}
@@ -946,9 +1012,9 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 7 — Paiement */}
+        {/* 3 — Paiement */}
         <section>
-          <SectionLabel n={7} label="Mode de paiement" primaryColor={primaryColor} />
+          <SectionLabel n={3} label="Mode de paiement" primaryColor={primaryColor} />
           <div className="space-y-2">
             {acceptOnlinePayment && (
               <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
@@ -984,11 +1050,13 @@ export function OrderForm({
             )}
           </div>
         </section>
+        </>}
       </div>
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto space-y-2 bg-white border-t border-gray-100 px-4 pb-8 pt-3 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
-        {total > 0 && (
+        {/* Récapitulatif total — uniquement à l'étape 3 */}
+        {step === 3 && total > 0 && (
           <div className="space-y-0.5 px-1">
             {deliveryPrice > 0 && (
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -1021,22 +1089,39 @@ export function OrderForm({
             )}
           </div>
         )}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-60"
-          style={{ backgroundColor: primaryColor }}
-        >
-          <ShoppingBag className="h-5 w-5" />
-          {submitting ? 'Envoi en cours...' : 'Confirmer la commande'}
-        </button>
-        <p className="flex items-center justify-center gap-3 text-[10px] text-gray-400 pt-0.5">
-          <span>🔒 Commande sécurisée</span>
-          <span>·</span>
-          <span>✅ Satisfaction garantie</span>
-          <span>·</span>
-          <span>💬 Support WhatsApp</span>
-        </p>
+
+        {/* Bouton Continuer (étapes 1-2) ou Confirmer (étape 3) */}
+        {step < 3 ? (
+          <button
+            type="button"
+            onClick={step === 1 ? goToStep2 : goToStep3}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Continuer
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {submitting ? 'Envoi en cours...' : 'Confirmer la commande'}
+          </button>
+        )}
+
+        {step === 3 && (
+          <p className="flex items-center justify-center gap-3 text-[10px] text-gray-400 pt-0.5">
+            <span>🔒 Commande sécurisée</span>
+            <span>·</span>
+            <span>✅ Satisfaction garantie</span>
+            <span>·</span>
+            <span>💬 Support WhatsApp</span>
+          </p>
+        )}
       </div>
     </form>
   )
