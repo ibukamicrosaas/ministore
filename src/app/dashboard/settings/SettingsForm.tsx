@@ -952,7 +952,7 @@ export function SettingsForm({ shop }: Props) {
                   type={showSecretKey ? 'text' : 'password'}
                   defaultValue={shop.bictorys_secret_key ?? ''}
                   className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-transparent outline-none font-mono"
-                  placeholder="sk_live_..."
+                  placeholder="live_secret-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.xxx..."
                   autoComplete="off"
                 />
                 <button
@@ -973,7 +973,7 @@ export function SettingsForm({ shop }: Props) {
                   type={showWebhookSecret ? 'text' : 'password'}
                   defaultValue={shop.bictorys_webhook_secret ?? ''}
                   className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-transparent outline-none font-mono"
-                  placeholder="whsec_..."
+                  placeholder="Secret webhook généré dans ton dashboard Bictorys"
                   autoComplete="off"
                 />
                 <button
