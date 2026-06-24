@@ -66,19 +66,23 @@ export async function deleteMyAccount(): Promise<{ error?: string }> {
 
   const admin = createAdminClient()
 
-  // Supprimer la boutique (CASCADE sur produits, commandes, etc.)
-  // Les subscription_transactions sont préservées via ON DELETE SET NULL
   if (profile?.shop_id) {
+    // Retirer le shop_id du profil avant la suppression du shop pour éviter
+    // la contrainte FK profiles.shop_id → shops(id) (migration 046 l'ajoute en CASCADE,
+    // mais ce null-out préventif garantit le bon fonctionnement même sans migration)
+    await admin.from('profiles').update({ shop_id: null } as never).eq('id', user.id)
+
+    // Supprimer la boutique (CASCADE sur produits, commandes, clients, etc.)
     const { error: shopError } = await admin
       .from('shops')
       .delete()
       .eq('id', profile.shop_id)
-    if (shopError) return { error: shopError.message }
+    if (shopError) return { error: `Suppression boutique : ${shopError.message}` }
   }
 
   // Supprimer l'utilisateur auth (CASCADE sur profiles)
   const { error: authError } = await admin.auth.admin.deleteUser(user.id)
-  if (authError) return { error: authError.message }
+  if (authError) return { error: `Suppression compte : ${authError.message}` }
 
   redirect('/')
 }

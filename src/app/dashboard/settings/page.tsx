@@ -4,6 +4,7 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { SettingsForm } from './SettingsForm'
 import { ChangePinForm } from './ChangePinForm'
 import { DeleteAccountButton } from './DeleteAccountButton'
+import { CancelSubscriptionButton } from '@/app/dashboard/billing/CancelSubscriptionButton'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { PWAPreviewPanel } from '@/components/dashboard/PWAPreviewPanel'
 import { ActivationChecker } from './ActivationChecker'
@@ -36,6 +37,14 @@ export default async function SettingsPage() {
 
   const shop = shopData as Shop | null
   if (!shop) redirect('/dashboard')
+
+  // plan_cancel_at_period_end n'est pas dans les types générés — requête séparée
+  const { data: cancelData } = await supabase
+    .from('shops')
+    .select('plan_cancel_at_period_end, subscription_ends_at' as never)
+    .eq('id', profile.shop_id)
+    .single()
+  const shopExtra = cancelData as { plan_cancel_at_period_end: boolean; subscription_ends_at: string | null } | null
 
   const isActivePlan = shop.plan !== 'trial'
   const planLabel    = shop.plan === 'decouverte' ? 'Découverte'
@@ -70,6 +79,16 @@ export default async function SettingsPage() {
                   ? 'Ton site est visible et tes clients peuvent passer commande.'
                   : 'Active ton site pour recevoir tes premières commandes.'}
               </p>
+              {isActivePlan && (
+                <div className="mt-2 flex items-center gap-3 flex-wrap">
+                  <Link
+                    href="/dashboard/billing"
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    Gérer la facturation
+                  </Link>
+                </div>
+              )}
               {!isActivePlan && (
                 <div className="flex flex-col gap-0.5">
                   <Link
@@ -83,6 +102,22 @@ export default async function SettingsPage() {
               )}
             </div>
           </div>
+
+          {/* Annulation abonnement — uniquement pour les plans payants */}
+          {isActivePlan && shopExtra && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Abonnement</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Ton accès reste actif jusqu'à la fin de la période payée.
+                </p>
+              </div>
+              <CancelSubscriptionButton
+                cancelAtPeriodEnd={shopExtra.plan_cancel_at_period_end}
+                expiresAt={shopExtra.subscription_ends_at}
+              />
+            </div>
+          )}
 
           {/* Lien boutique — mobile only */}
           <div className="lg:hidden">
