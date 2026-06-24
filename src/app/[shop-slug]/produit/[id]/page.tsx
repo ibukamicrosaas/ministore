@@ -10,6 +10,7 @@ import { StockAlertForm } from '@/components/pwa/StockAlertForm'
 import { APP_URL } from '@/constants'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { getShopBasePath } from '@/lib/utils/custom-domain'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -158,6 +159,8 @@ export default async function ProductDetailPage({ params }: Props) {
     ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
     : formatPrice(product.price, currency)
 
+  const basePath = await getShopBasePath(shopSlug)
+
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
   // JSON-LD : Product schema pour le SEO Google Shopping
@@ -204,7 +207,7 @@ export default async function ProductDetailPage({ params }: Props) {
         />
 
         <Link
-          href={`/${shopSlug}`}
+          href={basePath || '/'}
           className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors z-10"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
@@ -274,7 +277,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         ) : (
           <ProductCtaButton
-            href={`/${shopSlug}/commander?product=${product.id}`}
+            href={`${basePath}/commander?product=${product.id}`}
             color={color}
             productId={product.id}
             productName={product.name}

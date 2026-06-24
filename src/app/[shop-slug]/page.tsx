@@ -7,6 +7,7 @@ import { ShopBusinessLayout } from '@/components/pwa/ShopBusinessLayout'
 import type { Shop, Product } from '@/types'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { getShopBasePath } from '@/lib/utils/custom-domain'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -83,7 +84,8 @@ export default async function ShopPage({ params }: Props) {
       .order('created_at', { ascending: true })
 
     const products = (productsData ?? []) as Product[]
-    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} />
+    const basePath = await getShopBasePath(slug)
+    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} basePath={basePath} />
   }
 
   const { data: productsData } = await supabase
@@ -100,6 +102,7 @@ export default async function ShopPage({ params }: Props) {
   const waLink = shop.phone_whatsapp
     ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`
     : null
+  const basePath = await getShopBasePath(slug)
 
   // JSON-LD : données structurées LocalBusiness pour le SEO Google
   const jsonLd = {
@@ -179,7 +182,7 @@ export default async function ShopPage({ params }: Props) {
           {/* Actions */}
           <div className="mt-4 flex gap-2">
             <a
-              href={`/${slug}/commander`}
+              href={`${basePath}/commander`}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold bg-white shadow-md transition-opacity hover:opacity-90"
               style={{ color }}
             >

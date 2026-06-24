@@ -31,12 +31,26 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (shop?.slug && shop.plan === 'pro') {
+        // Si le path contient déjà le slug (ex: /viensonsconnait/produit/...), le supprimer
+        // pour éviter le double slug dans l'URL et dans le rewrite
+        const slugPrefix = `/${shop.slug}`
+        let effectivePath = pathname
+        if (pathname === slugPrefix) {
+          effectivePath = '/'
+        } else if (pathname.startsWith(`${slugPrefix}/`)) {
+          effectivePath = pathname.slice(slugPrefix.length)
+        }
+
         const newUrl = new URL(
-          `https://${APP_DOMAIN}/${shop.slug}${pathname === '/' ? '' : pathname}`,
+          `https://${APP_DOMAIN}/${shop.slug}${effectivePath === '/' ? '' : effectivePath}`,
           request.url
         )
         newUrl.search = request.nextUrl.search
-        return NextResponse.rewrite(newUrl)
+
+        // Transmettre le domaine personnalisé aux server components via header
+        const reqHeaders = new Headers(request.headers)
+        reqHeaders.set('x-custom-domain', hostname)
+        return NextResponse.rewrite(newUrl, { request: { headers: reqHeaders } })
       }
     } catch {
       // Shop not found or not Pro, continue with default routing

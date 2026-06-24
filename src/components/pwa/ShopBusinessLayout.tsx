@@ -11,6 +11,7 @@ interface Props {
   shop: Shop
   products: Product[]
   shopSlug: string
+  basePath?: string
 }
 
 // Badge "compte vérifié" bleu, style Instagram/X
@@ -53,7 +54,8 @@ function FacebookIcon({ className }: { className?: string }) {
   )
 }
 
-export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
+export function ShopBusinessLayout({ shop, products, shopSlug, basePath }: Props) {
+  const commanderHref = `${basePath ?? `/${shopSlug}`}/commander`
   const shopAny = shop as unknown as Record<string, unknown>
   const badges = Array.isArray(shopAny.badges) ? (shopAny.badges as string[]) : []
   const socialLinks = shopAny.social_links && typeof shopAny.social_links === 'object'
@@ -224,7 +226,7 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
       {/* ── CTA sticky ── */}
       <div className="sticky bottom-0 px-4 py-3 border-t border-gray-100 bg-white">
         <a
-          href={`/${shopSlug}/commander`}
+          href={commanderHref}
           className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: shop.primary_color ?? '#0EA5E9' }}
         >
