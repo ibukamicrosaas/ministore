@@ -116,11 +116,23 @@ export function SendToDeliveryButton({
             </div>
 
             {/* Aperçu du message */}
-            <div className="mb-4 rounded-xl bg-gray-50 border border-gray-200 p-3">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Aperçu du message</p>
-              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
-                {buildMessage()}
-              </pre>
+            <div className="mb-4 max-h-52 overflow-y-auto rounded-xl bg-[#1B2B33] p-3">
+              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wide mb-2">Aperçu</p>
+              <div className="space-y-0.5 text-[13px] text-white/90 leading-relaxed">
+                {buildMessage().split('\n').map((line, i) => {
+                  if (line === '') return <div key={i} className="h-1.5" />
+                  const parts = line.split(/\*([^*]+)\*/g)
+                  return (
+                    <div key={i}>
+                      {parts.map((part, j) =>
+                        j % 2 === 1
+                          ? <span key={j} className="font-bold text-white">{part}</span>
+                          : <span key={j}>{part}</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Saisie du numéro */}
