@@ -205,6 +205,7 @@ interface Props {
   deliveryZones: DeliveryZone[]
   targetCountries: string[] | null
   preselectedProductId: string | null
+  preselectedVariant: string | null
   basePath: string
 }
 
@@ -226,6 +227,7 @@ export function OrderForm({
   deliveryZones,
   targetCountries,
   preselectedProductId,
+  preselectedVariant,
   basePath,
 }: Props) {
   const router = useRouter()
@@ -280,9 +282,9 @@ export function OrderForm({
   const defaultDial = (availableCountries.find((c) => c.code === shopCountry) ?? availableCountries[0])?.dial ?? '+221'
   const CART_KEY    = `tekki_cart_${shopId}`
 
-  const makeItem = (productId?: string): OrderItem => ({
+  const makeItem = (productId?: string, variantLabel?: string | null): OrderItem => ({
     product_id: productId ?? products[0]?.id ?? '',
-    variant_label: null,
+    variant_label: variantLabel ?? null,
     quantity: 1,
     customization_note: '',
   })
@@ -315,7 +317,7 @@ export function OrderForm({
   })
 
   const [items, setItems] = useState<OrderItem[]>(
-    saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined)]
+    saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined, preselectedVariant)]
   )
 
   // InitiateCheckout : déclenché une seule fois à l'ouverture du formulaire

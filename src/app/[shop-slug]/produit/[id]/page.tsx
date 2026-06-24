@@ -8,7 +8,8 @@ import { ChevronLeft, Clock, Star, ShieldCheck } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
-import { ProductInlineCta, ProductStickyCta } from '@/components/pwa/ProductStickyCtaManager'
+import { ProductStickyCta } from '@/components/pwa/ProductStickyCtaManager'
+import { VariantSelectorCta } from './VariantSelectorCta'
 import { StockAlertForm } from '@/components/pwa/StockAlertForm'
 import { APP_URL } from '@/constants'
 import { formatPrice } from '@/lib/utils/country-groups'
@@ -302,21 +303,7 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
-        {variants && variants.length > 0 ? (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Variantes & prix</p>
-            {variants.map((v, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between rounded-xl px-4 py-3"
-                style={{ backgroundColor: `${color}12` }}
-              >
-                <span className="text-sm font-medium text-gray-800">{v.label}</span>
-                <span className="text-sm font-bold" style={{ color }}>{formatPrice(v.price, currency)}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
+        {!variants?.length && (
           <div className="mt-3 flex items-baseline gap-3">
             <p className="text-2xl font-bold" style={{ color }}>{displayPrice}</p>
             {(() => {
@@ -359,13 +346,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {!soldOut && (
           <div className="mt-4">
-            <ProductInlineCta
-              href={`${basePath}/commander?product=${product.id}`}
+            <VariantSelectorCta
+              baseHref={`${basePath}/commander?product=${product.id}`}
               color={color}
               productId={product.id}
               productName={product.name}
-              price={product.price}
-              displayPrice={displayPrice}
+              variants={variants ?? []}
+              minPrice={minPrice}
+              currency={currency}
             />
             {/* Méthodes de paiement — discret, informatif */}
             {(hasOnlinePayment || acceptCash) && (

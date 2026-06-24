@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
@@ -14,55 +14,15 @@ interface Props {
   displayPrice: string
 }
 
-/** Bouton inline — observé pour piloter la visibilité du sticky */
-export function ProductInlineCta({ href, color, productId, productName, price, displayPrice }: Props) {
-  const ref = useRef<HTMLButtonElement>(null)
-  const router = useRouter()
+type VariantEvent = { label: string | null; price: number; href: string; disabled: boolean }
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Diffuse un événement custom lu par ProductStickyCta
-        window.dispatchEvent(
-          new CustomEvent('inline-cta-visibility', { detail: { visible: entry.isIntersecting } })
-        )
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  function handleClick() {
-    trackMetaEvent('AddToCart', {
-      content_ids:  [productId],
-      content_name: productName,
-      content_type: 'product',
-      value:        price,
-      currency:     'XOF',
-    })
-    router.push(href)
-  }
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={handleClick}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
-      style={{ backgroundColor: color }}
-    >
-      <ShoppingBag className="h-5 w-5" />
-      Je le prends — {displayPrice}
-    </button>
-  )
-}
-
-/** Bouton sticky — n'apparaît que quand le bouton inline est hors du viewport */
-export function ProductStickyCta({ href, color, productId, productName, price, displayPrice }: Props) {
-  const [visible, setVisible] = useState(false)
+/** Bouton sticky — n'apparaît que quand le bouton inline (VariantSelectorCta) est hors du viewport */
+export function ProductStickyCta({ href: initialHref, color, productId, productName, price, displayPrice }: Props) {
+  const [visible,  setVisible]  = useState(false)
+  const [ctaHref,  setCtaHref]  = useState(initialHref)
+  const [ctaLabel, setCtaLabel] = useState(`Je le prends — ${displayPrice}`)
+  const [ctaPrice, setCtaPrice] = useState(price)
+  const [disabled, setDisabled] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -70,19 +30,31 @@ export function ProductStickyCta({ href, color, productId, productName, price, d
       const detail = (e as CustomEvent<{ visible: boolean }>).detail
       setVisible(!detail.visible)
     }
+    function onVariant(e: Event) {
+      const d = (e as CustomEvent<VariantEvent>).detail
+      setCtaHref(d.href)
+      setCtaPrice(d.price)
+      setCtaLabel(d.label ? `Je le prends — ${d.label}` : `Je le prends — ${displayPrice}`)
+      setDisabled(d.disabled)
+    }
     window.addEventListener('inline-cta-visibility', onVisibility)
-    return () => window.removeEventListener('inline-cta-visibility', onVisibility)
-  }, [])
+    window.addEventListener('variant-selected',      onVariant)
+    return () => {
+      window.removeEventListener('inline-cta-visibility', onVisibility)
+      window.removeEventListener('variant-selected',      onVariant)
+    }
+  }, [displayPrice])
 
   function handleClick() {
+    if (disabled) return
     trackMetaEvent('AddToCart', {
       content_ids:  [productId],
       content_name: productName,
       content_type: 'product',
-      value:        price,
+      value:        ctaPrice,
       currency:     'XOF',
     })
-    router.push(href)
+    router.push(ctaHref)
   }
 
   if (!visible) return null
@@ -92,11 +64,12 @@ export function ProductStickyCta({ href, color, productId, productName, price, d
       <button
         type="button"
         onClick={handleClick}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
+        disabled={disabled}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ backgroundColor: color }}
       >
         <ShoppingBag className="h-5 w-5" />
-        Je le prends — {displayPrice}
+        {ctaLabel}
       </button>
     </div>
   )

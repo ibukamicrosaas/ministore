@@ -7,14 +7,14 @@ import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
-  searchParams: Promise<{ product?: string }>
+  searchParams: Promise<{ product?: string; variant?: string }>
 }
 
 export const metadata = { title: 'Commander' }
 
 export default async function CommanderPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
-  const { product: preselectedProductId } = await searchParams
+  const { product: preselectedProductId, variant: preselectedVariant } = await searchParams
 
   const supabase = await createServerClient()
 
@@ -131,6 +131,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}
         targetCountries={targetCountriesVal}
         preselectedProductId={preselectedProductId ?? null}
+        preselectedVariant={preselectedVariant ?? null}
         basePath={await getShopBasePath(slug)}
       />
     </div>
