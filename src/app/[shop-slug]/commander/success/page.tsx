@@ -5,9 +5,10 @@ import { CheckCircle2, MessageCircle, ShoppingBag, Home, MapPin } from 'lucide-r
 import { PixelPurchase } from './PixelPurchase'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { Shop, OrderItem } from '@/types'
+import type { Shop, OrderItem, Product, ProductPhoto, ProductVariant } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { getShopBasePath } from '@/lib/utils/custom-domain'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -31,7 +32,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       payment_type, deposit_amount, total_price, notes,
       clients(first_name, phone, whatsapp),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
-      shops(name, slug, primary_color, phone_whatsapp, currency)
+      shops(id, name, slug, primary_color, phone_whatsapp, currency)
     `)
     .eq('id', order_id)
     .eq('client_token', token)
@@ -51,12 +52,31 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     notes: string | null
     clients: { first_name: string; phone: string; whatsapp: string | null } | null
     order_items: OrderItem[]
-    shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
+    shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
   }
 
   const shop     = order.shops
   const color    = shop?.primary_color ?? '#0EA5E9'
   const currency = (shop?.currency ?? 'XOF') as ShopCurrency
+
+  const basePath = await getShopBasePath(slug)
+
+  // Produits upsell — exclure les articles déjà commandés (par nom)
+  const orderedNames = new Set(order.order_items.map((i: OrderItem) => i.product_name))
+  const { data: upsellData } = shop?.id
+    ? await supabase
+        .from('products')
+        .select('*')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true)
+        .or('stock_count.is.null,stock_count.gt.0')
+        .order('display_order', { ascending: true })
+        .limit(8)
+    : { data: [] }
+
+  const upsellProducts = ((upsellData ?? []) as unknown as (Product & { slug?: string | null })[])
+    .filter(p => !orderedNames.has(p.name))
+    .slice(0, 3)
 
   const isOnline   = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
   const isPaid     = order.status === 'confirmed'
@@ -200,6 +220,46 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
       {order.notes && (
         <p className="mt-6 text-xs text-gray-400">Note transmise : "{order.notes}"</p>
+      )}
+
+      {upsellProducts.length > 0 && (
+        <div className="mt-8 text-left">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+            Vous aimerez aussi
+          </p>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
+            {upsellProducts.map(p => {
+              const photos = Array.isArray(p.photos) && (p.photos as unknown as ProductPhoto[]).length > 0
+                ? (p.photos as unknown as ProductPhoto[])
+                : p.photo_url ? [{ url: p.photo_url, is_primary: true }] : []
+              const photo    = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? null
+              const variants = p.variants as ProductVariant[] | null
+              const price    = variants?.length
+                ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
+                : formatPrice(p.price, currency)
+              const href = `${basePath}/produit/${(p as Product & { slug?: string | null }).slug ?? p.id}`
+              return (
+                <a key={p.id} href={href} className="shrink-0 w-32 group">
+                  <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                    {photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={photo}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{p.name}</p>
+                  <p className="mt-0.5 text-xs font-bold" style={{ color }}>{price}</p>
+                </a>
+              )
+            })}
+          </div>
+        </div>
       )}
     </div>
   )
