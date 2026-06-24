@@ -1,8 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
-import { format } from 'date-fns'
+import { format, differenceInCalendarDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, Phone, MessageCircle } from 'lucide-react'
+import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, Store, CreditCard } from 'lucide-react'
 import type { Shop, OrderItem } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -13,20 +13,43 @@ type Props = {
   params: Promise<{ 'shop-slug': string; token: string }>
 }
 
-const STATUS_STEPS: Record<string, { label: string; step: number }> = {
-  pending:   { label: 'Reçue',         step: 1 },
-  confirmed: { label: 'Confirmée',     step: 2 },
-  preparing: { label: 'En préparation',step: 3 },
-  ready:     { label: 'Prête',         step: 4 },
-  delivered: { label: 'Livrée',        step: 5 },
-  cancelled: { label: 'Annulée',       step: 0 },
+const STEPS = [
+  { key: 'pending',   label: 'Reçue',         icon: Clock,        step: 1 },
+  { key: 'confirmed', label: 'Confirmée',      icon: CheckCircle2, step: 2 },
+  { key: 'preparing', label: 'Préparation',    icon: Package,      step: 3 },
+  { key: 'ready',     label: 'Prête',          icon: Store,        step: 4 },
+  { key: 'delivered', label: 'Livrée',         icon: Truck,        step: 5 },
+]
+
+const STATUS_STEP: Record<string, number> = {
+  pending: 1, confirmed: 2, preparing: 3, ready: 4, delivered: 5, cancelled: 0,
 }
 
-const ALL_STEPS = ['pending', 'confirmed', 'preparing', 'ready', 'delivered']
+const PAYMENT_LABELS: Record<string, string> = {
+  on_delivery:     'Paiement à la livraison',
+  in_store:        'Paiement en boutique',
+  online_full:     'Paiement en ligne (total)',
+  online_deposit:  'Paiement en ligne (acompte)',
+  wave:            'Wave',
+  orange_money:    'Orange Money',
+  free_money:      'Free Money',
+  mtn_momo:        'MTN MoMo',
+}
+
+function deliveryDateLabel(dateStr: string): string {
+  const today    = new Date()
+  const delivery = new Date(dateStr + 'T12:00:00')
+  const diff     = differenceInCalendarDays(delivery, today)
+  if (diff < 0)  return format(delivery, 'EEEE d MMMM', { locale: fr })
+  if (diff === 0) return 'Prévu aujourd\'hui'
+  if (diff === 1) return 'Prévu demain'
+  return `Dans ${diff} jours — ${format(delivery, 'd MMMM', { locale: fr })}`
+}
 
 export async function generateMetadata({ params }: Props) {
   const { token } = await params
-  return { title: `Suivi de commande · TekkiShop`, robots: { index: false } }
+  void token
+  return { title: 'Suivi de commande · TekkiShop', robots: { index: false } }
 }
 
 export default async function OrderTrackingPage({ params }: Props) {
@@ -42,7 +65,7 @@ export default async function OrderTrackingPage({ params }: Props) {
       id, status, delivery_type, delivery_address, delivery_date, delivery_zone_name,
       payment_type, total_price, notes, created_at,
       clients(first_name, phone),
-      order_items(product_name, variant_label, unit_price, quantity, line_total),
+      order_items(product_name, variant_label, unit_price, quantity, line_total, customization_note),
       shops(name, slug, primary_color, phone_whatsapp, logo_url, currency)
     `)
     .eq('client_token', token)
@@ -62,33 +85,43 @@ export default async function OrderTrackingPage({ params }: Props) {
     notes: string | null
     created_at: string
     clients: { first_name: string; phone: string } | null
-    order_items: OrderItem[]
+    order_items: (OrderItem & { customization_note?: string | null })[]
     shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp' | 'logo_url'> & { currency?: string | null }) | null
   }
 
-  const shop  = order.shops
+  const shop = order.shops
   if (!shop || shop.slug !== slug) notFound()
 
-  const color    = shop.primary_color ?? '#0EA5E9'
-  const currency = (shop.currency ?? 'XOF') as ShopCurrency
+  const color       = shop.primary_color ?? '#0EA5E9'
+  const currency    = (shop.currency ?? 'XOF') as ShopCurrency
   const isCancelled = order.status === 'cancelled'
-  const statusInfo  = STATUS_STEPS[order.status] ?? STATUS_STEPS.pending
-  const currentStep = statusInfo.step
+  const isDelivered = order.status === 'delivered'
+  const currentStep = STATUS_STEP[order.status] ?? 1
+
   const waLink = shop.phone_whatsapp
-    ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour, je souhaite des informations sur ma commande #${order.id.slice(0, 8).toUpperCase()}`)}`
+    ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour, je voudrais des informations sur ma commande #${order.id.slice(0, 8).toUpperCase()}`)}`
     : null
 
+  // Bannière héro — couleur + message selon statut
+  const heroBg = isCancelled ? '#EF4444' : isDelivered ? '#16A34A' : color
+  const heroMsg = isCancelled
+    ? 'Commande annulée'
+    : isDelivered
+    ? '🎉 Commande livrée !'
+    : `En cours · ${STEPS.find(s => s.step === currentStep)?.label ?? 'Reçue'}`
+
   return (
-    <div className="min-h-screen bg-gray-50" style={{ '--color-primary': color } as React.CSSProperties}>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
 
         {/* En-tête boutique */}
         <div className="flex items-center gap-3">
           {shop.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={shop.logo_url} alt={shop.name} className="h-10 w-10 rounded-xl object-cover" />
           ) : (
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold text-base"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white font-bold text-base"
               style={{ backgroundColor: color }}
             >
               {shop.name[0]?.toUpperCase()}
@@ -100,77 +133,92 @@ export default async function OrderTrackingPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Référence et statut */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <div>
-              <p className="text-xs text-gray-500">Référence</p>
-              <p className="text-sm font-bold text-gray-900 font-mono">#{order.id.slice(0, 8).toUpperCase()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Passée le</p>
-              <p className="text-sm font-medium text-gray-700">
-                {format(new Date(order.created_at), 'd MMM yyyy', { locale: fr })}
-              </p>
-            </div>
+        {/* Bannière héro */}
+        <div
+          className="rounded-2xl p-4 text-white"
+          style={{ backgroundColor: heroBg }}
+        >
+          {order.clients?.first_name && (
+            <p className="text-xs font-medium text-white/80 mb-0.5">
+              Bonjour {order.clients.first_name} 👋
+            </p>
+          )}
+          <p className="text-lg font-bold leading-tight">{heroMsg}</p>
+          <div className="mt-2 flex items-center gap-3 text-xs text-white/80">
+            <span className="font-mono font-bold text-white">#{order.id.slice(0, 8).toUpperCase()}</span>
+            <span>·</span>
+            <span>{format(new Date(order.created_at), 'd MMM yyyy', { locale: fr })}</span>
           </div>
-
-          {isCancelled ? (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 p-3">
-              <XCircle className="h-5 w-5 text-red-500 shrink-0" />
-              <p className="text-sm font-semibold text-red-700">Commande annulée</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Barre de progression */}
-              <div className="flex items-center gap-1">
-                {ALL_STEPS.map((s, i) => {
-                  const step = STATUS_STEPS[s].step
-                  const done = step <= currentStep
-                  const active = step === currentStep
-                  return (
-                    <div key={s} className="flex items-center gap-1 flex-1">
-                      <div
-                        className={`h-2 flex-1 rounded-full transition-colors ${
-                          done ? 'bg-[var(--color-primary)]' : 'bg-gray-100'
-                        }`}
-                      />
-                      {i === ALL_STEPS.length - 1 && (
-                        <div
-                          className={`h-2 w-2 rounded-full shrink-0 ${
-                            done ? 'bg-[var(--color-primary)]' : 'bg-gray-100'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              {/* Étiquettes */}
-              <div className="flex justify-between">
-                {ALL_STEPS.map((s) => {
-                  const step = STATUS_STEPS[s].step
-                  const done = step <= currentStep
-                  const active = step === currentStep
-                  return (
-                    <span
-                      key={s}
-                      className={`text-[10px] font-medium ${
-                        active ? 'text-[var(--color-primary)]' : done ? 'text-gray-500' : 'text-gray-300'
-                      }`}
-                    >
-                      {STATUS_STEPS[s].label}
-                    </span>
-                  )
-                })}
-              </div>
+          {!isCancelled && !isDelivered && order.delivery_date && (
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+              <Clock className="h-3 w-3" />
+              {deliveryDateLabel(order.delivery_date)}
             </div>
           )}
         </div>
 
+        {/* Étapes de progression */}
+        {isCancelled ? (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-700">Commande annulée</p>
+                {waLink && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Contacte la boutique pour plus d'informations.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+            <div className="flex items-center justify-between relative">
+              {/* Ligne de connexion en arrière-plan */}
+              <div className="absolute left-5 right-5 top-5 h-0.5 bg-gray-100 -z-0" />
+              {STEPS.map((s) => {
+                const done   = s.step < currentStep
+                const active = s.step === currentStep
+                const Icon   = s.icon
+                return (
+                  <div key={s.key} className="flex flex-col items-center gap-1.5 z-10">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                        active
+                          ? 'border-[var(--color-primary)] bg-white shadow-md shadow-[color:var(--color-primary)]/20'
+                          : done
+                          ? 'border-transparent bg-[var(--color-primary)]'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                      style={{ '--color-primary': color } as React.CSSProperties}
+                    >
+                      {done ? (
+                        <CheckCircle2 className="h-5 w-5 text-white" />
+                      ) : (
+                        <Icon
+                          className={`h-4 w-4 ${active ? 'text-[var(--color-primary)]' : 'text-gray-300'}`}
+                          style={{ color: active ? color : undefined }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      className={`text-[9px] font-semibold text-center leading-tight ${
+                        active ? 'text-gray-900' : done ? 'text-gray-500' : 'text-gray-300'
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Livraison */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 space-y-2">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 space-y-2.5">
+          <div className="flex items-center gap-2">
             {order.delivery_type === 'home_delivery' ? (
               <Truck className="h-4 w-4 text-gray-400" />
             ) : (
@@ -183,44 +231,85 @@ export default async function OrderTrackingPage({ params }: Props) {
           {order.delivery_date && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">Date prévue</span>
-              <span className="font-medium text-gray-900">
-                {format(new Date(order.delivery_date), 'EEEE d MMMM', { locale: fr })}
+              <span className="font-semibold text-gray-900" style={{ color }}>
+                {deliveryDateLabel(order.delivery_date)}
               </span>
             </div>
           )}
-          {order.delivery_address && (
+          {order.delivery_zone_name && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Adresse</span>
-              <span className="font-medium text-gray-900 text-right max-w-[60%]">{order.delivery_address}</span>
+              <span className="text-gray-500">Zone</span>
+              <span className="font-medium text-gray-900">{order.delivery_zone_name}</span>
+            </div>
+          )}
+          {order.delivery_address && (
+            <div className="flex items-start justify-between text-sm gap-4">
+              <span className="text-gray-500 shrink-0">Adresse</span>
+              <span className="font-medium text-gray-900 text-right">{order.delivery_address}</span>
             </div>
           )}
         </div>
 
-        {/* Articles */}
+        {/* Articles commandés */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-3">
             <Package className="h-4 w-4 text-gray-400" />
             <p className="text-sm font-semibold text-gray-900">Articles commandés</p>
           </div>
-          <div className="space-y-2 divide-y divide-gray-50">
+          <div className="space-y-3 divide-y divide-gray-50">
             {order.order_items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between text-sm pt-2 first:pt-0">
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{item.product_name}</p>
-                  {item.variant_label && <p className="text-xs text-gray-400">{item.variant_label}</p>}
-                  {item.quantity > 1 && <p className="text-xs text-gray-400">× {item.quantity}</p>}
+              <div key={i} className="pt-3 first:pt-0">
+                <div className="flex items-start justify-between text-sm">
+                  <div className="min-w-0 flex-1 pr-3">
+                    <p className="font-medium text-gray-900">{item.product_name}</p>
+                    {item.variant_label && (
+                      <p className="text-xs text-gray-400 mt-0.5">{item.variant_label}</p>
+                    )}
+                    {item.quantity > 1 && (
+                      <p className="text-xs text-gray-400">× {item.quantity}</p>
+                    )}
+                    {item.customization_note && (
+                      <p className="text-xs italic text-gray-500 mt-1 bg-gray-50 rounded-lg px-2 py-1">
+                        ✏️ {item.customization_note}
+                      </p>
+                    )}
+                  </div>
+                  <p className="font-semibold text-gray-900 shrink-0">
+                    {formatPrice(item.line_total, currency)}
+                  </p>
                 </div>
-                <p className="font-semibold text-gray-900 shrink-0 ml-3">
-                  {formatPrice(item.line_total, currency)}
-                </p>
               </div>
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-sm font-bold text-gray-900">Total</span>
-            <span className="text-base font-bold text-gray-900">{formatPrice(order.total_price, currency)}</span>
+            <span className="text-base font-bold" style={{ color }}>
+              {formatPrice(order.total_price, currency)}
+            </span>
           </div>
         </div>
+
+        {/* Paiement */}
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CreditCard className="h-4 w-4 text-gray-400" />
+            <p className="text-sm font-semibold text-gray-900">Paiement</p>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">
+              {PAYMENT_LABELS[order.payment_type] ?? order.payment_type}
+            </span>
+            <span className="font-semibold text-gray-900">{formatPrice(order.total_price, currency)}</span>
+          </div>
+        </div>
+
+        {/* Note client */}
+        {order.notes && (
+          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+            <p className="text-xs font-semibold text-amber-700 mb-1">Votre note</p>
+            <p className="text-sm text-amber-900">"{order.notes}"</p>
+          </div>
+        )}
 
         {/* Contact boutique */}
         {waLink && (
@@ -228,12 +317,13 @@ export default async function OrderTrackingPage({ params }: Props) {
             href={waLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-white hover:bg-[#20bb5a] transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#20bb5a] transition-colors"
           >
             <MessageCircle className="h-4 w-4" />
             Contacter {shop.name}
           </a>
         )}
+
       </div>
     </div>
   )
