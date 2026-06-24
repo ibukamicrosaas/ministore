@@ -205,6 +205,7 @@ interface Props {
   deliveryZones: DeliveryZone[]
   targetCountries: string[] | null
   preselectedProductId: string | null
+  basePath: string
 }
 
 export function OrderForm({
@@ -225,9 +226,11 @@ export function OrderForm({
   deliveryZones,
   targetCountries,
   preselectedProductId,
+  basePath,
 }: Props) {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const justTransitionedRef = useRef(false)
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<{
     firstName?: string
@@ -238,6 +241,16 @@ export function OrderForm({
   function scrollTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  // Bloque les ghost-clicks mobiles : quand step passe à 3, on ignore
+  // tout submit pendant 400 ms (délai tactile Safari/Chrome Android)
+  useEffect(() => {
+    if (step === 3) {
+      justTransitionedRef.current = true
+      const t = setTimeout(() => { justTransitionedRef.current = false }, 400)
+      return () => clearTimeout(t)
+    }
+  }, [step])
 
   function goToStep2() {
     scrollTop()
@@ -432,8 +445,8 @@ export function OrderForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Ghost-click guard : ignorer tout submit tant qu'on n'est pas à l'étape 3
-    if (step !== 3) return
+    // Ghost-click guard : ignorer tout submit si on vient juste de transitionner
+    if (step !== 3 || justTransitionedRef.current) return
 
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
@@ -520,9 +533,9 @@ export function OrderForm({
       clearCart()
 
       if (data.redirect === 'pay' && data.orderId) {
-        router.push(`/${shopSlug}/commander/pay?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
+        router.push(`${basePath}/commander/pay?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
       } else {
-        router.push(`/${shopSlug}/commander/success?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
+        router.push(`${basePath}/commander/success?order_id=${data.orderId}&token=${data.clientToken ?? ''}`)
       }
     } catch {
       toast.error('Erreur réseau. Réessaie.')

@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
+import { getShopBasePath } from '@/lib/utils/custom-domain'
 import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
@@ -130,6 +131,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         deliveryZones={Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []}
         targetCountries={targetCountriesVal}
         preselectedProductId={preselectedProductId ?? null}
+        basePath={await getShopBasePath(slug)}
       />
     </div>
   )

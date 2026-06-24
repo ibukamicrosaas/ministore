@@ -283,6 +283,19 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
+        {!soldOut && (
+          <div className="mt-4">
+            <ProductCtaButton
+              href={`${basePath}/commander?product=${product.id}`}
+              color={color}
+              productId={product.id}
+              productName={product.name}
+              price={product.price}
+              displayPrice={displayPrice}
+            />
+          </div>
+        )}
+
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
