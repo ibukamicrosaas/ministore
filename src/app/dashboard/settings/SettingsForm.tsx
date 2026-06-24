@@ -73,7 +73,7 @@ const COLOR_PRESETS = [
   { label: 'Ardoise',    value: '#475569' },
 ]
 
-export function SettingsForm({ shop }: Props) {
+export function SettingsForm({ shop, section = 'boutique' }: Props & { section?: string }) {
   const router                                  = useRouter()
   const [saving, setSaving]                     = useState(false)
   const [logoUrl, setLogoUrl]                   = useState<string | null>(shop.logo_url)
@@ -444,7 +444,9 @@ export function SettingsForm({ shop }: Props) {
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit}>
+      {/* ── BOUTIQUE ─────────────────────────────────────── */}
+      <div className={section !== 'boutique' ? 'hidden' : 'space-y-4'}>
       {/* Logo */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Logo de la boutique</label>
@@ -610,6 +612,10 @@ export function SettingsForm({ shop }: Props) {
           placeholder="Décris ton site en quelques mots..."
         />
       </div>
+      </div>{/* /boutique */}
+
+      {/* ── VENTES ───────────────────────────────────────── */}
+      <div className={section !== 'ventes' ? 'hidden' : 'space-y-4'}>
 
       {/* Paiements mobile money */}
       <div className="rounded-xl border border-gray-200 p-4 space-y-3">
@@ -991,16 +997,21 @@ export function SettingsForm({ shop }: Props) {
           </div>
         </div>
       )}
+      </div>{/* /ventes */}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
-      >
-        {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-      </button>
+      {section !== 'contenu' && (
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full mt-4 rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
+        >
+          {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+        </button>
+      )}
     </form>
 
+    {/* ── CONTENU ──────────────────────────────────────────────────────── */}
+    <div className={section !== 'contenu' ? 'hidden' : 'space-y-5 mt-4'}>
     {/* ── Plan Business — Design Avancé ────────────────────────────────── */}
     {isProPlan ? (
       <div className="mt-5 space-y-5">
@@ -1521,6 +1532,10 @@ export function SettingsForm({ shop }: Props) {
       </p>
     </div>
 
+    </div>{/* /contenu */}
+
+    {/* ── VENTES (suite) ───────────────────────────────────────────────── */}
+    <div className={section !== 'ventes' ? 'hidden' : 'mt-4 space-y-4'}>
     {/* ── Devise du shop ─────────────────────────────────────────────────── */}
     <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
       <h3 className="text-sm font-bold text-gray-900">Devise de la boutique</h3>
@@ -1622,6 +1637,7 @@ export function SettingsForm({ shop }: Props) {
         </button>
       </div>
     )}
+    </div>{/* /ventes-ext */}
     </>
   )
 }
