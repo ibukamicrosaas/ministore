@@ -11,6 +11,7 @@ import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
 import { CancelOrderButton } from './CancelOrderButton'
 import { CopyReviewLinkButton } from './CopyReviewLinkButton'
+import { SendToDeliveryButton } from './SendToDeliveryButton'
 import type { Profile, OrderItem } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -29,9 +30,11 @@ type OrderRow = {
   id: string
   status: string
   client_token: string
+  delivery_token: string
   delivery_type: 'home_delivery' | 'store_pickup'
   delivery_address: string | null
   delivery_date: string | null
+  delivery_zone_name: string | null
   payment_type: string
   payment_method: string | null
   deposit_amount: number
@@ -69,9 +72,9 @@ export default async function OrderDetailPage({
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, status, client_token, delivery_type, delivery_address, delivery_date,
-      payment_type, payment_method, deposit_amount, deposit_paid,
-      total_price, notes, internal_notes, created_at,
+      id, status, client_token, delivery_token, delivery_type, delivery_address,
+      delivery_date, delivery_zone_name, payment_type, payment_method,
+      deposit_amount, deposit_paid, total_price, notes, internal_notes, created_at,
       clients(id, first_name, last_name, phone, whatsapp),
       order_items(id, product_name, variant_label, unit_price, quantity, line_total, customization_note, products(name))
     `)
@@ -83,10 +86,11 @@ export default async function OrderDetailPage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('slug')
+    .select('slug, currency')
     .eq('id', profile.shop_id)
     .single()
-  const shopSlug = (shopData as { slug?: string } | null)?.slug ?? ''
+  const shopSlug    = (shopData as { slug?: string; currency?: string | null } | null)?.slug ?? ''
+  const shopCurrency = (shopData as { slug?: string; currency?: string | null } | null)?.currency ?? 'XOF'
 
   const order = data as unknown as OrderRow
   const canAdvance = NEXT_ACTION_LABEL[order.status] !== undefined
@@ -171,6 +175,30 @@ export default async function OrderDetailPage({
           )}
           {canCancel && <CancelOrderButton orderId={id} />}
         </div>
+      )}
+
+      {/* Bouton livreur — uniquement pour les livraisons à domicile en cours */}
+      {order.delivery_type === 'home_delivery' &&
+        order.delivery_token &&
+        shopSlug &&
+        ['confirmed', 'preparing', 'ready'].includes(order.status) && (
+        <SendToDeliveryButton
+          shopSlug={shopSlug}
+          deliveryToken={order.delivery_token}
+          clientName={[order.clients?.first_name, order.clients?.last_name].filter(Boolean).join(' ')}
+          clientPhone={order.clients?.phone ?? ''}
+          deliveryAddress={order.delivery_address}
+          deliveryZone={(order as OrderRow & { delivery_zone_name?: string | null }).delivery_zone_name ?? null}
+          items={order.order_items.map(i => ({
+            product_name:  i.product_name,
+            variant_label: i.variant_label,
+            quantity:      i.quantity,
+          }))}
+          paymentType={order.payment_type}
+          totalPrice={order.total_price}
+          currency={shopCurrency}
+          orderId={order.id}
+        />
       )}
 
       {/* Articles */}
