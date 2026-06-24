@@ -1364,7 +1364,7 @@ export function SettingsForm({ shop }: Props) {
                 )}
                 <div className="space-y-1 text-xs text-gray-500 pt-1 border-t border-gray-200">
                   <p><span className="font-semibold text-gray-700">2. Attends la propagation DNS</span> (5 min à 48h selon le registrar)</p>
-                  <p><span className="font-semibold text-gray-700">3. Clique sur &quot;Vérifier le CNAME&quot;</span> pour confirmer la connexion</p>
+                  <p><span className="font-semibold text-gray-700">3. Clique sur &quot;Vérifier la connexion&quot;</span> pour confirmer</p>
                   <p><span className="text-gray-400">💡 Besoin d'aide ? Contact support@tekki.shop ou WhatsApp 📞</span></p>
                 </div>
               </div>
