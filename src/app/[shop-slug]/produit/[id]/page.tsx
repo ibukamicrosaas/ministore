@@ -1,5 +1,6 @@
 import React from 'react'
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Clock } from 'lucide-react'
@@ -161,6 +162,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const basePath = await getShopBasePath(shopSlug)
 
+  // Compteur de ventes — preuve sociale (server-side, admin client)
+  const admin = createAdminClient()
+  const { count: rawSalesCount } = await admin
+    .from('order_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', product.id)
+  const salesCount = rawSalesCount ?? 0
+
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
   // JSON-LD : Product schema pour le SEO Google Shopping
@@ -227,6 +236,12 @@ export default async function ProductDetailPage({ params }: Props) {
       {/* Info card */}
       <div className="bg-white px-5 pt-5 pb-36">
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
+
+        {salesCount >= 3 && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${color}15`, color }}>
+            🔥 {salesCount} personnes ont déjà commandé
+          </div>
+        )}
 
         {variants && variants.length > 0 ? (
           <div className="mt-4 space-y-2">
