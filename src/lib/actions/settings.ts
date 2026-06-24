@@ -86,6 +86,27 @@ export async function updateCustomDomain(
 
   if (error) return { error: 'Impossible de mettre à jour le domaine.' }
 
+  // Enregistrer le domaine dans le projet Vercel (si les env vars sont configurées)
+  if (domain) {
+    const vercelToken     = process.env.VERCEL_TOKEN
+    const vercelProjectId = process.env.VERCEL_PROJECT_ID
+    if (vercelToken && vercelProjectId) {
+      try {
+        await fetch(`https://api.vercel.com/v10/projects/${vercelProjectId}/domains`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${vercelToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: domain }),
+        })
+      } catch (e) {
+        console.error('[updateCustomDomain] Vercel API error', e)
+        // Non-bloquant : le domaine est sauvé en DB, l'enregistrement Vercel peut être fait manuellement
+      }
+    }
+  }
+
   revalidatePath('/dashboard/settings')
   return {}
 }

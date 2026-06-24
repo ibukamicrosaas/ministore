@@ -5,9 +5,7 @@ import { createServerClient } from '@/lib/supabase/server'
 // Force Node.js runtime pour accéder au module dns natif
 export const runtime = 'nodejs'
 
-const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tekki.shop')
-  .replace(/https?:\/\//, '')
-  .replace(/\/$/, '')
+const VERCEL_APEX_IP = '76.76.21.21'
 
 export async function GET(req: NextRequest) {
   // Authentification requise
@@ -34,20 +32,36 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Domaine non correspondant' }, { status: 400 })
   }
 
+  const parts = domain.split('.')
+  const isApex = parts.length === 2
+
+  if (isApex) {
+    // Domaine racine → vérifier l'enregistrement A
+    try {
+      const addresses = await dns.resolve4(domain)
+      const verified = addresses.includes(VERCEL_APEX_IP)
+      return NextResponse.json({ verified, record: addresses[0] ?? null })
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code
+      if (code === 'ENODATA' || code === 'ENOTFOUND') {
+        return NextResponse.json({ verified: false, record: null, error: 'Aucun enregistrement A trouvé' })
+      }
+      console.error('[verify-domain A]', err)
+      return NextResponse.json({ verified: false, record: null, error: 'Erreur DNS' })
+    }
+  }
+
+  // Sous-domaine (www.xxx.com ou sub.xxx.com) → vérifier le CNAME
   try {
     const cnames = await dns.resolveCname(domain)
-    const verified = cnames.some(c =>
-      c.includes('cname.vercel-dns.com') ||
-      c === APP_DOMAIN ||
-      c === `www.${APP_DOMAIN}`
-    )
-    return NextResponse.json({ verified, cname: cnames[0] ?? null })
+    const verified = cnames.some(c => c.includes('cname.vercel-dns.com'))
+    return NextResponse.json({ verified, record: cnames[0] ?? null })
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code
     if (code === 'ENODATA' || code === 'ENOTFOUND') {
-      return NextResponse.json({ verified: false, cname: null, error: 'Aucun enregistrement CNAME trouvé' })
+      return NextResponse.json({ verified: false, record: null, error: 'Aucun enregistrement CNAME trouvé' })
     }
-    console.error('[verify-domain]', err)
-    return NextResponse.json({ verified: false, cname: null, error: 'Erreur DNS' })
+    console.error('[verify-domain CNAME]', err)
+    return NextResponse.json({ verified: false, record: null, error: 'Erreur DNS' })
   }
 }

@@ -1371,7 +1371,7 @@ export function SettingsForm({ shop }: Props) {
             )
           })()}
 
-          {/* Vérification CNAME */}
+          {/* Vérification DNS */}
           {shop.custom_domain && (
             <div className="flex items-center gap-2">
               <button
@@ -1384,10 +1384,10 @@ export function SettingsForm({ shop }: Props) {
                 {domainStatus === 'verified' && <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />}
                 {domainStatus === 'failed'   && <XCircle className="h-3.5 w-3.5 text-red-500" />}
                 {domainStatus === 'idle'     && <Globe className="h-3.5 w-3.5 text-gray-400" />}
-                Vérifier le CNAME
+                Vérifier la connexion
               </button>
-              {domainStatus === 'verified' && <p className="text-xs text-green-600 font-medium">CNAME configuré correctement ✓</p>}
-              {domainStatus === 'failed'   && <p className="text-xs text-red-500">CNAME introuvable — vérifie chez ton registrar.</p>}
+              {domainStatus === 'verified' && <p className="text-xs text-green-600 font-medium">DNS configuré correctement ✓</p>}
+              {domainStatus === 'failed'   && <p className="text-xs text-red-500">DNS introuvable — vérifie chez ton registrar.</p>}
             </div>
           )}
 
@@ -1408,10 +1408,10 @@ export function SettingsForm({ shop }: Props) {
                     : 'text-blue-700'
               }`}>
                 {domainStatus === 'verified'
-                  ? '✓ Domaine configuré correctement. TekkiShop reconnaît déjà les visites vers ton domaine.'
+                  ? '✓ DNS configuré correctement. Ton domaine est prêt.'
                   : domainStatus === 'failed'
-                    ? '⏳ CNAME non trouvé. Vérifie ta configuration DNS ou réessaie dans quelques heures (propagation en cours).'
-                    : '📌 Enregistre le CNAME ci-dessus, puis clique sur "Vérifier le CNAME" pour valider.'}
+                    ? '⏳ Enregistrement DNS non trouvé. Vérifie ta configuration ou réessaie dans quelques heures (propagation en cours).'
+                    : '📌 Ajoute l\'enregistrement DNS ci-dessus, puis clique sur "Vérifier la connexion".'}
               </p>
             </div>
           )}
