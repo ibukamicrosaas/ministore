@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
           request.url
         )
         newUrl.search = request.nextUrl.search
-        return NextResponse.redirect(newUrl, { status: 307 })
+        return NextResponse.rewrite(newUrl)
       }
     } catch {
       // Shop not found or not Pro, continue with default routing
