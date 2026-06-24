@@ -5,7 +5,9 @@ import { createServerClient } from '@/lib/supabase/server'
 // Force Node.js runtime pour accéder au module dns natif
 export const runtime = 'nodejs'
 
-const VERCEL_APEX_IP = '76.76.21.21'
+// Vercel anycast IPs pour domaines racine (A record)
+// 216.150.1.1 est la nouvelle IP recommandée ; 76.76.21.21 continue de fonctionner
+const VERCEL_APEX_IPS = ['216.150.1.1', '76.76.21.21']
 
 export async function GET(req: NextRequest) {
   // Authentification requise
@@ -39,7 +41,7 @@ export async function GET(req: NextRequest) {
     // Domaine racine → vérifier l'enregistrement A
     try {
       const addresses = await dns.resolve4(domain)
-      const verified = addresses.includes(VERCEL_APEX_IP)
+      const verified = addresses.some(ip => VERCEL_APEX_IPS.includes(ip))
       return NextResponse.json({ verified, record: addresses[0] ?? null })
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code

@@ -1340,7 +1340,7 @@ export function SettingsForm({ shop }: Props) {
             const isWww  = d.startsWith('www.') && parts.length === 3
             const dnsType  = isApex ? 'A' : 'CNAME'
             const dnsHost  = isApex ? '@' : (isWww ? 'www' : parts[0])
-            const dnsValue = isApex ? '76.76.21.21' : 'cname.vercel-dns.com'
+            const dnsValue = isApex ? '216.150.1.1' : 'cname.vercel-dns.com'
             return (
               <div className="rounded-xl border border-purple-200 bg-white p-3 space-y-2">
                 <p className="text-xs font-semibold text-gray-700">📋 Configuration DNS requise</p>
