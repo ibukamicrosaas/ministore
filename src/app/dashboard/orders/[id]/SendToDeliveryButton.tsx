@@ -94,7 +94,7 @@ export function SendToDeliveryButton({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl overflow-hidden min-w-0">
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -118,12 +118,13 @@ export function SendToDeliveryButton({
             {/* Aperçu du message */}
             <div className="mb-4 max-h-52 overflow-y-auto rounded-xl bg-[#1B2B33] p-3">
               <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wide mb-2">Aperçu</p>
-              <div className="space-y-0.5 text-[13px] text-white/90 leading-relaxed">
+              <div className="space-y-0.5 text-[13px] text-white/90 leading-relaxed overflow-hidden">
                 {buildMessage().split('\n').map((line, i) => {
                   if (line === '') return <div key={i} className="h-1.5" />
+                  const isUrl = line.startsWith('http')
                   const parts = line.split(/\*([^*]+)\*/g)
                   return (
-                    <div key={i}>
+                    <div key={i} className={isUrl ? 'break-all text-[11px] text-white/60' : 'break-words'}>
                       {parts.map((part, j) =>
                         j % 2 === 1
                           ? <span key={j} className="font-bold text-white">{part}</span>
