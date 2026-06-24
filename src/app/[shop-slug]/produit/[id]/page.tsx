@@ -164,11 +164,24 @@ export default async function ProductDetailPage({ params }: Props) {
 
   // Compteur de ventes — preuve sociale (server-side, admin client)
   const admin = createAdminClient()
-  const { count: rawSalesCount } = await admin
-    .from('order_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('product_id', product.id)
-  const salesCount = rawSalesCount ?? 0
+  const [{ count: rawSalesCount }, relatedResult] = await Promise.all([
+    admin
+      .from('order_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('product_id', product.id),
+    createServerClient().then(sb =>
+      sb.from('products')
+        .select('*')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true)
+        .neq('id', product.id)
+        .or('stock_count.is.null,stock_count.gt.0')
+        .order('display_order', { ascending: true })
+        .limit(4)
+    ),
+  ])
+  const salesCount      = rawSalesCount ?? 0
+  const relatedProducts = (relatedResult.data ?? []) as Product[]
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
@@ -277,6 +290,45 @@ export default async function ProductDetailPage({ params }: Props) {
               ? renderProDescription(product.description)
               : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
             }
+          </div>
+        )}
+
+        {relatedProducts.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Vous aimerez aussi</p>
+            <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5">
+              {relatedProducts.map(rp => {
+                const rpPhotos = Array.isArray(rp.photos) && (rp.photos as unknown as ProductPhoto[]).length > 0
+                  ? (rp.photos as unknown as ProductPhoto[])
+                  : rp.photo_url ? [{ url: rp.photo_url, is_primary: true }] : []
+                const rpPhoto    = rpPhotos.find(p => p.is_primary)?.url ?? rpPhotos[0]?.url ?? null
+                const rpVariants = rp.variants as ProductVariant[] | null
+                const rpPrice    = rpVariants?.length
+                  ? `À partir de ${formatPrice(Math.min(...rpVariants.map(v => v.price)), currency)}`
+                  : formatPrice(rp.price, currency)
+                const rpSlug = (rp as Product & { slug?: string | null }).slug
+                const rpHref = `${basePath}/produit/${rpSlug ?? rp.id}`
+                return (
+                  <a key={rp.id} href={rpHref} className="shrink-0 w-32 group">
+                    <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                      {rpPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={rpPhoto}
+                          alt={rp.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{rp.name}</p>
+                    <p className="mt-0.5 text-xs font-bold" style={{ color }}>{rpPrice}</p>
+                  </a>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
