@@ -210,6 +210,10 @@ export type Database = {
           stock_count: number | null
           created_at: string
           updated_at: string
+          product_type?: 'physical' | 'digital' | null
+          digital_file_path?: string | null
+          digital_file_name?: string | null
+          digital_file_size?: number | null
         }
         Insert: {
           id?: string
@@ -230,6 +234,10 @@ export type Database = {
           stock_count?: number | null
           created_at?: string
           updated_at?: string
+          product_type?: 'physical' | 'digital' | null
+          digital_file_path?: string | null
+          digital_file_name?: string | null
+          digital_file_size?: number | null
         }
         Update: {
           id?: string
@@ -250,8 +258,51 @@ export type Database = {
           stock_count?: number | null
           created_at?: string
           updated_at?: string
+          product_type?: 'physical' | 'digital' | null
+          digital_file_path?: string | null
+          digital_file_name?: string | null
+          digital_file_size?: number | null
         }
       Relationships: []
+      }
+      download_tokens: {
+        Row: {
+          id: string
+          order_id: string
+          product_id: string
+          shop_id: string
+          token: string
+          expires_at: string
+          download_count: number
+          max_downloads: number
+          downloaded_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          product_id: string
+          shop_id: string
+          token?: string
+          expires_at: string
+          download_count?: number
+          max_downloads?: number
+          downloaded_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          product_id?: string
+          shop_id?: string
+          token?: string
+          expires_at?: string
+          download_count?: number
+          max_downloads?: number
+          downloaded_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
       clients: {
         Row: {
