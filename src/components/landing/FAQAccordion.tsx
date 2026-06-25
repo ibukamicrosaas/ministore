@@ -36,6 +36,14 @@ const FAQS = [
     q: "Comment je passe d'un plan à l'autre ?",
     a: "Tu peux changer de plan à tout moment depuis ton tableau de bord. Le nouveau tarif s'applique dès le mois suivant. Aucun frais caché, aucune surprise.",
   },
+  {
+    q: "Le plan Pro inclut-il un nom de domaine ?",
+    a: "Non. TEKKIShop ne vend pas de noms de domaine. Le plan Pro te permet de connecter ton propre domaine personnalisé (ex : monbusiness.com), mais tu dois l'acheter toi-même auprès d'un registrar comme Namecheap, GoDaddy, OVH ou Gandi. Une fois acheté, tu le connectes depuis les paramètres de ta boutique. TEKKIShop t'indique exactement comment faire (enregistrement DNS).",
+  },
+  {
+    q: "Dois-je avoir un compte Bictorys ou Stripe pour recevoir des paiements ?",
+    a: "Oui. Pour accepter les paiements en ligne en Afrique (Wave, Orange Money, Moov…), tu dois avoir un compte actif chez Bictorys — c'est la plateforme fintech qui traite ces paiements. Pour les paiements par carte bancaire en Europe ou au Canada, tu dois avoir un compte Stripe actif. Ces deux comptes sont gratuits à créer, mais sont soumis aux conditions et à la vérification d'identité propres à chaque Fintech. TEKKIShop te guide dans la procédure de connexion.",
+  },
 ]
 
 export function FAQAccordion() {

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import {
   ShoppingBag, MessageCircle, CheckCircle2, ArrowRight,
   Package, Smartphone, CreditCard, Bell, BarChart3,
-  TrendingUp, Zap, Users, Star,
+  TrendingUp, Zap, Users, Star, Truck, Sparkles, X,
 } from 'lucide-react'
 import { PaymentScroll } from '@/components/landing/PaymentScroll'
 import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
@@ -47,39 +47,51 @@ const CATEGORIES = [
 
 const FEATURES = [
   {
-    icon: Package,
-    title: 'Tes produits en ligne',
-    description: 'Ajoute tes produits avec photos, prix et description. Tes clients voient tout sur ton site.',
-    color: 'bg-sky-500',
-  },
-  {
     icon: CreditCard,
-    title: 'Mobile Money',
-    description: "Tes clients peuvent payer par Wave, Orange Money, ou autres moyens populaires en Afrique.",
+    title: 'Mobile Money intégré',
+    description: "Tes clients paient par Wave, Orange Money, Moov — les moyens les plus populaires en Afrique. L'argent arrive directement sur ton téléphone.",
     color: 'bg-emerald-500',
   },
   {
+    icon: Truck,
+    title: 'Livraison gérée de A à Z',
+    description: "Confirme, prépare, livre. Envoie un message WhatsApp automatique à ton livreur avec tous les détails de la commande. Suis chaque étape depuis ton dashboard.",
+    color: 'bg-orange-500',
+  },
+  {
+    icon: Sparkles,
+    title: 'Assistant IA intégré',
+    description: "Pose des questions à ton assistant IA : \"Quels sont mes produits les plus vendus ce mois ?\", \"Combien j'ai encaissé cette semaine ?\". Il connaît ta boutique.",
+    color: 'bg-violet-500',
+  },
+  {
     icon: MessageCircle,
-    title: 'Récap automatique sur WhatsApp',
-    description: "Dès qu'une commande est passée, ton client reçoit un message WhatsApp automatique. Toi aussi.",
+    title: 'WhatsApp automatique',
+    description: "Dès qu'une commande est passée, ton client reçoit un récapitulatif complet sur WhatsApp. Toi aussi. Zéro saisie manuelle.",
     color: 'bg-[#25D366]',
   },
   {
     icon: Smartphone,
-    title: 'Tu gères depuis ton téléphone',
-    description: 'Confirme tes commandes, suis tes livraisons, gère tes produits. Tout depuis ton téléphone.',
-    color: 'bg-violet-500',
+    title: 'Tout depuis ton téléphone',
+    description: 'Confirme tes commandes, gère tes produits, vois tes revenus. Ton tableau de bord est optimisé pour mobile.',
+    color: 'bg-sky-500',
   },
   {
     icon: Bell,
     title: 'Paiement à la livraison',
-    description: "Tes clients peuvent aussi choisir de payer quand tu livres ou en boutique. C'est toi qui décides.",
+    description: "Tes clients peuvent aussi payer quand tu livres ou en boutique. Tu choisis les modes acceptés dans tes paramètres.",
     color: 'bg-amber-500',
   },
   {
+    icon: Package,
+    title: 'Catalogue produit complet',
+    description: 'Photos, prix, variantes, stock, mise en avant — tout ce qu\'il faut pour présenter tes produits de manière professionnelle.',
+    color: 'bg-pink-500',
+  },
+  {
     icon: BarChart3,
-    title: 'Tu suis tes revenus',
-    description: "Vois ton chiffre d'affaires du jour, de la semaine. Récupère ton argent sur Wave ou Orange Money.",
+    title: 'Revenus en temps réel',
+    description: "CA du jour, de la semaine, par produit. Export CSV sur le plan Pro. Tu sais exactement où tu en es.",
     color: 'bg-indigo-500',
   },
 ]
@@ -296,9 +308,10 @@ export default async function LandingPage() {
               {[
                 'Tu prends les commandes à la main sur WhatsApp',
                 'Tu confonds les clients ou tu oublies des commandes',
-                'Des clients paient le mauvais montant ou n\'envoient jamais l\'argent',
+                'Des clients envoient le mauvais montant ou ne paient jamais',
+                'Tu coordonnes les livraisons par messages WhatsApp éparpillés',
                 'Tu ne sais pas combien tu as gagné ce mois-ci',
-                'Chaque commande te prend 10 minutes de gestion',
+                'Chaque commande te prend 10 à 15 minutes de gestion',
               ].map(t => (
                 <div key={t} className="flex items-start gap-2.5">
                   <span className="text-red-300 text-xs mt-1 shrink-0">✕</span>
@@ -313,11 +326,12 @@ export default async function LandingPage() {
                 Avec TekkiShop
               </p>
               {[
-                'Chaque commande est enregistrée automatiquement',
+                'Chaque commande est enregistrée et confirmée automatiquement',
                 'Zéro oubli — tout est dans ton tableau de bord',
-                'Tes clients paient en ligne avant de recevoir leur commande',
+                'Tes clients paient par Wave ou Orange Money avant la livraison',
+                'Ton livreur reçoit automatiquement les détails par WhatsApp',
                 'Tu vois tes revenus en temps réel, jour par jour',
-                'Tes clients reçoivent un récap WhatsApp automatique',
+                'Ton assistant IA répond à toutes tes questions sur ta boutique',
               ].map(t => (
                 <div key={t} className="flex items-start gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
@@ -512,6 +526,92 @@ export default async function LandingPage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEKKIShop vs Shopify ─────────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-white">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Fait pour l&apos;Afrique</p>
+            <h2
+              className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Pourquoi pas Shopify ?
+            </h2>
+            <p className="text-gray-500 text-sm max-w-md mx-auto">
+              Shopify est conçu pour les marchés occidentaux. Il ne tient pas compte des réalités africaines.
+              TEKKIShop, si.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5 mb-8">
+            {/* Shopify */}
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 shrink-0">
+                  <X className="h-3.5 w-3.5 text-gray-500" />
+                </div>
+                <p className="text-sm font-bold text-gray-500">Shopify</p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  'Nécessite une carte Visa ou Mastercard pour s\'inscrire',
+                  'Aucun paiement Wave, Orange Money, Moov intégré',
+                  'Interface en anglais — peu adapté au contexte local',
+                  'Tarifs en USD (≥ 29 $/mois ≈ 18 000 FCFA)',
+                  'Aucune gestion de livraison dernier kilomètre',
+                  'Pas de notifications WhatsApp natives',
+                  'Pas d\'assistant IA pour piloter ta boutique',
+                  'Pas de support francophone dédié à l\'Afrique',
+                ].map(t => (
+                  <div key={t} className="flex items-start gap-2.5">
+                    <span className="text-gray-300 text-xs mt-1 shrink-0">✕</span>
+                    <p className="text-sm text-gray-500 leading-snug">{t}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* TEKKIShop */}
+            <div className="rounded-3xl bg-[var(--color-primary)] p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 shrink-0">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                </div>
+                <p className="text-sm font-bold text-white">TEKKIShop</p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  'Inscription avec ton numéro WhatsApp — sans carte bancaire',
+                  'Wave, Orange Money, Moov — paiements Mobile Money natifs',
+                  '100 % en français, pensé pour les marchands africains',
+                  'Dès 2 900 FCFA/mois — tarifs en FCFA, euros ou CAD',
+                  'Suivi livraison + message WhatsApp automatique au livreur',
+                  'Notifications WhatsApp automatiques clients & vendeur',
+                  'Assistant IA intégré pour analyser et piloter ta boutique',
+                  'Support WhatsApp en français, par des humains',
+                ].map(t => (
+                  <div key={t} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-sky-200 mt-0.5 shrink-0" />
+                    <p className="text-sm text-sky-50 leading-snug">{t}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-md"
+            >
+              Créer ma boutique gratuitement
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <p className="text-xs text-gray-400 mt-3">30 jours d&apos;essai · Aucune carte bancaire</p>
           </div>
         </div>
       </section>
