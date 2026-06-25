@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, MessageCircle, ShoppingBag, Home, MapPin, Download, Clock } from 'lucide-react'
 import { PixelPurchase } from './PixelPurchase'
+import { DigitalDownloadPoller } from './DigitalDownloadPoller'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Shop, OrderItem, Product, ProductPhoto, ProductVariant } from '@/types'
@@ -164,52 +165,55 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
       {/* Section téléchargements — produits digitaux uniquement */}
       {isDigitalOrder && (
-        <div className="mb-6">
-          {downloadTokens.length > 0 ? (
-            <div className="space-y-3">
-              {downloadTokens.map((dt) => {
-                const prod = dt.products
-                const remaining = dt.max_downloads - dt.download_count
-                const expiresAt = new Date(dt.expires_at)
-                const fileSizeStr = prod?.digital_file_size
-                  ? prod.digital_file_size > 1024 * 1024
-                    ? `${(prod.digital_file_size / (1024 * 1024)).toFixed(1)} MB`
-                    : `${Math.round(prod.digital_file_size / 1024)} KB`
-                  : null
-                return (
-                  <div key={dt.token} className="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-500 mb-2">
-                      Téléchargement numérique
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900 mb-0.5">
-                      {prod?.digital_file_name ?? prod?.name ?? 'Fichier'}
-                      {fileSizeStr && <span className="text-gray-400 font-normal ml-1">({fileSizeStr})</span>}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Expire le {expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-                      </span>
-                      <span>{remaining} téléchargement{remaining > 1 ? 's' : ''} restant{remaining > 1 ? 's' : ''}</span>
-                    </div>
-                    <a
-                      href={`/api/download/${dt.token}`}
-                      className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: color }}
-                    >
-                      <Download className="h-4 w-4" />
-                      Télécharger
-                    </a>
+        downloadTokens.length > 0 ? (
+          // Tokens déjà disponibles au chargement (webhook rapide ou retour sur la page)
+          <div className="space-y-3 mb-6">
+            {downloadTokens.map((dt) => {
+              const prod = dt.products
+              const remaining = dt.max_downloads - dt.download_count
+              const expiresAt = new Date(dt.expires_at)
+              const fileSizeStr = prod?.digital_file_size
+                ? prod.digital_file_size > 1024 * 1024
+                  ? `${(prod.digital_file_size / (1024 * 1024)).toFixed(1)} MB`
+                  : `${Math.round(prod.digital_file_size / 1024)} KB`
+                : null
+              return (
+                <div key={dt.token} className="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-500 mb-2">
+                    Téléchargement numérique
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 mb-0.5">
+                    {prod?.digital_file_name ?? prod?.name ?? 'Fichier'}
+                    {fileSizeStr && <span className="text-gray-400 font-normal ml-1">({fileSizeStr})</span>}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Expire le {expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                    </span>
+                    <span>{remaining} téléchargement{remaining > 1 ? 's' : ''} restant{remaining > 1 ? 's' : ''}</span>
                   </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
-              Votre lien de téléchargement vous sera envoyé par SMS/WhatsApp dès confirmation du paiement.
-            </div>
-          )}
-        </div>
+                  <a
+                    href={`/api/download/${dt.token}`}
+                    className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: color }}
+                  >
+                    <Download className="h-4 w-4" />
+                    Télécharger
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          // Tokens pas encore créés (timing webhook) → polling côté client
+          <DigitalDownloadPoller
+            orderId={order_id}
+            clientToken={token}
+            color={color}
+            trackingUrl={`/${slug}/commande/${token}`}
+          />
+        )
       )}
 
       {/* Récap */}
@@ -278,14 +282,14 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
       {/* Actions */}
       <div className="space-y-3">
-        {/* Lien de suivi */}
+        {/* Lien de suivi / téléchargement */}
         <Link
           href={`/${slug}/commande/${token}`}
           className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition-colors"
           style={{ backgroundColor: color }}
         >
-          <Home className="h-4 w-4" />
-          Suivre ma commande
+          {isDigitalOrder ? <Download className="h-4 w-4" /> : <Home className="h-4 w-4" />}
+          {isDigitalOrder ? 'Accéder à mon téléchargement' : 'Suivre ma commande'}
         </Link>
 
         {waShopLink && (
