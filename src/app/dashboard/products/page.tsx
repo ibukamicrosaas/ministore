@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Card, CardHeader } from '@/components/ui/Card'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { Plus, Package, Tag, ShoppingCart, AlertTriangle } from 'lucide-react'
 import { toggleProductActive } from '@/lib/actions/products'
@@ -76,7 +75,9 @@ export default async function ProductsPage() {
   }, {})
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-4">
+
+      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Produits</h1>
@@ -84,7 +85,7 @@ export default async function ProductsPage() {
             {products.length} produit{products.length > 1 ? 's' : ''} configuré{products.length > 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <CsvImportButton />
           <Link href="/dashboard/products/new">
             <Button size="sm">
@@ -96,7 +97,7 @@ export default async function ProductsPage() {
       </div>
 
       {!products.length ? (
-        <Card>
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white">
           <EmptyState
             icon={Package}
             title="Aucun produit configuré"
@@ -110,60 +111,70 @@ export default async function ProductsPage() {
               </Link>
             }
           />
-        </Card>
+        </div>
       ) : (
-        <>
+        <div className="space-y-5">
           {Object.entries(byCategory).map(([category, items]) => (
-            <Card key={category} padding="none">
-              <CardHeader
-                title={category.charAt(0).toUpperCase() + category.slice(1)}
-                description={`${items.length} produit${items.length > 1 ? 's' : ''}`}
-                className="px-4 pt-4 pb-3 border-b border-gray-100"
-              />
-              <div className="divide-y divide-gray-100">
+            <div key={category}>
+              {/* Section header — léger, sans Card wrapper */}
+              <div className="flex items-center justify-between mb-2 px-0.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </p>
+                <span className="text-xs text-gray-400 font-medium">
+                  {items.length} produit{items.length > 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Liste produits */}
+              <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
                 {items.map((product) => {
                   const primaryPhoto = Array.isArray(product.photos)
                     ? (product.photos as { url: string; is_primary?: boolean }[]).find(p => p.is_primary)?.url
                       ?? (product.photos as { url: string }[])[0]?.url
                     : product.photo_url
 
-                  const sales = salesMap[product.id] ?? 0
-                  const stock = (product as Product & { stock_count?: number | null }).stock_count
+                  const sales    = salesMap[product.id] ?? 0
+                  const stock    = (product as Product & { stock_count?: number | null }).stock_count
                   const stockLow = stock !== null && stock !== undefined && stock <= 3
                   const stockOut = stock === 0
 
                   return (
-                    <div key={product.id} className="flex items-center gap-4 px-4 py-3">
+                    <div key={product.id} className="flex items-center gap-3 px-4 py-3">
+                      {/* Photo */}
                       {primaryPhoto ? (
                         <img
                           src={primaryPhoto}
                           alt={product.name}
-                          className="h-12 w-12 rounded-lg object-cover shrink-0"
+                          className="h-11 w-11 rounded-xl object-cover shrink-0"
                         />
                       ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sky-50 shrink-0">
-                          <Package className="h-5 w-5 text-[var(--color-primary)]" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 shrink-0">
+                          <Package className="h-4.5 w-4.5 text-gray-400" />
                         </div>
                       )}
 
+                      {/* Info */}
                       <Link
                         href={`/dashboard/products/${product.id}`}
                         className="flex-1 min-w-0 hover:opacity-75 transition-opacity"
                       >
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
                           {!product.is_active && <Badge variant="warning">Inactif</Badge>}
                         </div>
-                        <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
+                        <div className="flex items-center gap-2.5 text-xs text-gray-400 flex-wrap">
+                          <span className="flex items-center gap-1 font-medium text-gray-600">
                             <Tag className="h-3 w-3" />
                             {formatPrice(product.price, currency)}
                           </span>
                           {Array.isArray(product.variants) && product.variants.length > 0 && (
-                            <span className="text-gray-400">{product.variants.length} variante{product.variants.length > 1 ? 's' : ''}</span>
+                            <span className="text-gray-400">
+                              {product.variants.length} variante{product.variants.length > 1 ? 's' : ''}
+                            </span>
                           )}
                           {sales > 0 && (
-                            <span className="flex items-center gap-1 text-green-600">
+                            <span className="flex items-center gap-1 text-emerald-600">
                               <ShoppingCart className="h-3 w-3" />
                               {sales} vendu{sales > 1 ? 's' : ''}
                             </span>
@@ -177,27 +188,29 @@ export default async function ProductsPage() {
                         </div>
                       </Link>
 
+                      {/* Toggle actif/inactif */}
                       <ToggleActiveButton id={product.id} isActive={product.is_active} />
                     </div>
                   )
                 })}
               </div>
-            </Card>
+            </div>
           ))}
 
+          {/* Bouton ajout bas de page */}
           <Link
             href="/dashboard/products/new"
-            className="flex items-center gap-4 rounded-xl border border-dashed border-gray-300 p-4 hover:border-[var(--color-primary)] hover:bg-sky-50 transition-colors"
+            className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 p-4 hover:border-[var(--color-primary)] hover:bg-sky-50 transition-colors"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 shrink-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 shrink-0">
               <Plus className="h-5 w-5 text-gray-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Ajouter un produit</p>
-              <p className="text-xs text-gray-500">Alimentaire, vêtements, artisanat...</p>
+              <p className="text-sm font-semibold text-gray-900">Ajouter un produit</p>
+              <p className="text-xs text-gray-400">Alimentaire, vêtements, artisanat...</p>
             </div>
           </Link>
-        </>
+        </div>
       )}
     </div>
   )
