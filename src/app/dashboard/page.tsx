@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { SetupChecklist } from '@/components/dashboard/SetupChecklist'
+import { RevenueCard } from '@/components/dashboard/RevenueCard'
+import { getDateRange } from '@/app/api/dashboard/revenue/route'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ShoppingBag, TrendingUp, Package, ArrowRight, Bell, Clock } from 'lucide-react'
 import { format } from 'date-fns'
@@ -37,20 +39,18 @@ export default async function DashboardPage() {
     .select('id', { count: 'exact', head: true })
     .eq('shop_id', profile.shop_id)
 
-  const today     = new Date()
-  const todayStr  = format(today, 'yyyy-MM-dd')
-  const weekStart = format(
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7)),
-    'yyyy-MM-dd'
-  )
+  const today    = new Date()
+  const todayStr = format(today, 'yyyy-MM-dd')
+  const { from: todayFrom } = getDateRange('today')
 
-  const [weekRevenueRes, pendingOrdersRes, productsCountRes, todayDeliveriesRes] = await Promise.all([
+  const [todayRevenueRes, pendingOrdersRes, productsCountRes, todayDeliveriesRes] = await Promise.all([
+    // CA du jour — paiements réellement collectés
     supabase
       .from('orders')
-      .select('total_price')
+      .select('total_price, status, payment_type')
       .eq('shop_id', profile.shop_id)
-      .gte('created_at', weekStart)
-      .not('status', 'in', '("cancelled")'),
+      .not('status', 'in', '("pending","cancelled")')
+      .gte('created_at', todayFrom!),
 
     supabase
       .from('orders')
@@ -72,10 +72,18 @@ export default async function DashboardPage() {
       .not('status', 'in', '("cancelled","delivered")'),
   ])
 
-  const weekRevenue      = (weekRevenueRes.data ?? []).reduce((s, o) => s + o.total_price, 0)
-  const pendingCount     = pendingOrdersRes.count ?? 0
-  const productsCount    = productsCountRes.count ?? 0
-  const todayDeliveries  = todayDeliveriesRes.count ?? 0
+  const ONLINE_TYPES = ['online_full', 'online_deposit']
+  const PROGRESSING  = ['confirmed', 'preparing', 'ready', 'delivered']
+  const todayPaid = (todayRevenueRes.data ?? []).filter((o: { status: string; payment_type: string | null }) =>
+    o.status === 'completed' ||
+    o.status === 'delivered' ||
+    (ONLINE_TYPES.includes(o.payment_type ?? '') && PROGRESSING.includes(o.status ?? ''))
+  )
+  const todayRevenue    = todayPaid.reduce((s: number, o: { total_price: number }) => s + (o.total_price ?? 0), 0)
+  const todayRevenueCount = todayPaid.length
+  const pendingCount    = pendingOrdersRes.count ?? 0
+  const productsCount   = productsCountRes.count ?? 0
+  const todayDeliveries = todayDeliveriesRes.count ?? 0
 
   // Commandes actives (pas livrées, pas annulées)
   const { data: recentData } = await supabase
@@ -158,21 +166,8 @@ export default async function DashboardPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
-        {/* CA semaine — hero metric */}
-        <div className="col-span-2 rounded-2xl bg-[var(--color-primary)] p-4 text-white">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-medium text-white/70">CA cette semaine</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
-                {weekRevenue.toLocaleString('fr-FR')}
-                <span className="text-lg font-semibold ml-1 opacity-80">F</span>
-              </p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
-              <TrendingUp className="h-5 w-5 text-white" />
-            </div>
-          </div>
-        </div>
+        {/* CA — hero metric avec sélecteur de période */}
+        <RevenueCard initialRevenue={todayRevenue} initialCount={todayRevenueCount} />
 
         {/* Produits actifs */}
         <Link

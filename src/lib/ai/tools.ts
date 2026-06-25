@@ -98,44 +98,105 @@ export function buildAiTools(shopId: string) {
 
     get_orders: tool({
       description:
-        'Récupère les commandes de la boutique : nombre total, montant total, commandes récentes, répartition par statut.',
+        "Récupère les commandes et le chiffre d'affaires réel de la boutique (uniquement commandes livrées ou produits digitaux complétés). " +
+        "Utilise 'period' pour des périodes nommées (today, yesterday, week, month, quarter, semester, year, all) " +
+        "ou 'days' pour une fenêtre glissante en jours. 'period' est prioritaire sur 'days'. " +
+        "Exemples : ventes du jour → period='today', ventes de la semaine → period='week', ventes du mois → period='month'.",
       inputSchema: zodSchema(
         z.object({
-          days: z.number().optional().describe('Nombre de jours à analyser (défaut: 30)'),
+          days: z.number().optional().describe("Fenêtre glissante en jours (défaut: 30). Ignoré si 'period' est fourni."),
+          period: z.enum(['today', 'yesterday', 'week', 'month', 'quarter', 'semester', 'year', 'all'])
+            .optional()
+            .describe("Période nommée : today=aujourd'hui, yesterday=hier, week=semaine en cours, month=mois en cours, quarter=trimestre, semester=semestre, year=année, all=tout"),
         })
       ),
-      execute: async ({ days = 30 }) => {
-        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+      execute: async ({ days = 30, period }) => {
+        // Calcul de la plage de dates
+        const now = new Date()
+        const y = now.getUTCFullYear(), m = now.getUTCMonth(), d = now.getUTCDate()
+        let since: string | null = null
+        let until: string | null = null
 
-        const { data: orders, error } = await admin
-          .from('orders')
-          .select('id, status, total_price, created_at')
-          .eq('shop_id', shopId)
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
-
-        if (error) throw new Error('Impossible de récupérer les commandes')
-
-        const byStatus = { pending: 0, confirmed: 0, preparing: 0, ready: 0, delivered: 0, cancelled: 0 }
-        let total_revenue = 0
-
-        for (const o of orders ?? []) {
-          const s = o.status as keyof typeof byStatus
-          if (s in byStatus) byStatus[s]++
-          if (o.status === 'delivered') total_revenue += o.total_price
+        if (period) {
+          switch (period) {
+            case 'today':
+              since = new Date(Date.UTC(y, m, d)).toISOString(); break
+            case 'yesterday':
+              since = new Date(Date.UTC(y, m, d - 1)).toISOString()
+              until = new Date(Date.UTC(y, m, d)).toISOString(); break
+            case 'week': {
+              const dow = (now.getUTCDay() + 6) % 7
+              since = new Date(Date.UTC(y, m, d - dow)).toISOString(); break
+            }
+            case 'month':
+              since = new Date(Date.UTC(y, m, 1)).toISOString(); break
+            case 'quarter':
+              since = new Date(Date.UTC(y, m - 2, 1)).toISOString(); break
+            case 'semester':
+              since = new Date(Date.UTC(y, m - 5, 1)).toISOString(); break
+            case 'year':
+              since = new Date(Date.UTC(y, 0, 1)).toISOString(); break
+            case 'all':
+              since = null; break
+          }
+        } else {
+          since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
         }
 
+        let query = admin
+          .from('orders')
+          .select('id, status, total_price, created_at, payment_method, payment_type')
+          .eq('shop_id', shopId)
+          .not('status', 'in', '("pending","cancelled")')
+          .order('created_at', { ascending: false })
+
+        if (since) query = query.gte('created_at', since)
+        if (until) query = query.lt('created_at', until)
+
+        const { data: orders, error } = await query
+        if (error) throw new Error('Impossible de récupérer les commandes')
+
+        const byStatus: Record<string, number> = {
+          pending: 0, confirmed: 0, preparing: 0, ready: 0,
+          delivered: 0, completed: 0, cancelled: 0,
+        }
+        // CA réel = argent collecté :
+        // — online (Wave/OM/Stripe) : dès 'confirmed'
+        // — livraison / boutique : uniquement à 'delivered'
+        // — digital : 'completed'
+        const ONLINE_TYPES = ['online_full', 'online_deposit']
+        const PROGRESSING  = ['confirmed', 'preparing', 'ready', 'delivered']
+        let total_revenue = 0
+        const methodCount: Record<string, number> = {}
+
+        for (const o of orders ?? []) {
+          const s = o.status as string
+          if (s in byStatus) byStatus[s]++
+          const isPaid =
+            o.status === 'completed' ||
+            o.status === 'delivered' ||
+            (ONLINE_TYPES.includes((o as { payment_type?: string }).payment_type ?? '') &&
+             PROGRESSING.includes(o.status ?? ''))
+          if (isPaid) total_revenue += o.total_price
+          if (o.payment_method) {
+            methodCount[o.payment_method] = (methodCount[o.payment_method] ?? 0) + 1
+          }
+        }
+
+        const periodLabel = period ?? `${days} derniers jours`
+
         return {
+          period: periodLabel,
           total_orders: orders?.length ?? 0,
           total_revenue,
           orders_by_status: byStatus,
+          payment_methods_used: methodCount,
           recent_orders: (orders ?? []).slice(0, 5).map((o) => ({
             id: o.id.slice(0, 8),
             amount: o.total_price,
             status: o.status,
             created_at: o.created_at,
           })),
-          period_days: days,
         }
       },
     }),

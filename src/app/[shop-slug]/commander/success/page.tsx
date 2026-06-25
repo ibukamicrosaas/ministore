@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, MessageCircle, ShoppingBag, Home, MapPin } from 'lucide-react'
+import { CheckCircle2, MessageCircle, ShoppingBag, Home, MapPin, Download, Clock } from 'lucide-react'
 import { PixelPurchase } from './PixelPurchase'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -56,6 +56,22 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
   }
 
+  // Téléchargements digitaux — tokens créés par le webhook après confirmation paiement
+  const { data: rawTokens } = await (supabase as any)
+    .from('download_tokens')
+    .select('token, expires_at, download_count, max_downloads, products(name, digital_file_name, digital_file_size)')
+    .eq('order_id', order_id)
+
+  type DownloadToken = {
+    token: string
+    expires_at: string
+    download_count: number
+    max_downloads: number
+    products: { name: string; digital_file_name: string | null; digital_file_size: number | null } | null
+  }
+  const downloadTokens = (rawTokens ?? []) as DownloadToken[]
+  const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed'
+
   const shop     = order.shops
   const color    = shop?.primary_color ?? '#0EA5E9'
   const currency = (shop?.currency ?? 'XOF') as ShopCurrency
@@ -80,7 +96,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     .slice(0, 3)
 
   const isOnline   = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
-  const isPaid     = order.status === 'confirmed'
+  const isPaid     = order.status === 'confirmed' || order.status === 'completed'
   const clientWa   = order.clients?.whatsapp ?? order.clients?.phone
   const waShopLink = shop?.phone_whatsapp
     ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`
@@ -107,10 +123,16 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
-        {isOnline && isPaid ? 'Paiement reçu ✓' : 'Commande confirmée !'}
+        {isDigitalOrder && isPaid
+          ? 'Achat confirmé ✓'
+          : isOnline && isPaid
+          ? 'Paiement reçu ✓'
+          : 'Commande confirmée !'}
       </h1>
       <p className="text-sm text-gray-500 mb-3">
-        {isOnline && isPaid
+        {isDigitalOrder && isPaid
+          ? 'Votre paiement a été reçu. Téléchargez votre fichier ci-dessous.'
+          : isOnline && isPaid
           ? 'Votre paiement a été reçu. La boutique prépare votre commande.'
           : isOnline
           ? 'Votre paiement mobile money est en cours de vérification.'
@@ -124,6 +146,56 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           #{order.id.slice(0, 8).toUpperCase()}
         </span>
       </div>
+
+      {/* Section téléchargements — produits digitaux uniquement */}
+      {isDigitalOrder && (
+        <div className="mb-6">
+          {downloadTokens.length > 0 ? (
+            <div className="space-y-3">
+              {downloadTokens.map((dt) => {
+                const prod = dt.products
+                const remaining = dt.max_downloads - dt.download_count
+                const expiresAt = new Date(dt.expires_at)
+                const fileSizeStr = prod?.digital_file_size
+                  ? prod.digital_file_size > 1024 * 1024
+                    ? `${(prod.digital_file_size / (1024 * 1024)).toFixed(1)} MB`
+                    : `${Math.round(prod.digital_file_size / 1024)} KB`
+                  : null
+                return (
+                  <div key={dt.token} className="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-500 mb-2">
+                      Téléchargement numérique
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900 mb-0.5">
+                      {prod?.digital_file_name ?? prod?.name ?? 'Fichier'}
+                      {fileSizeStr && <span className="text-gray-400 font-normal ml-1">({fileSizeStr})</span>}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Expire le {expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                      </span>
+                      <span>{remaining} téléchargement{remaining > 1 ? 's' : ''} restant{remaining > 1 ? 's' : ''}</span>
+                    </div>
+                    <a
+                      href={`/api/download/${dt.token}`}
+                      className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: color }}
+                    >
+                      <Download className="h-4 w-4" />
+                      Télécharger
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+              Votre lien de téléchargement vous sera envoyé par SMS/WhatsApp dès confirmation du paiement.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Récap */}
       <div className="rounded-2xl border border-gray-200 bg-white text-left divide-y divide-gray-100 mb-6">
@@ -153,7 +225,8 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           </div>
         </div>
 
-        {/* Livraison */}
+        {/* Livraison — masqué pour commandes digitales */}
+        {!isDigitalOrder && (
         <div className="p-4 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Livraison</p>
           <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -171,6 +244,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
             <p className="text-xs text-gray-500 pl-6">{order.delivery_address}</p>
           )}
         </div>
+        )}
 
         {/* Paiement */}
         <div className="p-4">

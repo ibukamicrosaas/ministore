@@ -129,6 +129,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
     (product as Product & { digital_file_size?: number | null })?.digital_file_size ?? null
   )
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
 
   // Nom contrôlé pour auto-générer le slug
   const [productName, setProductName] = useState(product?.name ?? '')
@@ -242,9 +243,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
     setVariants(prev => prev.filter((_, i) => i !== index))
   }
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function uploadDigitalFile(file: File) {
     setUploadingFile(true)
     const formData = new FormData()
     formData.append('file', file)
@@ -258,6 +257,19 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       toast.error(data.error ?? 'Erreur upload')
     }
     setUploadingFile(false)
+  }
+
+  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) uploadDigitalFile(file)
+  }
+
+  function handleFileDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault()
+    setIsDraggingFile(false)
+    if (uploadingFile) return
+    const file = e.dataTransfer.files?.[0]
+    if (file) uploadDigitalFile(file)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -506,21 +518,31 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-8 cursor-pointer hover:border-[var(--color-primary)] hover:bg-sky-50 transition-all">
+              <label
+                className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 cursor-pointer transition-all ${
+                  isDraggingFile
+                    ? 'border-[var(--color-primary)] bg-sky-50 scale-[1.01]'
+                    : 'border-gray-200 bg-gray-50 hover:border-[var(--color-primary)] hover:bg-sky-50'
+                }`}
+                onDragOver={e => { e.preventDefault(); if (!uploadingFile) setIsDraggingFile(true) }}
+                onDragEnter={e => { e.preventDefault(); if (!uploadingFile) setIsDraggingFile(true) }}
+                onDragLeave={() => setIsDraggingFile(false)}
+                onDrop={handleFileDrop}
+              >
                 {uploadingFile ? (
                   <Loader2 className="h-8 w-8 text-[var(--color-primary)] animate-spin mb-2" />
                 ) : (
-                  <Upload className="h-8 w-8 text-gray-300 mb-2" />
+                  <Upload className={`h-8 w-8 mb-2 transition-colors ${isDraggingFile ? 'text-[var(--color-primary)]' : 'text-gray-300'}`} />
                 )}
                 <p className="text-sm font-medium text-gray-600">
-                  {uploadingFile ? 'Upload en cours...' : 'Cliquer pour uploader'}
+                  {uploadingFile ? 'Upload en cours...' : isDraggingFile ? 'Déposer le fichier ici' : 'Glisser-déposer ou cliquer'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">PDF, ZIP, DOCX, EPUB — max 50 MB</p>
                 <input
                   type="file"
                   className="hidden"
                   accept=".pdf,.zip,.docx,.xlsx,.epub"
-                  onChange={handleFileUpload}
+                  onChange={handleFileInputChange}
                   disabled={uploadingFile}
                 />
               </label>

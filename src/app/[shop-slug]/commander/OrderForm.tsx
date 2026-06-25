@@ -450,7 +450,7 @@ export function OrderForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     // Ghost-click guard : ignorer tout submit si on vient juste de transitionner
-    if (step !== 3 || justTransitionedRef.current) return
+    if ((!isDigital && step !== 3) || justTransitionedRef.current) return
 
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
@@ -590,43 +590,45 @@ export function OrderForm({
         <p className="ml-auto shrink-0 text-xs font-semibold text-gray-500">Commander</p>
       </div>
 
-      {/* Indicateur de progression */}
-      <div className="flex items-center px-5 pt-4 pb-1 gap-0">
-        {[
-          { n: 1, label: 'Commande' },
-          { n: 2, label: 'Infos' },
-          { n: 3, label: 'Paiement' },
-        ].map(({ n, label }, i) => (
-          <div key={n} className={`flex items-center ${i < 2 ? 'flex-1' : ''}`}>
-            <div className="flex flex-col items-center">
-              <div
-                className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors"
-                style={step >= n
-                  ? { backgroundColor: primaryColor, color: 'white' }
-                  : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}
-              >
-                {step > n ? '✓' : n}
+      {/* Indicateur de progression — masqué pour les produits digitaux (page unique) */}
+      {!isDigital && (
+        <div className="flex items-center px-5 pt-4 pb-1 gap-0">
+          {[
+            { n: 1, label: 'Commande' },
+            { n: 2, label: 'Infos' },
+            { n: 3, label: 'Paiement' },
+          ].map(({ n, label }, i) => (
+            <div key={n} className={`flex items-center ${i < 2 ? 'flex-1' : ''}`}>
+              <div className="flex flex-col items-center">
+                <div
+                  className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors"
+                  style={step >= n
+                    ? { backgroundColor: primaryColor, color: 'white' }
+                    : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+                >
+                  {step > n ? '✓' : n}
+                </div>
+                <span
+                  className="mt-0.5 text-[10px] font-medium"
+                  style={{ color: step >= n ? primaryColor : '#9ca3af' }}
+                >
+                  {label}
+                </span>
               </div>
-              <span
-                className="mt-0.5 text-[10px] font-medium"
-                style={{ color: step >= n ? primaryColor : '#9ca3af' }}
-              >
-                {label}
-              </span>
+              {i < 2 && (
+                <div
+                  className="flex-1 h-px mx-1 mb-3.5 transition-colors"
+                  style={{ backgroundColor: step > n ? primaryColor : '#e5e7eb' }}
+                />
+              )}
             </div>
-            {i < 2 && (
-              <div
-                className="flex-1 h-px mx-1 mb-3.5 transition-colors"
-                style={{ backgroundColor: step > n ? primaryColor : '#e5e7eb' }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-6 px-4 pt-4">
         {/* ── ÉTAPE 1 : Articles + Date ── */}
-        {step === 1 && <>
+        {(step === 1 || isDigital) && <>
         {/* 1 — Articles */}
         <section>
           <SectionLabel n={1} label="Votre commande" primaryColor={primaryColor} />
@@ -817,7 +819,7 @@ export function OrderForm({
         </>}
 
         {/* ── ÉTAPE 2 : Coordonnées + Livraison ── */}
-        {step === 2 && <>
+        {(step === 2 || isDigital) && <>
 
         {/* 1 — Coordonnées */}
         <section>
@@ -975,7 +977,7 @@ export function OrderForm({
         </>}
 
         {/* ── ÉTAPE 3 : Notes + Code promo + Paiement ── */}
-        {step === 3 && <>
+        {(step === 3 || isDigital) && <>
 
         {/* 1 — Notes */}
         <section>
@@ -1075,8 +1077,8 @@ export function OrderForm({
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto space-y-2 bg-white border-t border-gray-100 px-4 pb-8 pt-3 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
-        {/* Récapitulatif total — uniquement à l'étape 3 */}
-        {step === 3 && total > 0 && (
+        {/* Récapitulatif total — étape 3 ou page unique digital */}
+        {(step === 3 || isDigital) && total > 0 && (
           <div className="space-y-0.5 px-1">
             {deliveryPrice > 0 && (
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -1110,8 +1112,8 @@ export function OrderForm({
           </div>
         )}
 
-        {/* Bouton Continuer (étapes 1-2) ou Confirmer (étape 3) */}
-        {step < 3 ? (
+        {/* Bouton Continuer (étapes 1-2) ou Confirmer (étape 3 ou page unique digital) */}
+        {step < 3 && !isDigital ? (
           <button
             type="button"
             onClick={step === 1 ? goToStep2 : goToStep3}
@@ -1133,7 +1135,7 @@ export function OrderForm({
           </button>
         )}
 
-        {step === 3 && (
+        {(step === 3 || isDigital) && (
           <p className="flex items-center justify-center gap-3 text-[10px] text-gray-400 pt-0.5">
             <span>🔒 Commande sécurisée</span>
             <span>·</span>

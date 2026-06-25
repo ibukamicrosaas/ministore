@@ -131,7 +131,9 @@ function ProductCardList({ product, shopSlug, primaryColor, currency }: { produc
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
         {product.description && (
-          <p className="mt-0.5 text-xs text-gray-500 line-clamp-2 leading-relaxed">{product.description}</p>
+          <p className="mt-0.5 text-xs text-gray-500 line-clamp-2 leading-relaxed">
+            {product.description.replace(/!\[[^\]]*\]\([^)]+\)\s*/g, '').trim()}
+          </p>
         )}
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="min-w-0">

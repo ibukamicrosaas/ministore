@@ -112,9 +112,24 @@ export default async function OrderDetailPage({
     ? `https://wa.me/${clientWhatsapp.replace(/\D/g, '')}`
     : null
 
-  const paymentLabel = order.payment_type === 'on_delivery' ? 'Paiement à la livraison'
-    : order.payment_type === 'on_site' ? 'Paiement en boutique'
-    : order.deposit_paid ? `Acompte payé — ${order.deposit_amount.toLocaleString('fr-FR')} FCFA`
+  const METHOD_NAMES: Record<string, string> = {
+    wave:         'Wave',
+    orange_money: 'Orange Money',
+    mtn_money:    'MTN Money',
+    maxit:        'MaxIt',
+    stripe_card:  'Carte bancaire',
+    bictorys:     'Mobile Money',
+  }
+  const methodName = order.payment_method ? (METHOD_NAMES[order.payment_method] ?? order.payment_method) : null
+
+  const paymentLabel = order.payment_type === 'on_delivery'
+    ? 'Paiement à la livraison'
+    : order.payment_type === 'on_site'
+    ? 'Paiement en boutique'
+    : order.status === 'completed' || (order.deposit_paid && order.deposit_amount > 0)
+    ? `Paiement reçu${methodName ? ` — ${methodName}` : ''}${order.deposit_paid && order.deposit_amount > 0 && order.payment_type !== 'online_full' ? ` (acompte ${order.deposit_amount.toLocaleString('fr-FR')} FCFA)` : ''}`
+    : methodName
+    ? `Paiement en ligne — ${methodName} (en attente)`
     : 'Paiement en ligne — en attente'
 
   return (
