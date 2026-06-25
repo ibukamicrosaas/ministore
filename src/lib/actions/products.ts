@@ -102,6 +102,10 @@ export async function createProduct(input: CreateProductInput) {
     delivery_delay:        input.delivery_delay?.trim() || null,
     badges:                (input.badges ?? []).filter(Boolean),
     original_price:        input.original_price ?? null,
+    product_type:          input.product_type ?? 'physical',
+    digital_file_path:     input.product_type === 'digital' ? (input.digital_file_path ?? null) : null,
+    digital_file_name:     input.product_type === 'digital' ? (input.digital_file_name ?? null) : null,
+    digital_file_size:     input.product_type === 'digital' ? (input.digital_file_size ?? null) : null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -196,6 +200,10 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.delivery_delay !== undefined)     updates.delivery_delay     = input.delivery_delay?.trim() || null
   if (input.badges !== undefined)             updates.badges             = (input.badges ?? []).filter(Boolean)
   if (input.original_price !== undefined)     updates.original_price     = input.original_price ?? null
+  if (input.product_type !== undefined)       updates.product_type       = input.product_type ?? 'physical'
+  if (input.digital_file_path !== undefined)  updates.digital_file_path  = input.product_type === 'digital' ? input.digital_file_path : null
+  if (input.digital_file_name !== undefined)  updates.digital_file_name  = input.product_type === 'digital' ? input.digital_file_name : null
+  if (input.digital_file_size !== undefined)  updates.digital_file_size  = input.product_type === 'digital' ? input.digital_file_size : null
 
   if (input.slug !== undefined) {
     const newSlug = input.slug?.trim() || null

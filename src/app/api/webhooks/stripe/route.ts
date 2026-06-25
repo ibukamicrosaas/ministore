@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
+import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
+import { APP_URL } from '@/constants'
 
 export const runtime = 'nodejs'
 
@@ -53,11 +55,58 @@ export async function POST(req: NextRequest) {
           const orderId = meta.order_id
           if (!orderId) break
 
-          await supabase
+          const { data: updatedOrder } = await supabase
             .from('orders')
             .update({ status: 'confirmed', payment_method: 'stripe_card' })
             .eq('id', orderId)
             .eq('status', 'pending')
+            .select('id, shop_id, clients(first_name, whatsapp, phone), shops:shop_id(name)')
+            .single()
+
+          if (updatedOrder) {
+            const ord = updatedOrder as unknown as {
+              id: string; shop_id: string
+              clients: { first_name: string; whatsapp: string | null; phone: string } | null
+              shops: { name: string } | null
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: items } = await (supabase as any)
+              .from('order_items')
+              .select('product_id, products(product_type, digital_file_name)')
+              .eq('order_id', ord.id)
+
+            const digitalItems = ((items ?? []) as Array<{
+              product_id: string
+              products: { product_type: string | null; digital_file_name: string | null } | null
+            }>).filter(i => i.products?.product_type === 'digital')
+
+            if (digitalItems.length > 0 && ord.clients) {
+              await (supabase as ReturnType<typeof createServiceClient>).from('orders').update({ status: 'completed' }).eq('id', ord.id)
+              const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+              const clientPhone = ord.clients.whatsapp ?? ord.clients.phone
+
+              for (const item of digitalItems) {
+                const { data: tokenData } = await supabase
+                  .from('download_tokens')
+                  .insert({
+                    order_id: ord.id, product_id: item.product_id,
+                    shop_id: ord.shop_id, expires_at: expiresAt, max_downloads: 5,
+                  })
+                  .select('token').single()
+
+                if (tokenData?.token) {
+                  const downloadUrl = `${APP_URL}/telechargement/${tokenData.token}`
+                  const msg = buildDigitalDownloadMessage({
+                    shopName: ord.shops?.name ?? '',
+                    clientName: ord.clients.first_name,
+                    productName: item.products?.digital_file_name ?? 'ton fichier',
+                    downloadUrl, expiresHours: 48,
+                  })
+                  await sendWhatsApp(clientPhone, msg)
+                }
+              }
+            }
+          }
         }
         break
       }

@@ -56,6 +56,12 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     'delivery_zones'
   > & { currency?: string | null }
 
+  // Détecter si le produit présélectionné est digital
+  const { data: productTypeData } = preselectedProductId
+    ? await supabase.from('products').select('product_type' as never).eq('id', preselectedProductId).single()
+    : { data: null }
+  const isDigital = (productTypeData as { product_type?: string } | null)?.product_type === 'digital'
+
   const { data: productsData } = await supabase
     .from('products')
     .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count, customization_enabled, customization_label' as never)
@@ -133,6 +139,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         preselectedProductId={preselectedProductId ?? null}
         preselectedVariant={preselectedVariant ?? null}
         basePath={await getShopBasePath(slug)}
+        isDigital={isDigital}
       />
     </div>
   )

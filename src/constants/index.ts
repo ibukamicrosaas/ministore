@@ -55,6 +55,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   ready:     'Prête',
   delivered: 'Livrée',
   cancelled: 'Annulée',
+  completed: 'Complétée',
 }
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
@@ -64,6 +65,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   ready:     'bg-sky-100 text-sky-800',
   delivered: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
+  completed: 'bg-violet-100 text-violet-800',
 }
 
 // Catégories de produits (personnalisables par la boutique)

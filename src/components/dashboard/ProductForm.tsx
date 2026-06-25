@@ -9,7 +9,7 @@ import {
   deleteProduct,
   uploadProductPhoto,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2 } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto } from '@/types'
@@ -114,6 +114,21 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const [uploadingDescImage, setUploadingDescImage] = useState(false)
+
+  // Produit digital
+  const [productType, setProductType] = useState<'physical' | 'digital'>(
+    (product as Product & { product_type?: string | null })?.product_type === 'digital' ? 'digital' : 'physical'
+  )
+  const [digitalFilePath, setDigitalFilePath] = useState<string | null>(
+    (product as Product & { digital_file_path?: string | null })?.digital_file_path ?? null
+  )
+  const [digitalFileName, setDigitalFileName] = useState<string | null>(
+    (product as Product & { digital_file_name?: string | null })?.digital_file_name ?? null
+  )
+  const [digitalFileSize, setDigitalFileSize] = useState<number | null>(
+    (product as Product & { digital_file_size?: number | null })?.digital_file_size ?? null
+  )
+  const [uploadingFile, setUploadingFile] = useState(false)
 
   // Nom contrôlé pour auto-générer le slug
   const [productName, setProductName] = useState(product?.name ?? '')
@@ -227,6 +242,24 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
     setVariants(prev => prev.filter((_, i) => i !== index))
   }
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingFile(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/products/digital-upload', { method: 'POST', body: formData })
+    const data = await res.json()
+    if (res.ok) {
+      setDigitalFilePath(data.path)
+      setDigitalFileName(data.name)
+      setDigitalFileSize(data.size)
+    } else {
+      toast.error(data.error ?? 'Erreur upload')
+    }
+    setUploadingFile(false)
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -246,21 +279,25 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       price,
       description: description.trim() || undefined,
       category: categoryValue,
-      delivery_delay: deliveryDelay.trim() || null,
+      delivery_delay: productType === 'digital' ? null : (deliveryDelay.trim() || null),
       photos,
       video_url: videoUrl.trim() || null,
       image_ratio: imageRatio,
-      deposit_percentage: useDeposit ? depositPct : null,
-      variants: validVariants.length > 0 ? validVariants : null,
-      stock_count: fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null,
+      deposit_percentage: productType === 'digital' ? null : (useDeposit ? depositPct : null),
+      variants: productType === 'digital' ? null : (validVariants.length > 0 ? validVariants : null),
+      stock_count: productType === 'digital' ? null : (fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null),
       is_featured: isFeatured,
-      customization_enabled: customizationEnabled,
-      customization_label: customizationEnabled ? (customizationLabel.trim() || null) : null,
+      customization_enabled: productType === 'digital' ? false : customizationEnabled,
+      customization_label: productType === 'digital' ? null : (customizationEnabled ? (customizationLabel.trim() || null) : null),
       badges: badges.map(b => b.trim()).filter(Boolean),
       original_price: originalPrice.trim() ? (parseInt(originalPrice, 10) || null) : null,
       slug: slug.trim() || null,
       meta_title: metaTitle.trim() || null,
       meta_description: metaDescription.trim() || null,
+      product_type: productType,
+      digital_file_path: productType === 'digital' ? digitalFilePath : null,
+      digital_file_name: productType === 'digital' ? digitalFileName : null,
+      digital_file_size: productType === 'digital' ? digitalFileSize : null,
     }
 
     let result
@@ -419,6 +456,79 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
         </div>
       </Card>
 
+      {/* Type de produit */}
+      <Card>
+        <p className="text-sm font-semibold text-gray-900 mb-3">Type de produit</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setProductType('physical')}
+            className={`rounded-2xl border p-4 text-left transition-all ${
+              productType === 'physical'
+                ? 'border-[var(--color-primary)] bg-sky-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <p className="text-sm font-semibold text-gray-900">📦 Physique</p>
+            <p className="text-xs text-gray-500 mt-0.5">Livré ou retiré en boutique</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setProductType('digital')}
+            className={`rounded-2xl border p-4 text-left transition-all ${
+              productType === 'digital'
+                ? 'border-[var(--color-primary)] bg-sky-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <p className="text-sm font-semibold text-gray-900">📄 Digital</p>
+            <p className="text-xs text-gray-500 mt-0.5">Fichier à télécharger</p>
+          </button>
+        </div>
+
+        {productType === 'digital' && (
+          <div className="mt-4">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Fichier à vendre</label>
+            {digitalFilePath ? (
+              <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{digitalFileName}</p>
+                  <p className="text-xs text-gray-500">
+                    {digitalFileSize ? `${(digitalFileSize / (1024 * 1024)).toFixed(1)} MB` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setDigitalFilePath(null); setDigitalFileName(null); setDigitalFileSize(null) }}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  Supprimer
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-8 cursor-pointer hover:border-[var(--color-primary)] hover:bg-sky-50 transition-all">
+                {uploadingFile ? (
+                  <Loader2 className="h-8 w-8 text-[var(--color-primary)] animate-spin mb-2" />
+                ) : (
+                  <Upload className="h-8 w-8 text-gray-300 mb-2" />
+                )}
+                <p className="text-sm font-medium text-gray-600">
+                  {uploadingFile ? 'Upload en cours...' : 'Cliquer pour uploader'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">PDF, ZIP, DOCX, EPUB — max 50 MB</p>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.zip,.docx,.xlsx,.epub"
+                  onChange={handleFileUpload}
+                  disabled={uploadingFile}
+                />
+              </label>
+            )}
+          </div>
+        )}
+      </Card>
+
       {/* Vidéo */}
       <Card>
         <div className="flex items-center gap-2 mb-3">
@@ -561,21 +671,23 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             />
           </div>
 
-          {/* Délai de livraison */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Délai de livraison estimé
-              <span className="ml-1.5 font-normal text-gray-400">(optionnel)</span>
-            </label>
-            <input
-              value={deliveryDelay}
-              onChange={e => setDeliveryDelay(e.target.value)}
-              placeholder="Ex : 24h, 2 à 3 jours, 10 à 15 jours..."
-              maxLength={60}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-            />
-            <p className="mt-1 text-[10px] text-gray-400">Affiché sur la page produit avant que le client passe commande.</p>
-          </div>
+          {/* Délai de livraison — masqué pour les produits digitaux */}
+          {productType === 'physical' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Délai de livraison estimé
+                <span className="ml-1.5 font-normal text-gray-400">(optionnel)</span>
+              </label>
+              <input
+                value={deliveryDelay}
+                onChange={e => setDeliveryDelay(e.target.value)}
+                placeholder="Ex : 24h, 2 à 3 jours, 10 à 15 jours..."
+                maxLength={60}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+              />
+              <p className="mt-1 text-[10px] text-gray-400">Affiché sur la page produit avant que le client passe commande.</p>
+            </div>
+          )}
 
           {/* Produit en vedette */}
           <div className="flex items-center justify-between">
@@ -662,7 +774,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             <p className="mt-1 text-[10px] text-gray-400">S'affiche barré en gris à côté du prix actuel pour montrer la réduction.</p>
           </div>
 
-          {/* Variantes */}
+          {/* Variantes — masquées pour les produits digitaux */}
+          {productType === 'physical' && (
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">Variantes de prix</p>
@@ -678,8 +791,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${useVariants ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
+          )}
 
-          {useVariants && (
+          {productType === 'physical' && useVariants && (
             <div className="space-y-3">
               {/* Presets rapides */}
               <div>
@@ -738,7 +852,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             </div>
           )}
 
-          {/* Acompte */}
+          {/* Acompte — masqué pour les produits digitaux */}
+          {productType === 'physical' && (
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">Acompte à la commande</p>
@@ -754,8 +869,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${useDeposit ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </div>
+          )}
 
-          {useDeposit && (
+          {productType === 'physical' && useDeposit && (
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -791,19 +907,21 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
         <p className="mt-2 text-[10px] text-gray-400">Laissez vide les badges que vous ne voulez pas afficher.</p>
       </Card>
 
-      {/* Stock (optionnel) */}
-      <Card>
-        <p className="text-sm font-semibold text-gray-900 mb-1">Stock</p>
-        <p className="text-xs text-gray-500 mb-3">Laissez vide pour un stock illimité.</p>
-        <input
-          name="stock"
-          type="number"
-          min="0"
-          defaultValue={product?.stock_count ?? ''}
-          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
-          placeholder="Ex : 20 (laisser vide = illimité)"
-        />
-      </Card>
+      {/* Stock — masqué pour les produits digitaux */}
+      {productType === 'physical' && (
+        <Card>
+          <p className="text-sm font-semibold text-gray-900 mb-1">Stock</p>
+          <p className="text-xs text-gray-500 mb-3">Laissez vide pour un stock illimité.</p>
+          <input
+            name="stock"
+            type="number"
+            min="0"
+            defaultValue={product?.stock_count ?? ''}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+            placeholder="Ex : 20 (laisser vide = illimité)"
+          />
+        </Card>
+      )}
 
       {/* SEO */}
       <Card>

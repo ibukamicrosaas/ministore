@@ -26,7 +26,7 @@ export async function GET(
   if (dt.download_count >= dt.max_downloads)
     return NextResponse.redirect(expireUrl)
 
-  const product = dt.products as { digital_file_path: string; digital_file_name: string } | null
+  const product = dt.products as unknown as { digital_file_path: string; digital_file_name: string } | null
   if (!product?.digital_file_path)
     return NextResponse.redirect(expireUrl)
 

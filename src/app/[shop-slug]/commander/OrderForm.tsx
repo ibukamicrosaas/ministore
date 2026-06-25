@@ -207,6 +207,7 @@ interface Props {
   preselectedProductId: string | null
   preselectedVariant: string | null
   basePath: string
+  isDigital?: boolean
 }
 
 export function OrderForm({
@@ -229,6 +230,7 @@ export function OrderForm({
   preselectedProductId,
   preselectedVariant,
   basePath,
+  isDigital = false,
 }: Props) {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -263,7 +265,7 @@ export function OrderForm({
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
     if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
-    if (deliveryType === 'home_delivery' && !address.trim())
+    if (!isDigital && deliveryType === 'home_delivery' && !address.trim())
       newErrors.address = "L'adresse de livraison est obligatoire."
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -453,7 +455,7 @@ export function OrderForm({
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
     if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
-    if (deliveryType === 'home_delivery' && !address.trim())
+    if (!isDigital && deliveryType === 'home_delivery' && !address.trim())
       newErrors.address = "L'adresse de livraison est obligatoire."
 
     if (Object.keys(newErrors).length > 0) {
@@ -497,9 +499,9 @@ export function OrderForm({
           customization_note: it.customization_note.trim() || null,
         }
       }),
-      delivery_date: deliveryDate || null,
-      delivery_type: deliveryType,
-      delivery_address: deliveryType === 'home_delivery' ? address.trim() : null,
+      delivery_date: isDigital ? null : (deliveryDate || null),
+      delivery_type: isDigital ? 'store_pickup' : deliveryType,
+      delivery_address: (!isDigital && deliveryType === 'home_delivery') ? address.trim() : null,
       client_first_name: firstName.trim(),
       client_phone: fullPhone,
       client_whatsapp: fullWhatsapp,
@@ -507,8 +509,9 @@ export function OrderForm({
       delivery_zone_name: (deliveryType === 'home_delivery' && selectedZone) ? selectedZone.name : null,
       delivery_price: deliveryPrice,
       promo_code: promoStatus === 'valid' ? promoCode.trim().toUpperCase() : null,
-      payment_type:
-        paymentType === 'online'
+      payment_type: isDigital
+        ? (acceptOnlinePayment ? 'online_full' : 'on_site')
+        : paymentType === 'online'
           ? hasDeposit
             ? 'online_deposit'
             : 'online_full'
@@ -788,8 +791,8 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 2 — Date */}
-        {deliveryDates.length > 0 && (
+        {/* 2 — Date — masquée pour les produits digitaux */}
+        {!isDigital && deliveryDates.length > 0 && (
           <>
             <section>
               <SectionLabel n={2} label="Date de livraison" primaryColor={primaryColor} />
@@ -878,8 +881,8 @@ export function OrderForm({
 
         <div className="border-t border-gray-100" />
 
-        {/* 2 — Livraison */}
-        {(deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
+        {/* 2 — Livraison — masquée pour les produits digitaux */}
+        {!isDigital && (deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
           <>
             <section>
               <SectionLabel n={2} label="Mode de réception" primaryColor={primaryColor} />
@@ -1053,7 +1056,7 @@ export function OrderForm({
                 </RadioCard>
               </label>
             )}
-            {acceptCashOnDelivery && (
+            {!isDigital && acceptCashOnDelivery && (
               <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
                 <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
                   <div>
@@ -1126,7 +1129,7 @@ export function OrderForm({
             style={{ backgroundColor: primaryColor }}
           >
             <ShoppingBag className="h-5 w-5" />
-            {submitting ? 'Envoi en cours...' : 'Confirmer la commande'}
+            {submitting ? 'Envoi en cours...' : isDigital ? 'Acheter et télécharger' : 'Confirmer la commande'}
           </button>
         )}
 

@@ -32,6 +32,7 @@ const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus | null> = {
   ready:     'delivered',
   delivered: null,
   cancelled: null,
+  completed: null,
 }
 
 export async function advanceOrderStatus(orderId: string) {

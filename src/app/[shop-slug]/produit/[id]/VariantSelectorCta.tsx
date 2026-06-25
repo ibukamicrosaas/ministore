@@ -20,10 +20,11 @@ interface Props {
   variants: Variant[]
   minPrice: number
   currency: ShopCurrency
+  isDigital?: boolean
 }
 
 export function VariantSelectorCta({
-  baseHref, color, productId, productName, variants, minPrice, currency,
+  baseHref, color, productId, productName, variants, minPrice, currency, isDigital = false,
 }: Props) {
   const [selected, setSelected] = useState<Variant | null>(null)
   const ref    = useRef<HTMLButtonElement>(null)
@@ -76,10 +77,11 @@ export function VariantSelectorCta({
     router.push(href)
   }
 
+  const ctaPrefix = isDigital ? 'Acheter' : 'Je le prends'
   const ctaLabel = variants.length === 0
-    ? `Je le prends — ${formatPrice(minPrice, currency)}`
+    ? `${ctaPrefix} — ${formatPrice(minPrice, currency)}`
     : selected
-      ? `Je le prends — ${formatPrice(selected.price, currency)}`
+      ? `${ctaPrefix} — ${formatPrice(selected.price, currency)}`
       : 'Choisir une variante'
 
   const ctaDisabled = variants.length > 0 && !selected

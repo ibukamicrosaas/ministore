@@ -159,6 +159,16 @@ export function buildSubscriptionExpiredMessage(params: {
   return `TekkiShop - ${params.shopName}: abonnement ${params.planLabel} expire. Boutique suspendue. Renouvelez: ${params.renewUrl}`
 }
 
+export function buildDigitalDownloadMessage(params: {
+  shopName: string
+  clientName: string
+  productName: string
+  downloadUrl: string
+  expiresHours: number
+}): string {
+  return `Merci ${params.clientName} ! Ton achat chez *${params.shopName}* est confirme.\n\n📄 *${params.productName}*\n\nTelecharge ton fichier ici :\n${params.downloadUrl}\n\n_Lien valide ${params.expiresHours}h — max 5 telechargements._`
+}
+
 // ─── Builders non utilisés dans MiniStore (hérités BeautyDesk) ─────────────
 
 export function buildBookingConfirmationMessage(params: {

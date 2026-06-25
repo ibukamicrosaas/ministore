@@ -357,7 +357,7 @@ export type Database = {
           id: string
           shop_id: string
           client_id: string | null
-          status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+          status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed'
           delivery_type: 'home_delivery' | 'store_pickup'
           delivery_address: string | null
           delivery_date: string | null
@@ -381,7 +381,7 @@ export type Database = {
           id?: string
           shop_id: string
           client_id?: string | null
-          status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+          status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed'
           delivery_type?: 'home_delivery' | 'store_pickup'
           delivery_address?: string | null
           delivery_date?: string | null
@@ -405,7 +405,7 @@ export type Database = {
           id?: string
           shop_id?: string
           client_id?: string | null
-          status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+          status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed'
           delivery_type?: 'home_delivery' | 'store_pickup'
           delivery_address?: string | null
           delivery_date?: string | null

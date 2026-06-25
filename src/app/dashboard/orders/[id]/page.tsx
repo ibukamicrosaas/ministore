@@ -96,6 +96,17 @@ export default async function OrderDetailPage({
   const canAdvance = NEXT_ACTION_LABEL[order.status] !== undefined
   const canCancel  = ['pending', 'confirmed', 'preparing'].includes(order.status)
 
+  // Tokens de téléchargement pour les commandes digitales
+  const { data: downloadTokensData } = await supabase
+    .from('download_tokens' as never)
+    .select('id, token, expires_at, download_count, max_downloads, downloaded_at, products(name, digital_file_name)' as never)
+    .eq('order_id', id)
+  const downloadTokens = (downloadTokensData ?? []) as Array<{
+    id: string; token: string; expires_at: string
+    download_count: number; max_downloads: number; downloaded_at: string | null
+    products: { name: string; digital_file_name: string | null } | null
+  }>
+
   const clientWhatsapp = order.clients?.whatsapp ?? order.clients?.phone
   const waLink = clientWhatsapp
     ? `https://wa.me/${clientWhatsapp.replace(/\D/g, '')}`
@@ -295,6 +306,38 @@ export default async function OrderDetailPage({
               waNumber={order.clients.whatsapp ?? order.clients.phone}
             />
           )}
+        </Card>
+      )}
+
+      {/* Téléchargements digitaux */}
+      {downloadTokens.length > 0 && (
+        <Card>
+          <p className="text-sm font-semibold text-gray-900 mb-3">📄 Téléchargements</p>
+          <div className="space-y-3">
+            {downloadTokens.map(dt => {
+              const isExpired = new Date(dt.expires_at) < new Date()
+              const isExhausted = dt.download_count >= dt.max_downloads
+              const statusColor = isExpired || isExhausted ? 'text-red-500' : 'text-emerald-600'
+              const statusLabel = isExpired ? 'Expiré' : isExhausted ? 'Épuisé' : 'Actif'
+              return (
+                <div key={dt.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">
+                      {dt.products?.digital_file_name ?? dt.products?.name ?? 'Fichier'}
+                    </p>
+                    <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Téléchargements : {dt.download_count}/{dt.max_downloads}
+                    {dt.downloaded_at && ` · 1er dl : ${new Date(dt.downloaded_at).toLocaleDateString('fr-FR')}`}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Expire le {new Date(dt.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
         </Card>
       )}
     </div>

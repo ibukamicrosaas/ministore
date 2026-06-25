@@ -152,6 +152,9 @@ export default async function ProductDetailPage({ params }: Props) {
   const color         = shop.primary_color ?? '#0EA5E9'
   const currency      = (shop.currency ?? 'XOF') as ShopCurrency
   const deliveryDelay = (product as Product & { delivery_delay?: string | null }).delivery_delay ?? null
+  const isDigital     = (product as Product & { product_type?: string | null }).product_type === 'digital'
+  const digitalFileName = (product as Product & { digital_file_name?: string | null }).digital_file_name ?? null
+  const digitalFileSize = (product as Product & { digital_file_size?: number | null }).digital_file_size ?? null
 
   const rawPhotos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
     ? (product.photos as unknown as ProductPhoto[])
@@ -279,6 +282,22 @@ export default async function ProductDetailPage({ params }: Props) {
       <div className="bg-white px-5 pt-5 pb-24">
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
 
+        {/* Badge produit digital */}
+        {isDigital && (
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 w-fit">
+            <span className="text-base">📄</span>
+            <div>
+              <p className="text-xs font-semibold text-violet-700">Téléchargement numérique</p>
+              {digitalFileName && (
+                <p className="text-[10px] text-violet-500">
+                  {digitalFileName}
+                  {digitalFileSize && ` · ${digitalFileSize > 1024 * 1024 ? `${(digitalFileSize / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(digitalFileSize / 1024)} KB`}`}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Avis agrégat */}
         {reviewCount > 0 && (
           <div className="mt-1.5 flex items-center gap-1.5">
@@ -335,7 +354,7 @@ export default async function ProductDetailPage({ params }: Props) {
           ) : null
         })()}
 
-        {deliveryDelay && (
+        {deliveryDelay && !isDigital && (
           <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}12` }}>
             <Clock className="h-4 w-4 shrink-0" style={{ color }} />
             <p className="text-sm font-medium text-gray-700">
@@ -354,6 +373,7 @@ export default async function ProductDetailPage({ params }: Props) {
               variants={variants ?? []}
               minPrice={minPrice}
               currency={currency}
+              isDigital={isDigital}
             />
             {/* Méthodes de paiement — discret, informatif */}
             {(hasOnlinePayment || acceptCash) && (

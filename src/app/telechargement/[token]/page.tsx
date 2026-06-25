@@ -46,8 +46,8 @@ export default async function DownloadPage({
     )
   }
 
-  const product   = dt.products as { name: string; digital_file_name: string; digital_file_size: number | null } | null
-  const shop      = dt.shops as { name: string; slug: string } | null
+  const product   = dt.products as unknown as { name: string; digital_file_name: string; digital_file_size: number | null } | null
+  const shop      = dt.shops as unknown as { name: string; slug: string } | null
   const remaining = dt.max_downloads - dt.download_count
   const expiresAt = new Date(dt.expires_at)
 

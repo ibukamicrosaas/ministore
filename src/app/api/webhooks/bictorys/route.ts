@@ -5,6 +5,7 @@ import {
   sendWhatsApp,
   buildOrderConfirmationMessage,
   buildNewOrderAlertMessage,
+  buildDigitalDownloadMessage,
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 import { activatePlan } from '@/lib/billing/activate-plan'
@@ -424,6 +425,53 @@ async function handleOrderWebhook(
       status:            shopNotif.success ? 'sent' : 'failed',
       error_message:     shopNotif.error ?? null,
     })
+  }
+
+  // ── Produits digitaux : générer les tokens et envoyer le lien ────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orderItems } = await (supabase as any)
+    .from('order_items')
+    .select('product_id, products(product_type, digital_file_name)')
+    .eq('order_id', o.id)
+
+  const digitalItems = ((orderItems ?? []) as Array<{
+    product_id: string
+    products: { product_type: string | null; digital_file_name: string | null } | null
+  }>).filter(item => item.products?.product_type === 'digital')
+
+  if (digitalItems.length > 0) {
+    await supabase
+      .from('orders')
+      .update({ status: 'completed' })
+      .eq('id', o.id)
+
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+
+    for (const item of digitalItems) {
+      const { data: tokenData } = await supabase
+        .from('download_tokens')
+        .insert({
+          order_id:   o.id,
+          product_id: item.product_id,
+          shop_id:    o.shop_id,
+          expires_at: expiresAt,
+          max_downloads: 5,
+        })
+        .select('token')
+        .single()
+
+      if (tokenData?.token) {
+        const downloadUrl = `${APP_URL}/telechargement/${tokenData.token}`
+        const msg = buildDigitalDownloadMessage({
+          shopName:     o.shops!.name,
+          clientName:   o.clients!.first_name,
+          productName:  item.products?.digital_file_name ?? 'ton fichier',
+          downloadUrl,
+          expiresHours: 48,
+        })
+        await sendWhatsApp(clientWhatsapp, msg)
+      }
+    }
   }
 
   console.log('[handleOrderWebhook] ✅ Commande confirmée — notifications envoyées')
