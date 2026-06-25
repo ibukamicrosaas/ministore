@@ -92,7 +92,14 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(body.messages) || body.messages.length === 0) {
       return NextResponse.json({ error: 'Messages manquants' }, { status: 400 })
     }
-    messages = body.messages as ModelMessage[]
+    // MED-5 : limiter à 20 derniers messages, tronquer le contenu à 2000 chars
+    const raw = (body.messages as ModelMessage[]).slice(-20)
+    messages = raw.map(msg => {
+      if (typeof (msg as any).content === 'string') {
+        return { ...msg, content: (msg as any).content.slice(0, 2000) }
+      }
+      return msg
+    })
   } catch {
     return NextResponse.json({ error: 'Body invalide' }, { status: 400 })
   }

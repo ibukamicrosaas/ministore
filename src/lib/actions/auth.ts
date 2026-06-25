@@ -153,6 +153,25 @@ export async function changePin(currentPin: string, newPin: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) return { error: 'Non authentifié.' }
 
+  // MED-1 : rate limit anti-brute-force sur le PIN actuel (5 tentatives / 15 min)
+  const admin = createAdminClient()
+  const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { count: changeAttempts } = await admin
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', `pin_change:${user.id}`)
+    .eq('attempt_type', 'pin_change')
+    .gte('attempted_at', fifteenMinsAgo)
+
+  if ((changeAttempts ?? 0) >= 5) {
+    return { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+  }
+  void admin.from('login_attempts').insert({
+    identifier:   `pin_change:${user.id}`,
+    attempt_type: 'pin_change',
+    success:      true,
+  })
+
   // Vérifier le PIN actuel via re-signin silencieux
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email:    user.email,
@@ -225,10 +244,12 @@ export async function requestPinReset(phone: string) {
   // Invalider les anciens tokens non utilisés
   await admin.from('pin_resets').update({ used: true }).eq('phone_email', phoneEmail).eq('used', false)
 
+  // HIGH-3 : stocker le hash du token — jamais le code en clair
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
   const { error: insertError } = await admin.from('pin_resets').insert({
     phone_email: phoneEmail,
-    token,
-    expires_at: expiresAt,
+    token:       tokenHash,
+    expires_at:  expiresAt,
   })
 
   if (insertError) {
@@ -258,7 +279,22 @@ export async function confirmPinReset(phone: string, token: string, newPin: stri
   const phoneEmail = phoneToEmail(trimmed)
   const admin = createAdminClient()
 
-  // Récupérer le token par numéro seulement, puis comparer en timing-safe
+  // CRIT-3 : rate limit anti-brute-force (5 échecs / 30 min → invalide le token)
+  const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  const { count: failCount } = await admin
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', `pin_reset_confirm:${phoneEmail}`)
+    .eq('attempt_type', 'pin_reset_confirm')
+    .eq('success', false)
+    .gte('attempted_at', thirtyMinsAgo)
+
+  if ((failCount ?? 0) >= 5) {
+    await admin.from('pin_resets').update({ used: true }).eq('phone_email', phoneEmail).eq('used', false)
+    return { error: 'Trop de tentatives incorrectes. Demandez un nouveau code de réinitialisation.' }
+  }
+
+  // Récupérer le token par numéro seulement, puis comparer le hash en timing-safe
   const { data: resetData, error: fetchError } = await admin
     .from('pin_resets')
     .select('*')
@@ -269,16 +305,22 @@ export async function confirmPinReset(phone: string, token: string, newPin: stri
     .limit(1)
     .single()
 
-  // Comparaison en temps constant pour éviter les timing attacks
+  // HIGH-3 : comparer SHA-256(token_soumis) === hash_stocké en temps constant
+  const hashedSubmitted = crypto.createHash('sha256').update(token).digest('hex')
   const tokenValid = resetData && (() => {
     try {
-      const a = Buffer.from(token.padEnd(8, '\0').slice(0, 8))
-      const b = Buffer.from(resetData.token.padEnd(8, '\0').slice(0, 8))
-      return crypto.timingSafeEqual(a, b) && token === resetData.token
+      const a = Buffer.from(hashedSubmitted, 'hex')
+      const b = Buffer.from(resetData.token, 'hex')
+      return a.length === b.length && crypto.timingSafeEqual(a, b)
     } catch { return false }
   })()
 
   if (fetchError || !resetData || !tokenValid) {
+    void admin.from('login_attempts').insert({
+      identifier:   `pin_reset_confirm:${phoneEmail}`,
+      attempt_type: 'pin_reset_confirm',
+      success:      false,
+    })
     return { error: 'Code invalide ou expiré.' }
   }
 

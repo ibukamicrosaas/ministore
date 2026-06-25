@@ -21,17 +21,19 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
 
   // Vérifier que le token correspond à une vraie commande livrée (ou confirmée)
+  // MED-2 : seules les commandes livrées ou complétées peuvent recevoir un avis
   const { data: order } = await admin
     .from('orders')
     .select('id, shop_id, status, clients(first_name)')
     .eq('client_token', order_token)
+    .in('status', ['delivered', 'completed'])
     .single() as { data: {
       id: string; shop_id: string; status: string
       clients: { first_name: string } | null
     } | null }
 
   if (!order) {
-    return NextResponse.json({ error: 'Commande introuvable.' }, { status: 404 })
+    return NextResponse.json({ error: 'Commande introuvable ou non encore livrée.' }, { status: 404 })
   }
 
   // Vérifier que le produit commandé appartient bien à cette commande

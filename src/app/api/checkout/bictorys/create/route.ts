@@ -123,6 +123,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur Bictorys inconnue'
     console.error(`[checkout/bictorys/create] ❌ Erreur: ${message}`, { country: detectedCountry, paymentType })
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Impossible d\'initier le paiement. Réessayez ou contactez le vendeur.' }, { status: 500 })
   }
 }

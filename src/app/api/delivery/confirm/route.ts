@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
 
 const CONFIRMABLE_STATUSES = new Set(['confirmed', 'preparing', 'ready'])
 
 export async function POST(req: NextRequest) {
+  // HIGH-6 : rate limit — max 10 confirmations par IP / minute (évite le flooding)
+  const limited = await checkRateLimit(req, { key: 'delivery-confirm', maxRequests: 10, windowMs: 60_000 })
+  if (limited) return limited
+
   const { delivery_token } = await req.json() as { delivery_token?: string }
 
   if (!delivery_token || typeof delivery_token !== 'string' || delivery_token.length < 10) {

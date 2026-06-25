@@ -249,7 +249,7 @@ async function handleOrderWebhook(
   // matche pas le payload.id du webhook → on retrouve le record via order_id.
   const { data: existingByCharge } = await supabase
     .from('payments')
-    .select('id, status')
+    .select('id, status, amount')
     .eq('provider_payment_id', payload.id)
     .maybeSingle()
 
@@ -278,6 +278,27 @@ async function handleOrderWebhook(
       await supabase.from('payments').update({ status: 'failed' }).eq('id', failTarget.id)
     }
     return NextResponse.json({ ok: true })
+  }
+
+  // HIGH-5 : validation défensive du montant — prévient la manipulation post-signature
+  const { data: orderForValidation } = await supabase
+    .from('orders')
+    .select('total_price, deposit_amount, payment_type')
+    .eq('id', orderId)
+    .single()
+
+  if (orderForValidation) {
+    const ov = orderForValidation as { total_price: number; deposit_amount: number; payment_type: string }
+    const isDeposit = ov.payment_type === 'online_deposit' && (ov.deposit_amount ?? 0) > 0
+    const expectedAmount = isDeposit ? ov.deposit_amount : ov.total_price
+    if (payload.amount !== expectedAmount) {
+      console.error('[handleOrderWebhook] SÉCURITÉ: Montant webhook mismatch:', {
+        expected: expectedAmount,
+        actual:   payload.amount,
+        orderId,
+      })
+      return NextResponse.json({ ok: true })
+    }
   }
 
   // ── Marquer le paiement comme complété ──────────────────────────────────────

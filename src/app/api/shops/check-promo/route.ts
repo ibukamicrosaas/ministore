@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
+  // MED-3 : rate limit — max 10 vérifications par IP / minute (évite l'énumération)
+  const limited = await checkRateLimit(req, { key: 'check-promo', maxRequests: 10, windowMs: 60_000 })
+  if (limited) return limited
+
   const { searchParams } = req.nextUrl
   const shopId = searchParams.get('shopId')?.trim()
   const code   = searchParams.get('code')?.trim().toUpperCase()

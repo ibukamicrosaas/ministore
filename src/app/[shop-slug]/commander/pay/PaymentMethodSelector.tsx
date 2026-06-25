@@ -73,7 +73,7 @@ export function PaymentMethodSelector({
 
   const checkPaymentStatus = useCallback(async () => {
     try {
-      const res  = await fetch(`/api/orders/${orderId}/verify-payment?method=poll`)
+      const res  = await fetch(`/api/orders/${orderId}/verify-payment?method=poll&client_token=${clientToken}`)
       const data = (await res.json()) as { confirmed?: boolean }
       if (data.confirmed) {
         window.location.href = successUrl
