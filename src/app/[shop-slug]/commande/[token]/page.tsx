@@ -283,6 +283,7 @@ export default async function OrderTrackingPage({ params }: Props) {
                       </div>
                       <a
                         href={`/api/download/${dt.token}`}
+                        download
                         className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
                         style={{ backgroundColor: color }}
                       >
