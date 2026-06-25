@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { format, differenceInCalendarDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, Store, CreditCard, Star } from 'lucide-react'
+import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, Store, CreditCard, Star, Download } from 'lucide-react'
 import type { Shop, OrderItem } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -96,18 +96,52 @@ export default async function OrderTrackingPage({ params }: Props) {
   const currency    = (shop.currency ?? 'XOF') as ShopCurrency
   const isCancelled = order.status === 'cancelled'
   const isDelivered = order.status === 'delivered'
+  const isCompleted = order.status === 'completed'
   const currentStep = STATUS_STEP[order.status] ?? 1
+
+  // Détection digitale + tokens de téléchargement
+  const { data: rawTokens } = await (supabase as any)
+    .from('download_tokens')
+    .select('token, expires_at, download_count, max_downloads, products(name, digital_file_name, digital_file_size)')
+    .eq('order_id', order.id)
+
+  type DownloadToken = {
+    token: string
+    expires_at: string
+    download_count: number
+    max_downloads: number
+    products: { name: string; digital_file_name: string | null; digital_file_size: number | null } | null
+  }
+  const downloadTokens = (rawTokens ?? []) as DownloadToken[]
+
+  const { data: rawOrderItems } = await (supabase as any)
+    .from('order_items')
+    .select('product_id, products(product_type, digital_file_path)')
+    .eq('order_id', order.id)
+
+  const hasDigitalProducts = ((rawOrderItems ?? []) as Array<{
+    product_id: string
+    products: { product_type: string | null; digital_file_path: string | null } | null
+  }>).some(item =>
+    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
+  )
+
+  const isDigitalOrder = downloadTokens.length > 0 || isCompleted || hasDigitalProducts
 
   const waLink = shop.phone_whatsapp
     ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour, je voudrais des informations sur ma commande #${order.id.slice(0, 8).toUpperCase()}`)}`
     : null
 
   // Bannière héro — couleur + message selon statut
-  const heroBg = isCancelled ? '#EF4444' : isDelivered ? '#16A34A' : color
+  const heroBg = isCancelled ? '#EF4444' : (isDelivered || isCompleted) ? '#16A34A' : color
   const heroMsg = isCancelled
     ? 'Commande annulée'
+    : isCompleted && isDigitalOrder
+    ? '✓ Achat confirmé'
     : isDelivered
     ? '🎉 Commande livrée !'
+    : isDigitalOrder && (order.status === 'confirmed')
+    ? '✓ Paiement reçu'
     : `En cours · ${STEPS.find(s => s.step === currentStep)?.label ?? 'Reçue'}`
 
   return (
@@ -157,66 +191,121 @@ export default async function OrderTrackingPage({ params }: Props) {
           )}
         </div>
 
-        {/* Étapes de progression */}
-        {isCancelled ? (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-            <div className="flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-red-700">Commande annulée</p>
-                {waLink && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Contacte la boutique pour plus d'informations.
-                  </p>
-                )}
+        {/* Étapes de progression — masquées pour les commandes digitales */}
+        {!isDigitalOrder && (
+          isCancelled ? (
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-700">Commande annulée</p>
+                  {waLink && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Contacte la boutique pour plus d'informations.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center justify-between relative">
-              {/* Ligne de connexion en arrière-plan */}
-              <div className="absolute left-5 right-5 top-5 h-0.5 bg-gray-100 -z-0" />
-              {STEPS.map((s) => {
-                const done   = s.step < currentStep
-                const active = s.step === currentStep
-                const Icon   = s.icon
-                return (
-                  <div key={s.key} className="flex flex-col items-center gap-1.5 z-10">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-                        active
-                          ? 'border-[var(--color-primary)] bg-white shadow-md shadow-[color:var(--color-primary)]/20'
-                          : done
-                          ? 'border-transparent bg-[var(--color-primary)]'
-                          : 'border-gray-200 bg-white'
-                      }`}
-                      style={{ '--color-primary': color } as React.CSSProperties}
-                    >
-                      {done ? (
-                        <CheckCircle2 className="h-5 w-5 text-white" />
-                      ) : (
-                        <Icon
-                          className={`h-4 w-4 ${active ? 'text-[var(--color-primary)]' : 'text-gray-300'}`}
-                          style={{ color: active ? color : undefined }}
-                        />
-                      )}
+          ) : (
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+              <div className="flex items-center justify-between relative">
+                <div className="absolute left-5 right-5 top-5 h-0.5 bg-gray-100 -z-0" />
+                {STEPS.map((s) => {
+                  const done   = s.step < currentStep
+                  const active = s.step === currentStep
+                  const Icon   = s.icon
+                  return (
+                    <div key={s.key} className="flex flex-col items-center gap-1.5 z-10">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                          active
+                            ? 'border-[var(--color-primary)] bg-white shadow-md shadow-[color:var(--color-primary)]/20'
+                            : done
+                            ? 'border-transparent bg-[var(--color-primary)]'
+                            : 'border-gray-200 bg-white'
+                        }`}
+                        style={{ '--color-primary': color } as React.CSSProperties}
+                      >
+                        {done ? (
+                          <CheckCircle2 className="h-5 w-5 text-white" />
+                        ) : (
+                          <Icon
+                            className={`h-4 w-4 ${active ? 'text-[var(--color-primary)]' : 'text-gray-300'}`}
+                            style={{ color: active ? color : undefined }}
+                          />
+                        )}
+                      </div>
+                      <span
+                        className={`text-[9px] font-semibold text-center leading-tight ${
+                          active ? 'text-gray-900' : done ? 'text-gray-500' : 'text-gray-300'
+                        }`}
+                      >
+                        {s.label}
+                      </span>
                     </div>
-                    <span
-                      className={`text-[9px] font-semibold text-center leading-tight ${
-                        active ? 'text-gray-900' : done ? 'text-gray-500' : 'text-gray-300'
-                      }`}
-                    >
-                      {s.label}
-                    </span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
+          )
+        )}
+
+        {/* Section téléchargements — produits digitaux uniquement */}
+        {isDigitalOrder && (
+          <div>
+            {downloadTokens.length > 0 ? (
+              <div className="space-y-3">
+                {downloadTokens.map((dt) => {
+                  const prod = dt.products
+                  const remaining = dt.max_downloads - dt.download_count
+                  const expiresAt = new Date(dt.expires_at)
+                  const fileSizeStr = prod?.digital_file_size
+                    ? prod.digital_file_size > 1024 * 1024
+                      ? `${(prod.digital_file_size / (1024 * 1024)).toFixed(1)} MB`
+                      : `${Math.round(prod.digital_file_size / 1024)} KB`
+                    : null
+                  return (
+                    <div key={dt.token} className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-violet-500 mb-2">
+                        Téléchargement numérique
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900 mb-0.5">
+                        {prod?.digital_file_name ?? prod?.name ?? 'Fichier'}
+                        {fileSizeStr && <span className="text-gray-400 font-normal ml-1">({fileSizeStr})</span>}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Expire le {expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                        </span>
+                        <span>{remaining} téléchargement{remaining > 1 ? 's' : ''} restant{remaining > 1 ? 's' : ''}</span>
+                      </div>
+                      <a
+                        href={`/api/download/${dt.token}`}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: color }}
+                      >
+                        <Download className="h-4 w-4" />
+                        Télécharger
+                      </a>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-800 mb-1">Lien de téléchargement en cours de génération</p>
+                <p className="text-xs text-amber-700">
+                  Votre lien sera disponible ici dès confirmation du paiement. Vous le recevrez aussi par SMS/WhatsApp.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Livraison */}
+        {/* Livraison — masquée pour commandes digitales */}
+        {!isDigitalOrder && (
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 space-y-2.5">
           <div className="flex items-center gap-2">
             {order.delivery_type === 'home_delivery' ? (
@@ -249,6 +338,7 @@ export default async function OrderTrackingPage({ params }: Props) {
             </div>
           )}
         </div>
+        )}
 
         {/* Articles commandés */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">

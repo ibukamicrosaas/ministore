@@ -70,7 +70,22 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     products: { name: string; digital_file_name: string | null; digital_file_size: number | null } | null
   }
   const downloadTokens = (rawTokens ?? []) as DownloadToken[]
-  const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed'
+
+  // Détection robuste : produit digital = token présent OU status completed OU
+  // au moins un article dont le produit a product_type='digital' ou digital_file_path défini
+  const { data: rawOrderItems } = await (supabase as any)
+    .from('order_items')
+    .select('product_id, products(product_type, digital_file_path)')
+    .eq('order_id', order_id)
+
+  const hasDigitalProducts = ((rawOrderItems ?? []) as Array<{
+    product_id: string
+    products: { product_type: string | null; digital_file_path: string | null } | null
+  }>).some(item =>
+    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
+  )
+
+  const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed' || hasDigitalProducts
 
   const shop     = order.shops
   const color    = shop?.primary_color ?? '#0EA5E9'

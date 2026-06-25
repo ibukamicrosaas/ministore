@@ -431,13 +431,15 @@ async function handleOrderWebhook(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: orderItems } = await (supabase as any)
     .from('order_items')
-    .select('product_id, products(product_type, digital_file_name)')
+    .select('product_id, products(product_type, digital_file_name, digital_file_path)')
     .eq('order_id', o.id)
 
   const digitalItems = ((orderItems ?? []) as Array<{
     product_id: string
-    products: { product_type: string | null; digital_file_name: string | null } | null
-  }>).filter(item => item.products?.product_type === 'digital')
+    products: { product_type: string | null; digital_file_name: string | null; digital_file_path: string | null } | null
+  }>).filter(item =>
+    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
+  )
 
   if (digitalItems.length > 0) {
     await supabase
