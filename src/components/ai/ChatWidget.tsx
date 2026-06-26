@@ -6,6 +6,11 @@ import { X, Send, MessageCircle } from 'lucide-react'
 import { ChatMessage, type Message } from './ChatMessage'
 import { ChatLimitBanner } from './ChatLimitBanner'
 
+function generateSessionId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
 interface UsageState {
   used: number
   limit: number | null
@@ -77,6 +82,7 @@ interface ChatWidgetProps {
 export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProps) {
   const pathname = usePathname()
   const [messages, setMessages] = useState<Message[]>([])
+  const [sessionId] = useState<string>(() => generateSessionId())
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [limitReached, setLimitReached] = useState(false)
@@ -143,7 +149,8 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+          messages:   updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+          session_id: sessionId,
         }),
         signal: controller.signal,
       })

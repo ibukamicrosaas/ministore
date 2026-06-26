@@ -68,12 +68,14 @@ MOYENS DE PAIEMENT DISPONIBLES PAR PAYS :
 - Bénin : MTN Money, Moov Money
 
 REVERSEMENTS (PAYOUTS) :
-- Les reversements sont effectués via Wave ou Orange Money selon le pays du marchand
-- Le solde disponible = total collecté − commission TEKKIShop − reversements déjà effectués
-- Les plans trial, decouverte et business ont une commission de 3% sur les paiements en ligne
-- Le plan Pro est à 0% de commission
-- Les reversements sont généralement traités sous 24-48h
-- Le marchand configure son numéro de reversement dans Paramètres → Paiements
+- Les paiements en ligne des clients (Wave, Orange Money) arrivent dans la section "Revenus" du tableau de bord TEKKIShop, PAS directement sur le téléphone du marchand
+- Le marchand doit initier lui-même un retrait depuis la page "Revenus"
+- Montant minimum de retrait : 2 000 FCFA
+- Le retrait est instantané — l'argent arrive directement sur le numéro Wave ou Orange Money configuré dans Paramètres → Paiements
+- Les plans trial, decouverte et business ont une commission de 3% sur les paiements en ligne, automatiquement déduite au moment du retrait
+- Le plan Pro est à 0% de commission — le marchand reçoit 100% du montant payé par ses clients
+- Le solde disponible = total collecté depuis le dernier retrait − commission TEKKIShop
+- Le marchand configure son numéro de retrait (Wave ou Orange Money) dans Paramètres → Paiements
 
 COMMANDES :
 - "En attente" (pending) : le client a passé commande, paiement non encore confirmé
@@ -92,6 +94,14 @@ PRODUITS :
 DOMAINE PERSONNALISÉ (Plan Pro) :
 - Le marchand peut utiliser son propre domaine (ex: monboutique.com) à la place du lien tekki.shop
 - La configuration se fait dans Paramètres → Domaine
+
+CHANGEMENTS DE PLAN ET RENOUVELLEMENTS :
+- Un marchand peut changer de plan ou renouveler à tout moment depuis le tableau de bord (menu "Passer au Pro")
+- Le changement est immédiat : le nouveau plan est activé dès le paiement, valable 31 jours
+- Il n'y a pas de proratisation : les jours restants de l'ancien plan ne sont pas déduits
+- Un marchand peut renouveler son plan actuel avant la fin de son abonnement en cours
+- Si un marchand du plan Découverte (2 900 FCFA/mois) passe au plan Pro (9 900 FCFA/mois), il paie 9 900 FCFA et repart pour 31 jours. Il ne paie pas 12 800 FCFA au total.
+- Pour les paiements par carte bancaire (EUR via Stripe), les abonnements sont récurrents et gérés automatiquement par Stripe
 
 OPTIMISATION AVANCÉE (pour les boutiques actives) :
 - Codes promo : Paramètres → Codes promo. Permettent d'offrir des réductions pour attirer des clients.
@@ -137,8 +147,11 @@ APRÈS ACTIVATION — Optimiser pour vendre plus :
 
 Quand le marchand te pose une question sur sa boutique ou ce qu'il doit faire, utilise l'outil get_setup_checklist pour voir où il en est exactement, puis guide-le vers la prochaine étape non complétée. Sois proactif : si une étape est manquante, signale-la et explique comment la compléter.`
 
+interface KnowledgeEntry { title: string; content: string }
+
 export function buildSystemPrompt(
-  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at'>
+  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at'>,
+  knowledgeEntries?: KnowledgeEntry[],
 ): string {
   const siteUrl = `${APP_URL}/${shop.slug}`
   const planLabel = PLAN_LABELS[shop.plan] ?? shop.plan
@@ -167,5 +180,10 @@ Quand tu mentionnes la boutique, utilise son nom.`
 
   const onboardingContext = !shop.is_active ? SETUP_STEPS_GUIDE : ''
 
-  return STATIC_PROMPT + '\n' + userContext + onboardingContext
+  const customKnowledge = knowledgeEntries && knowledgeEntries.length > 0
+    ? '\n\n--- CONNAISSANCES COMPLÉMENTAIRES ---\n\n' +
+      knowledgeEntries.map(e => `### ${e.title}\n${e.content}`).join('\n\n')
+    : ''
+
+  return STATIC_PROMPT + customKnowledge + '\n' + userContext + onboardingContext
 }

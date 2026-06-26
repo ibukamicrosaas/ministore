@@ -18,7 +18,7 @@ const FAQS = [
   },
   {
     q: "Comment je reçois mon argent ?",
-    a: "En Afrique : tes clients paient par Wave ou Orange Money et l'argent arrive directement sur ton numéro. En Europe & Canada : les paiements par carte sont gérés via Stripe et virés sur ton compte bancaire automatiquement. Pour le paiement à la livraison, tu encaisses toi-même.",
+    a: "En Afrique : les paiements de tes clients (Wave, Orange Money) arrivent dans la section « Revenus » de ton tableau de bord TEKKIShop. Tu peux faire un retrait à tout moment, à partir de 2 000 FCFA minimum, et l'argent arrive instantanément sur ton numéro Wave ou Orange Money. Si tu es sur le plan Découverte ou Business, la commission de 3 % est automatiquement déduite au moment du retrait. En Europe & Canada : les paiements par carte sont gérés via Stripe et virés directement sur ton compte bancaire. Pour le paiement à la livraison, tu encaisses toi-même.",
   },
   {
     q: "Je suis en France / Belgique / Canada — ça marche pour moi ?",
@@ -34,7 +34,11 @@ const FAQS = [
   },
   {
     q: "Comment je passe d'un plan à l'autre ?",
-    a: "Tu peux changer de plan à tout moment depuis ton tableau de bord. Le nouveau tarif s'applique dès le mois suivant. Aucun frais caché, aucune surprise.",
+    a: "Tu peux changer de plan à tout moment depuis ton tableau de bord (menu « Passer au Pro »). Le changement est immédiat : ton nouveau plan est activé dès le paiement et reste valable 31 jours à compter de cette date. Attention : il n'y a pas de proratisation — les jours restants de ton ancien plan ne sont pas déduits du prix du nouveau plan. Aucun frais caché, aucune surprise.",
+  },
+  {
+    q: "Puis-je renouveler mon plan avant la fin de mon abonnement ?",
+    a: "Oui, absolument ! Tu peux renouveler à tout moment depuis la page « Passer au Pro » de ton tableau de bord — même si ton abonnement est encore en cours. Le renouvellement repart pour 31 jours à compter du paiement. Il n'y a pas de remboursement pour les jours restants.",
   },
   {
     q: "Le plan Pro inclut-il un nom de domaine ?",

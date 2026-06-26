@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Bell,
   ArrowLeft,
+  Bot,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
@@ -20,6 +21,7 @@ const NAV = [
   { href: '/admin/payments',      label: 'Paiements',         icon: CreditCard },
   { href: '/admin/payouts',       label: 'Reversements',      icon: Wallet },
   { href: '/admin/notifications', label: 'Notifications',     icon: Bell },
+  { href: '/admin/ai-expert',     label: 'Assistant IA',      icon: Bot },
 ]
 
 export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }) {

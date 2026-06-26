@@ -87,11 +87,13 @@ export async function POST(req: NextRequest) {
 
   // 4. Parser et valider les messages du body
   let messages: ModelMessage[]
+  let sessionId: string | undefined
   try {
-    const body = await req.json() as { messages?: unknown }
+    const body = await req.json() as { messages?: unknown; session_id?: unknown }
     if (!Array.isArray(body.messages) || body.messages.length === 0) {
       return NextResponse.json({ error: 'Messages manquants' }, { status: 400 })
     }
+    sessionId = typeof body.session_id === 'string' ? body.session_id.slice(0, 64) : undefined
     // MED-5 : limiter à 20 derniers messages, tronquer le contenu à 2000 chars
     const raw = (body.messages as ModelMessage[]).slice(-20)
     messages = raw.map(msg => {
@@ -104,11 +106,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body invalide' }, { status: 400 })
   }
 
-  // 5. Construire le system prompt et les tools
-  const systemPrompt = buildSystemPrompt(shop)
+  // 5. Charger la base de connaissance personnalisée
+  const { data: knowledgeEntries } = await admin
+    .from('ai_knowledge_entries' as never)
+    .select('title, content')
+    .eq('is_active', true)
+    .order('sort_order') as { data: Array<{ title: string; content: string }> | null }
+
+  // 6. Construire le system prompt et les tools
+  const systemPrompt = buildSystemPrompt(shop, knowledgeEntries ?? [])
   const tools = buildAiTools(shop.id)
 
-  // 6. Appel Claude avec streaming — tool calls traités silencieusement côté serveur
+  // Sauvegarder la conversation avec les messages utilisateur (fire-and-forget)
+  if (sessionId) {
+    const userMessages = messages.map(m => ({
+      role: (m as any).role,
+      content: typeof (m as any).content === 'string' ? (m as any).content : '',
+      at: new Date().toISOString(),
+    }))
+    void admin.from('ai_conversations' as never).upsert(
+      {
+        session_id:      sessionId,
+        shop_id:         shop.id,
+        messages:        userMessages,
+        message_count:   userMessages.length,
+        last_message_at: new Date().toISOString(),
+      } as never,
+      { onConflict: 'session_id' },
+    )
+  }
+
+  // 7. Appel Claude avec streaming — tool calls traités silencieusement côté serveur
   const result = streamText({
     model: anthropic('claude-haiku-4-5-20251001'),
     system: systemPrompt,
@@ -116,6 +144,27 @@ export async function POST(req: NextRequest) {
     tools,
     stopWhen: stepCountIs(5),
     temperature: 0.3,
+    onFinish: async ({ text }) => {
+      if (!sessionId || !text) return
+      const allMessages = [
+        ...messages.map(m => ({
+          role: (m as any).role,
+          content: typeof (m as any).content === 'string' ? (m as any).content : '',
+          at: new Date().toISOString(),
+        })),
+        { role: 'assistant', content: text, at: new Date().toISOString() },
+      ]
+      await admin.from('ai_conversations' as never).upsert(
+        {
+          session_id:      sessionId,
+          shop_id:         shop.id,
+          messages:        allMessages,
+          message_count:   allMessages.length,
+          last_message_at: new Date().toISOString(),
+        } as never,
+        { onConflict: 'session_id' },
+      )
+    },
   })
 
   return result.toTextStreamResponse()
