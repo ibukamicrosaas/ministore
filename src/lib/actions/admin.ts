@@ -17,20 +17,27 @@ export async function updateShopPlan(shopId: string, input: {
   plan: string
   is_active: boolean
   trial_ends_at?: string | null
+  subscription_ends_at?: string | null
 }) {
   const { error: authError } = await assertAdmin()
   if (authError) return { error: authError }
 
   const supabase = createAdminClient()
-  const { error } = await supabase
-    .from('shops')
-    .update({
-      plan:          input.plan,
-      is_active:     input.is_active,
-      trial_ends_at: input.trial_ends_at === null ? undefined : input.trial_ends_at,
-      updated_at:    new Date().toISOString(),
-    })
-    .eq('id', shopId)
+
+  const { error } = input.plan === 'trial'
+    ? await supabase.from('shops').update({
+        plan:          input.plan,
+        is_active:     input.is_active,
+        trial_ends_at: input.trial_ends_at ?? undefined,
+        updated_at:    new Date().toISOString(),
+      }).eq('id', shopId)
+    : await supabase.from('shops').update({
+        plan:                 input.plan,
+        is_active:            input.is_active,
+        subscription_ends_at: input.subscription_ends_at
+          ?? new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at:           new Date().toISOString(),
+      }).eq('id', shopId)
 
   if (error) {
     console.error('[admin/updateShopPlan]', error.message)

@@ -5,7 +5,7 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
-  ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock,
+  ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock, Download,
 } from 'lucide-react'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
@@ -18,6 +18,12 @@ import { APP_URL } from '@/constants'
 export const metadata = { title: 'Commande — TekkiShop' }
 
 const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'delivered']
+const DIGITAL_STATUS_FLOW = ['pending', 'confirmed', 'completed']
+const DIGITAL_STATUS_LABELS: Record<string, string> = {
+  pending:   'En attente',
+  confirmed: 'Accès envoyé',
+  completed: 'Livré',
+}
 
 const NEXT_ACTION_LABEL: Record<string, string> = {
   pending:   'Confirmer la commande',
@@ -47,7 +53,10 @@ type OrderRow = {
     id: string; first_name: string; last_name: string | null
     phone: string; whatsapp: string | null
   } | null
-  order_items: (OrderItem & { products: { name: string } | null; customization_note?: string | null })[]
+  order_items: (OrderItem & {
+    products: { name: string; product_type: string | null } | null
+    customization_note?: string | null
+  })[]
 }
 
 export default async function OrderDetailPage({
@@ -76,7 +85,7 @@ export default async function OrderDetailPage({
       delivery_date, delivery_zone_name, payment_type, payment_method,
       deposit_amount, deposit_paid, total_price, notes, internal_notes, created_at,
       clients(id, first_name, last_name, phone, whatsapp),
-      order_items(id, product_name, variant_label, unit_price, quantity, line_total, customization_note, products(name))
+      order_items(id, product_name, variant_label, unit_price, quantity, line_total, customization_note, products(name, product_type))
     `)
     .eq('id', id)
     .eq('shop_id', profile.shop_id)
@@ -93,7 +102,16 @@ export default async function OrderDetailPage({
   const shopCurrency = (shopData as { slug?: string; currency?: string | null } | null)?.currency ?? 'XOF'
 
   const order = data as unknown as OrderRow
-  const canAdvance = NEXT_ACTION_LABEL[order.status] !== undefined
+
+  // Detect digital order — all items must be digital products
+  const isDigitalOrder = order.order_items.length > 0 &&
+    order.order_items.every(item => (item.products as any)?.product_type === 'digital')
+
+  const statusFlow   = isDigitalOrder ? DIGITAL_STATUS_FLOW : STATUS_FLOW
+  const statusLabels = isDigitalOrder ? DIGITAL_STATUS_LABELS : ORDER_STATUS_LABELS
+
+  // Digital orders don't need manual advancement through physical fulfilment steps
+  const canAdvance = !isDigitalOrder && NEXT_ACTION_LABEL[order.status] !== undefined
   const canCancel  = ['pending', 'confirmed', 'preparing'].includes(order.status)
 
   // Tokens de téléchargement pour les commandes digitales
@@ -122,11 +140,20 @@ export default async function OrderDetailPage({
   }
   const methodName = order.payment_method ? (METHOD_NAMES[order.payment_method] ?? order.payment_method) : null
 
+  // For digital orders, 'confirmed' = payment received + access sent
+  const isOnlinePaymentReceived =
+    order.payment_type !== 'on_delivery' &&
+    order.payment_type !== 'on_site' && (
+      order.status === 'completed' ||
+      (isDigitalOrder && order.status === 'confirmed') ||
+      (order.deposit_paid && order.deposit_amount > 0)
+    )
+
   const paymentLabel = order.payment_type === 'on_delivery'
     ? 'Paiement à la livraison'
     : order.payment_type === 'on_site'
     ? 'Paiement en boutique'
-    : order.status === 'completed' || (order.deposit_paid && order.deposit_amount > 0)
+    : isOnlinePaymentReceived
     ? `Paiement reçu${methodName ? ` — ${methodName}` : ''}${order.deposit_paid && order.deposit_amount > 0 && order.payment_type !== 'online_full' ? ` (acompte ${order.deposit_amount.toLocaleString('fr-FR')} FCFA)` : ''}`
     : methodName
     ? `Paiement en ligne — ${methodName} (en attente)`
@@ -161,10 +188,10 @@ export default async function OrderDetailPage({
       {/* Progression statut */}
       <Card padding="md">
         <div className="flex items-center gap-1">
-          {STATUS_FLOW.map((s, i) => {
-            const idx  = STATUS_FLOW.indexOf(order.status)
+          {statusFlow.map((s, i) => {
+            const idx  = statusFlow.indexOf(order.status)
             const done = i <= idx
-            const last = i === STATUS_FLOW.length - 1
+            const last = i === statusFlow.length - 1
             return (
               <div key={s} className="flex flex-1 items-center gap-1">
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
@@ -180,8 +207,10 @@ export default async function OrderDetailPage({
           })}
         </div>
         <div className="flex justify-between mt-1">
-          {STATUS_FLOW.map(s => (
-            <p key={s} className="text-[9px] text-gray-400 text-center flex-1">{ORDER_STATUS_LABELS[s]}</p>
+          {statusFlow.map(s => (
+            <p key={s} className="text-[9px] text-gray-400 text-center flex-1">
+              {statusLabels[s] ?? ORDER_STATUS_LABELS[s] ?? s}
+            </p>
           ))}
         </div>
       </Card>
@@ -203,8 +232,9 @@ export default async function OrderDetailPage({
         </div>
       )}
 
-      {/* Bouton livreur — uniquement pour les livraisons à domicile en cours */}
-      {order.delivery_type === 'home_delivery' &&
+      {/* Bouton livreur — uniquement pour les livraisons à domicile physiques en cours */}
+      {!isDigitalOrder &&
+        order.delivery_type === 'home_delivery' &&
         order.delivery_token &&
         shopSlug &&
         ['confirmed', 'preparing', 'ready'].includes(order.status) && (
@@ -257,26 +287,69 @@ export default async function OrderDetailPage({
         </div>
       </Card>
 
-      {/* Livraison & paiement */}
-      <Card>
-        <p className="text-sm font-semibold text-gray-900 mb-3">Livraison & paiement</p>
-        <div className="space-y-2 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            {order.delivery_type === 'home_delivery' ? (
-              <Home className="h-4 w-4 text-gray-400 shrink-0" />
-            ) : (
-              <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
-            )}
-            <span>{order.delivery_type === 'home_delivery' ? 'Livraison à domicile' : 'Retrait en boutique'}</span>
+      {/* Téléchargements digitaux — mis en avant pour les commandes numériques */}
+      {isDigitalOrder && downloadTokens.length > 0 && (
+        <Card>
+          <p className="text-sm font-semibold text-gray-900 mb-3">📄 Liens de téléchargement</p>
+          <div className="space-y-3">
+            {downloadTokens.map(dt => {
+              const isExpired = new Date(dt.expires_at) < new Date()
+              const isExhausted = dt.download_count >= dt.max_downloads
+              const statusColor = isExpired || isExhausted ? 'text-red-500' : 'text-emerald-600'
+              const statusLabel = isExpired ? 'Expiré' : isExhausted ? 'Épuisé' : 'Actif'
+              return (
+                <div key={dt.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">
+                      {dt.products?.digital_file_name ?? dt.products?.name ?? 'Fichier'}
+                    </p>
+                    <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Téléchargements : {dt.download_count}/{dt.max_downloads}
+                    {dt.downloaded_at && ` · 1er dl : ${new Date(dt.downloaded_at).toLocaleDateString('fr-FR')}`}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Expire le {new Date(dt.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              )
+            })}
           </div>
-          {order.delivery_date && (
+        </Card>
+      )}
+
+      {/* Accès / Livraison & paiement */}
+      <Card>
+        <p className="text-sm font-semibold text-gray-900 mb-3">
+          {isDigitalOrder ? 'Accès & paiement' : 'Livraison & paiement'}
+        </p>
+        <div className="space-y-2 text-sm text-gray-600">
+          {isDigitalOrder ? (
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400 shrink-0" />
-              <span>{format(new Date(order.delivery_date + 'T12:00:00'), 'EEEE d MMMM yyyy', { locale: fr })}</span>
+              <Download className="h-4 w-4 text-gray-400 shrink-0" />
+              <span>Téléchargement numérique</span>
             </div>
-          )}
-          {order.delivery_address && (
-            <p className="pl-6 text-xs text-gray-500">{order.delivery_address}</p>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                {order.delivery_type === 'home_delivery' ? (
+                  <Home className="h-4 w-4 text-gray-400 shrink-0" />
+                ) : (
+                  <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+                )}
+                <span>{order.delivery_type === 'home_delivery' ? 'Livraison à domicile' : 'Retrait en boutique'}</span>
+              </div>
+              {order.delivery_date && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span>{format(new Date(order.delivery_date + 'T12:00:00'), 'EEEE d MMMM yyyy', { locale: fr })}</span>
+                </div>
+              )}
+              {order.delivery_address && (
+                <p className="pl-6 text-xs text-gray-500">{order.delivery_address}</p>
+              )}
+            </>
           )}
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-gray-400 shrink-0" />
@@ -314,7 +387,7 @@ export default async function OrderDetailPage({
               </a>
             )}
           </div>
-          {shopSlug && order.client_token && ['confirmed', 'preparing', 'ready', 'delivered'].includes(order.status) && (
+          {shopSlug && order.client_token && ['confirmed', 'preparing', 'ready', 'delivered', 'completed'].includes(order.status) && (
             <CopyReviewLinkButton
               reviewUrl={`${APP_URL}/${shopSlug}/avis/${order.client_token}`}
               clientName={order.clients.first_name}
@@ -324,8 +397,8 @@ export default async function OrderDetailPage({
         </Card>
       )}
 
-      {/* Téléchargements digitaux */}
-      {downloadTokens.length > 0 && (
+      {/* Téléchargements digitaux — pour commandes mixtes ou récapitulatif */}
+      {!isDigitalOrder && downloadTokens.length > 0 && (
         <Card>
           <p className="text-sm font-semibold text-gray-900 mb-3">📄 Téléchargements</p>
           <div className="space-y-3">

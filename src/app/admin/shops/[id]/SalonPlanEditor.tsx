@@ -16,12 +16,23 @@ const PLANS = [
   { value: 'pro',        label: 'Pro — 9 900 FCFA/mois' },
 ]
 
+const PLAN_DURATIONS: Record<string, number> = {
+  decouverte: 31,
+  business:   31,
+  pro:        31,
+}
+
+function defaultEndsAt(days = 31) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+}
+
 export interface SalonAdminData {
   id: string
   name: string
   slug: string
   plan: string
   trial_ends_at: string | null
+  subscription_ends_at: string | null
   is_active: boolean
   phone_whatsapp: string | null
   city: string | null
@@ -35,7 +46,24 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
   const [trialEndsAt, setTrialEndsAt] = useState(
     salon.trial_ends_at ? salon.trial_ends_at.slice(0, 10) : ''
   )
+  const [subscriptionEndsAt, setSubscriptionEndsAt] = useState(
+    salon.subscription_ends_at
+      ? salon.subscription_ends_at.slice(0, 10)
+      : defaultEndsAt(PLAN_DURATIONS[salon.plan] ?? 31)
+  )
   const [loading, setLoading] = useState(false)
+
+  // When plan changes, reset the expiry to a reasonable default if not already set
+  function handlePlanChange(newPlan: string) {
+    setPlan(newPlan)
+    if (newPlan !== 'trial' && !salon.subscription_ends_at) {
+      setSubscriptionEndsAt(defaultEndsAt(PLAN_DURATIONS[newPlan] ?? 31))
+    }
+  }
+
+  const isExpired = plan !== 'trial' && subscriptionEndsAt
+    ? new Date(subscriptionEndsAt) < new Date()
+    : false
 
   async function handleSave() {
     setLoading(true)
@@ -43,6 +71,9 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
       plan,
       is_active: isActive,
       trial_ends_at: plan === 'trial' ? (trialEndsAt ? new Date(trialEndsAt).toISOString() : null) : undefined,
+      subscription_ends_at: plan !== 'trial'
+        ? (subscriptionEndsAt ? new Date(subscriptionEndsAt + 'T23:59:59').toISOString() : undefined)
+        : undefined,
     })
     if ('error' in result) {
       toast.error(result.error ?? 'Erreur')
@@ -94,7 +125,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
           <label className="block text-xs font-medium text-gray-700 mb-1.5">Plan</label>
           <select
             value={plan}
-            onChange={e => setPlan(e.target.value)}
+            onChange={e => handlePlanChange(e.target.value)}
             className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
           >
             {PLANS.map(p => (
@@ -103,7 +134,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
           </select>
         </div>
 
-        {plan === 'trial' && (
+        {plan === 'trial' ? (
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">Date de fin d'essai</label>
             <input
@@ -113,6 +144,48 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
               className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
             />
             <p className="text-xs text-gray-400 mt-1">Laisser vide pour pas de date limite (déconseillé)</p>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Date d'expiration de l'abonnement
+              {isExpired && (
+                <span className="ml-2 text-red-500 font-semibold">⚠ Abonnement expiré</span>
+              )}
+            </label>
+            <input
+              type="date"
+              value={subscriptionEndsAt}
+              onChange={e => setSubscriptionEndsAt(e.target.value)}
+              className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-1 ${
+                isExpired
+                  ? 'border-red-300 focus:border-red-400 focus:ring-red-400'
+                  : 'border-gray-200 focus:border-sky-400 focus:ring-sky-400'
+              }`}
+            />
+            <div className="flex gap-2 mt-1.5 flex-wrap">
+              {[
+                { label: '+1 mois', days: 31 },
+                { label: '+3 mois', days: 92 },
+                { label: '+1 an', days: 365 },
+              ].map(({ label, days }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    const base = subscriptionEndsAt && new Date(subscriptionEndsAt) > new Date()
+                      ? new Date(subscriptionEndsAt).getTime()
+                      : Date.now()
+                    setSubscriptionEndsAt(
+                      new Date(base + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+                    )
+                  }}
+                  className="text-xs text-sky-600 hover:text-sky-800 font-medium bg-sky-50 hover:bg-sky-100 px-2 py-1 rounded-lg transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

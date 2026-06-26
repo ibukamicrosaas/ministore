@@ -394,13 +394,11 @@ export default function AdminShopsPage() {
                             <span className="text-xs text-gray-400">—</span>
                           ) : shop.subscription_ends_at ? (
                             <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5">
-                                {shop.is_annual && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                                    ANNUEL
-                                  </span>
-                                )}
-                              </div>
+                              {shop.is_annual && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                  ANNUEL
+                                </span>
+                              )}
                               <p className={`text-xs font-medium ${
                                 new Date(shop.subscription_ends_at) < new Date()
                                   ? 'text-red-600'
@@ -412,7 +410,13 @@ export default function AdminShopsPage() {
                               </p>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400">—</span>
+                            <Link
+                              href={`/admin/shops/${shop.id}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg hover:bg-amber-100 transition-colors"
+                              title="Aucune date d'expiration — cliquer pour corriger"
+                            >
+                              ⚠ Définir exp.
+                            </Link>
                           )}
                         </td>
                         <td className="px-6 py-4">

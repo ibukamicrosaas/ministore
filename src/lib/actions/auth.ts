@@ -237,8 +237,8 @@ export async function requestPinReset(phone: string) {
     return { success: true }
   }
 
-  // Générer un code à 6 chiffres (usage manuel — compensé par le rate limiting strict)
-  const token = String(Math.floor(100000 + Math.random() * 900000))
+  // Code à 6 chiffres via CSPRNG (crypto.randomInt garantit une distribution uniforme)
+  const token = String(crypto.randomInt(100000, 1000000))
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
   // Invalider les anciens tokens non utilisés

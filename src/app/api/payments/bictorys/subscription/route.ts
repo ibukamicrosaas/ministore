@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys, type BictorysPaymentType } from '@/lib/payments/bictorys'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
 
 const PLAN_PRICES: Record<string, number> = {
@@ -23,6 +24,9 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(req, { key: 'subscription', maxRequests: 5, windowMs: 60 * 60 * 1000 })
+  if (limited) return limited
+
   const apiKey = process.env.BICTORYS_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })

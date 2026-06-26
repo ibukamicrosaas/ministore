@@ -11,7 +11,7 @@ export default async function AdminShopDetailPage({ params }: { params: Promise<
 
   const { data, error } = await supabase
     .from('shops')
-    .select('id, name, slug, plan, trial_ends_at, is_active, phone_whatsapp, city, created_at')
+    .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, is_active, phone_whatsapp, city, created_at')
     .eq('id', id)
     .single()
 

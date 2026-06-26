@@ -9,22 +9,21 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { orderId, customerPhone, amount } = await req.json() as {
+    const { orderId, customerPhone } = await req.json() as {
       orderId: string
       customerPhone: string
-      amount: number
     }
 
-    if (!orderId || !customerPhone || !amount) {
+    if (!orderId || !customerPhone) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
 
-    // Récupérer la commande et ses infos
+    // Récupérer la commande et ses infos — montant toujours depuis la BDD (jamais du body)
     const { data: orderData } = await supabase
       .from('orders')
-      .select('id, shop_id, clients(first_name), shops(name, bictorys_api_key, country)')
+      .select('id, shop_id, status, total_price, deposit_amount, payment_type, clients(first_name), shops(name, bictorys_api_key, country)')
       .eq('id', orderId)
       .single()
 
@@ -32,21 +31,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Commande non trouvée' }, { status: 404 })
     }
 
-    const shop = (orderData as any).shops
-    const client = (orderData as any).clients
+    const order = orderData as any
+    const shop = order.shops
+    const client = order.clients
+
+    if (order.status !== 'pending') {
+      return NextResponse.json({ error: 'Cette commande n\'est plus en attente de paiement' }, { status: 409 })
+    }
 
     if (!shop?.bictorys_api_key) {
       return NextResponse.json({ error: 'Configuration incomplète' }, { status: 400 })
     }
 
     const apiKey = decryptApiKey(shop.bictorys_api_key)
+    const isDeposit = order.payment_type === 'online_deposit' && (order.deposit_amount ?? 0) > 0
+    const expectedAmount: number = isDeposit ? order.deposit_amount : order.total_price
 
     // Créer une charge Bictorys pour Orange Money CI avec OTP
     try {
       const { checkoutUrl } = await createBictorysCharge(
         apiKey,
         {
-          amount,
+          amount: expectedAmount, // toujours depuis la BDD
           currency: 'XOF',
           country: shop.country || 'CI',
           paymentReference: `orange-${orderId}`,
