@@ -30,6 +30,13 @@ export const PRO_PRICES: Record<ShopCurrency, { monthly: number; annual: number;
   CAD: { monthly:   1990, annual:   19900, label: '19,90 CAD/mois',   labelAnnual: '199 CAD/an'        },
 }
 
+// Prix en EUR (centimes) pour paiement carte bancaire — tous pays, tous plans
+export const PLAN_EUR_PRICES: Record<string, { monthly: number; annual: number; monthlyLabel: string; annualLabel: string }> = {
+  decouverte: { monthly:  490, annual:  4900, monthlyLabel: '4,90 €',  annualLabel: '49 €'  },
+  business:   { monthly:  790, annual:  7900, monthlyLabel: '7,90 €',  annualLabel: '79 €'  },
+  pro:        { monthly: 1490, annual: 14900, monthlyLabel: '14,90 €', annualLabel: '149 €' },
+}
+
 // Pays EU/CA avec indicatifs téléphoniques
 export const EU_CA_PHONE_COUNTRIES = [
   { code: 'FR', flag: '🇫🇷', dial: '+33',  name: 'France',      placeholder: '6 00 00 00 00' },

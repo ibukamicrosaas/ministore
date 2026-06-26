@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
         const meta    = session.metadata ?? {}
 
-        if (meta.type === 'subscription_eu_ca') {
+        if (meta.type === 'subscription_eu_ca' || meta.type === 'subscription_global') {
           const shopId  = meta.shop_id
           const planKey = meta.plan_key ?? 'pro'
 
@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
           await supabase
             .from('shops')
             .update({
-              plan:                 planKey,
-              is_active:            true,
-              stripe_customer_id:   session.customer as string | null,
+              plan:                   planKey,
+              is_active:              true,
+              stripe_customer_id:     session.customer as string | null,
               stripe_subscription_id: session.subscription as string | null,
             })
             .eq('id', shopId)

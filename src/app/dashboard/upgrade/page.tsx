@@ -172,12 +172,12 @@ export default async function UpgradePage({
         </div>
       )}
 
-      <UpgradePlans plans={plans} currentPlan={shop.plan} isEuCa={isEuCa} />
+      <UpgradePlans plans={plans} currentPlan={shop.plan} isEuCa={isEuCa} showCardOption={!isEuCa} />
 
       <p className="text-xs text-gray-400 text-center">
         {isEuCa
           ? 'Paiement sécurisé par carte bancaire via Stripe · Sans engagement'
-          : 'Sans carte bancaire · Paiement sécurisé par Bictorys · Wave, Orange Money, MaxIt'
+          : 'Paiement par mobile money (Wave, Orange Money, MaxIt) ou par carte bancaire en €'
         }
       </p>
 

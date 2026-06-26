@@ -1563,15 +1563,15 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       </div>
     </div>
 
-    {/* ── Stripe Connect — EU/CA, plan Pro uniquement ─────────────────────── */}
-    {isEuCa && isPro && (
+    {/* ── Stripe Connect — plan Pro uniquement ────────────────────────────── */}
+    {isPro && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-sky-500" />
           <h3 className="text-sm font-bold text-gray-900">Paiements par carte bancaire</h3>
         </div>
         <p className="text-xs text-gray-500">
-          Connectez votre compte Stripe pour recevoir les paiements par carte de vos clients directement.
+          Connectez votre compte Stripe pour recevoir les paiements par carte de vos clients directement sur votre boutique.
           TEKKIShop ne prélève aucune commission sur les paiements Stripe.
         </p>
 

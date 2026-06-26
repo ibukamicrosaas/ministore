@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { SubscriptionCheckoutForm } from './SubscriptionCheckoutForm'
 import { StripeSubscriptionCheckoutForm } from './StripeSubscriptionCheckoutForm'
-import { isEuCaCountry, getCurrencyForCountry } from '@/lib/utils/country-groups'
+import { isEuCaCountry, getCurrencyForCountry, PLAN_EUR_PRICES } from '@/lib/utils/country-groups'
 
 interface Plan {
   key:         string
@@ -18,6 +18,12 @@ const PLANS: Record<string, Plan> = {
   pro:        { key: 'pro',        name: 'Pro',         price: '9 900', priceInt: 9900, annualPrice: 99000 },
 }
 
+const PLAN_NAMES: Record<string, string> = {
+  decouverte: 'Découverte',
+  business:   'Business',
+  pro:        'Pro',
+}
+
 // Prix Stripe pour EU/CA (en centimes)
 const EU_CA_PRO_PRICES = {
   EUR: { monthly: 1490, annual: 14900 },
@@ -25,11 +31,11 @@ const EU_CA_PRO_PRICES = {
 }
 
 type Props = {
-  searchParams: Promise<{ plan?: string; billing?: string }>
+  searchParams: Promise<{ plan?: string; billing?: string; method?: string }>
 }
 
 export default async function SubscriptionCheckoutPage({ searchParams }: Props) {
-  const { plan: planKey, billing } = await searchParams
+  const { plan: planKey, billing, method } = await searchParams
   const billingCycle = billing === 'annual' ? 'annual' : 'monthly'
 
   const plan = planKey && PLANS[planKey] ? PLANS[planKey] : null
@@ -63,16 +69,29 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
   // EU/CA : uniquement Pro via Stripe
   if (shopEuCa && plan.key !== 'pro') notFound()
 
-  if (shopEuCa) {
-    const prices = EU_CA_PRO_PRICES[currency as 'EUR' | 'CAD'] ?? EU_CA_PRO_PRICES.EUR
-    const amountCents = billingCycle === 'annual' ? prices.annual : prices.monthly
+  // Paiement par carte (Stripe) — EU/CA natif ou Africa avec method=stripe
+  if (shopEuCa || method === 'stripe') {
+    let amountCents: number
+    let displayCurrency: 'EUR' | 'CAD'
+
+    if (shopEuCa) {
+      const prices = EU_CA_PRO_PRICES[currency as 'EUR' | 'CAD'] ?? EU_CA_PRO_PRICES.EUR
+      amountCents     = billingCycle === 'annual' ? prices.annual : prices.monthly
+      displayCurrency = currency as 'EUR' | 'CAD'
+    } else {
+      // Africa : prix EUR fixes
+      const eurPrices = PLAN_EUR_PRICES[plan.key]
+      if (!eurPrices) notFound()
+      amountCents     = billingCycle === 'annual' ? eurPrices.annual : eurPrices.monthly
+      displayCurrency = 'EUR'
+    }
 
     return (
       <StripeSubscriptionCheckoutForm
-        planKey="pro"
-        planName="Pro"
+        planKey={plan.key}
+        planName={PLAN_NAMES[plan.key] ?? plan.key}
         amountCents={amountCents}
-        currency={currency as 'EUR' | 'CAD'}
+        currency={displayCurrency}
         billingCycle={billingCycle}
         shopName={shop.name}
         primaryColor={shop.primary_color ?? '#0EA5E9'}

@@ -9,43 +9,76 @@ export function createStripeClient(): Stripe {
   return new Stripe(process.env.STRIPE_SECRET_KEY)
 }
 
-// ─── Abonnements EU/CA ────────────────────────────────────────────────────────
+// ─── Abonnements (EU/CA + Global) ────────────────────────────────────────────
 
 export interface StripeSubscriptionPayload {
   shopId:        string
   planKey:       string
-  currency:      ShopCurrency
+  currency:      ShopCurrency | 'EUR'
   billingCycle:  'monthly' | 'annual'
   customerEmail?: string
+  metaType?:     'subscription_eu_ca' | 'subscription_global'
 }
 
-const PRO_AMOUNTS: Record<ShopCurrency, { monthly: number; annual: number }> = {
-  XOF: { monthly: 990000, annual: 9900000 }, // centimes XOF (pas de décimales)
-  EUR: { monthly:    1490, annual:   14900 }, // centimes EUR
-  CAD: { monthly:    1990, annual:   19900 }, // centimes CAD
+// Centimes par devise (EU/CA)
+const EUCA_AMOUNTS: Record<string, { monthly: number; annual: number }> = {
+  EUR: { monthly: 1490, annual: 14900 },
+  CAD: { monthly: 1990, annual: 19900 },
+}
+
+// Centimes EUR pour tous les plans (Africa + global)
+const PLAN_EUR_AMOUNTS: Record<string, { monthly: number; annual: number }> = {
+  decouverte: { monthly:  490, annual:  4900 },
+  business:   { monthly:  790, annual:  7900 },
+  pro:        { monthly: 1490, annual: 14900 },
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  decouverte: 'TEKKIShop Découverte',
+  business:   'TEKKIShop Business',
+  pro:        'TEKKIShop Pro',
 }
 
 export async function createStripeSubscriptionSession(
   payload: StripeSubscriptionPayload,
 ): Promise<{ url: string; sessionId: string }> {
   const stripe   = createStripeClient()
-  const amounts  = PRO_AMOUNTS[payload.currency]
-  const amount   = payload.billingCycle === 'annual' ? amounts.annual : amounts.monthly
   const interval = payload.billingCycle === 'annual' ? 'year' : 'month'
+  const isEuCa   = payload.metaType !== 'subscription_global' && (payload.currency === 'EUR' || payload.currency === 'CAD')
+  const metaType = payload.metaType ?? (isEuCa ? 'subscription_eu_ca' : 'subscription_global')
+
+  let amount:   number
+  let currency: string
+
+  if (isEuCa) {
+    // EU/CA: Pro uniquement, avec les prix EUR/CAD existants
+    const amounts = EUCA_AMOUNTS[payload.currency]
+    if (!amounts) throw new Error(`Devise non supportée pour EU/CA : ${payload.currency}`)
+    amount   = payload.billingCycle === 'annual' ? amounts.annual : amounts.monthly
+    currency = payload.currency.toLowerCase()
+  } else {
+    // Global (Africa + autres) : tous plans, EUR fixe
+    const amounts = PLAN_EUR_AMOUNTS[payload.planKey]
+    if (!amounts) throw new Error(`Plan inconnu : ${payload.planKey}`)
+    amount   = payload.billingCycle === 'annual' ? amounts.annual : amounts.monthly
+    currency = 'eur'
+  }
+
+  const productName = PLAN_LABELS[payload.planKey] ?? `TEKKIShop ${payload.planKey}`
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{
       price_data: {
-        currency: payload.currency.toLowerCase(),
+        currency,
         unit_amount: amount,
         recurring: { interval },
-        product_data: { name: 'TEKKIShop Pro' },
+        product_data: { name: productName },
       },
       quantity: 1,
     }],
     metadata: {
-      type:          'subscription_eu_ca',
+      type:          metaType,
       shop_id:       payload.shopId,
       plan_key:      payload.planKey,
       billing_cycle: payload.billingCycle,
@@ -69,12 +102,13 @@ export async function createStripeConnectAccount(
 ): Promise<{ accountId: string }> {
   const stripe = createStripeClient()
 
-  // Mapper les codes pays vers les codes Stripe (ISO 3166-1 alpha-2)
-  const stripeCountry = country === 'BE' ? 'BE'
-    : country === 'LU' ? 'LU'
-    : country === 'CH' ? 'CH'
-    : country === 'CA' ? 'CA'
-    : 'FR' // défaut Europe
+  // Pays supportés par Stripe Connect Express (ISO 3166-1 alpha-2)
+  const STRIPE_CONNECT_COUNTRIES = new Set([
+    'FR','BE','LU','CH','CA','GB','DE','ES','IT','NL','PT','SE','NO','DK','FI',
+    'AT','PL','IE','SG','AU','NZ','HK','JP','US','BR','MX','IN','AE',
+    'SN','GH','NG','KE','ZA','EG','TZ','UG','RW', // Afrique supportée
+  ])
+  const stripeCountry = STRIPE_CONNECT_COUNTRIES.has(country) ? country : 'FR'
 
   const account = await stripe.accounts.create({
     type:    'express',

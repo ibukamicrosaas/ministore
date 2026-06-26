@@ -17,16 +17,35 @@ interface Props {
 
 const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', CAD: 'CAD' }
 
-const PRO_FEATURES = [
-  'Boutique en ligne immédiatement',
-  'Produits illimités',
-  'Paiement par carte bancaire (Stripe)',
-  'Domaine personnalisé',
-  'Statistiques avancées & export CSV',
-  'Notifications automatiques à vos clients',
-  '0% de commission sur vos ventes',
-  'Support prioritaire WhatsApp',
-]
+const PLAN_FEATURES: Record<string, string[]> = {
+  decouverte: [
+    'Boutique en ligne immédiatement',
+    "Jusqu'à 10 produits actifs",
+    'Paiements Wave & Orange Money',
+    'Paiement à la livraison',
+    'Suivi des commandes en temps réel',
+    '3% de commission sur paiements en ligne',
+  ],
+  business: [
+    'Boutique en ligne immédiatement',
+    'Produits illimités',
+    'Confirmations WhatsApp automatiques aux clients',
+    'Alertes retour en stock pour vos clients',
+    'Codes promo & réductions',
+    'Dashboard optimisé sur mobile',
+    '3% de commission sur paiements en ligne',
+  ],
+  pro: [
+    'Boutique en ligne immédiatement',
+    'Produits illimités',
+    'Paiement par carte bancaire (Stripe Connect)',
+    'Domaine personnalisé',
+    'Statistiques avancées & export CSV',
+    'Notifications automatiques à vos clients',
+    '0% de commission sur vos ventes',
+    'Support prioritaire WhatsApp',
+  ],
+}
 
 export function StripeSubscriptionCheckoutForm({
   planKey,
@@ -110,7 +129,7 @@ export function StripeSubscriptionCheckoutForm({
           </div>
 
           <ul className="space-y-2 border-t border-gray-100 pt-4">
-            {PRO_FEATURES.map(f => (
+            {(PLAN_FEATURES[planKey] ?? PLAN_FEATURES.pro).map(f => (
               <li key={f} className="flex items-center gap-2 text-xs text-gray-700">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: primaryColor }} />
                 {f}

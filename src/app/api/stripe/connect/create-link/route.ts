@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createStripeConnectAccount, createStripeConnectAccountLink } from '@/lib/payments/stripe'
-import { isEuCaCountry } from '@/lib/utils/country-groups'
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -41,10 +40,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Stripe Connect nécessite le plan Pro' }, { status: 403 })
   }
 
-  if (!isEuCaCountry(shopRaw.country ?? null)) {
-    return NextResponse.json({ error: 'Stripe Connect disponible uniquement pour Europe et Canada' }, { status: 400 })
-  }
-
   const email   = shopRaw.email ?? user.email
   const country = shopRaw.country ?? 'FR'
 
@@ -71,6 +66,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur interne'
+    // Donner un message utile si le pays n'est pas supporté par Stripe
+    if (message.includes('country') || message.includes('invalid_request')) {
+      return NextResponse.json({
+        error: 'Votre pays n\'est pas encore supporté par Stripe Connect. Contactez le support pour une solution alternative.',
+      }, { status: 400 })
+    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

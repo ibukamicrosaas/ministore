@@ -19,9 +19,10 @@ export interface Plan {
 }
 
 interface UpgradePlansProps {
-  plans:       Plan[]
-  currentPlan: string
-  isEuCa:      boolean
+  plans:           Plan[]
+  currentPlan:     string
+  isEuCa:          boolean
+  showCardOption?: boolean
 }
 
 const CURRENCY_SYMBOL: Record<ShopCurrency, string> = {
@@ -42,12 +43,17 @@ function formatMonthlyEquiv(plan: Plan): string {
   return `≈ ${Math.round(plan.annualPrice / 12).toLocaleString('fr-FR')} FCFA/mois`
 }
 
-export function UpgradePlans({ plans, currentPlan, isEuCa }: UpgradePlansProps) {
+export function UpgradePlans({ plans, currentPlan, isEuCa, showCardOption }: UpgradePlansProps) {
   const router  = useRouter()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
 
   function handleActivatePlan(plan: Plan) {
     const query = billing === 'annual' ? `?plan=${plan.key}&billing=annual` : `?plan=${plan.key}`
+    router.push(`/dashboard/upgrade/checkout${query}`)
+  }
+
+  function handleActivatePlanByCard(plan: Plan) {
+    const query = billing === 'annual' ? `?plan=${plan.key}&billing=annual&method=stripe` : `?plan=${plan.key}&method=stripe`
     router.push(`/dashboard/upgrade/checkout${query}`)
   }
 
@@ -161,17 +167,28 @@ export function UpgradePlans({ plans, currentPlan, isEuCa }: UpgradePlansProps) 
                   <CheckCircle2 className="h-4 w-4" /> Plan actuel
                 </div>
               ) : (
-                <button
-                  onClick={() => handleActivatePlan(plan)}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity active:opacity-80 ${
-                    plan.highlighted
-                      ? 'bg-[var(--color-primary)] text-white'
-                      : 'border border-gray-200 text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {isEuCa ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                  {isEuCa ? 'Payer par carte bancaire' : 'Activer ce plan'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleActivatePlan(plan)}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity active:opacity-80 ${
+                      plan.highlighted
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'border border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {isEuCa ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                    {isEuCa ? 'Payer par carte bancaire' : 'Activer ce plan'}
+                  </button>
+                  {showCardOption && (
+                    <button
+                      onClick={() => handleActivatePlanByCard(plan)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-sky-200 py-2 text-xs font-medium text-sky-600 hover:bg-sky-50 transition-colors"
+                    >
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Payer en € par carte bancaire
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )
