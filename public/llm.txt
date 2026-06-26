@@ -1,0 +1,386 @@
+# TEKKIShop — Présentation complète pour agents IA et représentants
+
+> Ce document est destiné à toute personne ou système IA qui doit comprendre TEKKIShop
+> en profondeur afin d'en parler avec justesse à des entrepreneurs et commerçants africains.
+
+---
+
+## 1. Qui est derrière TEKKIShop ?
+
+TEKKIShop est un produit de **Dukka**, créé par **Ibuka Ndjoli**.
+
+**Dukka** est l'infrastructure e-commerce pensée pour l'Afrique. Sa mission est de créer les outils
+et solutions qui manquent à l'e-commerce africain pour briser le plafond de verre qui empêche
+les e-commerçants africains d'atteindre de vraies hauteurs en termes de ventes et de revenus.
+
+Les grands outils internationaux — Shopify, WooCommerce, Magento — ont été conçus pour des marchés
+occidentaux avec des habitudes d'achat, des infrastructures bancaires et des comportements clients
+très différents de la réalité africaine. Dukka part du principe que l'e-commerce en Afrique ne
+ressemble à aucun autre : le paiement mobile money (Wave, Orange Money) est la norme ; les clients
+commandent via WhatsApp ; la livraison à domicile est encore fragile ; les petits vendeurs
+n'ont ni compte bancaire ni registre de commerce. Dukka construit les outils adaptés à ces réalités.
+
+TEKKIShop est le premier produit phare de Dukka, axé sur la création de boutiques en ligne pour
+les petits commerçants et entrepreneurs d'Afrique de l'Ouest, ainsi que de la diaspora en Europe
+francophone et au Canada.
+
+
+---
+
+## 2. Qu'est-ce que TEKKIShop ?
+
+TEKKIShop est une plateforme SaaS (Software as a Service) qui permet à tout entrepreneur ou petit
+commerçant de créer sa boutique en ligne professionnelle en quelques minutes, sans aucune compétence
+technique.
+
+En pratique :
+- Le marchand crée un compte, configure sa boutique (logo, couleurs, produits), et obtient un lien
+  partageable du type "tekki.shop/ma-boutique" qu'il peut envoyer à ses clients sur WhatsApp,
+  Facebook, Instagram ou par SMS.
+- Les clients ouvrent ce lien dans leur navigateur, parcourent le catalogue, commandent et paient —
+  sans télécharger aucune application.
+- Le marchand reçoit les commandes en temps réel sur son tableau de bord, les confirme, les prépare
+  et les livre.
+
+TEKKIShop est conçu mobile-first : le tableau de bord du marchand est entièrement optimisé pour
+être utilisé sur smartphone, ce qui correspond à la réalité des petits commerçants en Afrique
+qui gèrent leur activité depuis leur téléphone.
+
+
+---
+
+## 3. À qui s'adresse TEKKIShop ?
+
+TEKKIShop est fait pour :
+- Les vendeurs individuels (mode, alimentaire, beauté, électronique, artisanat, décoration…)
+- Les cuisinières à domicile et traiteurs
+- Les boutiques de quartier qui veulent une présence en ligne
+- Les créateurs de produits numériques (e-books, formations, guides…)
+- Les prestataires de services
+- Les vendeurs sur Facebook ou Instagram qui veulent structurer leurs ventes
+- La diaspora africaine en France, Belgique, Luxembourg, Suisse et Canada
+
+Il n'est PAS nécessaire d'être une entreprise enregistrée. TEKKIShop est accessible à tout
+particulier souhaitant vendre en ligne.
+
+
+---
+
+## 4. Marchés couverts
+
+**Afrique de l'Ouest (monnaie : FCFA)**
+- Sénégal, Côte d'Ivoire, Burkina Faso, Mali, Togo, Bénin, Cameroun, Guinée
+
+**Europe francophone (monnaie : EUR)**
+- France, Belgique, Luxembourg, Suisse
+
+**Canada (monnaie : CAD)**
+- Toutes les provinces
+
+Les marchands en Europe et au Canada accèdent au plan Pro uniquement, avec paiement par carte
+bancaire via Stripe. Les marchands africains ont le choix entre les 3 plans (Découverte, Business,
+Pro) avec paiement par mobile money ou par carte bancaire en euros.
+
+
+---
+
+## 5. Les plans et tarifs
+
+### Plan Essai gratuit (Trial)
+- Durée : 30 jours
+- Gratuit, sans carte bancaire
+- Max 10 produits actifs
+- Commission : 3 % sur les paiements en ligne
+- Pas de domaine personnalisé
+- Objectif : permettre au marchand de créer et tester sa boutique avant de payer
+
+### Plan Découverte — 2 900 FCFA/mois (ou 4,90 €/mois en carte bancaire)
+- Max 10 produits actifs
+- Paiements Wave, Orange Money, paiement à la livraison
+- Suivi des commandes en temps réel
+- Commission : 3 % sur les paiements en ligne
+- Idéal pour : vendeurs débutants, test de marché, activité secondaire
+
+### Plan Business — 4 900 FCFA/mois (ou 7,90 €/mois en carte bancaire)
+- Produits illimités
+- Tout du plan Découverte
+- Confirmations WhatsApp automatiques aux clients (après commande)
+- Rappels automatiques J-1 avant livraison
+- Alertes retour en stock (notifie les clients intéressés)
+- Codes promo et réductions
+- Dashboard optimisé sur mobile
+- Commission : 3 % sur les paiements en ligne
+- Idéal pour : boutiques actives avec volume régulier de commandes
+
+### Plan Pro — 9 900 FCFA/mois (ou 14,90 €/mois en carte bancaire)
+- Tout du plan Business
+- Commission : **0 %** sur les paiements en ligne (le marchand garde 100 % de ses ventes)
+- Domaine personnalisé (connecter son propre domaine, ex : ma-boutique.com)
+- Section "À propos" avec photo de boutique
+- Statistiques avancées et export CSV des commandes
+- Meta Pixel (suivi Facebook/Instagram Ads pour la publicité ciblée)
+- Paiement par carte bancaire pour les clients via Stripe Connect
+- Support prioritaire WhatsApp
+- Idéal pour : boutiques professionnelles à fort volume, marques établies
+
+### Facturation annuelle
+- 2 mois offerts sur tous les plans (10 mois payés = 12 mois d'accès)
+- Afrique : Découverte 29 000 FCFA/an, Business 49 000 FCFA/an, Pro 99 000 FCFA/an
+- Carte bancaire EUR : Découverte 49 €/an, Business 79 €/an, Pro 149 €/an
+
+### Modes de paiement de l'abonnement
+En Afrique :
+- Wave (Sénégal, Côte d'Ivoire, Burkina Faso, Mali)
+- Orange Money (Sénégal, Côte d'Ivoire, Burkina Faso, Mali, Cameroun, Guinée)
+- MaxIt (Sénégal)
+- Carte bancaire en euros via Stripe (disponible pour tous les pays et tous les plans)
+
+En Europe/Canada :
+- Carte bancaire via Stripe (seule option disponible)
+
+
+---
+
+## 6. Fonctionnalités clés
+
+### Boutique en ligne
+- Lien partageable (tekki.shop/slug ou domaine personnalisé pour Pro)
+- Page d'accueil avec catalogue, bannière et section "Coup de cœur"
+- Fiches produits avec photos, description, prix, stock
+- Catégories pour organiser le catalogue
+- Commande en quelques clics depuis le navigateur du client (aucune application)
+- Panier, formulaire de livraison, récapitulatif de commande
+
+### Produits
+- Produits physiques avec gestion du stock
+- Produits numériques (fichiers à télécharger : e-book, formations, musique, templates…)
+  → Le client reçoit un lien de téléchargement sécurisé immédiatement après le paiement
+  → Lien valable 48h, limité à 5 téléchargements
+- Produits inactifs : non visibles côté client
+- Désactivation automatique si le stock tombe à 0
+
+### Paiements acceptés par les clients
+Afrique :
+- Wave (Sénégal, CI, BF, Mali)
+- Orange Money (selon le pays)
+- Paiement à la livraison (toujours disponible, sans commission)
+
+Europe/Canada et Pro Afrique :
+- Carte bancaire via Stripe Connect (le marchand crée et connecte son compte Stripe)
+
+### Gestion des commandes
+Statuts disponibles pour les commandes physiques :
+- En attente → Confirmée → En préparation → Prête → Livrée → Annulée
+
+Statuts pour les commandes numériques :
+- En attente → Accès envoyé → Livré
+
+Le marchand peut avancer le statut depuis son tableau de bord. Des notifications WhatsApp
+automatiques sont envoyées au client à chaque étape (plans Business et Pro).
+
+### Revenus et reversements
+Les paiements en ligne des clients arrivent dans la section **Revenus** du tableau de bord TEKKIShop.
+L'argent ne va PAS directement sur le téléphone du marchand.
+
+Pour récupérer son argent, le marchand effectue un **retrait** depuis la page Revenus :
+- Montant minimum : 2 000 FCFA
+- Traitement : instantané
+- Destination : le numéro Wave ou Orange Money configuré dans Paramètres → Paiements
+- Commission de 3 % déduite automatiquement au moment du retrait (plans Découverte et Business)
+- 0 % de commission pour le plan Pro
+
+Pour le paiement à la livraison, le marchand encaisse directement auprès du client.
+
+### Notifications WhatsApp automatiques (Business et Pro)
+TEKKIShop envoie automatiquement des messages WhatsApp aux clients pour :
+- Confirmation de commande
+- Rappel J-1 avant la livraison
+- Notification de retour en stock (si le client s'est abonné aux alertes)
+- Envoi du lien de téléchargement pour les produits numériques
+
+### Codes promo (Business et Pro)
+- Création de codes avec réduction en pourcentage ou en montant fixe
+- Date d'expiration et limite d'utilisations paramétrables
+
+### Domaine personnalisé (Pro)
+- Le marchand connecte son propre domaine (ex : ma-boutique.com)
+- TEKKIShop fournit les instructions DNS pour la configuration
+- Le domaine doit être acheté séparément (Namecheap, GoDaddy, OVH, Gandi…)
+- TEKKIShop ne vend pas de noms de domaine
+
+### Stripe Connect — paiement carte bancaire (Pro)
+- Le marchand Pro peut connecter son compte Stripe pour accepter les paiements par carte
+- Disponible pour tous les pays (Sénégal, France, Canada, etc.)
+- Les marchands africains dont le pays n'est pas encore supporté par Stripe peuvent
+  créer un compte Stripe dans un pays supporté (France, UK, etc.)
+- TEKKIShop ne prélève aucune commission sur les paiements Stripe
+- Les fonds sont gérés directement par Stripe et virés sur le compte bancaire du marchand
+
+### Meta Pixel (Pro)
+- Connexion du Pixel Facebook/Instagram pour suivre les visiteurs de la boutique
+- Permet de faire de la publicité ciblée sur Facebook et Instagram Ads
+
+### Statistiques et analytics (Business et Pro)
+- Chiffre d'affaires par période
+- Nombre de commandes
+- Produits les plus vendus
+- Export CSV des commandes (Pro)
+
+### Assistant IA intégré
+Chaque marchand dispose d'un assistant IA directement dans son tableau de bord :
+- Répond aux questions sur le fonctionnement de TEKKIShop
+- Analyse les performances de la boutique (commandes, revenus, produits)
+- Guide le marchand étape par étape pour configurer et activer sa boutique
+- Donne des conseils personnalisés pour augmenter les ventes
+- Limites : 20 messages/jour (Découverte), 50 messages/jour (Business), illimité (Pro)
+- Strictement limité aux sujets TEKKIShop — ne répond pas aux questions hors périmètre
+
+
+---
+
+## 7. Comment activer une boutique ?
+
+Pour qu'une boutique soit visible par les clients, 4 étapes sont nécessaires :
+
+1. **Uploader un logo** (Paramètres → Apparence)
+2. **Ajouter au moins un produit actif** (Produits → Ajouter un produit)
+3. **Configurer au moins un moyen de paiement** (Paramètres → Paiements)
+   → Numéro Wave et/ou Orange Money pour recevoir les paiements des clients
+   → Numéro de retrait pour recevoir les reversements TEKKIShop
+4. **Cliquer sur "Activer mon site"** et choisir un plan payant
+
+Pendant les 30 jours d'essai, le marchand peut créer et configurer sa boutique. Elle n'est
+visible publiquement qu'après activation avec un plan payant.
+
+
+---
+
+## 8. Changements de plan et renouvellement
+
+- Un marchand peut changer de plan ou renouveler à **tout moment** depuis le tableau de bord
+- Le nouveau plan est activé **immédiatement** après le paiement
+- La durée du nouvel abonnement : **31 jours à compter de la date de paiement**
+- **Il n'y a pas de proratisation** : les jours restants de l'ancien plan ne sont pas déduits
+  du prix du nouveau plan
+- Exemple : un marchand Découverte (2 900 FCFA) qui passe au Pro (9 900 FCFA) à mi-mois paie
+  9 900 FCFA et repart pour 31 jours. Il ne paie pas 12 800 FCFA au total.
+- Un marchand peut renouveler son plan actuel avant la fin de son abonnement en cours
+- Pour les abonnements par carte Stripe, les renouvellements sont automatiques et gérés par Stripe
+
+
+---
+
+## 9. Sécurité et données
+
+- Les données des marchands et de leurs clients sont hébergées sur Supabase (infrastructure sécurisée)
+- Les paiements sont traités par Bictorys (Afrique) et Stripe (carte bancaire)
+- TEKKIShop ne stocke jamais les informations bancaires ou les données de carte
+- Les liens de téléchargement pour les produits numériques sont sécurisés par des tokens
+  de 64 caractères à usage limité (5 téléchargements max, expiration 48h)
+- Les chemins de fichiers internes ne sont jamais exposés aux clients
+
+
+---
+
+## 10. Ce que TEKKIShop n'est PAS
+
+- TEKKIShop n'est pas un marketplace (les boutiques sont indépendantes et séparées)
+- TEKKIShop ne gère pas la logistique ni la livraison (le marchand livre lui-même ou via son
+  propre livreur)
+- TEKKIShop ne vend pas de noms de domaine
+- TEKKIShop ne propose pas de publicité payante intégrée (le Meta Pixel permet seulement le suivi)
+- TEKKIShop n'est pas un outil de comptabilité ou de facturation avancée
+
+
+---
+
+## 11. Comparaison avec les outils internationaux
+
+| Critère                          | TEKKIShop          | Shopify / WooCommerce     |
+|----------------------------------|--------------------|---------------------------|
+| Conçu pour l'Afrique             | Oui                | Non                       |
+| Paiement Wave / Orange Money     | Natif              | Plugin tiers fragile      |
+| Paiement à la livraison          | Natif, sans frais  | Configuration complexe    |
+| Interface en français            | Oui                | Partiel                   |
+| Mobile-first (dashboard)         | Oui                | Non (conçu pour desktop)  |
+| Pas de compétences techniques    | Oui                | Nécessite des bases        |
+| Prix adapté Afrique              | Dès 2 900 FCFA     | Dès ~17 000 FCFA (29$/m)  |
+| Notifications WhatsApp natives   | Oui                | Plugin payant séparé       |
+| Produits numériques + download   | Natif              | Plugin payant séparé       |
+| Assistant IA intégré             | Oui                | Non (outils tiers)        |
+| Support local (Afrique)          | Oui                | Non                       |
+
+
+---
+
+## 12. Dukka — Vision et produits
+
+TEKKIShop est le premier produit de Dukka, mais Dukka construit un écosystème plus large :
+
+**Mia** — La Vendeuse IA des marques beauté
+Une IA spécialisée dans la vente conversationnelle pour les marques de cosmétique et beauté.
+Mia comprend le contexte africain, les produits locaux et les habitudes d'achat des clients.
+
+**ChatsEller** — La vente via WhatsApp
+Infrastructure pour vendre directement depuis WhatsApp : collecte des commandes, gestion des
+livraisons, automatisation des factures, gestion du paiement à la livraison (COD).
+
+**L'ambition Dukka** : devenir l'infrastructure e-commerce de référence en Afrique en construisant
+les briques technologiques que les outils internationaux n'ont jamais pensé à créer pour le
+continent africain.
+
+Chiffres clés Dukka (à date) :
+- +7 000 commandes gérées en Afrique
+- 11 min de traitement moyen par commande
+- +270 000 € de revenus générés pour les marchands
+- Présent dans plusieurs pays d'Afrique de l'Ouest, d'Europe francophone et du Canada
+
+
+---
+
+## 13. Questions fréquentes
+
+**Est-ce que les clients doivent télécharger une application ?**
+Non. Les clients commandent directement depuis un lien dans leur navigateur. Aucune app à installer.
+
+**Faut-il être une entreprise enregistrée ?**
+Non. TEKKIShop est fait pour tous les vendeurs, qu'ils soient enregistrés ou non.
+
+**Comment les marchands reçoivent leur argent ?**
+Les paiements en ligne arrivent dans la page "Revenus" du tableau de bord. Le marchand déclenche
+un retrait à partir de 2 000 FCFA minimum. L'argent arrive instantanément sur son numéro Wave
+ou Orange Money. La commission de 3 % est déduite à ce moment (plans Découverte et Business).
+
+**Peut-on vendre des produits numériques ?**
+Oui. Le client reçoit un lien de téléchargement sécurisé automatiquement après le paiement.
+
+**TEKKIShop prend-il une commission sur toutes les ventes ?**
+Non. La commission de 3 % s'applique uniquement sur les paiements en ligne (Wave, Orange Money).
+Le paiement à la livraison est toujours gratuit. Le plan Pro est à 0 % de commission partout.
+
+**Peut-on utiliser son propre nom de domaine ?**
+Oui, avec le plan Pro. Le marchand achète son domaine ailleurs et le connecte à TEKKIShop.
+
+**Peut-on passer d'un plan à l'autre ou renouveler avant la fin ?**
+Oui, à tout moment depuis le tableau de bord. Le changement est immédiat. Il n'y a pas de
+proratisation des jours restants.
+
+**TEKKIShop fonctionne-t-il en Europe et au Canada ?**
+Oui. Marchands en France, Belgique, Luxembourg, Suisse et Canada : boutique en euros ou CAD,
+paiement par carte bancaire via Stripe, plan Pro uniquement.
+
+
+---
+
+## 14. Contact et support
+
+- Site officiel : tekki.shop
+- Dukka (société mère) : dukka.app
+- Support marchand : WhatsApp (pour les plans Business et Pro)
+- Fondateur : Ibuka Ndjoli
+
+
+---
+
+*Document généré automatiquement à partir du code source de TEKKIShop.*
+*À utiliser comme source de référence pour les agents IA, représentants commerciaux et équipes support.*
