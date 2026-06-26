@@ -127,11 +127,11 @@ export default async function UpgradePage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, plan, is_active, country')
+    .select('name, plan, is_active, country, subscription_ends_at')
     .eq('id', profile.shop_id)
     .single()
 
-  const shop = shopData as Pick<Shop, 'name' | 'plan' | 'is_active'> & { country?: string } | null
+  const shop = shopData as Pick<Shop, 'name' | 'plan' | 'is_active'> & { country?: string; subscription_ends_at?: string | null } | null
   if (!shop) redirect('/dashboard')
 
   const { success, plan: activatedPlan, error } = await searchParams
@@ -172,7 +172,13 @@ export default async function UpgradePage({
         </div>
       )}
 
-      <UpgradePlans plans={plans} currentPlan={shop.plan} isEuCa={isEuCa} showCardOption={!isEuCa} />
+      <UpgradePlans
+        plans={plans}
+        currentPlan={shop.plan}
+        isEuCa={isEuCa}
+        showCardOption={!isEuCa}
+        subscriptionEndsAt={shop.subscription_ends_at ?? null}
+      />
 
       <p className="text-xs text-gray-400 text-center">
         {isEuCa

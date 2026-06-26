@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Zap, CreditCard } from 'lucide-react'
+import { CheckCircle2, Zap, CreditCard, RefreshCw } from 'lucide-react'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export interface Plan {
@@ -19,10 +19,11 @@ export interface Plan {
 }
 
 interface UpgradePlansProps {
-  plans:           Plan[]
-  currentPlan:     string
-  isEuCa:          boolean
-  showCardOption?: boolean
+  plans:                Plan[]
+  currentPlan:          string
+  isEuCa:               boolean
+  showCardOption?:      boolean
+  subscriptionEndsAt?:  string | null
 }
 
 const CURRENCY_SYMBOL: Record<ShopCurrency, string> = {
@@ -43,7 +44,11 @@ function formatMonthlyEquiv(plan: Plan): string {
   return `≈ ${Math.round(plan.annualPrice / 12).toLocaleString('fr-FR')} FCFA/mois`
 }
 
-export function UpgradePlans({ plans, currentPlan, isEuCa, showCardOption }: UpgradePlansProps) {
+function formatExpiryDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export function UpgradePlans({ plans, currentPlan, isEuCa, showCardOption, subscriptionEndsAt }: UpgradePlansProps) {
   const router  = useRouter()
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
 
@@ -163,8 +168,24 @@ export function UpgradePlans({ plans, currentPlan, isEuCa, showCardOption }: Upg
               </ul>
 
               {isCurrentPlan ? (
-                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 py-2.5 text-sm font-semibold text-green-700">
-                  <CheckCircle2 className="h-4 w-4" /> Plan actuel
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-2.5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" /> Plan actuel
+                    </div>
+                    {subscriptionEndsAt && (
+                      <span className="text-[11px] text-green-600">
+                        Expire le {formatExpiryDate(subscriptionEndsAt)}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleActivatePlan(plan)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:border-gray-300 hover:text-gray-800 transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Renouveler maintenant
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
