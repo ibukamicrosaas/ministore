@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
@@ -175,6 +175,29 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
   }
   const [waveLocal, setWaveLocal] = useState(() => stripDial(shop.payout_wave_number ?? null))
   const [omLocal,   setOmLocal]   = useState(() => stripDial(shop.payout_om_number   ?? null))
+
+  // Confirmation mot de passe pour modifier les numéros de reversement
+  const [payoutConfirmOpen, setPayoutConfirmOpen] = useState(false)
+  const [confirmPassword,   setConfirmPassword]   = useState('')
+  const [payoutSaving,      setPayoutSaving]       = useState(false)
+  const [payoutSaveError,   setPayoutSaveError]    = useState<string | null>(null)
+
+  async function handlePayoutSave() {
+    if (!confirmPassword) return
+    setPayoutSaving(true)
+    setPayoutSaveError(null)
+    const waveNum = waveLocal.trim() ? `${selectedPayoutCountry.dial}${waveLocal.trim()}` : null
+    const omNum   = omLocal.trim()   ? `${selectedPayoutCountry.dial}${omLocal.trim()}`   : null
+    const result  = await verifyAndUpdatePayoutNumbers(confirmPassword, waveNum, omNum)
+    setPayoutSaving(false)
+    if (result.error) {
+      setPayoutSaveError(result.error)
+      return
+    }
+    toast.success('Numéros de reversement enregistrés ✓')
+    setPayoutConfirmOpen(false)
+    setConfirmPassword('')
+  }
 
   // Stripe Connect (EU/CA Pro uniquement)
   const isEuCa                              = isEuCaCountry(shop.country ?? null)
@@ -423,8 +446,6 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       primary_color:     primaryColor,
       accept_online_payment:    acceptOnlinePayment,
       accept_cash_on_delivery:  acceptCashOnDelivery,
-      payout_wave_number: waveLocal.trim() ? `${selectedPayoutCountry.dial}${waveLocal.trim()}` : null,
-      payout_om_number:  omLocal.trim()   ? `${selectedPayoutCountry.dial}${omLocal.trim()}`   : null,
       target_countries:  targetCountries,
       delivery_options:  { home_delivery: homeDelivery, store_pickup: storePickup },
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
@@ -733,6 +754,15 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
                 </div>
               </div>
             )}
+
+            {/* Bouton dédié — séparé du formulaire principal pour exiger la confirmation */}
+            <button
+              type="button"
+              onClick={() => { setPayoutSaveError(null); setConfirmPassword(''); setPayoutConfirmOpen(true) }}
+              className="w-full rounded-xl border border-[var(--color-primary)] py-2.5 text-sm font-semibold text-[var(--color-primary)] hover:bg-orange-50 transition-colors"
+            >
+              Enregistrer les numéros de reversement
+            </button>
           </div>
         )}
         {acceptOnlinePayment && isEuCa && (
@@ -1638,6 +1668,56 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       </div>
     )}
     </div>{/* /ventes-ext */}
+
+    {/* ── Modal confirmation mot de passe — numéros de reversement ─────── */}
+    {payoutConfirmOpen && (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-gray-900">Confirmer la modification</h2>
+            <button
+              type="button"
+              onClick={() => setPayoutConfirmOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-gray-100"
+            >
+              <X className="h-4 w-4 text-gray-500" />
+            </button>
+          </div>
+
+          <div className="rounded-xl bg-amber-50 border border-amber-100 p-3">
+            <p className="text-xs text-amber-800">
+              Pour la sécurité de tes fonds, confirme ton mot de passe avant de modifier les numéros de reversement.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Mot de passe</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handlePayoutSave() }}
+              placeholder="Ton mot de passe de connexion"
+              autoFocus
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+            />
+          </div>
+
+          {payoutSaveError && (
+            <p className="text-xs text-red-600 font-medium">{payoutSaveError}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={handlePayoutSave}
+            disabled={payoutSaving || !confirmPassword}
+            className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
+          >
+            {payoutSaving ? 'Vérification...' : 'Confirmer et enregistrer'}
+          </button>
+        </div>
+      </div>
+    )}
     </>
   )
 }

@@ -621,3 +621,45 @@ export async function updateShopCurrency(currency: string): Promise<{ error?: st
   if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
   return {}
 }
+
+// ─── Mise à jour sécurisée des numéros de reversement ────────────────────────
+// Requiert une re-vérification du mot de passe avant toute modification.
+export async function verifyAndUpdatePayoutNumbers(
+  password: string,
+  payoutWaveNumber: string | null,
+  payoutOmNumber:   string | null,
+): Promise<{ success?: true; error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !user.email) return { error: 'Non authentifié.' }
+
+  // Re-vérification du mot de passe (protection contre accès non autorisé)
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email:    user.email,
+    password: password,
+  })
+  if (authError) return { error: 'Mot de passe incorrect. Modification annulée.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await admin
+    .from('shops')
+    .update({
+      payout_wave_number: payoutWaveNumber,
+      payout_om_number:   payoutOmNumber,
+      updated_at:         new Date().toISOString(),
+    } as any)
+    .eq('id', profile.shop_id)
+
+  if (updateError) return { error: 'Impossible de mettre à jour les numéros.' }
+
+  revalidatePath('/dashboard/settings')
+  return { success: true }
+}
