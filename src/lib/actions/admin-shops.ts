@@ -35,7 +35,8 @@ export async function getAllShopsForAdmin() {
     admin
       .from('shops')
       .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, city, country, is_active, created_at, phone_whatsapp')
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(10000),
     (admin
       .from('subscription_transactions' as never)
       .select('shop_id')
