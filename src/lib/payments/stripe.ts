@@ -102,11 +102,13 @@ export async function createStripeConnectAccount(
 ): Promise<{ accountId: string }> {
   const stripe = createStripeClient()
 
-  // Pays supportés par Stripe Connect Express (ISO 3166-1 alpha-2)
+  // Pays officiellement supportés par Stripe Connect Express (ISO 3166-1 alpha-2)
+  // SN, BJ, TG, BF, ML, CI ne sont pas dans la liste Stripe — on utilise 'FR' en fallback
+  // pour que les marchands de ces pays puissent quand même créer un compte Express EU.
   const STRIPE_CONNECT_COUNTRIES = new Set([
     'FR','BE','LU','CH','CA','GB','DE','ES','IT','NL','PT','SE','NO','DK','FI',
     'AT','PL','IE','SG','AU','NZ','HK','JP','US','BR','MX','IN','AE',
-    'SN','GH','NG','KE','ZA','EG','TZ','UG','RW', // Afrique supportée
+    'GH','NG','KE','ZA','EG','RW', // Afrique confirmée par Stripe
   ])
   const stripeCountry = STRIPE_CONNECT_COUNTRIES.has(country) ? country : 'FR'
 

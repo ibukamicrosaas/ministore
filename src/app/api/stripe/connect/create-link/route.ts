@@ -66,10 +66,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur interne'
-    // Donner un message utile si le pays n'est pas supporté par Stripe
-    if (message.includes('country') || message.includes('invalid_request')) {
+    if (
+      message.includes('not currently supported') ||
+      message.includes('country') ||
+      message.includes('invalid_request')
+    ) {
       return NextResponse.json({
-        error: 'Votre pays n\'est pas encore supporté par Stripe Connect. Contactez le support pour une solution alternative.',
+        error: 'Votre pays n\'est pas encore supporté par Stripe Connect. Contactez le support TEKKIShop pour une solution alternative.',
       }, { status: 400 })
     }
     return NextResponse.json({ error: message }, { status: 500 })
