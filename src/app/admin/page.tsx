@@ -44,7 +44,7 @@ export default async function AdminOverviewPage() {
     shopsWithProductsRes,
     annualSubsRes,
   ] = await Promise.all([
-    supabase.from('shops').select('id, plan, is_active'),
+    supabase.from('shops').select('id, plan, is_active').limit(10000),
     supabase.from('orders').select('id', { count: 'exact' })
       .gte('created_at', monthStart).lte('created_at', monthEnd + 'T23:59:59'),
     supabase.from('orders').select('id', { count: 'exact' })
