@@ -31,29 +31,39 @@ export async function getAllShopsForAdmin() {
 
   const admin = createAdminClient()
 
-  const [shopsResult, annualResult] = await Promise.all([
-    admin
+  // Pagination par batch de 1000 pour contourner le max_rows PostgREST de Supabase.
+  // .limit(N) > max_rows est ignoré côté serveur — seule la pagination .range() est fiable.
+  const PAGE_SIZE = 1000
+  const allShopsRaw: Record<string, unknown>[] = []
+  let page = 0
+  while (true) {
+    const { data, error } = await admin
       .from('shops')
       .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, city, country, is_active, created_at, phone_whatsapp')
       .order('created_at', { ascending: false })
-      .limit(10000),
-    (admin
-      .from('subscription_transactions' as never)
-      .select('shop_id')
-      .eq('status', 'activated')
-      .eq('billing_cycle', 'annual')) as unknown as Promise<{
-        data: Array<{ shop_id: string }> | null
-        error: unknown
-      }>,
-  ])
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+    if (error || !data || data.length === 0) break
+    allShopsRaw.push(...(data as Record<string, unknown>[]))
+    if (data.length < PAGE_SIZE) break
+    page++
+  }
+
+  const annualResult = await (admin
+    .from('subscription_transactions' as never)
+    .select('shop_id')
+    .eq('status', 'activated')
+    .eq('billing_cycle', 'annual')) as unknown as Promise<{
+      data: Array<{ shop_id: string }> | null
+      error: unknown
+    }>
 
   const annualIds = new Set(
-    ((annualResult as { data: Array<{ shop_id: string }> | null }).data ?? []).map(
+    (((await annualResult) as { data: Array<{ shop_id: string }> | null }).data ?? []).map(
       (t) => t.shop_id
     )
   )
 
-  return ((shopsResult.data ?? []) as Record<string, unknown>[]).map((s) => ({
+  return allShopsRaw.map((s) => ({
     ...s,
     is_annual: annualIds.has(s.id as string),
   }))

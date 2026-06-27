@@ -30,8 +30,26 @@ export default async function AdminOverviewPage() {
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   const thirtyDaysAgo  = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
+  // Pagination par batch pour contourner le max_rows PostgREST (1000 par défaut Supabase)
+  async function fetchAllShops() {
+    const PAGE = 1000
+    const rows: { id: string; plan: string; is_active: boolean }[] = []
+    let page = 0
+    while (true) {
+      const { data, error } = await supabase
+        .from('shops')
+        .select('id, plan, is_active')
+        .range(page * PAGE, (page + 1) * PAGE - 1)
+      if (error || !data || data.length === 0) break
+      rows.push(...(data as { id: string; plan: string; is_active: boolean }[]))
+      if (data.length < PAGE) break
+      page++
+    }
+    return rows
+  }
+
   const [
-    shopsRes,
+    allShops,
     ordersMonthRes,
     ordersPrevMonthRes,
     paymentsRes,
@@ -44,7 +62,7 @@ export default async function AdminOverviewPage() {
     shopsWithProductsRes,
     annualSubsRes,
   ] = await Promise.all([
-    supabase.from('shops').select('id, plan, is_active').limit(10000),
+    fetchAllShops(),
     supabase.from('orders').select('id', { count: 'exact' })
       .gte('created_at', monthStart).lte('created_at', monthEnd + 'T23:59:59'),
     supabase.from('orders').select('id', { count: 'exact' })
@@ -70,7 +88,6 @@ export default async function AdminOverviewPage() {
       .eq('billing_cycle', 'annual')) as unknown as Promise<{ data: Array<{ shop_id: string; plan_key: string }> | null }>,
   ])
 
-  const allShops = (shopsRes.data ?? []) as { id: string; plan: string; is_active: boolean }[]
   const totalShops   = allShops.length
   const activeShops  = allShops.filter(s => s.is_active).length
 
