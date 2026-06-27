@@ -9,6 +9,7 @@ import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/cou
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
+import { PinInput } from '@/components/ui/PinInput'
 
 interface Props {
   shop: Shop
@@ -1686,20 +1687,17 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
 
           <div className="rounded-xl bg-amber-50 border border-amber-100 p-3">
             <p className="text-xs text-amber-800">
-              Pour la sécurité de tes fonds, confirme ton mot de passe avant de modifier les numéros de reversement.
+              Pour la sécurité de tes fonds, confirme ton code PIN avant de modifier les numéros de reversement.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Mot de passe</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handlePayoutSave() }}
-              placeholder="Ton mot de passe de connexion"
-              autoFocus
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+            <label className="block text-xs font-medium text-gray-700 mb-2 text-center">Code PIN (6 chiffres)</label>
+            <PinInput
+              key={payoutConfirmOpen ? 'open' : 'closed'}
+              name="payout-confirm-pin"
+              length={6}
+              onChange={setConfirmPassword}
             />
           </div>
 
