@@ -5,7 +5,7 @@ import Image from 'next/image'
 import {
   ShoppingBag, MessageCircle, CheckCircle2, ArrowRight,
   Package, Smartphone, CreditCard, Bell, BarChart3,
-  TrendingUp, Zap, Users, Star, Truck, Sparkles, X,
+  TrendingUp, Zap, Users, Star, Truck, Sparkles, X, Download,
 } from 'lucide-react'
 import { PaymentScroll } from '@/components/landing/PaymentScroll'
 import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
@@ -38,6 +38,7 @@ const CATEGORIES = [
   '📱 Électronique',
   '🏡 Maison & Déco',
   '🛵 Livraison & Traiteur',
+  '📥 Produits digitaux',
   '📚 Formation & Coaching',
   '🌿 Agriculture & Plants',
   '👶 Puériculture',
@@ -530,6 +531,90 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ── Produits digitaux ─────────────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-white">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+
+            {/* Texte */}
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 mb-5">
+                <Download className="h-3.5 w-3.5" />
+                Vente automatique 24h/24
+              </div>
+              <h2
+                className="text-3xl sm:text-4xl font-black text-gray-900 mb-4 leading-tight"
+                style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+              >
+                Vends aussi tes<br />
+                <span className="text-violet-600">produits digitaux.</span>
+              </h2>
+              <p className="text-gray-600 leading-relaxed mb-7 max-w-md">
+                E-books, formations, guides PDF, photos, musique, templates… Ajoute tes fichiers à ta boutique. Ton client paie, il reçoit son lien de téléchargement instantanément. Toi, tu encaisses — même quand tu dors.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  { icon: '📁', text: 'Fichiers jusqu\'à 50 Mo — PDF, vidéo, audio, images, ZIP' },
+                  { icon: '🔗', text: 'Lien de téléchargement envoyé automatiquement après paiement' },
+                  { icon: '☁️', text: 'Stockage sécurisé inclus — aucun outil externe requis' },
+                  { icon: '💰', text: 'Vends des produits physiques et digitaux depuis la même boutique' },
+                ].map(f => (
+                  <li key={f.text} className="flex items-start gap-3 text-sm text-gray-700">
+                    <span className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xs">{f.icon}</span>
+                    {f.text}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-md"
+              >
+                Créer ma boutique
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Mockup page de téléchargement */}
+            <div className="flex-shrink-0 w-full max-w-xs">
+              <div className="rounded-3xl border border-violet-100 bg-white shadow-xl shadow-violet-100/60 overflow-hidden">
+                {/* Header boutique */}
+                <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-4">
+                  <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wide mb-1">Achat confirmé ✅</p>
+                  <p className="text-white font-black text-base">Coach Aminata — Formations</p>
+                  <p className="text-white/50 text-[10px]">tekki.shop/coach-aminata</p>
+                </div>
+                {/* Produit */}
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center text-xl shrink-0">📘</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 truncate">Guide business Afrique 2024</p>
+                      <p className="text-[10px] text-gray-400">PDF · 8,4 Mo</p>
+                    </div>
+                    <span className="text-emerald-600 text-[10px] font-bold shrink-0">✓ Payé</span>
+                  </div>
+                  {/* Lien téléchargement */}
+                  <div className="rounded-xl bg-violet-50 border border-violet-100 p-3 space-y-2.5 text-center">
+                    <p className="text-[10px] text-gray-400">Ton fichier est prêt</p>
+                    <div className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 py-2.5">
+                      <Download className="h-3.5 w-3.5 text-white" />
+                      <span className="text-[11px] font-bold text-white">Télécharger mon fichier</span>
+                    </div>
+                    <p className="text-[9px] text-gray-400">Lien sécurisé · Stocké par TEKKIShop</p>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 pt-0.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <p className="text-[10px] text-emerald-600 font-semibold">5 000 FCFA reçus par Wave ✓</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-[10px] text-gray-400 mt-3">Livraison instantanée · Zéro intervention manuelle</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* ── TEKKIShop vs Shopify ─────────────────────────────────────────── */}
       <section className="py-20 px-4 bg-white">
         <div className="mx-auto max-w-5xl">
@@ -592,6 +677,7 @@ export default async function LandingPage() {
                   'Suivi livraison + message WhatsApp automatique au livreur',
                   'Notifications WhatsApp automatiques clients & vendeur',
                   'Assistant IA intégré pour analyser et piloter ta boutique',
+                  'Vente de produits digitaux — stockage + livraison automatique',
                   'Support WhatsApp en français, par des humains',
                 ].map(t => (
                   <div key={t} className="flex items-start gap-2.5">
