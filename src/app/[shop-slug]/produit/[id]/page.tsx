@@ -377,24 +377,36 @@ export default async function ProductDetailPage({ params }: Props) {
             />
             {/* Méthodes de paiement — discret, informatif */}
             {(hasOnlinePayment || acceptCash) && (
-              <div className="mt-3 flex items-center gap-2 opacity-80">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-gray-400" />
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-500">Paiement accepté :</span>
+              <div className="mt-3 flex items-start gap-2 opacity-80">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-gray-400 mt-1" />
+                <div className="flex items-end gap-3 flex-wrap">
+                  <span className="text-xs text-gray-500 mb-1">Paiement accepté :</span>
                   {onlineMethods.map(m => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={m.id} src={m.icon} alt={m.label} className="h-5 object-contain" title={m.label} />
+                    <div key={m.id} className="flex flex-col items-center gap-0.5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={m.icon} alt={m.label} className="h-5 object-contain" />
+                      <span className="text-[9px] text-gray-400 leading-none">{m.label.split(' ')[0]}</span>
+                    </div>
                   ))}
                   {(shop.bictorys_secret_key || shop.stripe_connect_enabled) && onlineMethods.length === 0 && (
                     <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/logo-payments/visa.svg" alt="Visa" className="h-5 object-contain" />
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" className="h-5 object-contain" />
+                      <div className="flex flex-col items-center gap-0.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/logo-payments/visa.svg" alt="Visa" className="h-5 object-contain" />
+                        <span className="text-[9px] text-gray-400 leading-none">Visa</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" className="h-5 object-contain" />
+                        <span className="text-[9px] text-gray-400 leading-none">Mastercard</span>
+                      </div>
                     </>
                   )}
                   {acceptCash && (
-                    <Banknote className="h-5 w-5 text-gray-400" />
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Banknote className="h-5 w-5 text-gray-400" />
+                      <span className="text-[9px] text-gray-400 leading-none">Cash</span>
+                    </div>
                   )}
                 </div>
               </div>
