@@ -394,7 +394,7 @@ export default async function ProductDetailPage({ params }: Props) {
                     </>
                   )}
                   {acceptCash && (
-                    <Banknote className="h-5 w-5 text-gray-400" title="Paiement à la livraison" />
+                    <Banknote className="h-5 w-5 text-gray-400" />
                   )}
                 </div>
               </div>
