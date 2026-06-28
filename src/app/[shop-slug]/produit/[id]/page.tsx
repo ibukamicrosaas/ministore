@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Clock, Star, ShieldCheck } from 'lucide-react'
+import { ChevronLeft, Clock, Star, ShieldCheck, Banknote } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -377,24 +377,24 @@ export default async function ProductDetailPage({ params }: Props) {
             />
             {/* Méthodes de paiement — discret, informatif */}
             {(hasOnlinePayment || acceptCash) && (
-              <div className="mt-3 flex items-center gap-2 opacity-50">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-gray-400">Paiement accepté :</span>
+              <div className="mt-3 flex items-center gap-2 opacity-80">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-gray-400" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-gray-500">Paiement accepté :</span>
                   {onlineMethods.map(m => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={m.id} src={m.icon} alt={m.label} className="h-4 object-contain" title={m.label} />
+                    <img key={m.id} src={m.icon} alt={m.label} className="h-5 object-contain" title={m.label} />
                   ))}
                   {(shop.bictorys_secret_key || shop.stripe_connect_enabled) && onlineMethods.length === 0 && (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/logo-payments/visa.svg" alt="Visa" className="h-4 object-contain" />
+                      <img src="/logo-payments/visa.svg" alt="Visa" className="h-5 object-contain" />
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" className="h-4 object-contain" />
+                      <img src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" className="h-5 object-contain" />
                     </>
                   )}
                   {acceptCash && (
-                    <span className="text-[10px] text-gray-400 font-medium">À la livraison</span>
+                    <Banknote className="h-5 w-5 text-gray-400" title="Paiement à la livraison" />
                   )}
                 </div>
               </div>
