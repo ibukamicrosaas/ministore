@@ -72,19 +72,17 @@ export default async function SuccessPage({ params, searchParams }: Props) {
   }
   const downloadTokens = (rawTokens ?? []) as DownloadToken[]
 
-  // Détection robuste : produit digital = token présent OU status completed OU
-  // au moins un article dont le produit a product_type='digital' ou digital_file_path défini
+  // Détection : produit digital = token présent OU status completed OU product_type='digital'
+  // Note : digital_file_path n'est jamais sélectionné côté client (chemin Storage interne)
   const { data: rawOrderItems } = await (supabase as any)
     .from('order_items')
-    .select('product_id, products(product_type, digital_file_path)')
+    .select('product_id, products(product_type)')
     .eq('order_id', order_id)
 
   const hasDigitalProducts = ((rawOrderItems ?? []) as Array<{
     product_id: string
-    products: { product_type: string | null; digital_file_path: string | null } | null
-  }>).some(item =>
-    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
-  )
+    products: { product_type: string | null } | null
+  }>).some(item => item.products?.product_type === 'digital')
 
   const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed' || hasDigitalProducts
 

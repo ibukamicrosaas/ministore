@@ -116,15 +116,13 @@ export default async function OrderTrackingPage({ params }: Props) {
 
   const { data: rawOrderItems } = await (supabase as any)
     .from('order_items')
-    .select('product_id, products(product_type, digital_file_path)')
+    .select('product_id, products(product_type)')
     .eq('order_id', order.id)
 
   const hasDigitalProducts = ((rawOrderItems ?? []) as Array<{
     product_id: string
-    products: { product_type: string | null; digital_file_path: string | null } | null
-  }>).some(item =>
-    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
-  )
+    products: { product_type: string | null } | null
+  }>).some(item => item.products?.product_type === 'digital')
 
   const isDigitalOrder = downloadTokens.length > 0 || isCompleted || hasDigitalProducts
 
