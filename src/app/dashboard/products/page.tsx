@@ -35,7 +35,7 @@ export default async function ProductsPage() {
       .order('created_at', { ascending: true }),
     supabase
       .from('shops')
-      .select('currency')
+      .select('slug, currency')
       .eq('id', profile.shop_id)
       .single(),
     supabase
@@ -45,7 +45,9 @@ export default async function ProductsPage() {
       .not('status', 'eq', 'cancelled'),
   ])
 
-  const currency = ((shopData as { currency?: string | null } | null)?.currency ?? 'XOF') as ShopCurrency
+  const shopMeta = shopData as { slug?: string | null; currency?: string | null } | null
+  const currency  = (shopMeta?.currency ?? 'XOF') as ShopCurrency
+  const shopSlug  = shopMeta?.slug ?? ''
 
   if (error) return <ErrorState message="Impossible de charger les produits." />
 
@@ -117,6 +119,7 @@ export default async function ProductsPage() {
             byCategory={byCategory as Record<string, (Product & { stock_count?: number | null })[]>}
             salesMap={salesMap}
             currency={currency}
+            shopSlug={shopSlug}
           />
 
           {/* Bouton ajout bas de page */}

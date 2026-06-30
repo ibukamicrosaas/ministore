@@ -12,6 +12,8 @@ import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Product } from '@/types'
 import toast from 'react-hot-toast'
+import { ShareWhatsAppButton } from '@/components/dashboard/ShareWhatsAppButton'
+import { APP_URL } from '@/constants'
 
 type ProductRow = Product & { stock_count?: number | null; sales: number }
 type CategoryGroup = { name: string; products: ProductRow[] }
@@ -20,6 +22,7 @@ interface Props {
   byCategory: Record<string, (Product & { stock_count?: number | null })[]>
   salesMap: Record<string, number>
   currency: ShopCurrency
+  shopSlug: string
 }
 
 function buildCategories(
@@ -32,7 +35,7 @@ function buildCategories(
   }))
 }
 
-export function ProductOrderList({ byCategory, salesMap, currency }: Props) {
+export function ProductOrderList({ byCategory, salesMap, currency, shopSlug }: Props) {
   const [categories, setCategories] = useState<CategoryGroup[]>(() =>
     buildCategories(byCategory, salesMap),
   )
@@ -251,21 +254,27 @@ export function ProductOrderList({ byCategory, salesMap, currency }: Props) {
                     </div>
                   </Link>
 
-                  {/* Toggle actif/inactif — masqué en mode réorganisation */}
+                  {/* Bouton WhatsApp + Toggle — masqués en mode réorganisation */}
                   {!reorderMode && (
-                    <button
-                      onClick={() => handleToggle(product.id, product.is_active)}
-                      title={product.is_active ? 'Désactiver' : 'Activer'}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                        product.is_active ? 'bg-[var(--color-primary)]' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
-                          product.is_active ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                    <>
+                      <ShareWhatsAppButton
+                        variant="icon"
+                        message={`🛍️ *${product.name}*\n${formatPrice(product.price, currency)}\n\nDisponible maintenant, commandez ici 👉 ${APP_URL}/${shopSlug}/produit/${product.id}`}
                       />
-                    </button>
+                      <button
+                        onClick={() => handleToggle(product.id, product.is_active)}
+                        title={product.is_active ? 'Désactiver' : 'Activer'}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                          product.is_active ? 'bg-[var(--color-primary)]' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
+                            product.is_active ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </>
                   )}
                 </div>
               )

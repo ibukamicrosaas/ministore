@@ -213,7 +213,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Lien boutique */}
-      {shop && <ShopLinkCard shopSlug={shop.slug} appUrl={APP_URL} />}
+      {shop && <ShopLinkCard shopSlug={shop.slug} appUrl={APP_URL} shopName={shop.name} />}
 
       {/* Commandes actives */}
       <div>

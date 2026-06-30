@@ -2,15 +2,18 @@
 
 import { useState } from 'react'
 import { Copy, Check, ExternalLink, Share2 } from 'lucide-react'
+import { ShareWhatsAppButton } from './ShareWhatsAppButton'
 
 interface Props {
   shopSlug: string
   appUrl: string
+  shopName?: string
 }
 
-export function ShopLinkCard({ shopSlug, appUrl }: Props) {
+export function ShopLinkCard({ shopSlug, appUrl, shopName }: Props) {
   const [copied, setCopied] = useState(false)
   const url = `${appUrl.replace(/^http:\/\//, 'https://')}/${shopSlug}`
+  const waMessage = `Bonjour 👋\n\nDécouvrez *${shopName ?? shopSlug}* et commandez directement en ligne !\n\n👉 ${url}`
 
   async function handleCopy() {
     await navigator.clipboard.writeText(url)
@@ -43,32 +46,35 @@ export function ShopLinkCard({ shopSlug, appUrl }: Props) {
         </a>
       </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleCopy}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-white py-2 text-xs font-medium text-gray-700 hover:bg-sky-50 transition-colors"
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-green-500" />
-              <span className="text-green-600">Copié !</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              Copier le lien
-            </>
-          )}
-        </button>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Voir mon site
-        </a>
+      <div className="space-y-2">
+        <ShareWhatsAppButton message={waMessage} />
+        <div className="flex gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-white py-2 text-xs font-medium text-gray-700 hover:bg-sky-50 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green-500" />
+                <span className="text-green-600">Copié !</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                Copier le lien
+              </>
+            )}
+          </button>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-primary)] py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Voir mon site
+          </a>
+        </div>
       </div>
     </div>
   )
