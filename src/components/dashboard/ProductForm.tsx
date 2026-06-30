@@ -70,7 +70,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
   const [useVariants, setUseVariants]   = useState(initialVariants.length > 0)
   const [variants, setVariants]         = useState<ProductVariant[]>(
-    initialVariants.length > 0 ? initialVariants : [{ label: '', price: 0 }]
+    initialVariants.length > 0 ? initialVariants : [{ label: '', price: 0, stock_count: null }]
   )
 
   // Vidéo
@@ -227,15 +227,15 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   ]
 
   function applyPreset(values: string[]) {
-    setVariants(values.map(v => ({ label: v, price: 0 })))
+    setVariants(values.map(v => ({ label: v, price: 0, stock_count: null })))
     setUseVariants(true)
   }
 
   function addVariant() {
-    setVariants(prev => [...prev, { label: '', price: 0 }])
+    setVariants(prev => [...prev, { label: '', price: 0, stock_count: null }])
   }
 
-  function updateVariant(index: number, field: keyof ProductVariant, value: string | number) {
+  function updateVariant(index: number, field: keyof ProductVariant, value: string | number | null) {
     setVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
   }
 
@@ -837,6 +837,12 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
               {/* Variantes personnalisées */}
               <div className="space-y-2">
+                <div className="flex items-center gap-2 px-6 mb-1">
+                  <span className="flex-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider">Variante</span>
+                  <span className="w-24 text-[10px] font-medium text-gray-400 uppercase tracking-wider text-right shrink-0">Prix</span>
+                  <span className="w-20 text-[10px] font-medium text-gray-400 uppercase tracking-wider text-right shrink-0">Stock</span>
+                  <span className="w-5 shrink-0" />
+                </div>
                 {variants.map((v, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
@@ -846,18 +852,29 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                       placeholder="Ex : 1 kg, Taille L, Rouge…"
                       className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
                     />
-                    <div className="relative w-28 shrink-0">
+                    <div className="relative w-24 shrink-0">
                       <input
                         type="number"
                         min="0"
                         value={v.price || ''}
                         onChange={e => updateVariant(i, 'price', parseInt(e.target.value, 10) || 0)}
-                        placeholder="Prix"
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:border-[var(--color-primary)]"
+                        placeholder="0"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-9 text-sm outline-none focus:border-[var(--color-primary)]"
                       />
-                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currencySymbol}</span>
+                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">{currencySymbol}</span>
                     </div>
-                    <button type="button" onClick={() => removeVariant(i)} className="p-1 text-gray-400 hover:text-red-500">
+                    <div className="relative w-20 shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        value={v.stock_count ?? ''}
+                        onChange={e => updateVariant(i, 'stock_count', e.target.value === '' ? null : parseInt(e.target.value, 10) || 0)}
+                        placeholder="∞"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-7 text-sm outline-none focus:border-[var(--color-primary)]"
+                      />
+                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">pcs</span>
+                    </div>
+                    <button type="button" onClick={() => removeVariant(i)} className="p-1 text-gray-400 hover:text-red-500 shrink-0">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
@@ -929,8 +946,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
         <p className="mt-2 text-[10px] text-gray-400">Laissez vide les badges que vous ne voulez pas afficher.</p>
       </Card>
 
-      {/* Stock — masqué pour les produits digitaux */}
-      {productType === 'physical' && (
+      {/* Stock — masqué pour les produits digitaux et quand les variantes sont actives (stock géré par variante) */}
+      {productType === 'physical' && !useVariants && (
         <Card>
           <p className="text-sm font-semibold text-gray-900 mb-1">Stock</p>
           <p className="text-xs text-gray-500 mb-3">Laissez vide pour un stock illimité.</p>

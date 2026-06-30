@@ -144,8 +144,18 @@ export async function POST(req: NextRequest) {
     // Prix réel depuis la DB — ignorer it.unit_price envoyé par le client
     let unit_price = p.price
     if (it.variant_label && Array.isArray(p.variants)) {
-      const variant = (p.variants as { label: string; price: number }[]).find(v => v.label === it.variant_label)
-      if (variant) unit_price = variant.price
+      const variant = (p.variants as { label: string; price: number; stock_count?: number | null }[]).find(v => v.label === it.variant_label)
+      if (variant) {
+        unit_price = variant.price
+        if (variant.stock_count !== null && variant.stock_count !== undefined) {
+          if (variant.stock_count === 0) {
+            return NextResponse.json({ error: `La variante "${variant.label}" de ${p.name} est en rupture de stock.` }, { status: 400 })
+          }
+          if (it.quantity > variant.stock_count) {
+            return NextResponse.json({ error: `Stock insuffisant pour ${p.name} – ${variant.label} (${variant.stock_count} disponible(s)).` }, { status: 400 })
+          }
+        }
+      }
     }
     serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null })
   }

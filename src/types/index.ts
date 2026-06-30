@@ -24,6 +24,7 @@ export type UserRole         = Profile['role']
 export interface ProductVariant {
   label: string
   price: number
+  stock_count?: number | null
 }
 
 export interface ProductPhoto {
