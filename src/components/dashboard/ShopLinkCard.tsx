@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check, ExternalLink, Share2 } from 'lucide-react'
+import { Copy, Check, ExternalLink, Share2, ImageDown } from 'lucide-react'
 import { ShareWhatsAppButton } from './ShareWhatsAppButton'
 
 interface Props {
@@ -47,7 +47,20 @@ export function ShopLinkCard({ shopSlug, appUrl, shopName }: Props) {
       </div>
 
       <div className="space-y-2">
-        <ShareWhatsAppButton message={waMessage} />
+        <div className="flex gap-2">
+          <ShareWhatsAppButton message={waMessage} />
+          <a
+            href={`/api/share/shop-card?slug=${shopSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={`carte-boutique-${shopSlug}.png`}
+            title="Télécharger la carte boutique"
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+          >
+            <ImageDown className="h-3.5 w-3.5" />
+            Carte
+          </a>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={handleCopy}

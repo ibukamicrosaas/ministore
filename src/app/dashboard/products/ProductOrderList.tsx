@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import {
   Package, Tag, ShoppingCart, AlertTriangle,
-  ArrowUp, ArrowDown, Check, X, ListOrdered,
+  ArrowUp, ArrowDown, Check, X, ListOrdered, ImageDown,
 } from 'lucide-react'
 import { reorderProducts, toggleProductActive } from '@/lib/actions/products'
 import { formatPrice } from '@/lib/utils/country-groups'
@@ -254,9 +254,19 @@ export function ProductOrderList({ byCategory, salesMap, currency, shopSlug }: P
                     </div>
                   </Link>
 
-                  {/* Bouton WhatsApp + Toggle — masqués en mode réorganisation */}
+                  {/* Boutons partage + Toggle — masqués en mode réorganisation */}
                   {!reorderMode && (
                     <>
+                      <a
+                        href={`/api/share/product-card?id=${product.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={`carte-${product.id}.png`}
+                        title="Télécharger la carte produit"
+                        className="flex items-center justify-center rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors"
+                      >
+                        <ImageDown className="h-4 w-4" />
+                      </a>
                       <ShareWhatsAppButton
                         variant="icon"
                         message={`🛍️ *${product.name}*\n${formatPrice(product.price, currency)}\n\nDisponible maintenant, commandez ici 👉 ${APP_URL}/${shopSlug}/produit/${product.id}`}
