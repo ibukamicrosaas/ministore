@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { SetupChecklist } from '@/components/dashboard/SetupChecklist'
+import { FirstSalesNudge } from '@/components/dashboard/FirstSalesNudge'
 import { RevenueCard } from '@/components/dashboard/RevenueCard'
 import { getDateRange } from '@/app/api/dashboard/revenue/route'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -143,6 +144,11 @@ export default async function DashboardPage() {
           hasPayoutNumbers={!!(shop.payout_wave_number || shop.payout_om_number)}
           isActivePlan={shop.plan !== 'trial'}
         />
+      )}
+
+      {/* Nudge premières ventes — plan actif uniquement */}
+      {shop && shop.plan !== 'trial' && (
+        <FirstSalesNudge shopSlug={shop.slug} shopName={shop.name} />
       )}
 
       {/* Alerte commandes à traiter */}

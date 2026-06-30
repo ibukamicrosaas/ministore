@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check, ExternalLink, Share2, ImageDown } from 'lucide-react'
+import { Copy, Check, ExternalLink, Share2, ImageDown, QrCode } from 'lucide-react'
 import { ShareWhatsAppButton } from './ShareWhatsAppButton'
 
 interface Props {
@@ -59,6 +59,17 @@ export function ShopLinkCard({ shopSlug, appUrl, shopName }: Props) {
           >
             <ImageDown className="h-3.5 w-3.5" />
             Carte
+          </a>
+          <a
+            href={`/api/share/qr-code?slug=${shopSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={`qrcode-${shopSlug}.png`}
+            title="Télécharger le QR code"
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+          >
+            <QrCode className="h-3.5 w-3.5" />
+            QR
           </a>
         </div>
         <div className="flex gap-2">
