@@ -24,7 +24,7 @@ type OrderPayment = {
   created_at: string
   paid_at: string | null
   shops: { id: string; name: string; slug: string } | null
-  orders: { id: string; client_first_name: string; client_phone: string } | null
+  orders: { id: string; clients: { first_name: string; phone: string } | null } | null
 }
 
 type SubTxn = {
@@ -62,7 +62,7 @@ export default async function AdminPaymentsPage() {
   const [orderPaymentsRes, subTxnsRes] = await Promise.all([
     admin
       .from('payments')
-      .select('id, order_id, amount, currency, payment_method, payment_type, status, created_at, paid_at, shops(id, name, slug), orders(id, client_first_name, client_phone)')
+      .select('id, order_id, amount, currency, payment_method, payment_type, status, created_at, paid_at, shops(id, name, slug), orders(id, clients(first_name, phone))')
       .order('created_at', { ascending: false })
       .limit(300) as any,
 
@@ -211,8 +211,8 @@ export default async function AdminPaymentsPage() {
                     )}
                   </td>
                   <td className="px-6 py-3.5">
-                    <p className="text-gray-800">{p.orders?.client_first_name ?? '—'}</p>
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">{p.orders?.client_phone ?? ''}</p>
+                    <p className="text-gray-800">{p.orders?.clients?.first_name ?? '—'}</p>
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">{p.orders?.clients?.phone ?? ''}</p>
                   </td>
                   <td className="px-6 py-3.5">
                     <p className="font-semibold text-gray-900">{p.amount.toLocaleString('fr-FR')} F</p>
