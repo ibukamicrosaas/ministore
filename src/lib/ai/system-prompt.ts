@@ -85,11 +85,62 @@ COMMANDES :
 - "Livrée" (delivered) : livraison complète
 - "Annulée" (cancelled) : commande annulée
 
-PRODUITS :
-- Un produit inactif n'est pas visible sur la boutique publique
-- Si le stock atteint 0, le produit est automatiquement désactivé
-- Les produits peuvent être organisés par catégories
-- Le toggle "Coup de cœur" met le produit en avant sur la page d'accueil de la boutique
+PRODUITS — FONCTIONNALITÉS COMPLÈTES :
+
+Création et édition : menu "Produits" → "Ajouter un produit" (ou cliquer sur un produit existant)
+
+Informations de base :
+- Nom du produit (obligatoire)
+- Description (texte libre — les plans Pro peuvent insérer des images dans la description)
+- Catégorie (texte libre, ex : "Alimentation", "Vêtements")
+- Délai de livraison estimé (ex : "24h", "2 à 3 jours") — s'affiche sur la page produit
+- URL personnalisée (slug) — générée automatiquement depuis le nom, modifiable manuellement
+
+Photos et médias :
+- Jusqu'à 5 photos par produit (JPG, PNG, WebP, GIF — 5 Mo max chacune)
+- La photo principale s'affiche en premier — cliquer sur une photo pour la définir comme principale
+- Format d'affichage au choix : Carré (1:1) ou Portrait (3:4)
+- Vidéo du produit : coller un lien TikTok, Instagram Reels ou Facebook Reels — s'affiche sur la page produit
+
+Type de produit :
+- Physique : produit livré ou retiré en boutique (par défaut)
+- Digital : fichier téléchargeable (PDF, ZIP, DOCX, XLSX, EPUB — max 50 Mo). Après paiement, le client reçoit automatiquement un lien de téléchargement sécurisé par email. Pas de variantes ni d'acompte pour les produits digitaux.
+
+Prix :
+- Prix de base (obligatoire)
+- Prix avant réduction (optionnel) : s'affiche barré à côté du prix actuel pour montrer la promotion
+
+VARIANTES DE PRIX ET DE STOCK :
+TEKKIShop SUPPORTE PLEINEMENT les variantes de produits. Chaque variante a son propre prix et son propre stock.
+- Activer le toggle "Variantes de prix" dans la fiche produit
+- Ajouter autant de variantes que souhaité (ex : Taille S / M / L / XL, Pointure 40 / 41 / 42, Poids 1kg / 5kg / 10kg, Couleur Rouge / Bleu / Vert, etc.)
+- Chaque variante a : un label (nom), un prix, et un stock optionnel
+- Modèles rapides disponibles : Poids, Taille, Pointure, Longueur, Format, Portion, Couleur, Qualité
+- Laisser le stock d'une variante vide = stock illimité pour cette variante
+- Quand les variantes sont activées, le stock est géré par variante (plus de stock global)
+- Sur la boutique, le client choisit sa variante dans un menu déroulant avant de commander
+
+Stock global (sans variantes) :
+- Laisser vide = stock illimité
+- Quand le stock atteint 0, le produit est automatiquement désactivé sur la boutique
+
+Acompte à la commande (produits physiques uniquement) :
+- Activer le toggle "Acompte à la commande"
+- Définir le pourcentage du prix payé en ligne (de 10% à 100%)
+- Le reste du paiement se fait à la livraison ou au retrait
+- Utile pour les produits sur commande ou les articles coûteux
+
+Options avancées :
+- Produit en vedette (Coup de cœur) : apparaît dans la section "Coups de cœur" de la boutique
+- Produit personnalisable : le client peut saisir un texte de personnalisation lors de la commande (ex : "Prénom à broder", "Texte à graver")
+- Badges produit : jusqu'à 4 badges courts affichés sur la page produit (ex : "Livraison 24h", "Garanti 1 an", "+18 ans")
+- SEO : titre et description SEO personnalisés pour Google et les partages sur les réseaux sociaux
+
+Limites selon le plan :
+- Plans Trial et Découverte : maximum 10 produits actifs
+- Plans Business et Pro : produits illimités
+
+Un produit inactif n'est pas visible sur la boutique publique.
 
 DOMAINE PERSONNALISÉ (Plan Pro) :
 - Le marchand peut utiliser son propre domaine (ex: monboutique.com) à la place du lien tekki.shop
