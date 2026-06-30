@@ -54,7 +54,13 @@ const PLAN_COLORS: Record<string, string> = {
   pro:        'bg-purple-100 text-purple-700',
 }
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { tab = 'commandes' } = await searchParams
+  const activeTab = tab === 'abonnements' ? 'abonnements' : 'commandes'
   const admin = createAdminClient()
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -109,7 +115,7 @@ export default async function AdminPaymentsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           {
             label: 'Revenus clients',
@@ -149,7 +155,7 @@ export default async function AdminPaymentsPage() {
 
       {/* Alerte mismatch */}
       {notActivatedAfterPayment.length > 0 && (
-        <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-3">
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-red-900 text-sm">
@@ -170,7 +176,47 @@ export default async function AdminPaymentsPage() {
         </div>
       )}
 
+      {/* ── Onglets ── */}
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
+        <Link
+          href="/admin/payments?tab=commandes"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'commandes'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <ShoppingBag className="h-4 w-4" />
+          Paiements clients
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+            activeTab === 'commandes' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
+          }`}>
+            {completedOrders.length}
+          </span>
+        </Link>
+        <Link
+          href="/admin/payments?tab=abonnements"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'abonnements'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <CreditCard className="h-4 w-4" />
+          Abonnements
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+            activeTab === 'abonnements' ? 'bg-violet-100 text-violet-700' : 'bg-gray-200 text-gray-500'
+          }`}>
+            {activatedSubs.length}
+          </span>
+          {(pendingSubs.length > 0 || errorSubs.length > 0) && (
+            <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+          )}
+        </Link>
+      </div>
+
       {/* ── Section 1 : Paiements clients ── */}
+      {activeTab === 'commandes' && <>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
@@ -248,7 +294,18 @@ export default async function AdminPaymentsPage() {
         </div>
       </div>
 
+      <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-5">
+        <p className="font-semibold text-blue-900 text-sm mb-1">Statuts des paiements</p>
+        <ul className="space-y-0.5 text-xs text-blue-700">
+          <li>✅ Payé — webhook Bictorys reçu et confirmé</li>
+          <li>⏳ En attente — paiement initié, webhook attendu</li>
+          <li>❌ Échoué — erreur ou annulation côté client</li>
+        </ul>
+      </div>
+      </>}
+
       {/* ── Section 2 : Abonnements TEKKIShop ── */}
+      {activeTab === 'abonnements' && <>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <div className="h-9 w-9 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
@@ -347,28 +404,16 @@ export default async function AdminPaymentsPage() {
         </div>
       </div>
 
-      {/* Légende */}
+      {/* Légende abonnements */}
       <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-5">
-        <p className="font-semibold text-blue-900 text-sm mb-2">Comprendre les statuts</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-blue-800">
-          <div>
-            <strong>Paiements clients</strong>
-            <ul className="mt-1 space-y-0.5 text-blue-700">
-              <li>✅ Payé — webhook Bictorys reçu et confirmé</li>
-              <li>⏳ En attente — paiement initié, webhook attendu</li>
-              <li>❌ Échoué — erreur ou annulation</li>
-            </ul>
-          </div>
-          <div>
-            <strong>Abonnements</strong>
-            <ul className="mt-1 space-y-0.5 text-blue-700">
-              <li>✅ Réussi — plan activé par le webhook Bictorys</li>
-              <li>⏳ En attente — paiement initié, webhook non reçu</li>
-              <li>🔴 Ligne rouge — paiement réussi mais plan non changé</li>
-            </ul>
-          </div>
-        </div>
+        <p className="font-semibold text-blue-900 text-sm mb-1">Statuts des abonnements</p>
+        <ul className="space-y-0.5 text-xs text-blue-700">
+          <li>✅ Réussi — plan activé par le webhook Bictorys</li>
+          <li>⏳ En attente — paiement initié, webhook non reçu</li>
+          <li>🔴 Ligne rouge — paiement réussi mais plan non changé (anomalie)</li>
+        </ul>
       </div>
+      </>}
     </div>
   )
 }
