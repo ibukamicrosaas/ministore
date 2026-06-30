@@ -5,7 +5,6 @@ import { Building2, ShoppingBag, TrendingUp, Clock, AlertCircle, Zap, UserCheck,
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
 import CountryConversionWidget from '@/components/admin/CountryConversionWidget'
-import { FixShopCountriesButton } from '@/components/admin/FixShopCountriesButton'
 
 export const metadata = { title: 'Admin — TekkiShop' }
 
@@ -71,7 +70,12 @@ export default async function AdminOverviewPage() {
     supabase.from('shops').select('id, name, slug, trial_ends_at').eq('plan', 'trial').eq('is_active', true)
       .gte('trial_ends_at', now.toISOString())
       .lte('trial_ends_at', sevenDaysFromNow.toISOString()),
-    supabase.from('shops').select('id, name, slug, trial_ends_at, phone_whatsapp').eq('plan', 'trial').eq('is_active', false),
+    supabase.from('shops').select('id, name, slug, trial_ends_at, phone_whatsapp')
+      .eq('plan', 'trial').eq('is_active', false)
+      .gte('trial_ends_at', thirtyDaysAgo)
+      .lte('trial_ends_at', now.toISOString())
+      .order('trial_ends_at', { ascending: false })
+      .limit(20),
     supabase.from('payouts').select('id, shop_id, net_amount, payout_method, payout_number, requested_at, shops(name)')
       .eq('status', 'pending').order('requested_at', { ascending: true }),
     supabase.from('subscription_transactions' as never)
@@ -169,7 +173,7 @@ export default async function AdminOverviewPage() {
         </div>
 
         {/* 🚨 Actions urgentes */}
-        {(pendingSubscriptions.length > 0 || pendingPayouts.length > 0 || trialExpired.length > 0) && (
+        {(pendingSubscriptions.length > 0 || pendingPayouts.length > 0) && (
           <div className="mb-8 bg-gradient-to-r from-red-50 to-amber-50 border border-red-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <AlertCircle className="h-6 w-6 text-red-600" />
@@ -211,30 +215,9 @@ export default async function AdminOverviewPage() {
                 </Link>
               )}
 
-              {/* Essais expirés */}
-              {trialExpired.length > 0 && (
-                <Link href="/admin/shops"
-                  className="group rounded-lg bg-white border border-orange-200 p-4 hover:border-orange-300 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">
-                      <Clock className="h-3 w-3" />
-                      {trialExpired.length}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-orange-400 group-hover:text-orange-600 transition-colors" />
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900">Essais expirés</p>
-                  <p className="text-xs text-gray-500 mt-1">À relancer ou activer</p>
-                </Link>
-              )}
             </div>
           </div>
         )}
-
-        {/* Correction des pays */}
-        <div className="mb-8">
-          <FixShopCountriesButton />
-        </div>
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-8">
