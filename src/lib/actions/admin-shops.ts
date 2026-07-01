@@ -83,27 +83,43 @@ export async function getAllShopsForAdmin() {
 }
 
 /**
- * Réinitialise le PIN (mot de passe Supabase Auth) d'un utilisateur via son shop_id.
+ * Réinitialise le PIN (mot de passe Supabase Auth) du propriétaire d'une boutique.
  * Requiert une session admin valide.
+ * Retourne { userPhone } (masqué) pour confirmation dans l'UI.
  */
 export async function resetUserPin(
   shopId: string,
   newPin: string,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; userPhone?: string }> {
   await requireAdmin()
 
-  if (!UUID_RE.test(shopId))      return { error: 'ID boutique invalide.' }
-  if (!/^\d{6}$/.test(newPin))    return { error: 'Le PIN doit contenir exactement 6 chiffres.' }
+  if (!UUID_RE.test(shopId))   return { error: 'ID boutique invalide.' }
+  if (!/^\d{6}$/.test(newPin)) return { error: 'Le PIN doit contenir exactement 6 chiffres.' }
 
   const admin = createAdminClient()
 
+  // On filtre sur role = 'owner' pour éviter de prendre un profil admin
+  // en cas de boutique avec plusieurs profils liés
   const { data: profile, error: profileError } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, phone')
     .eq('shop_id', shopId)
+    .eq('role', 'owner')
     .single()
 
-  if (profileError || !profile) return { error: 'Aucun utilisateur trouvé pour cette boutique.' }
+  if (profileError || !profile) {
+    console.error('[resetUserPin] profile introuvable:', profileError?.message, { shopId })
+    return { error: 'Propriétaire introuvable pour cette boutique.' }
+  }
+
+  // Vérification préalable : l'utilisateur existe bien dans auth.users
+  const { data: authData, error: getUserError } = await admin.auth.admin.getUserById(profile.id)
+  if (getUserError || !authData.user) {
+    console.error('[resetUserPin] auth user introuvable:', getUserError?.message, { userId: profile.id })
+    return { error: 'Utilisateur Auth introuvable — contactez le support technique.' }
+  }
+
+  console.log('[resetUserPin] Mise à jour PIN pour', authData.user.email, '| shop:', shopId)
 
   const { error: updateError } = await admin.auth.admin.updateUserById(
     profile.id,
@@ -111,11 +127,17 @@ export async function resetUserPin(
   )
 
   if (updateError) {
-    console.error('[resetUserPin]', updateError.message)
-    return { error: 'Impossible de réinitialiser le PIN. Réessaie.' }
+    console.error('[resetUserPin] updateUserById error:', updateError.message, { userId: profile.id })
+    return { error: `Échec de la mise à jour : ${updateError.message}` }
   }
 
-  return {}
+  console.log('[resetUserPin] ✅ PIN réinitialisé pour', authData.user.email)
+
+  // Masquer le numéro pour l'afficher dans l'UI (ex: +221 77 ***45 67 → +221 77 ***)
+  const phone = (profile as { id: string; phone: string | null }).phone ?? authData.user.email ?? ''
+  const masked = phone.length > 6 ? phone.slice(0, 6) + '***' : phone
+
+  return { userPhone: masked }
 }
 
 /**

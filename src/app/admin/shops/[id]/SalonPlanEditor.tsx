@@ -84,7 +84,7 @@ export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminDat
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success('PIN réinitialisé ✓')
+      toast.success(`PIN réinitialisé ✓ — compte : ${result.userPhone ?? '?'}`)
       setNewPin('')
     }
   }
