@@ -13,6 +13,7 @@ import {
   Settings,
 } from 'lucide-react'
 import Link from 'next/link'
+import { COUNTRIES } from '@/constants/countries'
 
 export const metadata = { title: 'Paiements — Admin TEKKIShop' }
 
@@ -57,12 +58,17 @@ const PLAN_COLORS: Record<string, string> = {
   pro:        'bg-purple-100 text-purple-700',
 }
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  SN: '🇸🇳', CI: '🇨🇮', BK: '🇧🇫', ML: '🇲🇱', TG: '🇹🇬', BJ: '🇧🇯',
+}
+
 type ShopRank = {
-  shopId:   string
-  shopName: string
-  shopSlug: string
-  total:    number
-  count:    number
+  shopId:      string
+  shopName:    string
+  shopSlug:    string
+  shopCountry: string | null
+  total:       number
+  count:       number
 }
 
 export default async function AdminPaymentsPage({
@@ -92,7 +98,7 @@ export default async function AdminPaymentsPage({
     // Tous les paiements complétés (sans limite) pour le classement boutiques
     admin
       .from('payments')
-      .select('amount, shops(id, name, slug)')
+      .select('amount, shops(id, name, slug, country)')
       .eq('status', 'completed') as any,
   ])
 
@@ -100,13 +106,13 @@ export default async function AdminPaymentsPage({
   const subTxns = ((subTxnsRes as unknown as { data: SubTxn[] | null }).data ?? [])
 
   // Classement boutiques par CA en ligne
-  const rankingRaw = ((rankingRes.data ?? []) as { amount: number; shops: { id: string; name: string; slug: string } | null }[])
+  const rankingRaw = ((rankingRes.data ?? []) as { amount: number; shops: { id: string; name: string; slug: string; country: string | null } | null }[])
   const rankMap: Record<string, ShopRank> = {}
   for (const p of rankingRaw) {
     if (!p.shops) continue
     const sid = p.shops.id
     if (!rankMap[sid]) {
-      rankMap[sid] = { shopId: sid, shopName: p.shops.name, shopSlug: p.shops.slug, total: 0, count: 0 }
+      rankMap[sid] = { shopId: sid, shopName: p.shops.name, shopSlug: p.shops.slug, shopCountry: p.shops.country, total: 0, count: 0 }
     }
     rankMap[sid].total += p.amount ?? 0
     rankMap[sid].count += 1
@@ -401,7 +407,18 @@ export default async function AdminPaymentsPage({
                         </td>
                         <td className="px-6 py-3.5">
                           <p className="font-semibold text-gray-900">{shop.shopName}</p>
-                          <p className="text-xs text-gray-400 font-mono mt-0.5">{shop.shopSlug}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {shop.shopCountry && (
+                              <span className="text-sm leading-none">
+                                {COUNTRY_FLAGS[(shop.shopCountry ?? '').toUpperCase()] ?? '🌍'}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-400">
+                              {shop.shopCountry
+                                ? (COUNTRIES.find(c => c.code === (shop.shopCountry ?? '').toUpperCase())?.label ?? shop.shopCountry)
+                                : shop.shopSlug}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-3.5 text-right">
                           <p className={`font-bold ${isTop3 ? 'text-amber-700 text-base' : 'text-gray-900'}`}>
