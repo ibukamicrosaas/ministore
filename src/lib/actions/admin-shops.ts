@@ -63,10 +63,59 @@ export async function getAllShopsForAdmin() {
     )
   )
 
+  // CA en ligne (paiements Bictorys confirmés) par boutique
+  const { data: revenueRows } = await admin
+    .from('orders')
+    .select('shop_id, total_price')
+    .in('payment_type', ['online_full', 'online_deposit'])
+    .not('status', 'in', '("pending","cancelled")')
+
+  const revenueMap: Record<string, number> = {}
+  for (const o of (revenueRows ?? []) as { shop_id: string; total_price: number }[]) {
+    revenueMap[o.shop_id] = (revenueMap[o.shop_id] ?? 0) + (o.total_price ?? 0)
+  }
+
   return allShopsRaw.map((s) => ({
     ...s,
-    is_annual: annualIds.has(s.id as string),
+    is_annual:      annualIds.has(s.id as string),
+    online_revenue: revenueMap[s.id as string] ?? 0,
   }))
+}
+
+/**
+ * Réinitialise le PIN (mot de passe Supabase Auth) d'un utilisateur via son shop_id.
+ * Requiert une session admin valide.
+ */
+export async function resetUserPin(
+  shopId: string,
+  newPin: string,
+): Promise<{ error?: string }> {
+  await requireAdmin()
+
+  if (!UUID_RE.test(shopId))      return { error: 'ID boutique invalide.' }
+  if (!/^\d{6}$/.test(newPin))    return { error: 'Le PIN doit contenir exactement 6 chiffres.' }
+
+  const admin = createAdminClient()
+
+  const { data: profile, error: profileError } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('shop_id', shopId)
+    .single()
+
+  if (profileError || !profile) return { error: 'Aucun utilisateur trouvé pour cette boutique.' }
+
+  const { error: updateError } = await admin.auth.admin.updateUserById(
+    profile.id,
+    { password: newPin },
+  )
+
+  if (updateError) {
+    console.error('[resetUserPin]', updateError.message)
+    return { error: 'Impossible de réinitialiser le PIN. Réessaie.' }
+  }
+
+  return {}
 }
 
 /**

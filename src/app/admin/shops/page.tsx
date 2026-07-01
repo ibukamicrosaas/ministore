@@ -5,7 +5,7 @@ import { getAllShopsForAdmin } from '@/lib/actions/admin-shops'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X, Download } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X, Download, CreditCard } from 'lucide-react'
 import { COUNTRIES } from '@/constants/countries'
 
 const KNOWN_CODES = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const
@@ -97,10 +97,11 @@ export default function AdminShopsPage() {
   }, [shops, searchQuery, filterPlan, filterCountry])
 
   const stats = useMemo(() => ({
-    total:  shops.length,
-    active: shops.filter(s => s.is_active).length,
-    paid:   shops.filter(s => s.plan !== 'trial').length,
-    trial:  shops.filter(s => s.plan === 'trial').length,
+    total:         shops.length,
+    active:        shops.filter(s => s.is_active).length,
+    paid:          shops.filter(s => s.plan !== 'trial').length,
+    trial:         shops.filter(s => s.plan === 'trial').length,
+    totalRevenue:  shops.reduce((s: number, shop: any) => s + (shop.online_revenue ?? 0), 0),
   }), [shops])
 
   const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || searchQuery.length > 0
@@ -167,16 +168,21 @@ export default function AdminShopsPage() {
               <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total',    value: stats.total,  color: 'from-gray-500 to-gray-600' },
-              { label: 'Actives',  value: stats.active, color: 'from-emerald-500 to-emerald-600' },
-              { label: 'Payantes', value: stats.paid,   color: 'from-blue-500 to-blue-600' },
-              { label: 'Essai',    value: stats.trial,  color: 'from-amber-500 to-amber-600' },
+              { label: 'Total',    value: stats.total,  color: 'from-gray-500 to-gray-600',         fmt: null },
+              { label: 'Actives',  value: stats.active, color: 'from-emerald-500 to-emerald-600',   fmt: null },
+              { label: 'Payantes', value: stats.paid,   color: 'from-blue-500 to-blue-600',         fmt: null },
+              { label: 'Essai',    value: stats.trial,  color: 'from-amber-500 to-amber-600',       fmt: null },
+              { label: 'CA en ligne (Bictorys)', value: stats.totalRevenue, color: 'from-violet-500 to-violet-700', fmt: 'fcfa' },
             ].map((stat) => (
-              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-xl p-4 text-white shadow-sm`}>
+              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} rounded-xl p-4 text-white shadow-sm col-span-${stat.fmt ? '2 md:col-span-1' : '1'}`}>
                 <p className="text-sm opacity-80 font-medium">{stat.label}</p>
-                <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                <p className={`font-bold mt-1 ${stat.fmt ? 'text-xl' : 'text-3xl'}`}>
+                  {stat.fmt === 'fcfa'
+                    ? (stat.value as number).toLocaleString('fr-FR') + ' F'
+                    : stat.value}
+                </p>
               </div>
             ))}
           </div>
@@ -329,7 +335,8 @@ export default function AdminShopsPage() {
                     <th className="text-left px-6 py-4 font-semibold text-gray-600">Plan</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Téléphone</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600">Statut</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">Inscription</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">CA en ligne</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Inscription</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Abonnement</th>
                     <th className="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
                   </tr>
@@ -386,7 +393,17 @@ export default function AdminShopsPage() {
                             {shop.is_active ? 'Actif' : 'Inactif'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs text-gray-400 hidden lg:table-cell">
+                        <td className="px-6 py-4 hidden lg:table-cell">
+                          {(shop.online_revenue ?? 0) > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
+                              <CreditCard className="h-3 w-3" />
+                              {(shop.online_revenue as number).toLocaleString('fr-FR')} F
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-gray-400 hidden xl:table-cell">
                           {format(new Date(shop.created_at), 'd MMM yyyy', { locale: fr })}
                         </td>
                         <td className="px-6 py-4 hidden xl:table-cell">

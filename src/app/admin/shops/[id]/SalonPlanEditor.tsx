@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { updateShopPlan } from '@/lib/actions/admin'
-import { ChevronLeft, ExternalLink } from 'lucide-react'
+import { resetUserPin } from '@/lib/actions/admin-shops'
+import { ChevronLeft, ExternalLink, TrendingUp, KeyRound, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -39,7 +40,11 @@ export interface SalonAdminData {
   created_at: string
 }
 
-export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
+function formatFCFA(n: number): string {
+  return n.toLocaleString('fr-FR') + ' FCFA'
+}
+
+export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminData; onlineRevenue: number }) {
   const router = useRouter()
   const [plan, setPlan] = useState(salon.plan)
   const [isActive, setIsActive] = useState(salon.is_active)
@@ -52,6 +57,9 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
       : defaultEndsAt(PLAN_DURATIONS[salon.plan] ?? 31)
   )
   const [loading, setLoading] = useState(false)
+  const [newPin, setNewPin]   = useState('')
+  const [showPin, setShowPin] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
 
   // When plan changes, reset the expiry to a reasonable default if not already set
   function handlePlanChange(newPlan: string) {
@@ -64,6 +72,22 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
   const isExpired = plan !== 'trial' && subscriptionEndsAt
     ? new Date(subscriptionEndsAt) < new Date()
     : false
+
+  async function handlePinReset() {
+    if (!/^\d{6}$/.test(newPin)) {
+      toast.error('Le PIN doit contenir exactement 6 chiffres.')
+      return
+    }
+    setPinLoading(true)
+    const result = await resetUserPin(salon.id, newPin)
+    setPinLoading(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('PIN réinitialisé ✓')
+      setNewPin('')
+    }
+  }
 
   async function handleSave() {
     setLoading(true)
@@ -103,7 +127,7 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
         </div>
       </div>
 
-      {/* Infos salon */}
+      {/* Infos boutique */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-500">Slug</span>
@@ -115,6 +139,56 @@ export function SalonPlanEditor({ salon }: { salon: SalonAdminData }) {
             <span className="text-gray-900">{salon.phone_whatsapp}</span>
           </div>
         )}
+      </div>
+
+      {/* CA en ligne Bictorys */}
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+          <TrendingUp className="h-5 w-5 text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-xs font-medium text-emerald-700">CA généré via TEKKIShop (Bictorys)</p>
+          <p className="text-xl font-bold text-emerald-800 mt-0.5">{formatFCFA(onlineRevenue)}</p>
+        </div>
+      </div>
+
+      {/* Réinitialisation PIN */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900">Réinitialiser le PIN</h2>
+        </div>
+        <p className="text-xs text-gray-500">
+          Définis un PIN temporaire à 6 chiffres, puis communique-le à l'utilisateur.
+          Il pourra le changer depuis Paramètres → Changer le PIN.
+        </p>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type={showPin ? 'text' : 'password'}
+              value={newPin}
+              onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="6 chiffres"
+              maxLength={6}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 pr-10 text-sm font-mono tracking-widest outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPin(v => !v)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handlePinReset}
+            disabled={pinLoading || newPin.length !== 6}
+            className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          >
+            {pinLoading ? 'En cours…' : 'Réinitialiser'}
+          </button>
+        </div>
       </div>
 
       {/* Éditeur de plan */}
