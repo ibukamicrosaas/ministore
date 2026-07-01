@@ -8,6 +8,9 @@ import {
   ShoppingBag,
   CreditCard,
   TrendingUp,
+  Trophy,
+  ExternalLink,
+  Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -54,18 +57,26 @@ const PLAN_COLORS: Record<string, string> = {
   pro:        'bg-purple-100 text-purple-700',
 }
 
+type ShopRank = {
+  shopId:   string
+  shopName: string
+  shopSlug: string
+  total:    number
+  count:    number
+}
+
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
   const { tab = 'commandes' } = await searchParams
-  const activeTab = tab === 'abonnements' ? 'abonnements' : 'commandes'
+  const activeTab = ['abonnements', 'performances'].includes(tab) ? tab : 'commandes'
   const admin = createAdminClient()
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-  const [orderPaymentsRes, subTxnsRes] = await Promise.all([
+  const [orderPaymentsRes, subTxnsRes, rankingRes] = await Promise.all([
     admin
       .from('payments')
       .select('id, order_id, amount, currency, payment_method, payment_type, status, created_at, paid_at, shops(id, name, slug), orders(id, clients(first_name, phone))')
@@ -77,10 +88,30 @@ export default async function AdminPaymentsPage({
       .select('id, shop_id, plan_key, charge_id, status, created_at, activated_at, error_message, shops(id, name, slug, plan, is_active, phone_whatsapp)')
       .order('created_at', { ascending: false })
       .limit(300)) as unknown as Promise<{ data: SubTxn[] | null; error: unknown }>,
+
+    // Tous les paiements complétés (sans limite) pour le classement boutiques
+    admin
+      .from('payments')
+      .select('amount, shops(id, name, slug)')
+      .eq('status', 'completed') as any,
   ])
 
   const orderPayments = ((orderPaymentsRes.data ?? []) as OrderPayment[])
   const subTxns = ((subTxnsRes as unknown as { data: SubTxn[] | null }).data ?? [])
+
+  // Classement boutiques par CA en ligne
+  const rankingRaw = ((rankingRes.data ?? []) as { amount: number; shops: { id: string; name: string; slug: string } | null }[])
+  const rankMap: Record<string, ShopRank> = {}
+  for (const p of rankingRaw) {
+    if (!p.shops) continue
+    const sid = p.shops.id
+    if (!rankMap[sid]) {
+      rankMap[sid] = { shopId: sid, shopName: p.shops.name, shopSlug: p.shops.slug, total: 0, count: 0 }
+    }
+    rankMap[sid].total += p.amount ?? 0
+    rankMap[sid].count += 1
+  }
+  const shopRanking: ShopRank[] = Object.values(rankMap).sort((a, b) => b.total - a.total)
 
   // Stats commandes
   const completedOrders = orderPayments.filter(p => p.status === 'completed')
@@ -213,6 +244,22 @@ export default async function AdminPaymentsPage({
             <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
           )}
         </Link>
+        <Link
+          href="/admin/payments?tab=performances"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'performances'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Trophy className="h-4 w-4" />
+          Performances
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+            activeTab === 'performances' ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-500'
+          }`}>
+            {shopRanking.length}
+          </span>
+        </Link>
       </div>
 
       {/* ── Section 1 : Paiements clients ── */}
@@ -303,6 +350,113 @@ export default async function AdminPaymentsPage({
         </ul>
       </div>
       </>}
+
+      {/* ── Section 3 : Performances boutiques ── */}
+      {activeTab === 'performances' && (
+        <div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                  <Trophy className="h-4 w-4 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900">Classement par CA en ligne</h2>
+                  <p className="text-xs text-gray-500">
+                    {shopRanking.length} boutique{shopRanking.length !== 1 ? 's' : ''} avec au moins un paiement confirmé · tous temps
+                  </p>
+                </div>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-xs text-gray-400">CA total cumulé</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {shopRanking.reduce((s, r) => s + r.total, 0).toLocaleString('fr-FR')} F
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-12">#</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Boutique</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">CA total</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Commandes payées</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Panier moyen</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {shopRanking.map((shop, i) => {
+                    const avg = shop.count > 0 ? Math.round(shop.total / shop.count) : 0
+                    const isTop3 = i < 3
+                    const medals = ['🥇', '🥈', '🥉']
+                    return (
+                      <tr key={shop.shopId} className={`hover:bg-gray-50 transition-colors ${isTop3 ? 'bg-amber-50/30' : ''}`}>
+                        <td className="px-6 py-3.5">
+                          <span className={`text-base ${isTop3 ? '' : 'text-gray-400 font-mono text-sm'}`}>
+                            {isTop3 ? medals[i] : `${i + 1}`}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3.5">
+                          <p className="font-semibold text-gray-900">{shop.shopName}</p>
+                          <p className="text-xs text-gray-400 font-mono mt-0.5">{shop.shopSlug}</p>
+                        </td>
+                        <td className="px-6 py-3.5 text-right">
+                          <p className={`font-bold ${isTop3 ? 'text-amber-700 text-base' : 'text-gray-900'}`}>
+                            {shop.total.toLocaleString('fr-FR')} F
+                          </p>
+                        </td>
+                        <td className="px-6 py-3.5 text-right hidden md:table-cell">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                            {shop.count} commande{shop.count !== 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3.5 text-right hidden lg:table-cell">
+                          <span className="text-sm text-gray-600 font-medium">
+                            {avg.toLocaleString('fr-FR')} F
+                          </span>
+                        </td>
+                        <td className="px-6 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link
+                              href={`/admin/shops/${shop.shopId}`}
+                              title="Gérer la boutique"
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              href={`/${shop.shopSlug}`}
+                              target="_blank"
+                              title="Voir la boutique"
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {shopRanking.length === 0 && (
+              <div className="px-6 py-16 text-center">
+                <Trophy className="h-8 w-8 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">Aucun paiement en ligne confirmé pour le moment</p>
+              </div>
+            )}
+
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+              Basé sur les paiements Bictorys/Stripe avec statut "complété" · toutes périodes confondues
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Section 2 : Abonnements TEKKIShop ── */}
       {activeTab === 'abonnements' && <>
