@@ -214,7 +214,8 @@ export default async function AdminPaymentsPage({
       )}
 
       {/* ── Onglets ── */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
+      <div className="overflow-x-auto mb-6 -mx-5 px-5 sm:mx-0 sm:px-0 scrollbar-none">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-max sm:w-fit">
         <Link
           href="/admin/payments?tab=commandes"
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -266,6 +267,7 @@ export default async function AdminPaymentsPage({
             {shopRanking.length}
           </span>
         </Link>
+      </div>
       </div>
 
       {/* ── Section 1 : Paiements clients ── */}
