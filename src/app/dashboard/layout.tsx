@@ -201,7 +201,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin} renewalBanner={renewalBanner}>
+      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin} renewalBanner={renewalBanner} isTrial={isTrial}>
         {children}
       </DashboardShell>
       <Toaster

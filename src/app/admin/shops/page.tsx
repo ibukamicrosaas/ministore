@@ -12,6 +12,21 @@ const KNOWN_CODES = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const
 type KnownCode = typeof KNOWN_CODES[number]
 type CountryFilter = 'all' | KnownCode | 'other'
 type PlanFilter = 'all' | 'trial' | 'decouverte' | 'business' | 'pro'
+type SegmentFilter = 'all' | 'ready' | 'started' | 'ghost'
+
+const SEGMENT_CONFIG: Record<SegmentFilter, { label: string; description: string; color: string; icon: string }> = {
+  all:     { label: 'Tous',      description: '',                         color: 'bg-gray-100 text-gray-600',      icon: '' },
+  ready:   { label: 'Prêts',     description: '≥ 3 produits',             color: 'bg-emerald-100 text-emerald-700', icon: '🟢' },
+  started: { label: 'Démarrés',  description: '1-2 produits',             color: 'bg-sky-100 text-sky-700',        icon: '🔵' },
+  ghost:   { label: 'Fantômes',  description: '0 produit',                color: 'bg-gray-100 text-gray-500',      icon: '👻' },
+}
+
+function getSegment(shop: { product_count?: number }): Exclude<SegmentFilter, 'all'> {
+  const pc = shop.product_count ?? 0
+  if (pc >= 3) return 'ready'
+  if (pc >= 1) return 'started'
+  return 'ghost'
+}
 
 const COUNTRY_FLAGS: Record<string, string> = {
   SN: '🇸🇳', CI: '🇨🇮', BK: '🇧🇫', ML: '🇲🇱', TG: '🇹🇬', BJ: '🇧🇯',
@@ -30,6 +45,7 @@ export default function AdminShopsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlan, setFilterPlan] = useState<PlanFilter>('all')
   const [filterCountry, setFilterCountry] = useState<CountryFilter>('all')
+  const [filterSegment, setFilterSegment] = useState<SegmentFilter>('all')
 
   useEffect(() => { loadData() }, [])
 
@@ -64,6 +80,14 @@ export default function AdminShopsPage() {
     return c
   }, [shops])
 
+  // Comptages des segments pour les boutiques en essai
+  const segmentCounts = useMemo(() => {
+    const trialShops = shops.filter(s => s.plan === 'trial')
+    const c: Record<SegmentFilter, number> = { all: trialShops.length, ready: 0, started: 0, ghost: 0 }
+    for (const s of trialShops) c[getSegment(s)]++
+    return c
+  }, [shops])
+
   const filtered = useMemo(() => {
     // Normalisation du query téléphone — on ne l'utilise que s'il contient des chiffres
     const phoneQuery = searchQuery.replace(/\D/g, '')
@@ -71,6 +95,12 @@ export default function AdminShopsPage() {
     return shops.filter(s => {
       // Filtre plan
       if (filterPlan !== 'all' && s.plan !== filterPlan) return false
+
+      // Filtre segment (uniquement pertinent pour les boutiques en essai)
+      if (filterSegment !== 'all') {
+        if (s.plan !== 'trial') return false
+        if (getSegment(s) !== filterSegment) return false
+      }
 
       // Filtre pays
       const code = (s.country ?? '').toUpperCase()
@@ -94,7 +124,7 @@ export default function AdminShopsPage() {
 
       return true
     })
-  }, [shops, searchQuery, filterPlan, filterCountry])
+  }, [shops, searchQuery, filterPlan, filterCountry, filterSegment])
 
   const stats = useMemo(() => ({
     total:         shops.length,
@@ -104,16 +134,17 @@ export default function AdminShopsPage() {
     totalRevenue:  shops.reduce((s: number, shop: any) => s + (shop.online_revenue ?? 0), 0),
   }), [shops])
 
-  const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || searchQuery.length > 0
+  const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || filterSegment !== 'all' || searchQuery.length > 0
 
   function resetFilters() {
     setSearchQuery('')
     setFilterPlan('all')
     setFilterCountry('all')
+    setFilterSegment('all')
   }
 
   function exportCSV() {
-    const headers = ['Boutique', 'Plan', 'Cycle', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Expiration abonnement', 'Lien boutique']
+    const headers = ['Boutique', 'Plan', 'Cycle', 'Segment', 'Nb produits', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Expiration abonnement', 'Lien boutique']
     const rows = filtered.map(s => {
       const code = (s.country ?? '').toUpperCase()
       const countryLabel = COUNTRIES.find(c => c.code === code)?.label ?? s.country ?? ''
@@ -122,7 +153,8 @@ export default function AdminShopsPage() {
       const date = s.created_at ? format(new Date(s.created_at), 'd MMM yyyy', { locale: fr }) : ''
       const expiry = s.subscription_ends_at ? format(new Date(s.subscription_ends_at), 'd MMM yyyy', { locale: fr }) : ''
       const cycle = s.is_annual ? 'Annuel' : s.plan !== 'trial' ? 'Mensuel' : ''
-      return [s.name ?? '', planLabel, cycle, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, expiry, shopUrl]
+      const segment = s.plan === 'trial' ? SEGMENT_CONFIG[getSegment(s)].label : ''
+      return [s.name ?? '', planLabel, cycle, segment, s.product_count ?? 0, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, expiry, shopUrl]
     })
 
     const csv = [headers, ...rows]
@@ -271,6 +303,48 @@ export default function AdminShopsPage() {
             })}
           </div>
 
+          {/* Filtre segment — prospects en essai */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider w-8 shrink-0">Seg.</span>
+            {(['all', 'ready', 'started', 'ghost'] as SegmentFilter[]).map((seg) => {
+              const isActive = filterSegment === seg
+              const cfg = SEGMENT_CONFIG[seg]
+              return (
+                <button
+                  key={seg}
+                  onClick={() => {
+                    setFilterSegment(seg)
+                    // Quand on sélectionne un segment, on force le filtre essai
+                    if (seg !== 'all') setFilterPlan('trial')
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-violet-500 text-white shadow-md ring-2 ring-violet-200'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600'
+                  }`}
+                >
+                  {cfg.icon && <span className="text-xs leading-none">{cfg.icon}</span>}
+                  {cfg.label}
+                  {seg !== 'all' && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[1.25rem] text-center ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {segmentCounts[seg]}
+                    </span>
+                  )}
+                  {seg === 'all' && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[1.25rem] text-center ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {segmentCounts.all}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+            <span className="text-xs text-gray-400 ml-1">boutiques en essai uniquement</span>
+          </div>
+
           {/* Barre de résultats + actions */}
           <div className="flex items-center justify-between text-sm pt-1">
             <span className="text-gray-500">
@@ -335,6 +409,7 @@ export default function AdminShopsPage() {
                     <th className="text-left px-6 py-4 font-semibold text-gray-600">Plan</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Téléphone</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600">Statut</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Produits</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">CA en ligne</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Inscription</th>
                     <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Abonnement</th>
@@ -392,6 +467,19 @@ export default function AdminShopsPage() {
                             }`} />
                             {shop.is_active ? 'Actif' : 'Inactif'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 hidden md:table-cell">
+                          {shop.plan === 'trial' ? (
+                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${
+                              getSegment(shop) === 'ready'   ? 'bg-emerald-50 text-emerald-700' :
+                              getSegment(shop) === 'started' ? 'bg-sky-50 text-sky-700'          :
+                                                               'bg-gray-100 text-gray-400'
+                            }`}>
+                              {SEGMENT_CONFIG[getSegment(shop)].icon} {shop.product_count ?? 0}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">{shop.product_count ?? 0}</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 hidden lg:table-cell">
                           {(shop.online_revenue ?? 0) > 0 ? (

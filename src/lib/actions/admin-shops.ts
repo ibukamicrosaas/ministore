@@ -75,10 +75,22 @@ export async function getAllShopsForAdmin() {
     revenueMap[o.shop_id] = (revenueMap[o.shop_id] ?? 0) + (o.total_price ?? 0)
   }
 
+  // Nombre de produits actifs par boutique (pour segmentation des utilisateurs en essai)
+  const { data: productRows } = await admin
+    .from('products')
+    .select('shop_id')
+    .eq('is_active', true)
+
+  const productCountMap: Record<string, number> = {}
+  for (const p of (productRows ?? []) as { shop_id: string }[]) {
+    productCountMap[p.shop_id] = (productCountMap[p.shop_id] ?? 0) + 1
+  }
+
   return allShopsRaw.map((s) => ({
     ...s,
     is_annual:      annualIds.has(s.id as string),
     online_revenue: revenueMap[s.id as string] ?? 0,
+    product_count:  productCountMap[s.id as string] ?? 0,
   }))
 }
 
