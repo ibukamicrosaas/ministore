@@ -130,45 +130,78 @@ export default async function DashboardLayout({
     )
   }
 
+  // Calcul de la bannière de renouvellement (une seule, la plus urgente)
+  const renewalBanner = (() => {
+    if (subExpired) return (
+      <div className="flex items-center gap-3 bg-red-600 px-4 py-2.5 shrink-0">
+        <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-white">
+          Expiré
+        </span>
+        <p className="flex-1 text-sm font-medium text-white">
+          Votre abonnement est expiré — votre boutique est suspendue.
+        </p>
+        <Link
+          href="/dashboard/upgrade"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+        >
+          Renouveler →
+        </Link>
+      </div>
+    )
+    if (subWarning3) return (
+      <div className="flex items-center gap-3 bg-orange-500 px-4 py-2.5 shrink-0">
+        <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-white">
+          {subLeft} jour{subLeft! > 1 ? 's' : ''}
+        </span>
+        <p className="flex-1 text-sm font-medium text-white">
+          Votre abonnement expire bientôt. Renouvelez maintenant pour ne pas interrompre vos ventes.
+        </p>
+        <Link
+          href="/dashboard/upgrade"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
+        >
+          Renouveler →
+        </Link>
+      </div>
+    )
+    if (subWarning7) return (
+      <div className="flex items-center gap-3 bg-amber-500 px-4 py-2.5 shrink-0">
+        <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-white">
+          {subLeft} jours
+        </span>
+        <p className="flex-1 text-sm font-medium text-white">
+          Votre abonnement expire dans {subLeft} jours.
+        </p>
+        <Link
+          href="/dashboard/upgrade"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-50 transition-colors"
+        >
+          Renouveler →
+        </Link>
+      </div>
+    )
+    if (isTrial && trialWarning) return (
+      <div className="flex items-center gap-3 bg-amber-500 px-4 py-2.5 shrink-0">
+        <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-white">
+          {trialLeft} jour{trialLeft! > 1 ? 's' : ''}
+        </span>
+        <p className="flex-1 text-sm font-medium text-white">
+          Votre boutique n&apos;est pas encore active. Choisissez un plan pour commencer à vendre.
+        </p>
+        <Link
+          href="/dashboard/upgrade"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-50 transition-colors"
+        >
+          Activer →
+        </Link>
+      </div>
+    )
+    return null
+  })()
+
   return (
     <>
-      {/* ── Période de configuration (essai) ─────────────────── */}
-      {isTrial && trialWarning && (
-        <div className="bg-amber-500 text-white text-center px-4 py-2.5 text-sm font-medium">
-          Votre boutique n&apos;est pas encore active. Il vous reste {trialLeft} jour{trialLeft! > 1 ? 's' : ''} pour choisir un plan.{' '}
-          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
-            Activer maintenant →
-          </Link>
-        </div>
-      )}
-
-      {/* ── Abonnement payant ─────────────────────────────────── */}
-      {subExpired && (
-        <div className="bg-red-600 text-white text-center px-4 py-2.5 text-sm font-medium">
-          Votre abonnement est expiré — votre boutique est suspendue.{' '}
-          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
-            Renouveler →
-          </Link>
-        </div>
-      )}
-      {subWarning3 && (
-        <div className="bg-red-500 text-white text-center px-4 py-2.5 text-sm font-medium">
-          Votre abonnement expire dans {subLeft} jour{subLeft! > 1 ? 's' : ''} !{' '}
-          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
-            Renouveler maintenant →
-          </Link>
-        </div>
-      )}
-      {subWarning7 && (
-        <div className="bg-amber-500 text-white text-center px-4 py-2.5 text-sm font-medium">
-          Votre abonnement expire dans {subLeft} jours.{' '}
-          <Link href="/dashboard/upgrade" className="underline font-bold hover:opacity-80">
-            Renouveler →
-          </Link>
-        </div>
-      )}
-
-      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin}>
+      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin} renewalBanner={renewalBanner}>
         {children}
       </DashboardShell>
       <Toaster

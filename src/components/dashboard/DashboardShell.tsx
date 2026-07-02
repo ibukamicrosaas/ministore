@@ -15,9 +15,10 @@ interface DashboardShellProps {
   pageTitle?: string
   unreadNotifications?: number
   isAdmin?: boolean
+  renewalBanner?: React.ReactNode
 }
 
-export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false }: DashboardShellProps) {
+export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false, renewalBanner }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
 
@@ -39,6 +40,8 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
         />
         {/* Spacer pour le header fixe sur mobile */}
         <div className="h-14 shrink-0 lg:hidden" aria-hidden />
+        {/* Bannière renouvellement — placée ici pour être visible sous le header fixe */}
+        {renewalBanner}
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">
           {children}
         </main>
