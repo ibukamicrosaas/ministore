@@ -143,6 +143,14 @@ export function OnboardingForm() {
           error={errors.phone_whatsapp}
         />
 
+        <Input
+          name="email"
+          type="email"
+          label="E-mail (optionnel)"
+          placeholder="vous@exemple.com"
+          hint="Recevez aussi vos commandes par e-mail"
+        />
+
         {errors.form && (
           <p className="text-xs text-red-600 text-center">{errors.form}</p>
         )}

@@ -179,6 +179,7 @@ export async function createShop(formData: FormData) {
   const name = (formData.get('name') as string)?.trim()
   const city = (formData.get('city') as string)?.trim()
   const phoneWhatsapp = (formData.get('phone_whatsapp') as string)?.trim()
+  const notificationEmail = (formData.get('email') as string)?.trim() || null
   let country: string | null = (formData.get('country') as string)?.trim() || null
 
   if (!name || !city || !phoneWhatsapp) {
@@ -229,6 +230,7 @@ export async function createShop(formData: FormData) {
       country,
       currency,
       phone_whatsapp: phoneWhatsapp,
+      ...(notificationEmail ? { email: notificationEmail } : {}),
       trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select('id')

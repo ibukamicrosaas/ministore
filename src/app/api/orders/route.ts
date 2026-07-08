@@ -6,6 +6,7 @@ import {
   buildNewOrderAlertMessage,
   buildLowStockAlertMessage,
 } from '@/lib/notifications/whatsapp'
+import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
 
@@ -29,6 +30,7 @@ interface CreateOrderBody {
   client_first_name: string
   client_phone: string
   client_whatsapp: string
+  client_email?: string | null
   notes: string | null
   payment_type: 'online_full' | 'online_deposit' | 'on_delivery' | 'on_site'
   promo_code?: string | null
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   const { shopId, items, delivery_date, delivery_type, delivery_address,
     delivery_zone_name,
-    client_first_name, client_phone, client_whatsapp, notes, payment_type,
+    client_first_name, client_phone, client_whatsapp, client_email, notes, payment_type,
     promo_code } = body
 
   // ── Validation des entrées ────────────────────────────────────────────
@@ -79,6 +81,9 @@ export async function POST(req: NextRequest) {
   if (notes && (typeof notes !== 'string' || notes.length > 1000)) {
     return NextResponse.json({ error: 'Notes trop longues (max 1000 caractères).' }, { status: 400 })
   }
+  if (client_email && (typeof client_email !== 'string' || client_email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client_email))) {
+    return NextResponse.json({ error: 'Adresse e-mail invalide.' }, { status: 400 })
+  }
   if (delivery_address && (typeof delivery_address !== 'string' || delivery_address.length > 500)) {
     return NextResponse.json({ error: 'Adresse trop longue (max 500 caractères).' }, { status: 400 })
   }
@@ -96,7 +101,7 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
@@ -205,38 +210,70 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Phase 1 : Réservation atomique du stock AVANT création de la commande ─
-  // Chaque décrément est atomique en DB (UPDATE … WHERE stock_count >= qty).
-  // Si l'un échoue, on restore les précédents → zéro survente possible.
-  type DecrementedItem = { product_id: string; quantity: number }
+  // Pour les produits avec variants : décrémente le stock dans le JSONB.
+  // Pour les produits sans variant  : décrémente products.stock_count.
+  // Si l'un échoue, rollback des précédents → zéro survente possible.
+  type DecrementedItem = { product_id: string; variant_label: string | null; quantity: number }
   const decrementedItems: DecrementedItem[] = []
 
-  for (const it of serverItems) {
-    if (!it.product_id) continue
-    const p = productMap.get(it.product_id)
-    if (p?.stock_count === null) continue  // stock illimité, rien à décrémenter
-
-    const { data: ok } = await supabase.rpc('decrement_product_stock', {
-      p_product_id: it.product_id,
-      p_shop_id:    shopId,
-      p_quantity:   it.quantity,
-    })
-
-    if (!ok) {
-      // Décrément échoué : rollback stock + libérer le code promo réservé
-      for (const prev of decrementedItems) {
+  async function rollbackStock() {
+    for (const prev of decrementedItems) {
+      if (prev.variant_label) {
+        await supabase.rpc('increment_variant_stock', {
+          p_product_id:    prev.product_id,
+          p_shop_id:       shopId,
+          p_variant_label: prev.variant_label,
+          p_quantity:      prev.quantity,
+        })
+      } else {
         await supabase.rpc('increment_product_stock', {
           p_product_id: prev.product_id,
           p_shop_id:    shopId,
           p_quantity:   prev.quantity,
         })
       }
-      if (promoId) void (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)('release_promo_code', { p_promo_id: promoId })
-      return NextResponse.json(
-        { error: `Stock insuffisant pour ${p?.name ?? it.product_id}. Veuillez actualiser et réessayer.` },
-        { status: 409 }
-      )
     }
-    decrementedItems.push({ product_id: it.product_id, quantity: it.quantity })
+    if (promoId) void (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)('release_promo_code', { p_promo_id: promoId })
+  }
+
+  for (const it of serverItems) {
+    if (!it.product_id) continue
+    const p = productMap.get(it.product_id)
+
+    if (it.variant_label) {
+      // Variante : décrémente dans le JSONB (gère le cas stock null = illimité)
+      const { data: ok } = await supabase.rpc('decrement_variant_stock', {
+        p_product_id:    it.product_id,
+        p_shop_id:       shopId,
+        p_variant_label: it.variant_label,
+        p_quantity:      it.quantity,
+      })
+      if (!ok) {
+        await rollbackStock()
+        return NextResponse.json(
+          { error: `Stock insuffisant pour ${p?.name ?? it.product_id} – ${it.variant_label}. Veuillez actualiser.` },
+          { status: 409 }
+        )
+      }
+      decrementedItems.push({ product_id: it.product_id, variant_label: it.variant_label, quantity: it.quantity })
+    } else {
+      // Produit sans variante : décrémente products.stock_count
+      if (p?.stock_count === null) continue  // stock illimité, rien à décrémenter
+
+      const { data: ok } = await supabase.rpc('decrement_product_stock', {
+        p_product_id: it.product_id,
+        p_shop_id:    shopId,
+        p_quantity:   it.quantity,
+      })
+      if (!ok) {
+        await rollbackStock()
+        return NextResponse.json(
+          { error: `Stock insuffisant pour ${p?.name ?? it.product_id}. Veuillez actualiser et réessayer.` },
+          { status: 409 }
+        )
+      }
+      decrementedItems.push({ product_id: it.product_id, variant_label: null, quantity: it.quantity })
+    }
   }
 
   // ── Phase 2 : Upsert client ──────────────────────────────────────────────
@@ -246,7 +283,7 @@ export async function POST(req: NextRequest) {
     p_last_name:  '',
     p_phone:      client_phone,
     p_whatsapp:   client_whatsapp,
-    p_email:      '',
+    p_email:      client_email?.trim() ?? '',
   })
 
   // ── Phase 3 : Créer la commande (stock déjà réservé) ────────────────────
@@ -272,17 +309,15 @@ export async function POST(req: NextRequest) {
 
   if (orderError || !order) {
     console.error('[api/orders]', orderError?.message)
-    // Création échouée → restaurer le stock réservé + libérer le code promo
-    for (const item of decrementedItems) {
-      await supabase.rpc('increment_product_stock', {
-        p_product_id: item.product_id,
-        p_shop_id:    shopId,
-        p_quantity:   item.quantity,
-      })
-    }
-    if (promoId) void (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)('release_promo_code', { p_promo_id: promoId })
+    await rollbackStock()
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
   }
+
+  // Construction commune orderUrl + itemsSummary — utilisés par email + WhatsApp
+  const orderUrl     = `${APP_URL}/${shop.slug}/commander/success?order_id=${order.id}&token=${order.client_token}`
+  const itemsSummary = serverItems
+    .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${(i.unit_price * i.quantity).toLocaleString('fr-FR')} FCFA`)
+    .join('\n')
 
   // Notification push au marchand (fire-and-forget)
   void sendPushToShop(shopId, {
@@ -290,6 +325,22 @@ export async function POST(req: NextRequest) {
     body:  `${client_first_name} • ${total_price.toLocaleString('fr-FR')} FCFA`,
     url:   `${APP_URL}/dashboard/orders`,
   })
+
+  // Alerte email au marchand si email configuré (fire-and-forget)
+  const shopEmail = (shop as typeof shop & { email?: string | null }).email
+  if (shopEmail) {
+    void sendNewOrderAlertEmail({
+      toEmail:           shopEmail,
+      shopName:          shop.name,
+      clientName:        client_first_name,
+      clientPhone:       client_phone,
+      items:             itemsSummary,
+      totalPrice:        total_price,
+      deliveryType:      delivery_type,
+      deliveryDate:      delivery_date,
+      orderDashboardUrl: `${APP_URL}/dashboard/orders/${order.id}`,
+    })
+  }
 
   // Enregistrer la commande pour le rate limiting
   void supabase.from('login_attempts').insert({
@@ -342,17 +393,30 @@ export async function POST(req: NextRequest) {
     })()
   }
 
+  // E-mail de confirmation client (fire-and-forget, ne bloque pas la réponse)
+  if (client_email) {
+    void sendOrderConfirmationEmail({
+      toEmail:      client_email,
+      clientName:   client_first_name,
+      shopName:     shop.name,
+      shopSlug:     shop.slug,
+      orderId:      order.id,
+      clientToken:  order.client_token,
+      items:        itemsSummary,
+      totalPrice:   total_price,
+      deliveryType: delivery_type,
+      deliveryDate: delivery_date,
+      paymentType:  payment_type,
+      orderUrl,
+    })
+  }
+
   // Si paiement en ligne → renvoyer vers la page de paiement
   if (payment_type === 'online_full' || payment_type === 'online_deposit') {
     return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'pay' })
   }
 
   // Paiement à la réception → envoyer les notifications WhatsApp
-  const orderUrl     = `${APP_URL}/${shop.slug}/commander/success?order_id=${order.id}&token=${order.client_token}`
-  const itemsSummary = serverItems
-    .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${(i.unit_price * i.quantity).toLocaleString('fr-FR')} FCFA`)
-    .join('\n')
-
   const confirmMsg = buildOrderConfirmationMessage({
     shopName:     shop.name,
     clientName:   client_first_name,

@@ -442,6 +442,7 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       city:              (fd.get('city') as string).trim(),
       country:           country || null,
       phone_whatsapp:    (fd.get('phone_whatsapp') as string).trim(),
+      email:             (fd.get('email') as string | null)?.trim() || undefined,
       address:           (fd.get('address') as string).trim() || undefined,
       description:       (fd.get('description') as string).trim() || undefined,
       primary_color:     primaryColor,
@@ -613,6 +614,23 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
           required
           className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          E-mail de notification{' '}
+          <span className="text-xs font-normal text-gray-400">(optionnel)</span>
+        </label>
+        <input
+          name="email"
+          type="email"
+          defaultValue={(shop as Shop & { email?: string }).email ?? ''}
+          placeholder="vous@exemple.com"
+          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Recevez une copie de chaque nouvelle commande par e-mail, en complément du WhatsApp.
+        </p>
       </div>
 
       <div>

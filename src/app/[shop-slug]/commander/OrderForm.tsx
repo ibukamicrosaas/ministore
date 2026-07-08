@@ -333,6 +333,7 @@ export function OrderForm({
   const [sameWa, setSameWa] = useState(true)
   const [waDial, setWaDial] = useState(defaultDial)
   const [waNum, setWaNum] = useState('')
+  const [clientEmail, setClientEmail] = useState('')
   const [deliveryType, setDeliveryType] = useState<'home_delivery' | 'store_pickup'>(
     deliveryOptions.home_delivery ? 'home_delivery' : 'store_pickup',
   )
@@ -505,6 +506,7 @@ export function OrderForm({
       client_first_name: firstName.trim(),
       client_phone: fullPhone,
       client_whatsapp: fullWhatsapp,
+      client_email: clientEmail.trim() || null,
       notes: notes.trim() || null,
       delivery_zone_name: (deliveryType === 'home_delivery' && selectedZone) ? selectedZone.name : null,
       delivery_price: deliveryPrice,
@@ -878,6 +880,19 @@ export function OrderForm({
                 />
               </div>
             )}
+            <div>
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="E-mail (optionnel)"
+                autoComplete="email"
+                className={inputCls}
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Votre adresse e-mail nous permettra de vous envoyer une confirmation de commande.
+              </p>
+            </div>
           </div>
         </section>
 

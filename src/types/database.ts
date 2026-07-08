@@ -728,6 +728,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      decrement_variant_stock: {
+        Args: {
+          p_product_id: string
+          p_shop_id: string
+          p_variant_label: string
+          p_quantity: number
+        }
+        Returns: boolean
+      }
+      increment_variant_stock: {
+        Args: {
+          p_product_id: string
+          p_shop_id: string
+          p_variant_label: string
+          p_quantity: number
+        }
+        Returns: undefined
+      }
       increment_promo_used_count: {
         Args: { p_promo_id: string }
         Returns: undefined
