@@ -7,6 +7,8 @@ const PAYMENT_TYPE_MAP: Record<string, string> = {
   orange_money: 'orange_money',
   maxit:        'maxit',
   mtn_money:    'mtn_money',
+  moov_money:   'moov',
+  togocell:     'togocell',
 }
 
 interface Props {
