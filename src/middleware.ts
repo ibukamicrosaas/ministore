@@ -25,12 +25,11 @@ export async function middleware(request: NextRequest) {
     try {
       const { data: shop } = await supabase
         .from('shops')
-        .select('slug, plan, is_active')
+        .select('slug, is_active')
         .eq('custom_domain', hostname)
-        .eq('is_active', true)
         .single()
 
-      if (shop?.slug && shop.plan === 'pro') {
+      if (shop?.slug) {
         // Si le path contient déjà le slug (ex: /viensonsconnait/produit/...), le supprimer
         // pour éviter le double slug dans l'URL et dans le rewrite
         const slugPrefix = `/${shop.slug}`
