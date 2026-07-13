@@ -12,6 +12,7 @@ import { advanceOrderStatus } from '@/lib/actions/orders'
 import { CancelOrderButton } from './CancelOrderButton'
 import { CopyReviewLinkButton } from './CopyReviewLinkButton'
 import { SendToDeliveryButton } from './SendToDeliveryButton'
+import { DigitalDeliveryCard } from './DigitalDeliveryCard'
 import type { Profile, OrderItem } from '@/types'
 import { APP_URL } from '@/constants'
 
@@ -21,8 +22,8 @@ const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'delivered']
 const DIGITAL_STATUS_FLOW = ['pending', 'confirmed', 'completed']
 const DIGITAL_STATUS_LABELS: Record<string, string> = {
   pending:   'En attente',
-  confirmed: 'Accès envoyé',
-  completed: 'Livré',
+  confirmed: 'Paiement reçu',
+  completed: 'Accès envoyé',
 }
 
 const NEXT_ACTION_LABEL: Record<string, string> = {
@@ -288,35 +289,14 @@ export default async function OrderDetailPage({
       </Card>
 
       {/* Téléchargements digitaux — mis en avant pour les commandes numériques */}
-      {isDigitalOrder && downloadTokens.length > 0 && (
-        <Card>
-          <p className="text-sm font-semibold text-gray-900 mb-3">📄 Liens de téléchargement</p>
-          <div className="space-y-3">
-            {downloadTokens.map(dt => {
-              const isExpired = new Date(dt.expires_at) < new Date()
-              const isExhausted = dt.download_count >= dt.max_downloads
-              const statusColor = isExpired || isExhausted ? 'text-red-500' : 'text-emerald-600'
-              const statusLabel = isExpired ? 'Expiré' : isExhausted ? 'Épuisé' : 'Actif'
-              return (
-                <div key={dt.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">
-                      {dt.products?.digital_file_name ?? dt.products?.name ?? 'Fichier'}
-                    </p>
-                    <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Téléchargements : {dt.download_count}/{dt.max_downloads}
-                    {dt.downloaded_at && ` · 1er dl : ${new Date(dt.downloaded_at).toLocaleDateString('fr-FR')}`}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Expire le {new Date(dt.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
+      {isDigitalOrder && (
+        <DigitalDeliveryCard
+          tokens={downloadTokens}
+          orderId={id}
+          clientPhone={order.clients?.whatsapp ?? order.clients?.phone ?? ''}
+          clientName={order.clients?.first_name ?? 'le client'}
+          appUrl={APP_URL}
+        />
       )}
 
       {/* Accès / Livraison & paiement */}
@@ -397,36 +377,15 @@ export default async function OrderDetailPage({
         </Card>
       )}
 
-      {/* Téléchargements digitaux — pour commandes mixtes ou récapitulatif */}
+      {/* Téléchargements digitaux — pour commandes mixtes */}
       {!isDigitalOrder && downloadTokens.length > 0 && (
-        <Card>
-          <p className="text-sm font-semibold text-gray-900 mb-3">📄 Téléchargements</p>
-          <div className="space-y-3">
-            {downloadTokens.map(dt => {
-              const isExpired = new Date(dt.expires_at) < new Date()
-              const isExhausted = dt.download_count >= dt.max_downloads
-              const statusColor = isExpired || isExhausted ? 'text-red-500' : 'text-emerald-600'
-              const statusLabel = isExpired ? 'Expiré' : isExhausted ? 'Épuisé' : 'Actif'
-              return (
-                <div key={dt.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">
-                      {dt.products?.digital_file_name ?? dt.products?.name ?? 'Fichier'}
-                    </p>
-                    <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Téléchargements : {dt.download_count}/{dt.max_downloads}
-                    {dt.downloaded_at && ` · 1er dl : ${new Date(dt.downloaded_at).toLocaleDateString('fr-FR')}`}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Expire le {new Date(dt.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
+        <DigitalDeliveryCard
+          tokens={downloadTokens}
+          orderId={id}
+          clientPhone={order.clients?.whatsapp ?? order.clients?.phone ?? ''}
+          clientName={order.clients?.first_name ?? 'le client'}
+          appUrl={APP_URL}
+        />
       )}
     </div>
   )
