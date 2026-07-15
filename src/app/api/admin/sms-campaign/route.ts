@@ -16,13 +16,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // 2. Secret admin
-  const envSecret    = process.env.ADMIN_SECRET ?? ''
-  const headerSecret = req.headers.get('X-Admin-Secret') ?? ''
-  if (!envSecret || headerSecret !== envSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const body = await req.json() as { message?: string; shopIds?: string[] }
   const { message, shopIds } = body
 

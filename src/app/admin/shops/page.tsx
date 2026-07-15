@@ -184,7 +184,7 @@ export default function AdminShopsPage() {
     try {
       const res = await fetch('/api/admin/sms-campaign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': '' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: campaignMessage, shopIds: recipients.map((s: any) => s.id) }),
       })
       if (res.ok) {
