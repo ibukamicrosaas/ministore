@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
 
@@ -34,11 +33,7 @@ export async function POST(
   // Vérifier que la commande appartient à cette boutique
   const { data: orderData } = await supabase
     .from('orders')
-    .select(`
-      id, shop_id, status,
-      clients(first_name, phone, whatsapp),
-      shops(name)
-    `)
+    .select('id, shop_id, status')
     .eq('id', orderId)
     .eq('shop_id', profileData.shop_id)
     .single()
@@ -47,13 +42,7 @@ export async function POST(
     return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
   }
 
-  const o = orderData as unknown as {
-    id: string
-    shop_id: string
-    status: string
-    clients: { first_name: string; phone: string; whatsapp: string | null } | null
-    shops: { name: string } | null
-  }
+  const o = orderData as unknown as { id: string; shop_id: string; status: string }
 
   // Récupérer les produits digitaux de la commande
   const { data: orderItems } = await (supabase as any)
@@ -72,12 +61,9 @@ export async function POST(
     return NextResponse.json({ error: 'Aucun produit digital dans cette commande' }, { status: 400 })
   }
 
-  const clientPhone = o.clients?.whatsapp ?? o.clients?.phone ?? ''
-  const clientName  = o.clients?.first_name ?? 'Client'
-  const shopName    = o.shops?.name ?? ''
-  const expiresAt   = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
 
-  const newTokens: { token: string; downloadUrl: string }[] = []
+  const newTokens: { token: string; downloadUrl: string; productName: string }[] = []
 
   for (const item of digitalItems) {
     const { data: tokenData } = await supabase
@@ -93,19 +79,9 @@ export async function POST(
       .single()
 
     if (tokenData?.token) {
-      const downloadUrl = `${APP_URL}/telechargement/${tokenData.token}`
-      newTokens.push({ token: tokenData.token, downloadUrl })
-
-      if (clientPhone) {
-        const msg = buildDigitalDownloadMessage({
-          shopName,
-          clientName,
-          productName:  item.products?.digital_file_name ?? 'ton fichier',
-          downloadUrl,
-          expiresHours: 48,
-        })
-        void sendWhatsApp(clientPhone, msg)
-      }
+      const downloadUrl   = `${APP_URL}/telechargement/${tokenData.token}`
+      const productName   = item.products?.digital_file_name ?? 'ton fichier'
+      newTokens.push({ token: tokenData.token, downloadUrl, productName })
     }
   }
 

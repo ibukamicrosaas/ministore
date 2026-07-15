@@ -5,7 +5,7 @@ import { getAllShopsForAdmin } from '@/lib/actions/admin-shops'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X, Download, CreditCard } from 'lucide-react'
+import { Settings, ExternalLink, MessageCircle, Search, TrendingUp, X, Download, CreditCard, ChevronUp, ChevronDown, Send } from 'lucide-react'
 import { COUNTRIES } from '@/constants/countries'
 
 const KNOWN_CODES = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ'] as const
@@ -13,6 +13,11 @@ type KnownCode = typeof KNOWN_CODES[number]
 type CountryFilter = 'all' | KnownCode | 'other'
 type PlanFilter = 'all' | 'trial' | 'decouverte' | 'business' | 'pro'
 type SegmentFilter = 'all' | 'ready' | 'started' | 'ghost'
+type StatusFilter = 'all' | 'active' | 'inactive'
+type SortField = 'name' | 'plan' | 'created_at' | 'subscription_ends_at'
+type SortDir = 'asc' | 'desc'
+
+const PLAN_ORDER: Record<string, number> = { trial: 0, decouverte: 1, business: 2, pro: 3 }
 
 const SEGMENT_CONFIG: Record<SegmentFilter, { label: string; description: string; color: string; icon: string }> = {
   all:     { label: 'Tous',      description: '',                         color: 'bg-gray-100 text-gray-600',      icon: '' },
@@ -46,6 +51,13 @@ export default function AdminShopsPage() {
   const [filterPlan, setFilterPlan] = useState<PlanFilter>('all')
   const [filterCountry, setFilterCountry] = useState<CountryFilter>('all')
   const [filterSegment, setFilterSegment] = useState<SegmentFilter>('all')
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>('all')
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [campaignOpen, setCampaignOpen] = useState(false)
+  const [campaignMessage, setCampaignMessage] = useState('')
+  const [campaignSending, setCampaignSending] = useState(false)
+  const [campaignResult, setCampaignResult] = useState<{ sent: number; failed: number; skipped: number } | null>(null)
 
   useEffect(() => { loadData() }, [])
 
@@ -102,6 +114,10 @@ export default function AdminShopsPage() {
         if (getSegment(s) !== filterSegment) return false
       }
 
+      // Filtre statut actif/inactif
+      if (filterStatus === 'active'   && !s.is_active) return false
+      if (filterStatus === 'inactive' &&  s.is_active) return false
+
       // Filtre pays
       const code = (s.country ?? '').toUpperCase()
       if (filterCountry !== 'all') {
@@ -124,7 +140,61 @@ export default function AdminShopsPage() {
 
       return true
     })
-  }, [shops, searchQuery, filterPlan, filterCountry, filterSegment])
+  }, [shops, searchQuery, filterPlan, filterCountry, filterSegment, filterStatus])
+
+  const sorted = useMemo(() => {
+    if (!sortField) return filtered
+    return [...filtered].sort((a, b) => {
+      let av: string | number = ''
+      let bv: string | number = ''
+      if (sortField === 'name') {
+        av = (a.name ?? '').toLowerCase()
+        bv = (b.name ?? '').toLowerCase()
+      } else if (sortField === 'plan') {
+        av = PLAN_ORDER[a.plan] ?? 0
+        bv = PLAN_ORDER[b.plan] ?? 0
+      } else if (sortField === 'created_at') {
+        av = a.created_at ?? ''
+        bv = b.created_at ?? ''
+      } else if (sortField === 'subscription_ends_at') {
+        av = a.subscription_ends_at ?? '9999-12-31'
+        bv = b.subscription_ends_at ?? '9999-12-31'
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [filtered, sortField, sortDir])
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  async function handleSendCampaign() {
+    if (!campaignMessage.trim()) return
+    const recipients = sorted.filter(s => s.phone_whatsapp)
+    if (recipients.length === 0) return
+    setCampaignSending(true)
+    setCampaignResult(null)
+    try {
+      const res = await fetch('/api/admin/sms-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': '' },
+        body: JSON.stringify({ message: campaignMessage, shopIds: recipients.map((s: any) => s.id) }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { sent: number; failed: number; skipped: number }
+        setCampaignResult(data)
+      }
+    } finally {
+      setCampaignSending(false)
+    }
+  }
 
   const stats = useMemo(() => ({
     total:         shops.length,
@@ -134,18 +204,19 @@ export default function AdminShopsPage() {
     totalRevenue:  shops.reduce((s: number, shop: any) => s + (shop.online_revenue ?? 0), 0),
   }), [shops])
 
-  const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || filterSegment !== 'all' || searchQuery.length > 0
+  const hasFilters = filterPlan !== 'all' || filterCountry !== 'all' || filterSegment !== 'all' || filterStatus !== 'all' || searchQuery.length > 0
 
   function resetFilters() {
     setSearchQuery('')
     setFilterPlan('all')
     setFilterCountry('all')
     setFilterSegment('all')
+    setFilterStatus('all')
   }
 
   function exportCSV() {
-    const headers = ['Boutique', 'Plan', 'Cycle', 'Segment', 'Nb produits', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Expiration abonnement', 'Lien boutique']
-    const rows = filtered.map(s => {
+    const headers = ['Boutique', 'Plan', 'Statut', 'Cycle', 'Segment', 'Nb produits', 'Téléphone WhatsApp', 'Ville', 'Pays', 'Date d\'inscription', 'Expiration abonnement', 'Lien boutique']
+    const rows = sorted.map(s => {
       const code = (s.country ?? '').toUpperCase()
       const countryLabel = COUNTRIES.find(c => c.code === code)?.label ?? s.country ?? ''
       const planLabel = PLAN_CONFIG[s.plan as keyof typeof PLAN_CONFIG]?.label ?? s.plan ?? ''
@@ -154,7 +225,8 @@ export default function AdminShopsPage() {
       const expiry = s.subscription_ends_at ? format(new Date(s.subscription_ends_at), 'd MMM yyyy', { locale: fr }) : ''
       const cycle = s.is_annual ? 'Annuel' : s.plan !== 'trial' ? 'Mensuel' : ''
       const segment = s.plan === 'trial' ? SEGMENT_CONFIG[getSegment(s)].label : ''
-      return [s.name ?? '', planLabel, cycle, segment, s.product_count ?? 0, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, expiry, shopUrl]
+      const statusLabel = s.is_active ? 'Actif' : 'Inactif'
+      return [s.name ?? '', planLabel, statusLabel, cycle, segment, s.product_count ?? 0, s.phone_whatsapp ?? '', s.city ?? '', countryLabel, date, expiry, shopUrl]
     })
 
     const csv = [headers, ...rows]
@@ -186,15 +258,33 @@ export default function AdminShopsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
+                onClick={() => {
+                  const recipientsCount = sorted.filter(s => s.phone_whatsapp).length
+                  const defaultMsg = `Bonjour ! Votre boutique TEKKIShop est suspendue. Réactivez votre abonnement pour continuer à recevoir des commandes : https://app.tekki.shop/dashboard`
+                  setCampaignMessage(defaultMsg)
+                  setCampaignResult(null)
+                  setCampaignOpen(true)
+                }}
+                disabled={loading || sorted.length === 0}
+                title="Envoyer une campagne SMS aux boutiques filtrées"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Send className="h-4 w-4" />
+                Campagne SMS
+                <span className="bg-gray-100 text-gray-500 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  {sorted.filter(s => s.phone_whatsapp).length}
+                </span>
+              </button>
+              <button
                 onClick={exportCSV}
-                disabled={loading || filtered.length === 0}
-                title={`Exporter ${filtered.length} boutique${filtered.length !== 1 ? 's' : ''} en CSV`}
+                disabled={loading || sorted.length === 0}
+                title={`Exporter ${sorted.length} boutique${sorted.length !== 1 ? 's' : ''} en CSV`}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Download className="h-4 w-4" />
                 Exporter CSV
                 <span className="bg-gray-100 text-gray-500 text-xs font-bold px-1.5 py-0.5 rounded-full">
-                  {filtered.length}
+                  {sorted.length}
                 </span>
               </button>
               <TrendingUp className="h-12 w-12 text-sky-400 opacity-20" />
@@ -345,23 +435,50 @@ export default function AdminShopsPage() {
             <span className="text-xs text-gray-400 ml-1">boutiques en essai uniquement</span>
           </div>
 
+          {/* Filtre statut actif/inactif */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider w-8 shrink-0">Statut</span>
+            {([
+              { value: 'all',      label: 'Tous',      color: 'bg-sky-500 text-white shadow-md ring-2 ring-sky-200',         inactive: 'bg-white border border-gray-200 text-gray-600 hover:border-sky-300 hover:text-sky-600' },
+              { value: 'active',   label: '🟢 Actifs',  color: 'bg-emerald-500 text-white shadow-md ring-2 ring-emerald-200', inactive: 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600' },
+              { value: 'inactive', label: '🔴 Inactifs', color: 'bg-red-500 text-white shadow-md ring-2 ring-red-200',        inactive: 'bg-white border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600' },
+            ] as const).map(opt => {
+              const isActive = filterStatus === opt.value
+              const count = opt.value === 'all' ? shops.length
+                : opt.value === 'active' ? shops.filter(s => s.is_active).length
+                : shops.filter(s => !s.is_active).length
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilterStatus(opt.value)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isActive ? opt.color : opt.inactive}`}
+                >
+                  {opt.label}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[1.25rem] text-center ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
           {/* Barre de résultats + actions */}
           <div className="flex items-center justify-between text-sm pt-1">
             <span className="text-gray-500">
-              <span className="font-semibold text-gray-800">{filtered.length}</span>
-              {' '}résultat{filtered.length !== 1 ? 's' : ''}
-              {filtered.length < shops.length && (
+              <span className="font-semibold text-gray-800">{sorted.length}</span>
+              {' '}résultat{sorted.length !== 1 ? 's' : ''}
+              {sorted.length < shops.length && (
                 <span className="text-gray-400"> sur {shops.length}</span>
               )}
             </span>
             <div className="flex items-center gap-3">
-              {filtered.length > 0 && (
+              {sorted.length > 0 && (
                 <button
                   onClick={exportCSV}
                   className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800 font-medium transition-colors"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  Exporter ({filtered.length})
+                  Exporter ({sorted.length})
                 </button>
               )}
               {hasFilters && (
@@ -383,7 +500,7 @@ export default function AdminShopsPage() {
             <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent mb-3" />
             <p className="text-sm text-gray-400">Chargement des boutiques...</p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
             <p className="text-4xl mb-3">🔍</p>
             <p className="font-semibold text-gray-800 mb-1">Aucune boutique trouvée</p>
@@ -405,19 +522,39 @@ export default function AdminShopsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Boutique</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Plan</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Téléphone</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600">Statut</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden md:table-cell">Produits</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden lg:table-cell">CA en ligne</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Inscription</th>
-                    <th className="text-left px-6 py-4 font-semibold text-gray-600 hidden xl:table-cell">Abonnement</th>
+                    {([
+                      { field: 'name' as SortField,                 label: 'Boutique',     cls: 'px-6 py-4' },
+                      { field: 'plan' as SortField,                 label: 'Plan',         cls: 'px-6 py-4' },
+                      { field: null,                                  label: 'Téléphone',    cls: 'px-6 py-4 hidden md:table-cell' },
+                      { field: null,                                  label: 'Statut',       cls: 'px-6 py-4' },
+                      { field: null,                                  label: 'Produits',     cls: 'px-6 py-4 hidden md:table-cell' },
+                      { field: null,                                  label: 'CA en ligne',  cls: 'px-6 py-4 hidden lg:table-cell' },
+                      { field: 'created_at' as SortField,           label: 'Inscription',  cls: 'px-6 py-4 hidden xl:table-cell' },
+                      { field: 'subscription_ends_at' as SortField, label: 'Abonnement',   cls: 'px-6 py-4 hidden xl:table-cell' },
+                    ].map(col => (
+                      <th
+                        key={col.label}
+                        className={`text-left font-semibold text-gray-600 ${col.cls} ${col.field ? 'cursor-pointer select-none hover:text-sky-600 transition-colors' : ''}`}
+                        onClick={col.field ? () => handleSort(col.field!) : undefined}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {col.label}
+                          {col.field && sortField === col.field && (
+                            sortDir === 'asc'
+                              ? <ChevronUp className="h-3.5 w-3.5 text-sky-500" />
+                              : <ChevronDown className="h-3.5 w-3.5 text-sky-500" />
+                          )}
+                          {col.field && sortField !== col.field && (
+                            <ChevronUp className="h-3.5 w-3.5 text-gray-300" />
+                          )}
+                        </span>
+                      </th>
+                    )))}
                     <th className="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filtered.map((shop) => {
+                  {sorted.map((shop) => {
                     const code = (shop.country ?? '').toUpperCase()
                     const flag = COUNTRY_FLAGS[code]
                     const countryLabel = COUNTRIES.find(c => c.code === code)?.label
@@ -562,8 +699,8 @@ export default function AdminShopsPage() {
             </div>
             <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between">
               <span>
-                {filtered.length} boutique{filtered.length !== 1 ? 's' : ''}
-                {filtered.length < shops.length && ` sur ${shops.length}`}
+                {sorted.length} boutique{sorted.length !== 1 ? 's' : ''}
+                {sorted.length < shops.length && ` sur ${shops.length}`}
               </span>
               {hasFilters && (
                 <button onClick={resetFilters} className="text-sky-500 hover:text-sky-700 font-medium transition-colors">
@@ -573,6 +710,93 @@ export default function AdminShopsPage() {
             </div>
           </div>
         )}
+
+      {/* ── Modal campagne SMS ── */}
+      {campaignOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-base font-bold text-gray-900">Campagne SMS Lafricamobile</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {sorted.filter(s => s.phone_whatsapp).length} destinataire{sorted.filter(s => s.phone_whatsapp).length !== 1 ? 's' : ''} sur {sorted.length} boutique{sorted.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => { setCampaignOpen(false); setCampaignResult(null) }}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {campaignResult ? (
+              <div className="space-y-3">
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
+                  <p className="text-2xl font-bold text-emerald-700">{campaignResult.sent}</p>
+                  <p className="text-sm text-emerald-600">SMS envoyés avec succès</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-center">
+                    <p className="text-lg font-bold text-red-600">{campaignResult.failed}</p>
+                    <p className="text-xs text-red-500">Échecs</p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 text-center">
+                    <p className="text-lg font-bold text-gray-600">{campaignResult.skipped}</p>
+                    <p className="text-xs text-gray-500">Sans numéro</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setCampaignOpen(false); setCampaignResult(null) }}
+                  className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Message SMS</label>
+                  <textarea
+                    value={campaignMessage}
+                    onChange={e => setCampaignMessage(e.target.value)}
+                    rows={5}
+                    maxLength={480}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 resize-none transition-all"
+                    placeholder="Votre message SMS..."
+                  />
+                  <p className="text-right text-[10px] text-gray-400 mt-1">{campaignMessage.length}/480 caractères</p>
+                </div>
+
+                {sorted.filter(s => !s.phone_whatsapp).length > 0 && (
+                  <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                    ⚠ {sorted.filter(s => !s.phone_whatsapp).length} boutique{sorted.filter(s => !s.phone_whatsapp).length !== 1 ? 's' : ''} sans numéro seront ignorées.
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setCampaignOpen(false); setCampaignResult(null) }}
+                    className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => void handleSendCampaign()}
+                    disabled={campaignSending || !campaignMessage.trim() || sorted.filter(s => s.phone_whatsapp).length === 0}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {campaignSending
+                      ? 'Envoi en cours...'
+                      : `Envoyer à ${sorted.filter(s => s.phone_whatsapp).length} boutique${sorted.filter(s => s.phone_whatsapp).length !== 1 ? 's' : ''}`}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
