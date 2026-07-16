@@ -14,7 +14,12 @@ import Link from 'next/link'
 import { APP_URL, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile, Shop } from '@/types'
 
-export default async function DashboardPage() {
+interface Props {
+  searchParams: Promise<{ welcome?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: Props) {
+  const { welcome } = await searchParams
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -135,6 +140,29 @@ export default async function DashboardPage() {
           </Link>
         )}
       </div>
+
+      {/* Banner de bienvenue — uniquement après /start, si aucun produit encore */}
+      {welcome === 'start' && (productCount ?? 0) === 0 && shop && (
+        <div className="rounded-2xl overflow-hidden border border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+          <div className="px-5 py-4">
+            <p className="text-sm font-bold text-blue-900 mb-1">🎉 Ta boutique {shop.name} est créée !</p>
+            <p className="text-sm text-blue-700 mb-4">
+              Ajoute ton premier produit pour ouvrir ta boutique à tes clients et réaliser ta première vente.
+            </p>
+            <Link
+              href="/dashboard/products/new"
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-bold text-white"
+            >
+              <Package className="h-4 w-4" />
+              Ajouter mon premier produit →
+            </Link>
+            <div className="flex justify-center gap-5 mt-3 text-xs text-blue-600">
+              <Link href="/dashboard/settings" className="underline">Ajouter un logo</Link>
+              <Link href="/dashboard/settings" className="underline">Renseigner ma ville</Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Checklist démarrage */}
       {shop && (
