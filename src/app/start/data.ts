@@ -1,48 +1,57 @@
-export type QuizCat      = 'mode' | 'beaute' | 'chaussures' | 'alimentaire' | 'digital' | 'autre'
-export type QuizCanal    = 'whatsapp' | 'instagram' | 'physique' | 'debut'
-export type QuizPays     = 'SN' | 'CI' | 'BJ' | 'TG' | 'ML' | 'BF'
-export type QuizDouleur  = 'clients' | 'livraison' | 'paiement' | 'chiffres'
+export type QuizCat     = 'mode' | 'beaute' | 'chaussures' | 'alimentaire' | 'digital' | 'electronique' | 'maison' | 'autre'
+export type QuizCanal   = 'whatsapp' | 'instagram' | 'physique' | 'debut'
+export type QuizPays    = 'SN' | 'CI' | 'BJ' | 'TG' | 'ML' | 'BF'
+export type QuizDouleur = 'clients' | 'livraison' | 'paiement' | 'chiffres'
 
+// Emojis utilisés uniquement pour l'aperçu de la carte boutique (écran 7)
 export const CAT_EMO: Record<QuizCat, string> = {
   mode:        '👗',
   beaute:      '💄',
   chaussures:  '👟',
   alimentaire: '🍲',
   digital:     '📚',
+  electronique:'📱',
+  maison:      '🏠',
   autre:       '🛍️',
 }
 
 export const CAT_LABEL: Record<QuizCat, string> = {
-  mode:        'Mode & vêtements',
-  beaute:      'Cosmétiques & beauté',
-  chaussures:  'Chaussures & sacs',
-  alimentaire: 'Alimentaire',
-  digital:     'Produits digitaux',
-  autre:       'Autre chose',
+  mode:         'Mode & vêtements',
+  beaute:       'Cosmétiques & beauté',
+  chaussures:   'Chaussures & sacs',
+  alimentaire:  'Alimentaire',
+  digital:      'Produits digitaux',
+  electronique: 'Électronique',
+  maison:       'Maison & Déco',
+  autre:        'Autre chose',
 }
 
 // Maps /start categories → onboarding specialty values
 export const CAT_TO_SPECIALTY: Record<QuizCat, string> = {
-  mode:        'fashion',
-  beaute:      'beauty',
-  chaussures:  'fashion',
-  alimentaire: 'food',
-  digital:     'services',
-  autre:       'other',
+  mode:         'fashion',
+  beaute:       'beauty',
+  chaussures:   'fashion',
+  alimentaire:  'food',
+  digital:      'services',
+  electronique: 'electronics',
+  maison:       'home',
+  autre:        'other',
 }
 
 export const PREUVES_CAT: Record<QuizCat, string> = {
-  mode:        "Bon choix 👗 La mode est la <b>catégorie n°1 sur TEKKIShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
-  beaute:      "Excellent 💄 Les vendeuses de cosmétiques reçoivent souvent leurs <b>premières commandes en quelques jours</b> — leurs clientes rachètent régulièrement.",
-  chaussures:  "Top 👟 Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
-  alimentaire: "Miam 🍲 Menus, prix et zones de livraison affichés : tes clients <b>commandent directement</b>, toi tu cuisines.",
-  digital:     "Malin 📚 Ebooks, guides, formations : le client paie et <b>reçoit son fichier automatiquement</b>. Tu n'envoies plus rien à la main.",
-  autre:       "Parfait 📦 Quoi que tu vendes, ta boutique l'affiche proprement avec photos et prix. <b>+1 000 marchands</b> de tous secteurs sont déjà là.",
+  mode:         "Bon choix 👗 La mode est la <b>catégorie n°1 sur TEKKIShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
+  beaute:       "Excellent 💄 Les vendeuses de cosmétiques reçoivent souvent leurs <b>premières commandes en quelques jours</b> — leurs clientes rachètent régulièrement.",
+  chaussures:   "Top 👟 Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
+  alimentaire:  "Miam 🍲 Menus, prix et zones de livraison affichés : tes clients <b>commandent directement</b>, toi tu cuisines.",
+  digital:      "Malin 📚 Ebooks, guides, formations : le client paie et <b>reçoit son fichier automatiquement</b>. Tu n'envoies plus rien à la main.",
+  electronique: "Excellent choix 📱 Accessoires, gadgets, électronique... tes clients voient le stock disponible et <b>commandent directement</b> sans avoir à te déranger pour chaque question.",
+  maison:       "Très bonne niche 🏠 Déco, mobilier, articles de maison : les <b>photos font vendre</b>. Ta boutique met tes produits en valeur bien mieux qu'un simple post WhatsApp.",
+  autre:        "Parfait 📦 Quoi que tu vendes, ta boutique l'affiche proprement avec photos et prix. <b>+1 000 marchands</b> de tous secteurs sont déjà là.",
 }
 
 export const PREUVES_CANAL: Record<QuizCanal, string> = {
   whatsapp:  "Parfait 💬 Ta boutique est <b>faite pour WhatsApp</b> : un seul lien dans ton statut, et tes clients voient tout, commandent et paient tout seuls — même quand tu dors.",
-  instagram: "Génial 📸 Mets ton lien boutique en bio : tes abonnés passent de « j'aime » à <b>« j'achète »</b> sans t'écrire en DM.",
+  instagram: "Génial 📸 Mets le lien de ta boutique en bio : tes abonnés passent de « j'aime » à <b>« j'achète »</b> sans t'écrire en DM.",
   physique:  "Excellente base 🏪 Ta boutique en ligne devient ta <b>deuxième vitrine, ouverte 24h/24</b> — tes clients du quartier commandent même quand c'est fermé.",
   debut:     "C'est le meilleur moment 🌱 Tu démarres <b>directement avec les bons outils</b>, sans passer par le chaos des commandes dans les DM.",
 }
