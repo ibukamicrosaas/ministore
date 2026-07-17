@@ -459,9 +459,9 @@ export default async function LandingPage() {
               className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Tout ce dont tu as besoin
+              Tout ce qu&apos;il te faut. <span className="text-[var(--color-primary)]">Rien de compliqué.</span>
             </h2>
-            <p className="text-gray-500 text-sm max-w-sm mx-auto">Simple. Rapide. Fait pour l&apos;Afrique.</p>
+            <p className="text-gray-500 text-sm max-w-md mx-auto">Chaque fonction de TEKKIShop existe pour te faire gagner du temps ou de l&apos;argent. Sinon, on ne la construit pas.</p>
           </Reveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
