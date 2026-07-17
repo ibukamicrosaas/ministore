@@ -22,6 +22,15 @@
   --font-display: 'Outfit', sans-serif;
 }
 
+/* Scope dédié à la landing page (accueil + pages marketing) — n'affecte jamais le dashboard */
+.landing-scope {
+  --font-sans: var(--font-landing-sans), 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: var(--font-landing-display), 'Space Grotesk', sans-serif;
+  --color-primary: #2E90FA;
+  --color-primary-dark: #175CD3;
+  --color-navy: #0B1B32;
+}
+
 /* Désactiver le dark mode automatique — design light-only pour ce produit */
 @media (prefers-color-scheme: dark) {
   :root {

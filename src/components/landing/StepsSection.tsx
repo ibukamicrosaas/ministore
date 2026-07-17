@@ -1,9 +1,21 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { useInView } from '@/hooks/useInView'
+
 export function StepsSection() {
   return (
     <section id="comment" className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%)' }}>
+      <style>{`
+        @keyframes tekki-msg-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       <div className="mx-auto max-w-6xl">
         <div className="text-center mb-16">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">C'est simple</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">C&apos;est simple</p>
           <h2
             className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
             style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
@@ -24,10 +36,10 @@ export function StepsSection() {
                 <div className="h-px flex-1 bg-gradient-to-r from-sky-200 to-transparent hidden lg:block" />
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-3" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                Crée ton site
+                Crée ta boutique
               </h3>
               <p className="text-gray-500 leading-relaxed mb-5">
-                Tu donnes le nom de ton business, tu ajoutes tes produits avec description, photo et prix. Tu mets le site en ligne. <strong className="text-gray-700">Ça prend 5 minutes.</strong>
+                Tu donnes le nom de ton business, tu ajoutes tes produits avec description, photo et prix. Ta boutique est en ligne. <strong className="text-gray-700">Ça prend 5 minutes.</strong>
               </p>
               <ul className="space-y-2">
                 {['Nom + logo de ta boutique', 'Photos et prix de tes produits', 'Couleur aux couleurs de ton business'].map(item => (
@@ -54,10 +66,10 @@ export function StepsSection() {
                 <div className="h-px flex-1 bg-gradient-to-r from-violet-200 to-transparent hidden lg:block" />
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-3" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                Active ton site
+                Active ta boutique
               </h3>
               <p className="text-gray-500 leading-relaxed mb-5">
-                Active ton site pour que tes clients puissent voir tous tes produits et passer commande. Ils reçoivent une <strong className="text-gray-700">confirmation automatique par WhatsApp.</strong>
+                Active ta boutique pour que tes clients puissent voir tous tes produits et passer commande. Ils reçoivent une <strong className="text-gray-700">confirmation automatique par WhatsApp.</strong>
               </p>
               <ul className="space-y-2">
                 {['Active en un clic depuis ton téléphone', 'Ton lien unique est prêt à partager', 'Les commandes arrivent directement'].map(item => (
@@ -129,11 +141,26 @@ export function StepsSection() {
   )
 }
 
-/* ── Illustrations SVG ── */
+/* ── Illustrations animées ── */
 
 function Step1Illustration() {
+  const [ref, inView] = useInView<HTMLDivElement>()
+  const fullText = 'Keur Mode Dakar'
+  const [typed, setTyped] = useState('')
+
+  useEffect(() => {
+    if (!inView) return
+    let i = 0
+    const interval = setInterval(() => {
+      i++
+      setTyped(fullText.slice(0, i))
+      if (i >= fullText.length) clearInterval(interval)
+    }, 70)
+    return () => clearInterval(interval)
+  }, [inView])
+
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-sky-100 border border-sky-100">
+    <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-sky-100 border border-sky-100">
       <div className="bg-gradient-to-br from-sky-50 to-white p-6">
         {/* Header mockup */}
         <div className="flex items-center gap-2 mb-4">
@@ -150,9 +177,9 @@ function Step1Illustration() {
           <div className="space-y-2.5">
             <div>
               <p className="text-[9px] text-gray-400 mb-1">Nom de ta boutique</p>
-              <div className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-gray-800">Keur Mode Dakar</span>
-                <span className="ml-auto h-3.5 w-0.5 bg-sky-500 animate-pulse" />
+              <div className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 flex items-center gap-2 min-h-[30px]">
+                <span className="text-[11px] font-semibold text-gray-800">{typed}</span>
+                <span className="ml-auto h-3.5 w-0.5 bg-sky-500 animate-pulse shrink-0" />
               </div>
             </div>
             <div>
@@ -170,7 +197,7 @@ function Step1Illustration() {
               </div>
             </div>
             <button className="w-full rounded-xl bg-sky-500 py-2 text-[11px] font-bold text-white shadow-sm">
-              Créer mon site →
+              Créer ma boutique →
             </button>
           </div>
         </div>
@@ -183,37 +210,55 @@ function Step1Illustration() {
   )
 }
 
+const STEP2_PRODUCTS = [
+  { name: 'Robe wax bleue', price: '12 000', stock: 8 },
+  { name: 'Sac bandoulière', price: '8 500', stock: 3 },
+  { name: 'Chaussures sandales', price: '6 000', stock: 0 },
+]
+
 function Step2Illustration() {
+  const [ref, inView] = useInView<HTMLDivElement>()
+  const [online, setOnline] = useState(false)
+  const [active, setActive] = useState([false, false, false])
+
+  useEffect(() => {
+    if (!inView) return
+    const timers = [
+      setTimeout(() => setActive([true, false, false]), 500),
+      setTimeout(() => setActive([true, true, false]), 1000),
+      setTimeout(() => setOnline(true), 1500),
+    ]
+    return () => timers.forEach(clearTimeout)
+  }, [inView])
+
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-violet-100 border border-violet-100">
+    <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-violet-100 border border-violet-100">
       <div className="bg-gradient-to-br from-violet-50 to-white p-6">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] font-bold text-gray-800">Mon tableau de bord</p>
             <div className="flex items-center gap-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[9px] text-emerald-600 font-semibold">En ligne</span>
+              <div className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${online ? 'bg-emerald-400 animate-pulse' : 'bg-gray-300'}`} />
+              <span className={`text-[9px] font-semibold transition-colors duration-300 ${online ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {online ? 'En ligne' : 'Hors ligne'}
+              </span>
             </div>
           </div>
           {/* Products list */}
-          {[
-            { name: 'Robe wax bleue', price: '12 000', stock: 8, active: true },
-            { name: 'Sac bandoulière', price: '8 500', stock: 3, active: true },
-            { name: 'Chaussures sandales', price: '6 000', stock: 0, active: false },
-          ].map((p) => (
+          {STEP2_PRODUCTS.map((p, i) => (
             <div key={p.name} className="flex items-center gap-2.5 py-2 border-b border-gray-50 last:border-0">
               <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center text-sm shrink-0">🛍️</div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-semibold text-gray-800 truncate">{p.name}</p>
                 <p className="text-[9px] text-gray-400">{p.price} FCFA · stock: {p.stock}</p>
               </div>
-              <div className={`h-4 w-7 rounded-full ${p.active ? 'bg-emerald-400' : 'bg-gray-200'} relative shrink-0`}>
-                <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${p.active ? 'left-3.5' : 'left-0.5'}`} />
+              <div className={`h-4 w-7 rounded-full relative shrink-0 transition-colors duration-300 ${active[i] ? 'bg-emerald-400' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all duration-300 ${active[i] ? 'left-3.5' : 'left-0.5'}`} />
               </div>
             </div>
           ))}
           <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 p-2.5 text-center">
-            <p className="text-[10px] font-bold text-violet-700">✅ Ton site est visible par tes clients</p>
+            <p className="text-[10px] font-bold text-violet-700">✅ Ta boutique est visible par tes clients</p>
           </div>
         </div>
       </div>
@@ -222,8 +267,17 @@ function Step2Illustration() {
 }
 
 function Step3Illustration() {
+  const [ref, inView] = useInView<HTMLDivElement>()
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    if (!inView) return
+    const timers = [500, 1300, 2100].map((delay, i) => setTimeout(() => setStep(i + 1), delay))
+    return () => timers.forEach(clearTimeout)
+  }, [inView])
+
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-amber-100 border border-amber-100">
+    <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-amber-100 border border-amber-100">
       <div className="bg-gradient-to-br from-amber-50 to-white p-6">
         {/* WhatsApp mockup */}
         <div className="bg-[#111b21] rounded-2xl overflow-hidden">
@@ -231,29 +285,34 @@ function Step3Illustration() {
             <div className="h-6 w-6 rounded-full bg-amber-400 flex items-center justify-center text-xs font-bold text-white">M</div>
             <div>
               <p className="text-white text-[10px] font-semibold">Ma boutique</p>
-              <p className="text-white/40 text-[8px]">en ligne</p>
+              <p className={`text-[8px] transition-colors duration-300 ${step > 0 ? 'text-emerald-400' : 'text-white/40'}`}>
+                {step > 0 ? 'en ligne' : 'hors ligne'}
+              </p>
             </div>
           </div>
-          <div className="p-3 space-y-2">
-            {/* Message reçu */}
-            <div className="max-w-[85%] rounded-tl-lg rounded-tr-lg rounded-br-lg bg-[#202c33] p-2.5">
-              <p className="text-white/80 text-[10px]">Bonsoir ! C'est quoi ton lien pour commander ?</p>
-              <p className="text-white/30 text-[8px] text-right mt-1">18:32</p>
-            </div>
-            {/* Message envoyé */}
-            <div className="max-w-[85%] ml-auto rounded-tl-lg rounded-tr-lg rounded-bl-lg bg-[#005c4b] p-2.5">
-              <p className="text-white text-[10px]">Voilà mon site 👇</p>
-              <div className="mt-1.5 rounded-md bg-[#025C4C] p-2 border border-white/10">
-                <p className="text-amber-300 text-[9px] font-bold">🛍️ tekki.shop/keur-mode</p>
-                <p className="text-white/60 text-[8px]">Commande directement ici !</p>
+          <div className="p-3 space-y-2 min-h-[150px]">
+            {step >= 1 && (
+              <div className="max-w-[85%] rounded-tl-lg rounded-tr-lg rounded-br-lg bg-[#202c33] p-2.5" style={{ animation: 'tekki-msg-in .35s ease-out' }}>
+                <p className="text-white/80 text-[10px]">Bonsoir ! C&apos;est quoi ton lien pour commander ?</p>
+                <p className="text-white/30 text-[8px] text-right mt-1">18:32</p>
               </div>
-              <p className="text-white/30 text-[8px] text-right mt-1">18:33 ✓✓</p>
-            </div>
-            {/* Réponse */}
-            <div className="max-w-[85%] rounded-tl-lg rounded-tr-lg rounded-br-lg bg-[#202c33] p-2.5">
-              <p className="text-white/80 text-[10px]">Waaaw c'est beau ! Je commande tout de suite 😍</p>
-              <p className="text-white/30 text-[8px] text-right mt-1">18:35</p>
-            </div>
+            )}
+            {step >= 2 && (
+              <div className="max-w-[85%] ml-auto rounded-tl-lg rounded-tr-lg rounded-bl-lg bg-[#005c4b] p-2.5" style={{ animation: 'tekki-msg-in .35s ease-out' }}>
+                <p className="text-white text-[10px]">Voilà ma boutique 👇</p>
+                <div className="mt-1.5 rounded-md bg-[#025C4C] p-2 border border-white/10">
+                  <p className="text-amber-300 text-[9px] font-bold">🛍️ tekki.shop/keur-mode</p>
+                  <p className="text-white/60 text-[8px]">Commande directement ici !</p>
+                </div>
+                <p className="text-white/30 text-[8px] text-right mt-1">18:33 ✓✓</p>
+              </div>
+            )}
+            {step >= 3 && (
+              <div className="max-w-[85%] rounded-tl-lg rounded-tr-lg rounded-br-lg bg-[#202c33] p-2.5" style={{ animation: 'tekki-msg-in .35s ease-out' }}>
+                <p className="text-white/80 text-[10px]">Waaaw c&apos;est beau ! Je commande tout de suite 😍</p>
+                <p className="text-white/30 text-[8px] text-right mt-1">18:35</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-3 flex items-center justify-center gap-1.5">
@@ -265,46 +324,77 @@ function Step3Illustration() {
   )
 }
 
+function useCountUp(target: number, inView: boolean, duration = 1300) {
+  const [value, setValue] = useState(0)
+
+  useEffect(() => {
+    if (!inView) return
+    let start: number | null = null
+    let raf: number
+    function tick(ts: number) {
+      if (start === null) start = ts
+      const progress = Math.min((ts - start) / duration, 1)
+      setValue(Math.round(target * progress))
+      if (progress < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [inView, target, duration])
+
+  return value
+}
+
 function Step4Illustration() {
+  const [ref, inView] = useInView<HTMLDivElement>()
+  const today = useCountUp(47500, inView, 1300)
+  const month = useCountUp(312000, inView, 1700)
+  const amount1 = useCountUp(12000, inView, 1100)
+  const amount2 = useCountUp(8500, inView, 1100)
+  const amount3 = useCountUp(15000, inView, 1100)
+
+  const payments = [
+    { method: 'Wave', logo: '/logo-payments/wave_1.svg', amount: amount1, time: 'Il y a 5 min', color: 'text-blue-600' },
+    { method: 'MaxIt', logo: '/logo-payments/maxit.webp', amount: amount2, time: 'Il y a 23 min', color: 'text-orange-500' },
+    { method: 'Wave', logo: '/logo-payments/wave_1.svg', amount: amount3, time: 'Il y a 1h', color: 'text-blue-600' },
+  ]
+
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-emerald-100 border border-emerald-100">
+    <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-emerald-100 border border-emerald-100">
       <div className="bg-gradient-to-br from-emerald-50 to-white p-6">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Tes revenus</p>
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="rounded-xl bg-emerald-50 p-2.5 border border-emerald-100">
-              <p className="text-[9px] text-emerald-600 font-medium">Aujourd'hui</p>
-              <p className="text-base font-black text-emerald-700">47 500</p>
+              <p className="text-[9px] text-emerald-600 font-medium">Aujourd&apos;hui</p>
+              <p className="text-base font-black text-emerald-700">{today.toLocaleString('fr-FR')}</p>
               <p className="text-[8px] text-emerald-500">FCFA reçus</p>
             </div>
             <div className="rounded-xl bg-sky-50 p-2.5 border border-sky-100">
               <p className="text-[9px] text-sky-600 font-medium">Ce mois</p>
-              <p className="text-base font-black text-sky-700">312 000</p>
+              <p className="text-base font-black text-sky-700">{month.toLocaleString('fr-FR')}</p>
               <p className="text-[8px] text-sky-500">FCFA reçus</p>
             </div>
           </div>
           {/* Payments */}
           <div className="space-y-1.5">
-            {[
-              { method: '🟦 Wave', amount: '+12 000', time: 'Il y a 5 min', color: 'text-blue-600' },
-              { method: '🟠 Orange Money', amount: '+8 500', time: 'Il y a 23 min', color: 'text-orange-500' },
-              { method: '🟦 Wave', amount: '+15 000', time: 'Il y a 1h', color: 'text-blue-600' },
-            ].map((t) => (
-              <div key={t.time} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                <span className="text-sm">{t.method.split(' ')[0]}</span>
+            {payments.map((t, i) => (
+              <div key={i} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                <div className="relative h-4 w-6 shrink-0">
+                  <Image src={t.logo} alt={t.method} fill className="object-contain" sizes="24px" />
+                </div>
                 <div className="flex-1">
-                  <p className="text-[10px] text-gray-600">{t.method.split(' ').slice(1).join(' ')}</p>
+                  <p className="text-[10px] text-gray-600">{t.method}</p>
                   <p className="text-[8px] text-gray-400">{t.time}</p>
                 </div>
-                <p className={`text-[11px] font-bold ${t.color}`}>{t.amount} FCFA</p>
+                <p className={`text-[11px] font-bold ${t.color}`}>+{t.amount.toLocaleString('fr-FR')} FCFA</p>
               </div>
             ))}
           </div>
         </div>
         <div className="mt-3 flex items-center justify-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <p className="text-[10px] text-emerald-600 font-semibold">L'argent arrive sur ton téléphone</p>
+          <p className="text-[10px] text-emerald-600 font-semibold">L&apos;argent arrive sur ton téléphone</p>
         </div>
       </div>
     </div>

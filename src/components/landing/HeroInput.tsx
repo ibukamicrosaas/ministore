@@ -74,7 +74,7 @@ export function HeroInput() {
           className="shrink-0 m-1.5 flex items-center gap-1.5 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
           style={{ backgroundColor: 'var(--color-primary)' }}
         >
-          <span>Créer mon site</span>
+          <span>Créer ma boutique</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

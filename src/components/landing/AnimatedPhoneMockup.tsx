@@ -37,19 +37,19 @@ export function AnimatedPhoneMockup() {
   }, [screen])
 
   return (
-    <div className="relative shrink-0" style={{ width: 280 }}>
+    <div className="relative shrink-0" style={{ width: 330 }}>
       <div
-        className="relative rounded-[44px] bg-[#0A1628]"
-        style={{ padding: '11px', boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 30px 60px -10px rgba(0,0,0,0.4)' }}
+        className="relative rounded-[52px] bg-[#0A1628]"
+        style={{ padding: '13px', boxShadow: '0 0 0 1.5px rgba(255,255,255,0.08), 0 40px 80px -15px rgba(0,0,0,0.45), 0 15px 30px -10px rgba(0,0,0,0.3)' }}
       >
         {/* Boutons physiques */}
-        <div className="absolute -right-[3px] top-24 w-[3px] h-12 rounded-r-sm bg-[#1a1a1a]" />
-        <div className="absolute -left-[3px] top-20 w-[3px] h-8 rounded-l-sm bg-[#1a1a1a]" />
-        <div className="absolute -left-[3px] top-36 w-[3px] h-8 rounded-l-sm bg-[#1a1a1a]" />
+        <div className="absolute -right-[3px] top-28 w-[3px] h-14 rounded-r-sm bg-[#1a1a1a]" />
+        <div className="absolute -left-[3px] top-24 w-[3px] h-9 rounded-l-sm bg-[#1a1a1a]" />
+        <div className="absolute -left-[3px] top-[9.5rem] w-[3px] h-9 rounded-l-sm bg-[#1a1a1a]" />
 
-        <div className="relative rounded-[34px] overflow-hidden bg-gray-50" style={{ height: 537 }}>
-          {/* Notch */}
-          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-20 w-14 h-4 rounded-full bg-[#0A1628]" />
+        <div className="relative rounded-[40px] overflow-hidden bg-gray-50" style={{ height: 632 }}>
+          {/* Dynamic Island */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-24 h-6 rounded-full bg-[#0A1628]" />
 
           {/* Step dots */}
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">

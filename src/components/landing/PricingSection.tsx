@@ -22,7 +22,7 @@ const PLANS = [
     note: 'Paiement par Wave ou Orange Money',
     features: [
       { text: 'Jusqu\'à 10 produits', included: true },
-      { text: 'Ton site en ligne immédiatement', included: true },
+      { text: 'Ta boutique en ligne immédiatement', included: true },
       { text: 'Page produit avec photos et prix', included: true },
       { text: 'Paiement Wave & Orange Money', included: true },
       { text: 'Paiement à la livraison', included: true },
@@ -45,12 +45,12 @@ const PLANS = [
     monthly: 4900,
     annual: 49000,
     annualPerMonth: Math.round(49000 / 12),
-    cta: 'Créer mon site',
+    cta: 'Créer ma boutique',
     ctaStyle: 'bg-white text-sky-600 font-bold hover:opacity-90 shadow-sm',
     note: 'Paiement par Wave ou Orange Money',
     features: [
       { text: 'Produits illimités', included: true },
-      { text: 'Ton site en ligne immédiatement', included: true },
+      { text: 'Ta boutique en ligne immédiatement', included: true },
       { text: 'Page produit avec photos et prix', included: true },
       { text: 'Paiement Wave & Orange Money', included: true },
       { text: 'Paiement à la livraison', included: true },
@@ -85,7 +85,7 @@ const PLANS = [
       { text: 'Domaine personnalisé (monbusiness.com)', included: true },
       { text: 'Branding TekkiShop masqué', included: true },
       { text: 'Statistiques avancées', included: true },
-      { text: 'Export CSV de toutes tes commandes', included: true },
+      { text: 'Télécharge toutes tes commandes en fichier Excel', included: true },
       { text: 'Support prioritaire WhatsApp', included: true },
     ],
     diff: 'Pour les boutiques qui veulent une image professionnelle au maximum.',
@@ -107,7 +107,7 @@ export function PricingSection() {
           Un tarif simple et honnête
         </h2>
         <p className="text-gray-500 text-sm max-w-xs mx-auto mb-8">
-          Tu paies par Wave ou Orange Money. Ton site est en ligne en quelques minutes.
+          Tu paies par Wave ou Orange Money. Ta boutique est en ligne en quelques minutes.
         </p>
 
         {/* Toggle mensuel / annuel */}

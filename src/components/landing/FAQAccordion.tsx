@@ -5,6 +5,18 @@ import { Plus, Minus } from 'lucide-react'
 
 const FAQS = [
   {
+    q: "Je n'ai jamais vendu en ligne. C'est vraiment pour moi ?",
+    a: "Oui. TekkiShop est fait exactement pour toi. Si tu sais envoyer une photo sur WhatsApp, tu sais créer ta boutique. Et si tu bloques quelque part, notre équipe t'accompagne gratuitement sur WhatsApp jusqu'à ta première vente.",
+  },
+  {
+    q: "Est-ce que j'ai besoin d'un ordinateur ?",
+    a: "Non. Tout se fait depuis ton téléphone : créer ta boutique, ajouter tes produits, confirmer tes commandes, suivre tes ventes. Un ordinateur peut être utilisé si tu préfères, mais il n'est jamais obligatoire.",
+  },
+  {
+    q: "L'argent de mes ventes arrive où ?",
+    a: "Directement chez toi. En Afrique : sur ton compte Wave ou Orange Money, dès que tu fais un retrait depuis ton tableau de bord (2 000 FCFA minimum). Si tu es sur le plan Découverte ou Business, la commission de 3 % est automatiquement déduite au moment du retrait. En Europe & Canada : les paiements par carte sont gérés via Stripe et virés directement sur ton compte bancaire. TekkiShop ne garde jamais ton argent.",
+  },
+  {
     q: "Est-ce que mes clients doivent télécharger une application ?",
     a: "Non. Tes clients commandent directement depuis ton lien, dans leur navigateur. Aucune application à télécharger. C'est aussi simple que d'ouvrir un lien WhatsApp.",
   },
@@ -15,10 +27,6 @@ const FAQS = [
   {
     q: "Quels sont exactement les frais ?",
     a: "TekkiShop est transparent. Plan Découverte & Business : 3% de commission uniquement sur les paiements en ligne (Wave, Orange Money, carte bancaire). Le paiement à la livraison est gratuit. Plan Pro : 0% de commission partout. Aucun frais caché, aucun frais d'annulation.",
-  },
-  {
-    q: "Comment je reçois mon argent ?",
-    a: "En Afrique : les paiements de tes clients (Wave, Orange Money) arrivent dans la section « Revenus » de ton tableau de bord TEKKIShop. Tu peux faire un retrait à tout moment, à partir de 2 000 FCFA minimum, et l'argent arrive instantanément sur ton numéro Wave ou Orange Money. Si tu es sur le plan Découverte ou Business, la commission de 3 % est automatiquement déduite au moment du retrait. En Europe & Canada : les paiements par carte sont gérés via Stripe et virés directement sur ton compte bancaire. Pour le paiement à la livraison, tu encaisses toi-même.",
   },
   {
     q: "Je suis en France / Belgique / Canada — ça marche pour moi ?",
