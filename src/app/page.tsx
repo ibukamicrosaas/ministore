@@ -4,8 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   ShoppingBag, CheckCircle2, ArrowRight,
-  Package, Smartphone, BarChart3,
-  TrendingUp, Zap, Users, Sparkles,
+  Smartphone, TrendingUp, Zap, Users, Sparkles,
+  Link2, Wallet, Truck, Star,
 } from 'lucide-react'
 import { PaymentScroll } from '@/components/landing/PaymentScroll'
 import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
@@ -57,27 +57,39 @@ const JOURNEE = [
 
 const FEATURES = [
   {
+    icon: Link2,
+    title: 'Ta boutique, accessible partout',
+    description: 'Le lien de ta boutique permet à n\'importe qui de voir et commander tes produits. Mets-le dans ta bio sur les réseaux sociaux et partage-le sur WhatsApp et dans les groupes Facebook.',
+    color: 'bg-sky-500',
+  },
+  {
     icon: Sparkles,
-    title: 'Assistant IA intégré',
-    description: "Pose des questions à ton assistant IA : \"Quels sont mes produits les plus vendus ce mois ?\", \"Combien j'ai encaissé cette semaine ?\". Il connaît ta boutique.",
+    title: 'Un Assistant IA intégré',
+    description: "Il connaît et comprend toute ton activité. Pose-lui des questions sur tes ventes, tes produits, ta stratégie : il répond à tout et t'aide à vendre mieux et plus, même si tu pars de zéro.",
     color: 'bg-violet-500',
   },
   {
-    icon: Package,
-    title: 'Catalogue produit complet',
-    description: 'Photos, prix, variantes, stock, mise en avant — tout ce qu\'il faut pour présenter tes produits de manière professionnelle.',
+    icon: Wallet,
+    title: 'Le paiement mobile intégré',
+    description: 'Les moyens de paiement mobile sont déjà disponibles pour tous les pays couverts par TekkiShop. Tes clients paient comme ils le désirent, et tu retires ton argent instantanément.',
+    color: 'bg-emerald-500',
+  },
+  {
+    icon: Truck,
+    title: 'Tes livraisons, simplifiées',
+    description: 'Chaque commande part sur le WhatsApp de ton livreur en 1 clic, avec toutes les infos de la commande. Ton livreur confirme la livraison en 1 clic, et met à jour le statut de la commande.',
+    color: 'bg-amber-500',
+  },
+  {
+    icon: Star,
+    title: 'Tes avis, collectés facilement',
+    description: 'Envoie en 1 clic une demande d\'avis aux clients qui ont commandé sur ta boutique, et affiche-les sur les pages de tes produits pour augmenter la preuve sociale et tes ventes.',
     color: 'bg-pink-500',
   },
   {
     icon: Smartphone,
     title: 'Tout depuis ton téléphone',
-    description: 'Confirme tes commandes, gère tes produits, vois tes revenus. Ton tableau de bord est optimisé pour mobile.',
-    color: 'bg-sky-500',
-  },
-  {
-    icon: BarChart3,
-    title: 'Revenus en temps réel',
-    description: "Tes ventes du jour, de la semaine, produit par produit. Télécharge le détail de tes ventes sur le plan Pro. Tu sais exactement où tu en es.",
+    description: 'Pas besoin d\'ordinateur ou de développeur. Tu peux créer et gérer toute ta boutique en ligne depuis ton téléphone, même si tu n\'as jamais vendu sur un site e-commerce.',
     color: 'bg-indigo-500',
   },
 ]
@@ -452,7 +464,7 @@ export default async function LandingPage() {
             <p className="text-gray-500 text-sm max-w-sm mx-auto">Simple. Rapide. Fait pour l&apos;Afrique.</p>
           </Reveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {FEATURES.map((f, i) => {
               const Icon = f.icon
               return (
