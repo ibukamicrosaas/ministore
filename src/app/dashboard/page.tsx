@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { SetupChecklist } from '@/components/dashboard/SetupChecklist'
 import { FirstSalesNudge } from '@/components/dashboard/FirstSalesNudge'
-import { TrialUpgradeNudge } from '@/components/dashboard/TrialUpgradeNudge'
 import { RevenueCard } from '@/components/dashboard/RevenueCard'
 import { getDateRange } from '@/app/api/dashboard/revenue/route'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -180,13 +179,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         <FirstSalesNudge shopSlug={shop.slug} shopName={shop.name} />
       )}
 
-      {/* Nudge activation — utilisateurs en essai uniquement */}
-      {shop && shop.plan === 'trial' && (
-        <TrialUpgradeNudge
-          hasProducts={(productCount ?? 0) > 0}
-          hasPayoutNumbers={!!(shop.payout_wave_number || shop.payout_om_number)}
-        />
-      )}
 
       {/* Alerte commandes à traiter */}
       {pendingCount > 0 && (

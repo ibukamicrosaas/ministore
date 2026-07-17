@@ -20,7 +20,7 @@ type VariantEvent = { label: string | null; price: number; href: string; disable
 export function ProductStickyCta({ href: initialHref, color, productId, productName, price, displayPrice }: Props) {
   const [visible,  setVisible]  = useState(false)
   const [ctaHref,  setCtaHref]  = useState(initialHref)
-  const [ctaLabel, setCtaLabel] = useState(`Je le prends — ${displayPrice}`)
+  const [ctaLabel, setCtaLabel] = useState('Je le prends')
   const [ctaPrice, setCtaPrice] = useState(price)
   const [disabled, setDisabled] = useState(false)
   const router = useRouter()
@@ -34,7 +34,7 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
       const d = (e as CustomEvent<VariantEvent>).detail
       setCtaHref(d.href)
       setCtaPrice(d.price)
-      setCtaLabel(d.label ? `Je le prends — ${d.label}` : `Je le prends — ${displayPrice}`)
+      setCtaLabel(d.label ? `Je le prends — ${d.label}` : 'Je le prends')
       setDisabled(d.disabled)
     }
     window.addEventListener('inline-cta-visibility', onVisibility)

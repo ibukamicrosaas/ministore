@@ -78,11 +78,9 @@ export function VariantSelectorCta({
   }
 
   const ctaPrefix = isDigital ? 'Acheter' : 'Je le prends'
-  const ctaLabel = variants.length === 0
-    ? `${ctaPrefix} — ${formatPrice(minPrice, currency)}`
-    : selected
-      ? `${ctaPrefix} — ${formatPrice(selected.price, currency)}`
-      : 'Choisir une variante'
+  const ctaLabel = variants.length === 0 || selected
+    ? ctaPrefix
+    : 'Choisir une variante'
 
   const ctaDisabled = variants.length > 0 && !selected
 

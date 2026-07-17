@@ -95,6 +95,7 @@ export interface CreateProductInput {
   customization_label?: string | null
   badges?: string[] | null
   original_price?: number | null
+  cost_price?: number | null
   product_type?: 'physical' | 'digital' | null
   digital_file_path?: string | null
   digital_file_name?: string | null

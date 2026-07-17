@@ -197,7 +197,7 @@ interface Props {
   shopCurrency: ShopCurrency
   primaryColor: string
   products: ProductOption[]
-  deliveryDates: { value: string; label: string }[]
+
   deliveryOptions: { home_delivery: boolean; store_pickup: boolean }
   shopDepositPct: number
   acceptOnlinePayment: boolean
@@ -220,7 +220,7 @@ export function OrderForm({
   shopCurrency,
   primaryColor,
   products,
-  deliveryDates,
+
   deliveryOptions,
   shopDepositPct,
   acceptOnlinePayment,
@@ -326,7 +326,6 @@ export function OrderForm({
   useEffect(() => {
     trackMetaEvent('InitiateCheckout')
   }, [])
-  const [deliveryDate, setDeliveryDate] = useState(deliveryDates[0]?.value ?? '')
   const [firstName, setFirstName] = useState(saved.firstName ?? '')
   const [phoneDial, setPhoneDial] = useState(saved.phoneDial ?? defaultDial)
   const [phoneNum, setPhoneNum] = useState(saved.phoneNum ?? '')
@@ -500,7 +499,7 @@ export function OrderForm({
           customization_note: it.customization_note.trim() || null,
         }
       }),
-      delivery_date: isDigital ? null : (deliveryDate || null),
+      delivery_date: null,
       delivery_type: isDigital ? 'store_pickup' : deliveryType,
       delivery_address: (!isDigital && deliveryType === 'home_delivery') ? address.trim() : null,
       client_first_name: firstName.trim(),
@@ -791,33 +790,19 @@ export function OrderForm({
               Ajouter un article
             </button>
           )}
+
+          {/* Total en temps réel — affiché dès que le sous-total > 0 */}
+          {itemsSubtotal > 0 && (
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <span className="text-sm font-medium text-gray-500">Sous-total</span>
+              <span className="text-base font-bold" style={{ color: primaryColor }}>
+                {formatPrice(itemsSubtotal, shopCurrency)}
+              </span>
+            </div>
+          )}
         </section>
 
         <div className="border-t border-gray-100" />
-
-        {/* 2 — Date — masquée pour les produits digitaux */}
-        {!isDigital && deliveryDates.length > 0 && (
-          <>
-            <section>
-              <SectionLabel n={2} label="Date de livraison" primaryColor={primaryColor} />
-              <div className="relative">
-                <select
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  className={`${inputCls} appearance-none pr-10`}
-                >
-                  {deliveryDates.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
-            </section>
-            <div className="border-t border-gray-100" />
-          </>
-        )}
         </>}
 
         {/* ── ÉTAPE 2 : Coordonnées + Livraison ── */}

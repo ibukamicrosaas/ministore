@@ -214,6 +214,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          cost_price?: number | null
         }
         Insert: {
           id?: string
@@ -238,6 +239,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          cost_price?: number | null
         }
         Update: {
           id?: string
@@ -262,6 +264,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          cost_price?: number | null
         }
       Relationships: []
       }

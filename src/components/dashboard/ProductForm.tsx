@@ -110,6 +110,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [originalPrice, setOriginalPrice] = useState<string>(
     String((product as Product & { original_price?: number | null })?.original_price ?? '')
   )
+  const [costPrice, setCostPrice] = useState<string>(
+    String((product as Product & { cost_price?: number | null })?.cost_price ?? '')
+  )
   const descRef           = useRef<HTMLTextAreaElement>(null)
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
@@ -303,6 +306,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       customization_label: productType === 'digital' ? null : (customizationEnabled ? (customizationLabel.trim() || null) : null),
       badges: badges.map(b => b.trim()).filter(Boolean),
       original_price: originalPrice.trim() ? (parseInt(originalPrice, 10) || null) : null,
+      cost_price: costPrice.trim() ? (parseInt(costPrice, 10) || null) : null,
       slug: slug.trim() || null,
       meta_title: metaTitle.trim() || null,
       meta_description: metaDescription.trim() || null,
@@ -794,6 +798,28 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
               placeholder="Ex : 18 000 (affiché barré à côté du prix)"
             />
             <p className="mt-1 text-[10px] text-gray-400">S'affiche barré en gris à côté du prix actuel pour montrer la réduction.</p>
+          </div>
+
+          {/* Coût d'achat / de fabrication */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Coût d&apos;achat ou de fabrication ({currencySymbol}) <span className="ml-1.5 font-normal text-gray-400">(optionnel)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={costPrice}
+              onChange={e => setCostPrice(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
+              placeholder="Ex : 5 000"
+            />
+            {costPrice.trim() && parseInt(costPrice, 10) > 0 && (product?.price || 0) > 0 && (
+              <p className="mt-1 text-[10px] text-emerald-600 font-medium">
+                Marge brute : {((product?.price ?? 0) - parseInt(costPrice, 10)).toLocaleString('fr-FR')} {currencySymbol}
+                {' '}({Math.round(((product?.price ?? 0) - parseInt(costPrice, 10)) / (product?.price ?? 1) * 100)}%)
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-gray-400">Non visible par tes clients. Utilisé pour calculer ta marge brute.</p>
           </div>
 
           {/* Variantes — masquées pour les produits digitaux */}

@@ -73,27 +73,6 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category' | 'stock_count'
   > & { customization_enabled?: boolean; customization_label?: string | null })[]
 
-  // Générer les dates disponibles sur 14 jours
-  const availableDays = Array.isArray(shop.available_days) ? shop.available_days as string[] : []
-
-  const dates: { value: string; label: string }[] = []
-  const today = new Date()
-  const todayDayName = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][today.getDay()]
-  if (availableDays.length === 0 || availableDays.includes(todayDayName)) {
-    dates.push({ value: today.toISOString().slice(0, 10), label: "Aujourd'hui" })
-  }
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    const dayName = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][d.getDay()]
-    if (availableDays.length === 0 || availableDays.includes(dayName)) {
-      dates.push({
-        value: d.toISOString().slice(0, 10),
-        label: d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
-      })
-    }
-  }
-
   const deliveryOptions = (shop.delivery_options ?? { home_delivery: true, store_pickup: true }) as {
     home_delivery: boolean
     store_pickup: boolean
@@ -127,7 +106,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
           customization_enabled: p.customization_enabled ?? false,
           customization_label: p.customization_label ?? null,
         }))}
-        deliveryDates={dates}
+
         deliveryOptions={deliveryOptions}
         shopDepositPct={shop.deposit_percentage ?? 0}
         shopCountry={shop.country ?? 'SN'}
