@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TEKKIShop — Crée ta boutique en 60 secondes</title>
+<meta name="description" content="Réponds à 5 questions et ta boutique en ligne est prête. Gratuit, depuis ton téléphone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#2E90FA;
+    --bleu-fonce:#175CD3;
+    --bleu-pale:#EFF6FF;
+    --nuit:#0B1B32;
+    --texte:#1D2939;
+    --gris:#5D6B82;
+    --ligne:#E4EAF2;
+    --vert:#12B76A;
+    --vert-pale:#ECFDF3;
+    --fond:#F7FAFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    background:var(--fond);color:var(--texte);
+    font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+  }
+  h1,h2,.gros{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;line-height:1.15}
+
+  /* Cadre app : plein écran sur mobile, colonne centrée sur desktop */
+  .app{
+    width:100%;max-width:480px;min-height:100dvh;
+    background:#fff;display:flex;flex-direction:column;position:relative;
+    box-shadow:0 0 60px rgba(11,27,50,.08);
+  }
+
+  /* ——— Barre haute ——— */
+  .barre{padding:14px 20px 10px;display:flex;align-items:center;gap:12px}
+  .logo{font-family:'Space Grotesk';font-weight:700;font-size:1.05rem;text-decoration:none;color:var(--texte)}
+  .logo b{color:var(--bleu)}
+  .retour{
+    background:none;border:none;font-size:1.3rem;color:var(--gris);cursor:pointer;
+    width:36px;height:36px;border-radius:50%;display:grid;place-items:center;visibility:hidden;
+  }
+  .retour.on{visibility:visible}
+  .etape-label{margin-left:auto;font-size:.78rem;font-weight:700;color:var(--gris)}
+  .progress{height:5px;background:var(--ligne);margin:0 20px;border-radius:99px;overflow:hidden}
+  .progress i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--bleu),var(--bleu-fonce));border-radius:99px;transition:width .4s ease}
+
+  /* ——— Écrans ——— */
+  .ecran{
+    flex:1;display:none;flex-direction:column;padding:26px 22px 30px;
+    animation:entre .35s ease;
+  }
+  .ecran.actif{display:flex}
+  @keyframes entre{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+  .question{font-size:clamp(1.5rem,6vw,1.9rem);font-weight:700;margin-bottom:8px}
+  .question em{font-style:normal;color:var(--bleu)}
+  .aide{color:var(--gris);font-size:.95rem;margin-bottom:24px}
+
+  /* Tuiles de réponse */
+  .tuiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tuiles.une-col{grid-template-columns:1fr}
+  .tuile{
+    border:2px solid var(--ligne);border-radius:16px;background:#fff;
+    padding:18px 14px;font-family:inherit;font-size:1rem;font-weight:600;color:var(--texte);
+    cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;
+    transition:border-color .15s, transform .1s, background .15s;
+  }
+  .tuile .emo{font-size:1.9rem}
+  .tuile:active{transform:scale(.97)}
+  .tuile.choisie{border-color:var(--bleu);background:var(--bleu-pale)}
+  .tuiles.liste .tuile{flex-direction:row;justify-content:flex-start;text-align:left;padding:16px 18px}
+  .tuiles.liste .tuile .emo{font-size:1.4rem}
+
+  /* Champ texte (nom de boutique) */
+  .champ{
+    width:100%;border:2px solid var(--ligne);border-radius:16px;padding:18px;
+    font-family:'Space Grotesk';font-size:1.25rem;font-weight:600;text-align:center;color:var(--texte);
+    outline:none;transition:border-color .15s;
+  }
+  .champ:focus{border-color:var(--bleu)}
+  .champ::placeholder{color:#B4BFCF;font-weight:500}
+  .exemples{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .exemples button{
+    border:1px solid var(--ligne);background:#fff;border-radius:99px;padding:7px 14px;
+    font-family:inherit;font-size:.82rem;color:var(--gris);cursor:pointer;
+  }
+
+  /* Micro-preuve */
+  .preuve{
+    margin-top:auto;display:none;align-items:flex-start;gap:12px;
+    background:var(--vert-pale);border:1px solid #B9F0D3;border-radius:16px;padding:16px;
+    animation:pop .3s ease;
+  }
+  .preuve.on{display:flex}
+  @keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .preuve .ico{font-size:1.4rem;flex-shrink:0}
+  .preuve p{font-size:.92rem;line-height:1.5}
+  .preuve b{color:var(--nuit)}
+
+  /* Boutons */
+  .btn{
+    width:100%;border:none;border-radius:16px;padding:18px;cursor:pointer;
+    font-family:inherit;font-weight:800;font-size:1.05rem;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:transform .12s, opacity .15s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-bleu{background:var(--bleu);color:#fff;box-shadow:0 10px 26px rgba(46,144,250,.35)}
+  .btn-vert{background:var(--vert);color:#fff;box-shadow:0 10px 26px rgba(18,183,106,.35)}
+  .btn[disabled]{opacity:.4;pointer-events:none}
+  .pied{margin-top:16px}
+  .lien-discret{
+    display:block;text-align:center;margin-top:14px;font-size:.85rem;color:var(--gris);
+    text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;
+  }
+
+  /* ——— Écran d'accueil ——— */
+  #e0{justify-content:center;text-align:center;gap:0}
+  #e0 .badge{
+    display:inline-flex;align-self:center;align-items:center;gap:8px;
+    background:var(--bleu-pale);color:var(--bleu-fonce);font-size:.82rem;font-weight:700;
+    padding:8px 16px;border-radius:99px;margin-bottom:22px;
+  }
+  #e0 h1{font-size:clamp(1.9rem,8vw,2.5rem);font-weight:700}
+  #e0 h1 em{font-style:normal;color:var(--bleu)}
+  #e0 .sous{color:var(--gris);margin:16px 0 30px;font-size:1.02rem}
+  #e0 .social{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:22px;font-size:.85rem;color:var(--gris)}
+  #e0 .avatars{display:flex}
+  #e0 .avatars span{width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-left:-8px;background:linear-gradient(135deg,#CFE4FF,#8FBFFB);display:grid;place-items:center;font-size:.6rem;font-weight:700;color:var(--bleu-fonce)}
+  #e0 .avatars span:first-child{margin-left:0}
+
+  /* ——— Écran construction ——— */
+  #e6{justify-content:center;text-align:center}
+  .construit{list-style:none;text-align:left;max-width:300px;margin:26px auto 0}
+  .construit li{
+    padding:10px 0;display:flex;gap:12px;align-items:center;font-size:.98rem;font-weight:600;
+    color:#B4BFCF;transition:color .3s;
+  }
+  .construit li::before{content:"○";color:var(--ligne);font-size:1.1rem}
+  .construit li.fait{color:var(--texte)}
+  .construit li.fait::before{content:"✅"}
+  .spinner{
+    width:64px;height:64px;border-radius:50%;margin:0 auto;
+    border:5px solid var(--bleu-pale);border-top-color:var(--bleu);
+    animation:tourne 1s linear infinite;
+  }
+  @keyframes tourne{to{transform:rotate(360deg)}}
+
+  /* ——— Écran final ——— */
+  .apercu{
+    border:1px solid var(--ligne);border-radius:20px;padding:20px;margin:20px 0;
+    background:linear-gradient(180deg,#fff,var(--bleu-pale));text-align:center;
+    box-shadow:0 16px 40px rgba(11,27,50,.08);
+  }
+  .apercu .enseigne{
+    width:64px;height:64px;border-radius:18px;background:var(--nuit);color:#fff;margin:0 auto 12px;
+    display:grid;place-items:center;font-size:1.8rem;
+  }
+  .apercu h2{font-size:1.4rem}
+  .apercu .url{font-size:.85rem;color:var(--bleu-fonce);font-weight:700;margin-top:4px}
+  .apercu .badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .apercu .badges span{font-size:.72rem;font-weight:700;background:#fff;border:1px solid var(--ligne);border-radius:99px;padding:5px 11px}
+  .jauge{margin-top:16px}
+  .jauge .txt{font-size:.82rem;font-weight:700;color:var(--vert);margin-bottom:6px}
+  .jauge .barre-j{height:8px;background:var(--ligne);border-radius:99px;overflow:hidden}
+  .jauge .barre-j i{display:block;height:100%;width:0%;background:var(--vert);border-radius:99px;transition:width 1s ease .3s}
+  .tel-ligne{display:flex;gap:10px;margin-top:8px}
+  .indicatif{
+    border:2px solid var(--ligne);border-radius:16px;padding:0 14px;display:flex;align-items:center;
+    font-weight:700;font-size:1rem;background:#fff;white-space:nowrap;
+  }
+  .tel-ligne .champ{text-align:left;font-family:'Plus Jakarta Sans';font-size:1.05rem}
+  .rassure-fin{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:.8rem;color:var(--gris)}
+  .rassure-fin span::before{content:"✓ ";color:var(--vert);font-weight:800}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="barre">
+    <button class="retour" id="btnRetour" aria-label="Revenir en arrière">←</button>
+    <a class="logo" href="#">TEKKI<b>Shop</b></a>
+    <span class="etape-label" id="etapeLabel"></span>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="barre"></i></div>
+
+  <!-- ÉCRAN 0 — Accueil -->
+  <section class="ecran actif" id="e0">
+    <span class="badge">⚡ 60 secondes chrono</span>
+    <h1>Réponds à 5 questions.<br>Ta boutique sera <em>prête</em>.</h1>
+    <p class="sous">Pas de blabla, pas de formulaire compliqué. Tu réponds, on construit ta boutique en ligne pendant ce temps. Gratuit.</p>
+    <button class="btn btn-bleu" onclick="allerA(1)">C'est parti 🚀</button>
+    <div class="social">
+      <div class="avatars"><span>AS</span><span>RD</span><span>MT</span><span>+</span></div>
+      <span><b>+1 000 marchands</b> ont déjà leur boutique</span>
+    </div>
+    <button class="lien-discret" onclick="alert('→ Redirection directe vers l\'inscription classique (pour les visiteurs déjà convaincus)')">Je connais déjà TEKKIShop, créer ma boutique directement</button>
+  </section>
+
+  <!-- ÉCRAN 1 — Nom du business -->
+  <section class="ecran" id="e1">
+    <h2 class="question">Comment s'appelle ton business&nbsp;?</h2>
+    <p class="aide">C'est le nom que tes clients verront sur ta boutique. Tu pourras le changer plus tard.</p>
+    <input class="champ" id="nomBoutique" type="text" placeholder="Ex : Chez Fatou" maxlength="30" autocomplete="off">
+    <div class="exemples">
+      <button onclick="remplirNom('Chez Fatou')">Chez Fatou</button>
+      <button onclick="remplirNom('Adja Cosmétiques')">Adja Cosmétiques</button>
+      <button onclick="remplirNom('Dakar Sneakers')">Dakar Sneakers</button>
+    </div>
+    <div class="preuve on" style="margin-top:auto">
+      <span class="ico">🔒</span>
+      <p>Ta boutique t'appartient. <b>Aucune carte bancaire demandée</b>, aucun engagement.</p>
+    </div>
+    <div class="pied">
+      <button class="btn btn-bleu" id="btnNom" disabled onclick="validerNom()">Continuer</button>
+    </div>
+  </section>
+
+  <!-- ÉCRAN 2 — Catégorie -->
+  <section class="ecran" id="e2">
+    <h2 class="question">Tu vends quoi, <em id="nomQ2">…</em>&nbsp;?</h2>
+    <p class="aide">Choisis ce qui ressemble le plus à ton business.</p>
+    <div class="tuiles">
+      <button class="tuile" onclick="choisir(this,'cat','mode')"><span class="emo">👗</span>Mode & vêtements</button>
+      <button class="tuile" onclick="choisir(this,'cat','beaute')"><span class="emo">💄</span>Cosmétiques & beauté</button>
+      <button class="tuile" onclick="choisir(this,'cat','chaussures')"><span class="emo">👟</span>Chaussures & sacs</button>
+      <button class="tuile" onclick="choisir(this,'cat','alimentaire')"><span class="emo">🍲</span>Alimentaire</button>
+      <button class="tuile" onclick="choisir(this,'cat','digital')"><span class="emo">📚</span>Produits digitaux</button>
+      <button class="tuile" onclick="choisir(this,'cat','autre')"><span class="emo">📦</span>Autre chose</button>
+    </div>
+    <div class="preuve" id="preuveCat"><span class="ico">✨</span><p id="preuveCatTxt"></p></div>
+    <div class="pied"><button class="btn btn-bleu" id="btn2" disabled onclick="allerA(3)">Continuer</button></div>
+  </section>
+
+  <!-- ÉCRAN 3 — Canal actuel -->
+  <section class="ecran" id="e3">
+    <h2 class="question">Aujourd'hui, tu vends où&nbsp;?</h2>
+    <p class="aide">Sois honnête, il n'y a pas de mauvaise réponse 😊</p>
+    <div class="tuiles liste une-col">
+      <button class="tuile" onclick="choisir(this,'canal','whatsapp')"><span class="emo">💬</span>Sur WhatsApp (statuts, groupes)</button>
+      <button class="tuile" onclick="choisir(this,'canal','instagram')"><span class="emo">📸</span>Sur Instagram ou TikTok</button>
+      <button class="tuile" onclick="choisir(this,'canal','physique')"><span class="emo">🏪</span>Au marché ou en boutique physique</button>
+      <button class="tuile" onclick="choisir(this,'canal','debut')"><span class="emo">🌱</span>Je démarre, je ne vends pas encore</button>
+    </div>
+    <div class="preuve" id="preuveCanal"><span class="ico">💪</span><p id="preuveCanalTxt"></p></div>
+    <div class="pied"><button class="btn btn-bleu" id="btn3" disabled onclick="allerA(4)">Continuer</button></div>
+  </section>
+
+  <!-- ÉCRAN 4 — Pays -->
+  <section class="ecran" id="e4">
+    <h2 class="question">Tu es dans quel pays&nbsp;?</h2>
+    <p class="aide">Pour préparer les moyens de paiement de tes clients.</p>
+    <div class="tuiles">
+      <button class="tuile" onclick="choisir(this,'pays','sn')"><span class="emo">🇸🇳</span>Sénégal</button>
+      <button class="tuile" onclick="choisir(this,'pays','ci')"><span class="emo">🇨🇮</span>Côte d'Ivoire</button>
+      <button class="tuile" onclick="choisir(this,'pays','bj')"><span class="emo">🇧🇯</span>Bénin</button>
+      <button class="tuile" onclick="choisir(this,'pays','tg')"><span class="emo">🇹🇬</span>Togo</button>
+      <button class="tuile" onclick="choisir(this,'pays','ml')"><span class="emo">🇲🇱</span>Mali</button>
+      <button class="tuile" onclick="choisir(this,'pays','bf')"><span class="emo">🇧🇫</span>Burkina Faso</button>
+    </div>
+    <div class="preuve" id="preuvePays"><span class="ico">💰</span><p id="preuvePaysTxt"></p></div>
+    <div class="pied"><button class="btn btn-bleu" id="btn4" disabled onclick="allerA(5)">Continuer</button></div>
+  </section>
+
+  <!-- ÉCRAN 5 — Casse-tête -->
+  <section class="ecran" id="e5">
+    <h2 class="question">Ton plus grand casse-tête, c'est quoi&nbsp;?</h2>
+    <p class="aide">On configure ta boutique pour t'aider là-dessus en priorité.</p>
+    <div class="tuiles liste une-col">
+      <button class="tuile" onclick="choisir(this,'douleur','clients')"><span class="emo">🧲</span>Trouver des clients</button>
+      <button class="tuile" onclick="choisir(this,'douleur','livraison')"><span class="emo">🛵</span>Gérer les livraisons</button>
+      <button class="tuile" onclick="choisir(this,'douleur','paiement')"><span class="emo">💸</span>Encaisser et suivre l'argent</button>
+      <button class="tuile" onclick="choisir(this,'douleur','chiffres')"><span class="emo">🧮</span>Comprendre mes chiffres et bénéfices</button>
+    </div>
+    <div class="preuve" id="preuveDouleur"><span class="ico">🎯</span><p id="preuveDouleurTxt"></p></div>
+    <div class="pied"><button class="btn btn-bleu" id="btn5" disabled onclick="construire()">Créer ma boutique →</button></div>
+  </section>
+
+  <!-- ÉCRAN 6 — Construction -->
+  <section class="ecran" id="e6">
+    <div class="spinner" aria-hidden="true"></div>
+    <h2 class="question" style="margin-top:26px">On construit <em id="nomQ6">ta boutique</em>…</h2>
+    <ul class="construit">
+      <li id="c1">Ta page boutique au format mobile</li>
+      <li id="c2">Tes moyens de paiement <span id="paiementsC6"></span></li>
+      <li id="c3">Le paiement à la livraison + suivi livreur</li>
+      <li id="c4">Ton Assistant IA personnel</li>
+    </ul>
+  </section>
+
+  <!-- ÉCRAN 7 — Final -->
+  <section class="ecran" id="e7">
+    <h2 class="question">🎉 <em id="nomFinal">Ta boutique</em> est presque prête&nbsp;!</h2>
+    <div class="apercu">
+      <div class="enseigne" id="emoFinal">🛍️</div>
+      <h2 id="nomApercu">Ta boutique</h2>
+      <div class="url" id="urlApercu">tekki.shop/ta-boutique</div>
+      <div class="badges" id="badgesFinal"></div>
+      <div class="jauge">
+        <div class="txt">Boutique prête à <span id="pct">0</span>%</div>
+        <div class="barre-j"><i id="jaugeFill"></i></div>
+      </div>
+    </div>
+    <p class="aide" style="margin-bottom:6px"><b>Dernière étape :</b> entre ton numéro WhatsApp pour récupérer ta boutique et ajouter tes premiers produits.</p>
+    <div class="tel-ligne">
+      <span class="indicatif" id="indicatif">🇸🇳 +221</span>
+      <input class="champ" id="tel" type="tel" inputmode="tel" placeholder="77 123 45 67" autocomplete="tel">
+    </div>
+    <div class="pied">
+      <button class="btn btn-vert" id="btnFinal" disabled onclick="terminer()">Récupérer ma boutique 💬</button>
+      <div class="rassure-fin">
+        <span>Gratuit</span><span>Sans carte bancaire</span><span>2 min pour finir</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // ————— État du flow (dans un vrai déploiement : tracké écran par écran) —————
+  const etat={nom:"",cat:null,canal:null,pays:null,douleur:null};
+  let ecranCourant=0;
+  const TOTAL=5; // étapes questionnées
+
+  // ————— Données de personnalisation —————
+  const preuvesCat={
+    mode:"Bon choix 👗 La mode est la <b>catégorie n°1 sur TEKKIShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
+    beaute:"Excellent 💄 Les vendeuses de cosmétiques reçoivent souvent leurs <b>premières commandes en quelques jours</b> — leurs clientes rachètent régulièrement.",
+    chaussures:"Top 👟 Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
+    alimentaire:"Miam 🍲 Menus, prix et zones de livraison affichés : tes clients <b>commandent directement</b>, toi tu cuisines.",
+    digital:"Malin 📚 Ebooks, guides, formations : le client paie et <b>reçoit son fichier automatiquement</b>. Tu n'envoies plus rien à la main.",
+    autre:"Parfait 📦 Quoi que tu vendes, ta boutique l'affiche proprement avec photos et prix. <b>+1 000 marchands</b> de tous secteurs sont déjà là."
+  };
+  const preuvesCanal={
+    whatsapp:"Parfait 💬 Ta boutique est <b>faite pour WhatsApp</b> : un seul lien dans ton statut, et tes clients voient tout, commandent et paient tout seuls — même quand tu dors.",
+    instagram:"Génial 📸 Mets ton lien boutique en bio : tes abonnés passent de « j'aime » à <b>« j'achète »</b> sans t'écrire en DM.",
+    physique:"Excellente base 🏪 Ta boutique en ligne devient ta <b>deuxième vitrine, ouverte 24h/24</b> — tes clients du quartier commandent même quand c'est fermé.",
+    debut:"C'est le meilleur moment 🌱 Tu démarres <b>directement avec les bons outils</b>, sans passer par le chaos des commandes dans les DM."
+  };
+  const pays={
+    sn:{nomP:"Sénégal",drapeau:"🇸🇳",ind:"+221",paie:"Wave et Orange Money",badges:["Wave","Orange Money"]},
+    ci:{nomP:"Côte d'Ivoire",drapeau:"🇨🇮",ind:"+225",paie:"Orange Money, MTN Money et Wave",badges:["Orange Money","MTN MoMo","Wave"]},
+    bj:{nomP:"Bénin",drapeau:"🇧🇯",ind:"+229",paie:"MTN Money et Moov Money",badges:["MTN MoMo","Moov Money"]},
+    tg:{nomP:"Togo",drapeau:"🇹🇬",ind:"+228",paie:"Mixx by Yas et Moov Money",badges:["Mixx by Yas","Moov Money"]},
+    ml:{nomP:"Mali",drapeau:"🇲🇱",ind:"+223",paie:"Orange Money et Moov Money",badges:["Orange Money","Moov Money"]},
+    bf:{nomP:"Burkina Faso",drapeau:"🇧🇫",ind:"+226",paie:"Orange Money et Moov Money",badges:["Orange Money","Moov Money"]}
+  };
+  const preuvesDouleur={
+    clients:"On s'en occupe ensemble 🧲 Ta boutique génère des <b>visuels prêts à publier</b> pour tes statuts et réseaux, et ton <b>Assistant IA</b> te conseille pour vendre plus. Tu n'as pas besoin d'être un pro du marketing.",
+    livraison:"C'est réglé 🛵 Chaque commande part sur le <b>WhatsApp de ton livreur en 1 clic</b> : adresse, numéro, montant. Il confirme la livraison en 1 clic, et ton tableau de bord se met à jour tout seul. Fini les erreurs d'adresse.",
+    paiement:"Bonne nouvelle 💸 Tes paiements mobile money sont encaissés en ligne et <b>tu retires ton argent instantanément</b> — pas besoin d'attendre 24 ou 48h. Et le cash à la livraison est compté automatiquement.",
+    chiffres:"On a pensé à toi 🧮 Ton <b>Assistant IA</b> connaît les chiffres de TA boutique : demande-lui « combien j'ai gagné ce mois ? » ou « quel produit marche le mieux ? » et il te répond simplement, sans calculs de tête."
+  };
+  const emoCat={mode:"👗",beaute:"💄",chaussures:"👟",alimentaire:"🍲",digital:"📚",autre:"🛍️"};
+
+  // ————— Navigation —————
+  const ecrans=document.querySelectorAll(".ecran");
+  function allerA(n){
+    ecrans.forEach(e=>e.classList.remove("actif"));
+    document.getElementById("e"+n).classList.add("actif");
+    ecranCourant=n;
+    majBarre();
+    // Personnalisation à l'arrivée
+    if(n===2) document.getElementById("nomQ2").textContent=prenomBoutique();
+    window.scrollTo(0,0);
+    track("ecran_vu",n);
+  }
+  function majBarre(){
+    const barre=document.getElementById("barre");
+    const label=document.getElementById("etapeLabel");
+    const retour=document.getElementById("btnRetour");
+    if(ecranCourant>=1 && ecranCourant<=5){
+      barre.style.width=(ecranCourant/TOTAL*100)+"%";
+      label.textContent="Étape "+ecranCourant+"/"+TOTAL;
+      retour.classList.toggle("on",ecranCourant>1);
+    }else if(ecranCourant>=6){
+      barre.style.width="100%";label.textContent="";retour.classList.remove("on");
+    }else{
+      barre.style.width="0%";label.textContent="";retour.classList.remove("on");
+    }
+  }
+  document.getElementById("btnRetour").onclick=()=>{ if(ecranCourant>1&&ecranCourant<=5) allerA(ecranCourant-1); };
+
+  // ————— Écran 1 : nom —————
+  const inputNom=document.getElementById("nomBoutique");
+  inputNom.addEventListener("input",()=>{document.getElementById("btnNom").disabled=inputNom.value.trim().length<2;});
+  inputNom.addEventListener("keydown",e=>{if(e.key==="Enter"&&inputNom.value.trim().length>=2)validerNom();});
+  function remplirNom(n){inputNom.value=n;document.getElementById("btnNom").disabled=false;}
+  function validerNom(){etat.nom=inputNom.value.trim();allerA(2);}
+  function prenomBoutique(){return etat.nom||"toi";}
+
+  // ————— Sélections + micro-preuves —————
+  function choisir(el,cle,val){
+    etat[cle]=val;
+    el.parentElement.querySelectorAll(".tuile").forEach(t=>t.classList.remove("choisie"));
+    el.classList.add("choisie");
+    if(cle==="cat"){montrerPreuve("preuveCat","preuveCatTxt",preuvesCat[val]);document.getElementById("btn2").disabled=false;}
+    if(cle==="canal"){montrerPreuve("preuveCanal","preuveCanalTxt",preuvesCanal[val]);document.getElementById("btn3").disabled=false;}
+    if(cle==="pays"){
+      const p=pays[val];
+      montrerPreuve("preuvePays","preuvePaysTxt","Dès le 1er jour, ta boutique accepte <b>"+p.paie+"</b> + le paiement à la livraison — déjà intégrés, rien à configurer. Et tu <b>retires ton argent instantanément</b>.");
+      document.getElementById("btn4").disabled=false;
+    }
+    if(cle==="douleur"){montrerPreuve("preuveDouleur","preuveDouleurTxt",preuvesDouleur[val]);document.getElementById("btn5").disabled=false;}
+    track("reponse",cle+":"+val);
+  }
+  function montrerPreuve(idBloc,idTxt,html){
+    document.getElementById(idTxt).innerHTML=html;
+    document.getElementById(idBloc).classList.add("on");
+  }
+
+  // ————— Écran 6 : construction —————
+  function construire(){
+    allerA(6);
+    document.getElementById("nomQ6").textContent=etat.nom;
+    const p=pays[etat.pays];
+    document.getElementById("paiementsC6").textContent="("+p.paie+")";
+    ["c1","c2","c3","c4"].forEach((id,i)=>{
+      setTimeout(()=>document.getElementById(id).classList.add("fait"),600+i*650);
+    });
+    setTimeout(finaliser,600+4*650+500);
+  }
+
+  // ————— Écran 7 : final —————
+  function finaliser(){
+    allerA(7);
+    const p=pays[etat.pays];
+    const slug=etat.nom.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    document.getElementById("nomFinal").textContent=etat.nom;
+    document.getElementById("nomApercu").textContent=etat.nom;
+    document.getElementById("urlApercu").textContent="tekki.shop/"+ (slug||"ma-boutique");
+    document.getElementById("emoFinal").textContent=emoCat[etat.cat]||"🛍️";
+    document.getElementById("indicatif").textContent=p.drapeau+" "+p.ind;
+    const badges=document.getElementById("badgesFinal");
+    badges.innerHTML="";
+    [...p.badges,"💵 À la livraison","🛵 Suivi livreur","🤖 Assistant IA"].forEach(b=>{
+      const s=document.createElement("span");s.textContent=b;badges.appendChild(s);
+    });
+    setTimeout(()=>{
+      document.getElementById("jaugeFill").style.width="80%";
+      let n=0;const it=setInterval(()=>{n+=4;document.getElementById("pct").textContent=Math.min(n,80);if(n>=80)clearInterval(it);},40);
+    },200);
+  }
+  const tel=document.getElementById("tel");
+  tel.addEventListener("input",()=>{document.getElementById("btnFinal").disabled=tel.value.replace(/\D/g,"").length<8;});
+  function terminer(){
+    track("conversion","numero_saisi");
+    alert("✅ Dans le vrai flow : création du compte + envoi du lien d'accès sur WhatsApp + redirection vers l'ajout du 1er produit.\n\nBoutique : "+etat.nom+"\nCatégorie : "+etat.cat+"\nCanal : "+etat.canal+"\nPays : "+etat.pays+"\nCasse-tête : "+etat.douleur);
+  }
+
+  // ————— Tracking (simulé) —————
+  function track(evt,val){console.log("[track]",evt,val);/* → en prod : event analytics écran par écran */}
+</script>
+</body>
+</html>

@@ -342,14 +342,14 @@ export default async function LandingPage() {
         <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 60%, #f0f9ff 100%)' }}>
           <div className="mx-auto max-w-6xl">
             <Reveal className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Nos succès</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Ils vendent déjà avec TEKKIShop</p>
               <h2
-                className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3"
+                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
                 style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
               >
-                Ils font confiance à TekkiShop
+                Des marchands comme toi.
               </h2>
-              <p className="text-gray-500 max-w-sm mx-auto text-sm">
+              <p className="text-gray-500 max-w-md mx-auto text-lg">
                 Découvre les boutiques qui vendent avec succès via TekkiShop
               </p>
             </Reveal>
@@ -456,12 +456,12 @@ export default async function LandingPage() {
           <Reveal className="text-center mb-14">
             <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tout est inclus</p>
             <h2
-              className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3"
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
               Tout ce qu&apos;il te faut. <span className="text-[var(--color-primary)]">Rien de compliqué.</span>
             </h2>
-            <p className="text-gray-500 text-sm max-w-md mx-auto">Chaque fonction de TEKKIShop existe pour te faire gagner du temps ou de l&apos;argent. Sinon, on ne la construit pas.</p>
+            <p className="text-gray-500 text-lg max-w-md mx-auto">Chaque fonctionnalité de TEKKIShop existe pour te faire gagner du temps ou de l&apos;argent. Sinon, on ne la construit pas.</p>
           </Reveal>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
@@ -492,15 +492,30 @@ export default async function LandingPage() {
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #0EA5E9 0%, transparent 50%), radial-gradient(circle at 80% 50%, #22D3EE 0%, transparent 50%)' }} />
         <div className="relative">
           <Reveal className="text-center mb-10">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Ils utilisent TekkiShop</p>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Nos marchands en parlent mieux</p>
             <h2
-              className="text-3xl font-bold text-white"
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Ils ont changé leur façon de vendre
+              Vendre en ligne n&apos;a jamais été aussi simple
             </h2>
           </Reveal>
           <TestimonialsCarousel />
+
+          <Reveal delay={100} className="mt-14 flex flex-wrap items-center justify-center gap-x-14 gap-y-8 text-center px-4">
+            <div>
+              <p className="text-3xl font-black text-white">+{shopsCount}</p>
+              <p className="text-sm text-gray-400 mt-1">boutiques créées</p>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-white">6 pays d&apos;Afrique</p>
+              <p className="text-sm text-gray-400 mt-1 max-w-[280px]">Côte d&apos;Ivoire, Sénégal, Bénin, Togo, Mali & Burkina Faso</p>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-white">5 pays d&apos;Occident</p>
+              <p className="text-sm text-gray-400 mt-1 max-w-[280px]">France, Belgique, Suisse, Luxembourg & Canada</p>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -513,7 +528,7 @@ export default async function LandingPage() {
           <Reveal className="text-center mb-12">
             <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tu as des questions ?</p>
             <h2
-              className="text-3xl font-bold text-gray-900"
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
               On répond à tout
@@ -533,16 +548,13 @@ export default async function LandingPage() {
             <TrendingUp className="h-8 w-8 text-white" />
           </div>
           <h2
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight"
+            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white mb-4 leading-tight"
             style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
           >
-            Prêt à avoir ta boutique ?
+            Prêt à vendre tes produits en ligne ?
           </h2>
-          <p className="text-gray-400 text-lg mb-4 max-w-md mx-auto leading-relaxed">
+          <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto leading-relaxed">
             Ta boutique prête en 5 minutes. Tes clients commandent et paient directement en ligne.
-          </p>
-          <p className="font-bold text-base mb-8" style={{ color: 'var(--color-primary)' }}>
-            🎁 Plan Business : 1 mois offert sur la facturation annuelle
           </p>
 
           {/* Pays disponibles - footer CTA */}
@@ -566,7 +578,7 @@ export default async function LandingPage() {
           </div>
 
           <p className="text-xs text-gray-500">
-            ✓ Essai gratuit 30 jours &nbsp;·&nbsp; ✓ Pas besoin d&apos;ordinateur &nbsp;·&nbsp; ✓ Annulation à tout moment
+            ✓ Boutique gratuite à créer &nbsp;·&nbsp; ✓ Pas besoin d&apos;ordinateur &nbsp;·&nbsp; ✓ Annulation à tout moment
           </p>
         </Reveal>
       </section>

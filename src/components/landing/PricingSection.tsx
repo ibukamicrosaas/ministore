@@ -19,19 +19,16 @@ const PLANS = [
     annualPerMonth: Math.round(29000 / 12),
     cta: 'Commencer',
     ctaStyle: 'border border-gray-200 text-gray-700 hover:bg-gray-50',
-    note: 'Paiement par Wave ou Orange Money',
+    note: 'Paiement par mobile money ou CB',
     features: [
-      { text: 'Jusqu\'à 10 produits', included: true },
-      { text: 'Ta boutique en ligne immédiatement', included: true },
-      { text: 'Page produit avec photos et prix', included: true },
-      { text: 'Paiement Wave & Orange Money', included: true },
-      { text: 'Paiement à la livraison', included: true },
-      { text: '3% de commission sur paiements', included: true },
-      { text: 'Commandes illimitées', included: true },
-      { text: 'Tableau de bord basique', included: true },
+      { text: 'Jusqu\'à 10 produits en ligne', included: true },
+      { text: 'Tes clients paient par mobile money ou à la livraison', included: true },
+      { text: 'Assistant IA inclus (20 messages/jour) pour gérer ta boutique', included: true },
+      { text: 'Livraison simplifiée : envoi et confirmation en 1 clic avec ton livreur', included: true },
+      { text: 'Un tableau de bord pour suivre tes ventes', included: true },
+      { text: '3% de commission sur les paiements en ligne', included: true },
       { text: 'Produits illimités', included: false },
       { text: 'Image de couverture boutique', included: false },
-      { text: 'Section "À propos" boutique', included: false },
       { text: 'Domaine personnalisé (.com)', included: false },
       { text: '0% de commission', included: false },
     ],
@@ -40,25 +37,23 @@ const PLANS = [
   {
     key: 'business',
     name: 'Business',
-    badge: '🎁 1 MOIS OFFERT',
+    badge: '⭐ Le plus choisi',
     highlight: true,
     monthly: 4900,
     annual: 49000,
     annualPerMonth: Math.round(49000 / 12),
     cta: 'Créer ma boutique',
     ctaStyle: 'bg-white text-sky-600 font-bold hover:opacity-90 shadow-sm',
-    note: 'Paiement par Wave ou Orange Money',
+    note: 'Paiement par mobile money ou CB',
     features: [
       { text: 'Produits illimités', included: true },
-      { text: 'Ta boutique en ligne immédiatement', included: true },
-      { text: 'Page produit avec photos et prix', included: true },
-      { text: 'Paiement Wave & Orange Money', included: true },
-      { text: 'Paiement à la livraison', included: true },
-      { text: '3% de commission sur paiements', included: true },
-      { text: 'Commandes illimitées', included: true },
-      { text: 'Tableau de bord avancé + rapports', included: true },
-      { text: 'Notifications WhatsApp automatiques', included: true },
-      { text: 'Codes promo pour tes clients', included: true },
+      { text: 'Tes clients paient par mobile money ou à la livraison', included: true },
+      { text: 'Assistant IA inclus (50 messages/jour) pour gérer ta boutique', included: true },
+      { text: 'Livraison simplifiée : envoi et confirmation en 1 clic avec ton livreur', included: true },
+      { text: 'Notifications WhatsApp automatiques à chaque commande', included: true },
+      { text: 'Codes promo pour fidéliser tes clients', included: true },
+      { text: 'Tableau de bord avancé avec rapports de ventes', included: true },
+      { text: '3% de commission sur les paiements en ligne', included: true },
       { text: 'Image de couverture boutique', included: false },
       { text: 'Domaine personnalisé (.com)', included: false },
       { text: '0% de commission', included: false },
@@ -75,18 +70,16 @@ const PLANS = [
     annualPerMonth: Math.round(99000 / 12),
     cta: 'Choisir Pro',
     ctaStyle: 'border border-gray-200 text-gray-700 hover:bg-gray-50',
-    note: 'Paiement par Wave ou Orange Money',
+    note: 'Paiement par mobile money ou CB',
     features: [
-      { text: 'Tout du plan Business', included: true },
-      { text: '0% de commission sur paiements', included: true },
-      { text: 'Image de couverture boutique', included: true },
-      { text: 'Section "À propos" + photo boutique', included: true },
-      { text: 'Produits "Coup de cœur" mis en avant', included: true },
-      { text: 'Domaine personnalisé (monbusiness.com)', included: true },
-      { text: 'Branding TekkiShop masqué', included: true },
-      { text: 'Statistiques avancées', included: true },
+      { text: 'Tout ce qu\'offre Business', included: true },
+      { text: 'Assistant IA illimité pour piloter ta boutique à tout moment', included: true },
+      { text: '0% de commission sur tous tes paiements', included: true },
+      { text: 'Domaine personnalisé (tonsite.com)', included: true },
+      { text: 'Image de couverture + produits « Coup de cœur » mis en avant', included: true },
+      { text: 'Marque TekkiShop masquée — ta boutique, ta marque', included: true },
       { text: 'Télécharge toutes tes commandes en fichier Excel', included: true },
-      { text: 'Support prioritaire WhatsApp', included: true },
+      { text: 'Support prioritaire par WhatsApp', included: true },
     ],
     diff: 'Pour les boutiques qui veulent une image professionnelle au maximum.',
   },
@@ -101,13 +94,13 @@ export function PricingSection() {
       <div className="text-center mb-10">
         <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tarifs</p>
         <h2
-          className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+          className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
           style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
         >
-          Un tarif simple et honnête
+          Crée ta boutique gratuitement. Paie seulement quand tu es prêt à vendre.
         </h2>
-        <p className="text-gray-500 text-sm max-w-xs mx-auto mb-8">
-          Tu paies par Wave ou Orange Money. Ta boutique est en ligne en quelques minutes.
+        <p className="text-gray-500 text-lg max-w-md mx-auto mb-8">
+          Tu paies ton abonnement par mobile money ou carte bancaire. Tu peux arrêter quand tu veux.
         </p>
 
         {/* Toggle mensuel / annuel */}
@@ -186,16 +179,7 @@ export function PricingSection() {
                   </p>
                 </>
               ) : (
-                <>
-                  {plan.highlight ? (
-                    <>
-                      <p className="text-sky-200 text-xs mb-1">pour <strong className="text-white">2 mois</strong> — au lieu de 1</p>
-                      <p className="text-sky-300/70 text-[11px] mb-6">Puis {plan.monthly.toLocaleString('fr-FR')} FCFA/mois</p>
-                    </>
-                  ) : (
-                    <p className={`text-xs mb-6 ${plan.highlight ? 'text-sky-200' : 'text-gray-400'}`}>/mois</p>
-                  )}
-                </>
+                <p className={`text-xs mb-6 ${plan.highlight ? 'text-sky-200' : 'text-gray-400'}`}>/mois</p>
               )}
 
               {/* Pitch différenciateur */}
@@ -256,9 +240,9 @@ export function PricingSection() {
             <tbody className="divide-y divide-gray-100">
               {[
                 { label: 'Produits', d: '10 max', b: 'Illimités', p: 'Illimités' },
+                { label: 'Assistant IA', d: '20 msg/jour', b: '50 msg/jour', p: 'Illimité' },
                 { label: 'Commission paiements', d: '3%', b: '3%', p: '0%' },
                 { label: 'Image de couverture', d: '✗', b: '✗', p: '✓' },
-                { label: 'Section À propos', d: '✗', b: '✗', p: '✓' },
                 { label: 'Domaine personnalisé', d: '✗', b: '✗', p: '✓' },
                 { label: 'Branding TekkiShop', d: 'Visible', b: 'Visible', p: 'Masqué' },
               ].map((row) => (

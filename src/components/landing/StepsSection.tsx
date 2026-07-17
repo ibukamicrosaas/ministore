@@ -17,12 +17,12 @@ export function StepsSection() {
         <div className="text-center mb-16">
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">C&apos;est simple</p>
           <h2
-            className="text-3xl sm:text-4xl font-black text-gray-900 mb-3"
+            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
             style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
           >
             Ça marche en 4 étapes
           </h2>
-          <p className="text-gray-500 max-w-sm mx-auto text-sm">
+          <p className="text-gray-500 max-w-md mx-auto text-lg">
             Pas besoin d&apos;un développeur. Pas besoin d&apos;un ordinateur.
           </p>
         </div>

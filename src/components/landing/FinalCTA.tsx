@@ -8,12 +8,12 @@ export function FinalCTA({ title, subtitle }: { title: string; subtitle: string 
         style={{ background: 'radial-gradient(ellipse at center, #0EA5E9 0%, transparent 60%)' }} />
       <div className="relative text-center mx-auto max-w-lg">
         <h2
-          className="text-3xl sm:text-4xl font-black text-white mb-4 leading-tight"
+          className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white mb-4 leading-tight"
           style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
         >
           {title}
         </h2>
-        <p className="text-gray-400 text-base mb-8 leading-relaxed">
+        <p className="text-gray-400 text-lg mb-8 leading-relaxed">
           {subtitle}
         </p>
         <Link
@@ -23,7 +23,7 @@ export function FinalCTA({ title, subtitle }: { title: string; subtitle: string 
           Créer ma boutique gratuitement
           <ArrowRight className="h-4 w-4" />
         </Link>
-        <p className="text-xs text-gray-500 mt-4">✓ Essai gratuit 30 jours &nbsp;·&nbsp; ✓ Pas besoin de carte bancaire</p>
+        <p className="text-xs text-gray-500 mt-4">✓ Boutique gratuite à créer &nbsp;·&nbsp; ✓ Pas besoin de carte bancaire</p>
       </div>
     </section>
   )

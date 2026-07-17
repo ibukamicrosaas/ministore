@@ -148,7 +148,7 @@ export default function PourquoiPasShopifyPage() {
 
       <FinalCTA
         title="Prêt à essayer TekkiShop ?"
-        subtitle="30 jours d'essai, aucune carte bancaire requise. Compare par toi-même."
+        subtitle="Crée ta boutique gratuitement, aucune carte bancaire requise. Compare par toi-même."
       />
 
       <WhatsAppButton />

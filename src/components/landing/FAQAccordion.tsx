@@ -22,7 +22,7 @@ const FAQS = [
   },
   {
     q: "Est-ce que c'est gratuit pour commencer ?",
-    a: "Tu as 30 jours pour créer ta boutique, ajouter tes produits et voir à quoi elle ressemble — gratuitement, sans carte bancaire. Quand tu es prêt à recevoir tes premières commandes, tu choisis un plan à partir de 2 900 FCFA / mois. Tu peux annuler à tout moment, sans engagement.",
+    a: "Oui, la création de ta boutique est gratuite : tu peux ajouter tes produits et voir à quoi elle ressemble sans payer. Pour l'activer et commencer à recevoir des commandes, tu choisis un plan à partir de 2 900 FCFA / mois. Tu peux arrêter à tout moment, sans engagement.",
   },
   {
     q: "Quels sont exactement les frais ?",

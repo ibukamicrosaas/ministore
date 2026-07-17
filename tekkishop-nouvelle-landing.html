@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEKKIShop — Ta boutique en ligne en 5 minutes, depuis ton téléphone</title>
+<meta name="description" content="Tu vends déjà sur WhatsApp ? Crée ta boutique en ligne en 5 minutes depuis ton téléphone. Tes clients commandent seuls, l'argent arrive sur ton Wave ou Orange Money.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#2E90FA;
+    --bleu-fonce:#175CD3;
+    --bleu-pale:#EFF6FF;
+    --nuit:#0B1B32;
+    --texte:#1D2939;
+    --gris:#5D6B82;
+    --fond:#FFFFFF;
+    --fond-2:#F5F9FF;
+    --ligne:#E4EAF2;
+    --vert:#12B76A;        /* WhatsApp / argent reçu */
+    --vert-pale:#ECFDF3;
+    --jaune:#FDB022;
+    --radius:16px;
+    --maxw:1140px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    color:var(--texte);background:var(--fond);
+    font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;line-height:1.12;letter-spacing:-0.02em}
+  a{color:inherit}
+  a:focus-visible,button:focus-visible{outline:3px solid var(--bleu);outline-offset:3px;border-radius:6px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .eyebrow{
+    display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--bleu-fonce);background:var(--bleu-pale);padding:7px 14px;border-radius:999px;margin-bottom:18px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    padding:16px 28px;border-radius:14px;font-weight:700;font-size:1.02rem;
+    text-decoration:none;border:none;cursor:pointer;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-bleu{background:var(--bleu);color:#fff;box-shadow:0 8px 24px rgba(46,144,250,.35)}
+  .btn-nuit{background:var(--nuit);color:#fff}
+  .btn-blanc{background:#fff;color:var(--nuit);border:1.5px solid var(--ligne)}
+  .btn-wa{background:var(--vert);color:#fff}
+  .rassure{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:.9rem;color:var(--gris)}
+  .rassure span::before{content:"✓ ";color:var(--vert);font-weight:700}
+
+  /* Placeholders images */
+  .ph{
+    border:2px dashed #9DB8DB;background:repeating-linear-gradient(45deg,#F2F7FF,#F2F7FF 12px,#EAF2FF 12px,#EAF2FF 24px);
+    border-radius:var(--radius);display:flex;align-items:center;justify-content:center;text-align:center;
+    color:#3E6BA8;font-size:.88rem;font-weight:600;padding:18px;
+  }
+
+  /* ——— Header ——— */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--ligne)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .logo{font-family:'Space Grotesk';font-weight:700;font-size:1.35rem;text-decoration:none}
+  .logo b{color:var(--bleu)}
+  .nav-droite{display:flex;gap:10px;align-items:center}
+  .nav-lien{text-decoration:none;font-weight:600;font-size:.92rem;color:var(--gris);margin-right:12px}
+  .nav .btn{padding:11px 20px;font-size:.92rem}
+
+  /* ——— Hero ——— */
+  .hero{padding:64px 0 40px;background:linear-gradient(180deg,var(--fond-2) 0%,#fff 100%);overflow:hidden}
+  .hero .wrap{display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:center}
+  .hero h1{font-size:clamp(2.2rem,5.2vw,3.6rem);font-weight:700}
+  .hero h1 em{font-style:normal;color:var(--bleu)}
+  .hero .sous{margin-top:20px;font-size:1.18rem;color:var(--gris);max-width:46ch}
+  .hero .sous b{color:var(--texte)}
+  .hero .actions{margin-top:32px;display:flex;gap:12px;flex-wrap:wrap}
+  .hero-social{margin-top:36px;display:flex;align-items:center;gap:14px;font-size:.92rem;color:var(--gris)}
+  .hero-social .avatars{display:flex}
+  .hero-social .avatars span{
+    width:38px;height:38px;border-radius:50%;border:2.5px solid #fff;margin-left:-10px;
+    background:linear-gradient(135deg,#CFE4FF,#8FBFFB);display:grid;place-items:center;font-size:.75rem;font-weight:700;color:var(--bleu-fonce);
+  }
+  .hero-social .avatars span:first-child{margin-left:0}
+  .hero-social b{color:var(--texte)}
+  /* Téléphone + notifications flottantes */
+  .scene{position:relative}
+  .scene .ph-tel{width:min(320px,80%);aspect-ratio:9/18;margin:0 auto;border-radius:36px}
+  .notif{
+    position:absolute;background:#fff;border:1px solid var(--ligne);border-radius:14px;
+    box-shadow:0 12px 32px rgba(11,27,50,.12);padding:12px 16px;font-size:.85rem;
+    display:flex;gap:10px;align-items:center;max-width:240px;
+  }
+  .notif .ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem;flex-shrink:0}
+  .notif b{display:block;font-size:.85rem}
+  .notif span{color:var(--gris);font-size:.78rem}
+  .n1{top:6%;left:-4%}
+  .n1 .ico{background:var(--vert-pale)}
+  .n2{top:42%;right:-6%}
+  .n2 .ico{background:var(--bleu-pale)}
+  .n3{bottom:8%;left:0}
+  .n3 .ico{background:#FFF6E5}
+  @keyframes flotte{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .n1{animation:flotte 5s ease-in-out infinite}
+  .n2{animation:flotte 6s ease-in-out 1s infinite}
+  .n3{animation:flotte 5.5s ease-in-out .5s infinite}
+
+  /* ——— Bande paiements ——— */
+  .paiements{border-top:1px solid var(--ligne);border-bottom:1px solid var(--ligne);padding:22px 0;background:#fff}
+  .paiements .wrap{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;color:var(--gris);font-size:.9rem}
+  .badge-p{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--ligne);border-radius:999px;font-weight:600;font-size:.88rem;color:var(--texte);background:#fff}
+  .badge-p .pastille{width:10px;height:10px;border-radius:3px}
+
+  /* ——— Avant / Après ——— */
+  .avap{padding:96px 0}
+  .titre-sec{text-align:center;max-width:60ch;margin:0 auto 56px}
+  .titre-sec h2{font-size:clamp(1.8rem,4vw,2.7rem);font-weight:700}
+  .titre-sec h2 em{font-style:normal;color:var(--bleu)}
+  .titre-sec p{margin-top:14px;color:var(--gris);font-size:1.08rem}
+  .avap-grille{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:980px;margin:0 auto}
+  .carte-av{border-radius:20px;padding:34px 30px}
+  .carte-av.avant{background:#FFF5F3;border:1px solid #FFD9D0}
+  .carte-av.apres{background:var(--vert-pale);border:1px solid #B9F0D3}
+  .carte-av h3{font-size:1.25rem;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .carte-av ul{list-style:none}
+  .carte-av li{padding:10px 0;display:flex;gap:12px;align-items:flex-start;font-size:1rem;border-top:1px dashed rgba(0,0,0,.08)}
+  .carte-av li:first-of-type{border-top:none}
+  .avant li::before{content:"✗";color:#E0492E;font-weight:800;flex-shrink:0}
+  .apres li::before{content:"✓";color:var(--vert);font-weight:800;flex-shrink:0}
+
+  /* ——— Étapes ——— */
+  .etapes{padding:96px 0;background:var(--fond-2)}
+  .etapes-grille{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .etape{background:#fff;border:1px solid var(--ligne);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
+  .etape .num{
+    width:44px;height:44px;border-radius:50%;background:var(--bleu);color:#fff;
+    display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:1.1rem;
+  }
+  .etape h3{font-size:1.15rem}
+  .etape p{color:var(--gris);font-size:.95rem;flex-grow:1}
+  .etape .ph{height:130px;font-size:.78rem}
+  .etapes .cta-centre{text-align:center;margin-top:44px}
+  .etapes .duree{display:block;margin-top:12px;color:var(--gris);font-size:.9rem}
+
+  /* ——— Journée type / démonstration concrète ——— */
+  .journee{padding:96px 0;background:var(--nuit);color:#fff}
+  .journee .titre-sec h2{color:#fff}
+  .journee .titre-sec p{color:#9FB0C7}
+  .journee-grille{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  .moment{display:flex;gap:18px;padding:20px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .moment:first-child{border-top:none}
+  .moment .heure{font-family:'Space Grotesk';font-weight:700;color:var(--bleu);min-width:74px;font-size:1.05rem}
+  .moment b{display:block;margin-bottom:4px}
+  .moment p{color:#9FB0C7;font-size:.95rem}
+  .journee .ph{height:420px;background:repeating-linear-gradient(45deg,#12233D,#12233D 12px,#16294a 12px,#16294a 24px);border-color:#3E5B85;color:#8FB4E8}
+
+  /* ——— Bénéfices ——— */
+  .benefs{padding:96px 0}
+  .benefs-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .benef{border:1px solid var(--ligne);border-radius:20px;padding:30px 26px;transition:box-shadow .2s,transform .2s}
+  .benef:hover{box-shadow:0 16px 40px rgba(11,27,50,.08);transform:translateY(-3px)}
+  .benef .ico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;margin-bottom:18px}
+  .benef h3{font-size:1.18rem;margin-bottom:10px}
+  .benef p{color:var(--gris);font-size:.96rem}
+  .b1 .ico{background:var(--bleu-pale)} .b2 .ico{background:var(--vert-pale)} .b3 .ico{background:#FFF6E5}
+  .b4 .ico{background:#F4EBFF} .b5 .ico{background:#FFF1F3} .b6 .ico{background:#E0F2FE}
+
+  /* ——— Témoignages ——— */
+  .temoins{padding:96px 0;background:var(--fond-2)}
+  .temoins-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .temoin{background:#fff;border:1px solid var(--ligne);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px}
+  .temoin .etoiles{color:var(--jaune);letter-spacing:2px}
+  .temoin blockquote{font-size:1rem;line-height:1.65}
+  .temoin .qui{display:flex;align-items:center;gap:12px;margin-top:auto}
+  .temoin .ph{width:46px;height:46px;border-radius:50%;padding:0;font-size:.6rem;flex-shrink:0}
+  .temoin .qui b{display:block;font-size:.95rem}
+  .temoin .qui span{font-size:.82rem;color:var(--gris)}
+  .stat-bande{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;margin-top:56px;text-align:center}
+  .stat-bande div b{font-family:'Space Grotesk';font-size:2.2rem;display:block;color:var(--nuit)}
+  .stat-bande div span{color:var(--gris);font-size:.92rem}
+
+  /* ——— Tarifs ——— */
+  .tarifs{padding:96px 0}
+  .tarifs-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;max-width:1020px;margin:0 auto}
+  .plan{border:1.5px solid var(--ligne);border-radius:22px;padding:34px 28px;display:flex;flex-direction:column;background:#fff}
+  .plan.star{border-color:var(--bleu);box-shadow:0 20px 50px rgba(46,144,250,.18);position:relative}
+  .plan.star .reco{
+    position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+    background:var(--bleu);color:#fff;font-size:.78rem;font-weight:700;padding:6px 16px;border-radius:999px;white-space:nowrap;
+  }
+  .plan h3{font-size:1.1rem}
+  .plan .prix{font-family:'Space Grotesk';font-size:2.3rem;font-weight:700;margin:14px 0 2px}
+  .plan .prix small{font-size:.95rem;font-weight:500;color:var(--gris)}
+  .plan .pour{color:var(--gris);font-size:.9rem;margin-bottom:20px;min-height:44px}
+  .plan ul{list-style:none;margin-bottom:26px;flex-grow:1}
+  .plan li{padding:8px 0;font-size:.94rem;display:flex;gap:10px}
+  .plan li::before{content:"✓";color:var(--vert);font-weight:800}
+  .plan .btn{width:100%}
+  .tarifs .note{max-width:56ch;margin:32px auto 0;text-align:center;color:var(--gris);font-size:.92rem}
+
+  /* ——— FAQ ——— */
+  .faq{padding:96px 0;background:var(--fond-2)}
+  .faq-liste{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .faq details{background:#fff;border:1px solid var(--ligne);border-radius:16px;padding:6px 22px}
+  .faq summary{
+    cursor:pointer;font-weight:700;font-size:1.02rem;padding:16px 0;list-style:none;
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+  }
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";font-family:'Space Grotesk';font-size:1.4rem;color:var(--bleu);transition:transform .2s}
+  .faq details[open] summary::after{transform:rotate(45deg)}
+  .faq details p{padding:0 0 18px;color:var(--gris)}
+
+  /* ——— CTA final ——— */
+  .final{padding:100px 0;background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;text-align:center;position:relative;overflow:hidden}
+  .final h2{font-size:clamp(2rem,4.6vw,3.2rem);font-weight:700;max-width:22ch;margin:0 auto}
+  .final p{margin:18px auto 0;max-width:48ch;color:#DCEBFF;font-size:1.1rem}
+  .final .actions{margin-top:36px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .final .btn-blanc{border:none}
+  .final .rassure{justify-content:center;color:#CFE4FF}
+  .final .rassure span::before{color:#fff}
+
+  /* ——— Aide WhatsApp flottante ——— */
+  .aide-wa{
+    position:fixed;bottom:22px;right:22px;z-index:60;
+    display:inline-flex;align-items:center;gap:10px;text-decoration:none;
+    background:var(--vert);color:#fff;font-weight:700;font-size:.92rem;
+    padding:13px 20px;border-radius:999px;box-shadow:0 12px 30px rgba(18,183,106,.4);
+  }
+
+  /* ——— Footer ——— */
+  footer{background:var(--nuit);color:#9FB0C7;padding:64px 0 32px;font-size:.92rem}
+  .foot-grille{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:48px}
+  footer .logo{color:#fff}
+  footer h4{color:#fff;font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;font-family:'Plus Jakarta Sans'}
+  footer ul{list-style:none}
+  footer li{margin-bottom:9px}
+  footer a{text-decoration:none}
+  footer a:hover{color:#fff}
+  .foot-bas{border-top:1px solid rgba(255,255,255,.1);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.82rem}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.vu{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    .reveal{opacity:1;transform:none}
+    html{scroll-behavior:auto}
+  }
+
+  @media (max-width:960px){
+    .hero .wrap,.journee-grille{grid-template-columns:1fr}
+    .scene{margin-top:16px}
+    .n1{left:0}.n2{right:0}
+    .avap-grille{grid-template-columns:1fr}
+    .etapes-grille{grid-template-columns:1fr 1fr}
+    .benefs-grille,.temoins-grille,.tarifs-grille{grid-template-columns:1fr}
+    .plan.star{order:-1}
+    .foot-grille{grid-template-columns:1fr 1fr}
+    .journee .ph{height:300px}
+  }
+  @media (max-width:560px){
+    .etapes-grille{grid-template-columns:1fr}
+    .nav-lien{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#">TEKKI<b>Shop</b></a>
+    <div class="nav-droite">
+      <a class="nav-lien" href="#etapes">Comment ça marche</a>
+      <a class="nav-lien" href="#tarifs">Tarifs</a>
+      <a class="btn btn-bleu" href="#final">Créer ma boutique</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">✨ Déjà +1 000 boutiques créées en Afrique</span>
+      <h1>Tu vends sur WhatsApp&nbsp;? Crée ta boutique en ligne <em>en 5 minutes</em>, avec ton téléphone.</h1>
+      <p class="sous">Ajoute tes produits, partage ton lien, et c'est tout&nbsp;: <b>tes clients commandent seuls</b>, même quand tu dors, et <b>l'argent arrive directement sur ton Wave ou Orange Money</b>.</p>
+      <div class="actions">
+        <a class="btn btn-bleu" href="#final">Créer ma boutique gratuitement</a>
+        <a class="btn btn-blanc" href="#etapes">Voir comment ça marche</a>
+      </div>
+      <div class="rassure">
+        <span>Gratuit pour commencer</span>
+        <span>Pas besoin d'ordinateur</span>
+        <span>Pas besoin de carte bancaire</span>
+      </div>
+      <div class="hero-social">
+        <div class="avatars"><span>AD</span><span>FK</span><span>MN</span><span>+</span></div>
+        <p><b>4,9★</b> — noté par des marchands au Sénégal, en Côte d'Ivoire, au Bénin, au Togo, au Mali et au Burkina&nbsp;Faso</p>
+      </div>
+    </div>
+    <div class="scene">
+      <div class="ph ph-tel">📱 CAPTURE D'ÉCRAN<br>Une vraie boutique TEKKIShop<br>vue sur téléphone<br>(page produits + bouton Commander)</div>
+      <div class="notif n1"><div class="ico">💰</div><div><b>Paiement Wave reçu</b><span>15 000 FCFA — Awa D.</span></div></div>
+      <div class="notif n2"><div class="ico">🛍️</div><div><b>Nouvelle commande</b><span>2 articles — il y a 1 min</span></div></div>
+      <div class="notif n3"><div class="ico">🛵</div><div><b>Commande envoyée au livreur</b><span>en 1 clic, sur WhatsApp</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAIEMENTS ============ -->
+<section class="paiements" aria-label="Moyens de paiement acceptés">
+  <div class="wrap">
+    <span>Tes clients paient comme ils veulent&nbsp;:</span>
+    <span class="badge-p"><span class="pastille" style="background:#1DC8FF"></span>Wave</span>
+    <span class="badge-p"><span class="pastille" style="background:#FF7900"></span>Orange Money</span>
+    <span class="badge-p"><span class="pastille" style="background:#FFCC00"></span>MTN Money</span>
+    <span class="badge-p"><span class="pastille" style="background:#1A1F71"></span>Carte bancaire</span>
+    <span class="badge-p"><span class="pastille" style="background:#12B76A"></span>À la livraison</span>
+  </div>
+</section>
+
+<!-- ============ AVANT / APRÈS ============ -->
+<section class="avap">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Ta journée de vendeur, <em>avant et après</em> TEKKIShop.</h2>
+      <p>Si tu vends déjà sur WhatsApp ou Instagram, tu connais la colonne de gauche par cœur.</p>
+    </div>
+    <div class="avap-grille reveal">
+      <div class="carte-av avant">
+        <h3>😮‍💨 Aujourd'hui, sans TEKKIShop</h3>
+        <ul>
+          <li>Tu réponds aux mêmes questions toute la journée&nbsp;: «&nbsp;C'est combien&nbsp;? Il reste quelle taille&nbsp;? C'est où&nbsp;?&nbsp;»</li>
+          <li>Tu envoies les photos produit une par une, à chaque client</li>
+          <li>Tu perds des ventes quand tu dors, quand tu pries, quand tu es occupé·e</li>
+          <li>Tu notes les commandes dans un cahier ou dans ta tête</li>
+          <li>Tu appelles le livreur, tu lui dictes l'adresse, tu attends</li>
+          <li>À la fin du mois, impossible de savoir combien tu as vraiment gagné</li>
+        </ul>
+      </div>
+      <div class="carte-av apres">
+        <h3>😌 Demain, avec TEKKIShop</h3>
+        <ul>
+          <li>Tes produits, prix et photos sont sur ta boutique&nbsp;: le client regarde tout seul</li>
+          <li>Tu partages un seul lien sur WhatsApp, Instagram, TikTok ou Facebook</li>
+          <li>Les clients commandent et paient à toute heure, même à 3h du matin</li>
+          <li>Chaque commande est enregistrée automatiquement, avec l'adresse du client</li>
+          <li>Tu envoies la commande à ton livreur en 1 clic, sur son WhatsApp</li>
+          <li>Tu vois tes ventes du jour, de la semaine et du mois en un coup d'œil</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ÉTAPES ============ -->
+<section class="etapes" id="etapes">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">C'est simple, promis</span>
+      <h2>4 étapes, et tu vends en ligne.</h2>
+      <p>Aussi facile que de publier un statut WhatsApp. Si tu bloques, notre équipe t'aide sur WhatsApp, en français.</p>
+    </div>
+    <div class="etapes-grille reveal">
+      <div class="etape">
+        <div class="num">1</div>
+        <h3>Crée ta boutique</h3>
+        <p>Ton numéro de téléphone + le nom de ta boutique. C'est tout ce qu'il faut pour commencer.</p>
+        <div class="ph">📷 Capture : écran d'inscription (numéro + nom de la boutique)</div>
+      </div>
+      <div class="etape">
+        <div class="num">2</div>
+        <h3>Ajoute tes produits</h3>
+        <p>Photo, nom, prix. Les photos que tu as déjà dans ton téléphone suffisent largement.</p>
+        <div class="ph">📷 Capture : ajout d'un produit avec photo depuis la galerie</div>
+      </div>
+      <div class="etape">
+        <div class="num">3</div>
+        <h3>Partage ton lien</h3>
+        <p>Mets le lien de ta boutique dans ta bio, tes statuts et tes groupes. Tes clients cliquent et commandent.</p>
+        <div class="ph">📷 Capture : partage du lien dans un statut WhatsApp</div>
+      </div>
+      <div class="etape">
+        <div class="num">4</div>
+        <h3>Reçois ton argent</h3>
+        <p>Wave, Orange Money, MTN, carte ou paiement à la livraison&nbsp;: l'argent arrive directement chez toi, sans intermédiaire.</p>
+        <div class="ph">📷 Capture : notification de paiement reçu + tableau des ventes</div>
+      </div>
+    </div>
+    <div class="cta-centre reveal">
+      <a class="btn btn-bleu" href="#final">Créer ma boutique maintenant</a>
+      <span class="duree">⏱️ La 1ère boutique se crée en 5 minutes environ</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOURNÉE TYPE ============ -->
+<section class="journee">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow" style="background:rgba(46,144,250,.15);color:#7DB8FC">Pendant que tu vis ta vie</span>
+      <h2>Ta boutique travaille pour toi, 24h/24.</h2>
+      <p>Voici une vraie journée avec TEKKIShop.</p>
+    </div>
+    <div class="journee-grille">
+      <div class="reveal">
+        <div class="moment">
+          <span class="heure">07h30</span>
+          <div><b>Tu publies ton lien dans ton statut</b><p>«&nbsp;Nouveaux arrivages 🔥 commandez ici&nbsp;» — et tu pars au marché chercher ta marchandise.</p></div>
+        </div>
+        <div class="moment">
+          <span class="heure">10h15</span>
+          <div><b>Première commande, déjà payée</b><p>Aïssatou a commandé 2 robes et payé par Wave. Tu reçois la notification. Tu n'as parlé à personne.</p></div>
+        </div>
+        <div class="moment">
+          <span class="heure">13h00</span>
+          <div><b>Tu envoies les livraisons en 1 clic</b><p>Les 4 commandes du matin partent sur le WhatsApp de ton livreur, avec les adresses et les montants.</p></div>
+        </div>
+        <div class="moment">
+          <span class="heure">18h40</span>
+          <div><b>Le livreur confirme, tout est compté</b><p>Il clique «&nbsp;Livré&nbsp;», le paiement à la livraison est enregistré. Tu sais exactement qui a payé quoi.</p></div>
+        </div>
+        <div class="moment">
+          <span class="heure">22h00</span>
+          <div><b>Tu regardes tes chiffres du jour</b><p>7 commandes, 84 500 FCFA. Et pendant que tu dors, la boutique reste ouverte.</p></div>
+        </div>
+      </div>
+      <div class="ph reveal">📷 CAPTURE : tableau de bord TEKKIShop sur téléphone (ventes du jour, commandes, boutons Livreur)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BÉNÉFICES ============ -->
+<section class="benefs">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Tout ce qu'il te faut. <em>Rien de compliqué.</em></h2>
+      <p>Chaque fonction de TEKKIShop existe pour te faire gagner du temps ou de l'argent. Sinon, on ne la construit pas.</p>
+    </div>
+    <div class="benefs-grille reveal">
+      <div class="benef b1"><div class="ico">🔗</div><h3>Un lien qui vend à ta place</h3><p>Ta boutique tient dans un lien. Bio Instagram, statut WhatsApp, groupe Facebook&nbsp;: partout où tu le mets, on peut commander.</p></div>
+      <div class="benef b2"><div class="ico">💬</div><h3>Le WhatsApp marketing intégré</h3><p>TEKKIShop garde les numéros de tes clients. Nouveau stock&nbsp;? Promo&nbsp;? Tu leur envoies un message à tous, en une fois.</p></div>
+      <div class="benef b3"><div class="ico">🛵</div><h3>Tes livreurs, sans les appels</h3><p>Chaque commande part sur le WhatsApp de ton livreur en 1 clic, avec l'adresse et le montant. Il confirme la livraison en 1 clic aussi.</p></div>
+      <div class="benef b4"><div class="ico">💵</div><h3>Le paiement à la livraison, enfin organisé</h3><p>Tu sais toujours quel client a payé, quel livreur détient combien, et ce qu'il doit te remettre. Fini les comptes de tête.</p></div>
+      <div class="benef b5"><div class="ico">📱</div><h3>Tout depuis ton téléphone</h3><p>Créer, vendre, gérer&nbsp;: pas besoin d'ordinateur, pas besoin de développeur, pas besoin d'être «&nbsp;fort en informatique&nbsp;».</p></div>
+      <div class="benef b6"><div class="ico">📚</div><h3>Vends aussi tes produits digitaux</h3><p>Ebooks, guides, formations&nbsp;: le client paie et reçoit son fichier automatiquement. Tu n'envoies plus rien à la main.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TÉMOIGNAGES ============ -->
+<section class="temoins">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Ils vendent déjà avec TEKKIShop</span>
+      <h2>Des marchands comme toi.</h2>
+    </div>
+    <div class="temoins-grille reveal">
+      <div class="temoin">
+        <div class="etoiles">★★★★★</div>
+        <blockquote>«&nbsp;Avant, je passais mes soirées à répondre aux questions. Maintenant j'envoie juste mon lien et les commandes tombent, même la nuit. J'ai récupéré mon temps.&nbsp;»</blockquote>
+        <div class="qui"><div class="ph">📷 Photo</div><div><b>Aminata S.</b><span>Vêtements & accessoires — Dakar 🇸🇳</span></div></div>
+      </div>
+      <div class="temoin">
+        <div class="etoiles">★★★★★</div>
+        <blockquote>«&nbsp;Le paiement à la livraison me stressait&nbsp;: je ne savais jamais qui avait payé quoi. Aujourd'hui, chaque livraison est comptée automatiquement. Je dors tranquille.&nbsp;»</blockquote>
+        <div class="qui"><div class="ph">📷 Photo</div><div><b>Rokhaya D.</b><span>Cosmétiques — Abidjan 🇨🇮</span></div></div>
+      </div>
+      <div class="temoin">
+        <div class="etoiles">★★★★★</div>
+        <blockquote>«&nbsp;Je pensais que c'était pour les gens qui connaissent l'informatique. J'ai créé ma boutique un dimanche soir, seul, avec mon téléphone. Première vente le lundi.&nbsp;»</blockquote>
+        <div class="qui"><div class="ph">📷 Photo</div><div><b>Malik T.</b><span>Chaussures — Cotonou 🇧🇯</span></div></div>
+      </div>
+    </div>
+    <div class="stat-bande reveal">
+      <div><b>+1 000</b><span>boutiques créées en 45 jours</span></div>
+      <div><b>6 pays</b><span>Sénégal, Côte d'Ivoire, Bénin, Togo, Mali, Burkina Faso</span></div>
+      <div><b>4,9★</b><span>note moyenne des marchands</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TARIFS ============ -->
+<section class="tarifs" id="tarifs">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Un prix simple et honnête</span>
+      <h2>Commence gratuitement. Paie seulement quand tu vends.</h2>
+      <p>Les prix sont en FCFA, sans surprise et sans engagement&nbsp;: tu peux arrêter quand tu veux.</p>
+    </div>
+    <div class="tarifs-grille reveal">
+      <div class="plan">
+        <h3>Découverte</h3>
+        <div class="prix">0 <small>FCFA</small></div>
+        <p class="pour">Pour tester TEKKIShop et faire tes premières ventes.</p>
+        <ul>
+          <li>Ta boutique en ligne avec ton lien</li>
+          <li>Jusqu'à 10 produits</li>
+          <li>Paiements Wave & Orange Money</li>
+          <li>Commandes sur WhatsApp</li>
+        </ul>
+        <a class="btn btn-blanc" href="#final">Commencer gratuitement</a>
+      </div>
+      <div class="plan star">
+        <span class="reco">⭐ Le choix des marchands</span>
+        <h3>Business</h3>
+        <div class="prix">4 900 <small>FCFA / mois</small></div>
+        <p class="pour">Pour vendre sérieusement et gagner du temps chaque jour.</p>
+        <ul>
+          <li>Produits illimités</li>
+          <li>Tous les moyens de paiement + à la livraison</li>
+          <li>Gestion des livreurs en 1 clic</li>
+          <li>WhatsApp marketing (messages en masse)</li>
+          <li>Statistiques de ventes</li>
+          <li>Support prioritaire sur WhatsApp</li>
+        </ul>
+        <a class="btn btn-bleu" href="#final">Essayer 14 jours gratuits</a>
+      </div>
+      <div class="plan">
+        <h3>Pro</h3>
+        <div class="prix">9 900 <small>FCFA / mois</small></div>
+        <p class="pour">Pour les boutiques qui tournent fort, avec une équipe.</p>
+        <ul>
+          <li>Tout le plan Business</li>
+          <li>Plusieurs boutiques</li>
+          <li>Comptes pour ton équipe</li>
+          <li>Vente de produits digitaux</li>
+          <li>Accompagnement dédié</li>
+        </ul>
+        <a class="btn btn-blanc" href="#final">Choisir Pro</a>
+      </div>
+    </div>
+    <p class="note">💡 4 900 FCFA/mois, c'est moins que ce que tu perds en une seule vente ratée pendant que tu dormais.</p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Tes questions, nos réponses.</h2>
+      <p>Et si ta question n'est pas là, écris-nous sur WhatsApp — un humain te répond, en français.</p>
+    </div>
+    <div class="faq-liste reveal">
+      <details>
+        <summary>Je n'ai jamais vendu en ligne. C'est vraiment pour moi&nbsp;?</summary>
+        <p>Oui. TEKKIShop a été créé exactement pour toi. Si tu sais envoyer une photo sur WhatsApp, tu sais créer ta boutique. Et si tu bloques quelque part, notre équipe t'accompagne gratuitement sur WhatsApp jusqu'à ta première vente.</p>
+      </details>
+      <details>
+        <summary>Est-ce que j'ai besoin d'un ordinateur&nbsp;?</summary>
+        <p>Non. Tout se fait depuis ton téléphone&nbsp;: créer la boutique, ajouter les produits, suivre les commandes, envoyer les livraisons. Un ordinateur peut être utilisé si tu préfères, mais il n'est jamais obligatoire.</p>
+      </details>
+      <details>
+        <summary>L'argent de mes ventes arrive où&nbsp;?</summary>
+        <p>Directement chez toi&nbsp;: sur ton compte Wave, Orange Money ou MTN Money, ou sur ton compte bancaire si le client paie par carte. TEKKIShop ne garde pas ton argent.</p>
+      </details>
+      <details>
+        <summary>Mes clients doivent-ils télécharger une application&nbsp;?</summary>
+        <p>Non. Tes clients cliquent sur ton lien et commandent directement, comme sur n'importe quel site. Rien à installer, ni pour eux, ni pour toi.</p>
+      </details>
+      <details>
+        <summary>Comment ça marche avec mon livreur&nbsp;?</summary>
+        <p>Tu ajoutes le numéro WhatsApp de ton livreur une fois. Ensuite, à chaque commande, tu cliques sur un bouton et il reçoit tout sur WhatsApp&nbsp;: l'adresse, le numéro du client et le montant à encaisser. Quand il a livré, il confirme en 1 clic et tout est compté automatiquement.</p>
+      </details>
+      <details>
+        <summary>Et si je veux arrêter&nbsp;?</summary>
+        <p>Tu arrêtes quand tu veux, sans frais et sans justification. Il n'y a aucun engagement.</p>
+      </details>
+      <details>
+        <summary>Je vends depuis la France ou le Canada vers l'Afrique, ça marche&nbsp;?</summary>
+        <p>Oui. Tu peux gérer ta boutique depuis l'Europe ou le Canada, encaisser par carte bancaire, et servir tes clients en Afrique avec les paiements mobiles locaux.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="final" id="final">
+  <div class="wrap">
+    <h2 class="reveal">Ta boutique peut être en ligne ce soir.</h2>
+    <p class="reveal">Rejoins les +1 000 marchands qui vendent déjà avec TEKKIShop. Commence gratuitement, tu décides de la suite.</p>
+    <div class="actions reveal">
+      <a class="btn btn-blanc" href="#">Créer ma boutique gratuitement</a>
+      <a class="btn btn-wa" href="#">💬 Poser une question sur WhatsApp</a>
+    </div>
+    <div class="rassure reveal">
+      <span>5 minutes chrono</span>
+      <span>Sans carte bancaire</span>
+      <span>Sans engagement</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<a class="aide-wa" href="#" aria-label="Contacter le support sur WhatsApp">💬 Besoin d'aide&nbsp;?</a>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grille">
+      <div>
+        <a class="logo" href="#">TEKKI<b>Shop</b></a>
+        <p style="margin-top:14px;max-width:34ch">La boutique en ligne des marchands en Afrique. Créée par Dukka, à Dakar.</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <ul>
+          <li><a href="#etapes">Comment ça marche</a></li>
+          <li><a href="#tarifs">Tarifs</a></li>
+          <li><a href="#">Produits digitaux</a></li>
+          <li><a href="#">Vendre depuis l'Europe/Canada</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Aide</h4>
+        <ul>
+          <li><a href="#">Support WhatsApp</a></li>
+          <li><a href="#">Guides pour bien démarrer</a></li>
+          <li><a href="#">Questions fréquentes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Dukka</h4>
+        <ul>
+          <li><a href="https://getdukka.com">À propos de Dukka</a></li>
+          <li><a href="https://sheka.store">Sheka — salons de beauté</a></li>
+          <li><a href="https://tekki.pro">TEKKIPro — prestataires</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bas">
+      <span>© 2026 TEKKIShop, un produit Dukka. Tous droits réservés.</span>
+      <span>🇸🇳 🇨🇮 🇧🇯 🇹🇬 🇲🇱 🇧🇫</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    if(!("IntersectionObserver" in window)){document.querySelectorAll(".reveal").forEach(e=>e.classList.add("vu"));return}
+    const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("vu");obs.unobserve(e.target)}})},{threshold:.1});
+    document.querySelectorAll(".reveal").forEach(e=>obs.observe(e));
+  })();
+</script>
+</body>
+</html>
