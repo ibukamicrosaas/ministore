@@ -1,62 +1,86 @@
 import Link from 'next/link'
-import { ArrowRight, Download } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { SiteHeader } from '@/components/landing/SiteHeader'
 import { SiteFooter } from '@/components/landing/SiteFooter'
 import { WhatsAppButton } from '@/components/landing/WhatsAppButton'
 import { MiniFAQ } from '@/components/landing/MiniFAQ'
 import { FinalCTA } from '@/components/landing/FinalCTA'
+import { Reveal } from '@/components/landing/Reveal'
+import { DigitalProductPhoneMockup } from '@/components/landing/DigitalProductPhoneMockup'
+import { DecouverteIllustration, PaiementIllustration, ReceptionIllustration, AvisIllustration } from '@/components/landing/DigitalParcoursIllustrations'
 import { APP_NAME } from '@/constants'
 
 export const metadata = {
-  title: `Vends tes produits digitaux — ${APP_NAME}`,
-  description: "E-books, guides PDF, supports de formation, modèles Excel... Vends tes fichiers directement depuis ta boutique TekkiShop. Ton client paie, il reçoit son lien de téléchargement instantanément.",
+  title: `Vends tes produits digitaux, on s'occupe du reste — ${APP_NAME}`,
+  description: "Ebooks, guides, templates, musique : ajoute ton fichier, partage ton lien. TekkiShop encaisse par mobile money, livre ton fichier automatiquement et collecte les avis. Toi, tu retires ton argent instantanément.",
 }
 
-const ETAPES = [
+const VENDEURS = ['✍️ Auteurs', '🎓 Coachs & formateurs', '🎨 Designers', '🎵 Beatmakers', '📊 Consultants', '📱 Créateurs de contenu']
+
+const PARCOURS = [
   {
     num: '1',
-    titre: 'Ajoute ton fichier',
-    texte: 'Dans la fiche produit, ajoute ton fichier — PDF, ZIP, EPUB, DOCX ou XLSX, jusqu\'à 50 Mo — à la place d\'une photo.',
+    titre: 'Il découvre ton produit',
+    texte: 'Page pro avec ta couverture, ton prix, tes points forts et les avis de tes clients précédents.',
+    Illustration: DecouverteIllustration,
   },
   {
     num: '2',
-    titre: 'Ton client achète normalement',
-    texte: 'Il paie comme n\'importe quel produit de ta boutique : Wave, Orange Money, carte bancaire ou à la livraison.',
+    titre: 'Il paie comme il a l\'habitude',
+    texte: 'Mobile money de ton pays, en quelques secondes. Pas de carte bancaire exigée, pas de compte à créer.',
+    Illustration: PaiementIllustration,
   },
   {
     num: '3',
-    titre: 'Il reçoit son lien automatiquement',
-    texte: 'Dès le paiement confirmé, un lien de téléchargement sécurisé lui est envoyé. Toi, tu es payé — sans rien faire.',
+    titre: 'Il reçoit son fichier immédiatement',
+    texte: 'Page de téléchargement + lien par e-mail et SMS. Sécurisé : 48h, 5 téléchargements. Zéro action de ta part.',
+    Illustration: ReceptionIllustration,
+  },
+  {
+    num: '4',
+    titre: 'Il laisse un avis',
+    texte: 'La demande d\'avis part automatiquement 3 jours après l\'achat. Tu peux aussi l\'envoyer toi-même en 1 clic depuis la page de commande du client.',
+    Illustration: AvisIllustration,
   },
 ]
 
-const USAGES = [
-  { icon: '📘', titre: 'Formateurs & coachs', texte: 'Guides et supports de formation en PDF' },
-  { icon: '📗', titre: 'Auteurs & créateurs', texte: 'E-books au format EPUB' },
-  { icon: '📊', titre: 'Consultants', texte: 'Modèles et grilles de calcul en Excel (XLSX)' },
-  { icon: '🗂️', titre: 'Plusieurs fichiers à livrer ?', texte: 'Regroupe-les dans un ZIP' },
+const PERSONAS = [
+  { emo: '✍️', titre: 'L\'auteur·e', texte: 'Ton roman, ton recueil, ton essai — en EPUB ou PDF, vendu directement à ta communauté, sans maison d\'édition.', ex: 'Ex : ebook à 4 500 FCFA' },
+  { emo: '🎓', titre: 'Le coach / formateur', texte: 'Ton guide pratique, ton workbook, tes fiches méthode — ce que tu répètes en accompagnement, transformé en revenu qui tourne seul.', ex: 'Ex : guide à 10 000 FCFA' },
+  { emo: '🎨', titre: 'Le designer / créateur', texte: 'Tes templates Canva, tes presets, tes maquettes de site — crée une fois, vends cent fois.', ex: 'Ex : pack templates à 7 500 FCFA' },
+  { emo: '🎵', titre: 'Le beatmaker / musicien', texte: 'Tes instrus, tes packs de sons, tes projets — livrés en ZIP, payés par mobile money, sans intermédiaire.', ex: 'Ex : beat à 15 000 FCFA' },
+  { emo: '📊', titre: 'Le consultant', texte: 'Tes modèles Excel, business plans types, grilles de calcul — l\'outil que tes clients te réclament, enfin monétisé.', ex: 'Ex : modèle XLSX à 5 000 FCFA' },
+  { emo: '📱', titre: 'Le créateur de contenu', texte: 'Ton audience te suit déjà. Ton guide « comment je fais » est le produit le plus simple à lui vendre — le lien est déjà dans ta bio.', ex: 'Ex : guide à 3 000 FCFA' },
 ]
 
 const FAQS = [
   {
     q: 'Quels types de fichiers puis-je vendre ?',
-    a: 'PDF, ZIP, EPUB, DOCX et XLSX, jusqu\'à 50 Mo par fichier. Si tu veux vendre plusieurs documents d\'un coup, regroupe-les dans un ZIP avant de l\'ajouter à ta boutique.',
+    a: 'PDF, EPUB, ZIP, DOCX et XLSX, jusqu\'à 50 Mo par fichier. Pour vendre plusieurs documents d\'un coup (un pack), regroupe-les dans un ZIP avant de l\'ajouter à ta boutique.',
   },
   {
-    q: 'Puis-je vendre plusieurs fichiers pour un même produit ?',
-    a: 'Un produit digital correspond à un seul fichier. Pour livrer plusieurs documents ensemble, mets-les dans un ZIP — ton client recevra tout en un seul téléchargement.',
+    q: 'Comment mon client reçoit-il son fichier ?',
+    a: 'De trois façons, automatiquement : une page de téléchargement s\'affiche juste après le paiement, et le lien lui est aussi envoyé par e-mail et par SMS. Tu n\'as rien à envoyer, jamais.',
   },
   {
-    q: 'Le lien de téléchargement est-il sécurisé ?',
-    a: 'Oui. Chaque lien est unique, généré automatiquement au moment du paiement, valable 48h et utilisable jusqu\'à 5 fois. Personne d\'autre que ton client ne peut y accéder.',
+    q: 'Mon fichier est-il protégé contre le partage ?',
+    a: 'Chaque lien de téléchargement est personnel, valable 48h et limité à 5 téléchargements. Ton fichier ne peut pas circuler librement via un lien public.',
   },
   {
-    q: 'Où sont stockés mes fichiers ?',
-    a: 'Sur un hébergement sécurisé inclus dans TekkiShop — pas besoin d\'outil externe ni de compte cloud séparé.',
+    q: 'Et si mon client perd son fichier ou rate le délai ?',
+    a: 'Pas de panique : il peut te contacter en un clic depuis sa page de commande (bouton « Contacter la boutique »), et tu peux lui renvoyer un accès depuis ton tableau de bord. Personne ne reste bloqué.',
   },
   {
-    q: 'Puis-je vendre des produits physiques et digitaux sur la même boutique ?',
-    a: 'Oui, tu peux mélanger les deux types de produits librement dans ton catalogue — pas besoin de deux boutiques.',
+    q: 'Combien ça me coûte ?',
+    a: 'Ton abonnement boutique (à partir de 2 900 FCFA/mois) + 3 % de commission sur les paiements en ligne, qui couvrent les frais de l\'agrégateur mobile money et du transfert. Exemple : une vente à 4 500 FCFA te rapporte 4 365 FCFA, retirables instantanément. C\'est tout.',
+  },
+  {
+    q: 'Puis-je vendre des produits physiques ET digitaux sur la même boutique ?',
+    a: 'Oui. Tes produits physiques et ton ebook peuvent vivre sur la même boutique : au moment d\'ajouter un produit, tu choisis simplement « Physique » ou « Digital ». Le reste s\'adapte automatiquement.',
+  },
+  {
+    q: 'Je veux vendre une formation vidéo, c\'est possible ?',
+    a: 'Les fichiers vidéo dépassent généralement 50 Mo, donc pas encore ici. Mais c\'est exactement le rôle de TEKKI Classes, notre solution dédiée aux formations en ligne (modules, chapitres, progression des apprenants), bientôt disponible.',
   },
 ]
 
@@ -66,157 +90,283 @@ export default function ProduitsDigitauxPage() {
       <SiteHeader />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-white">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-
-            {/* Texte */}
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 mb-5">
-                <Download className="h-3.5 w-3.5" />
-                Vente automatique 24h/24
+      <section style={{ background: 'linear-gradient(180deg, #F4F1FF 0%, #ffffff 100%)' }}>
+        <div className="mx-auto max-w-6xl px-4 pt-14 pb-16">
+          <div className="grid lg:grid-cols-[1.15fr_1fr] items-center gap-12 lg:gap-14">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-4 py-2 text-xs font-extrabold uppercase tracking-widest text-violet-700 mb-6">
+                💾 Produits digitaux
               </div>
               <h1
-                className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4 leading-tight"
+                className="text-[clamp(2.1rem,5vw,3.3rem)] font-bold text-gray-900 leading-[1.14] tracking-tight mb-5"
                 style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
               >
-                Vends aussi tes<br />
-                <span className="text-violet-600">produits digitaux.</span>
+                Tu as un savoir, un talent, un vécu ? <span className="text-violet-600">Vends-le en fichier.</span>
               </h1>
-              <p className="text-gray-600 leading-relaxed mb-7 max-w-md text-lg">
-                E-books, guides PDF, supports de formation, modèles Excel… Ajoute ton fichier à ta boutique. Ton client paie, il reçoit son lien de téléchargement instantanément. Toi, tu encaisses — même quand tu dors.
+              <p className="text-lg text-gray-500 mb-7 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                Ebook, guide, template, musique, modèle Excel… Ajoute ton fichier à ta boutique et partage ton lien.{' '}
+                <strong className="text-gray-700">Ton client paie par mobile money, reçoit son fichier automatiquement</strong> — et toi, tu encaisses. Même à 3h du matin.
               </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  { icon: '📁', text: 'Fichiers jusqu\'à 50 Mo — PDF, ZIP, EPUB, DOCX, XLSX' },
-                  { icon: '🔗', text: 'Lien de téléchargement envoyé automatiquement après paiement' },
-                  { icon: '🔒', text: 'Lien sécurisé et à usage limité — valable 48h' },
-                  { icon: '💰', text: 'Vends des produits physiques et digitaux depuis la même boutique' },
-                ].map(f => (
-                  <li key={f.text} className="flex items-start gap-3 text-sm text-gray-700">
-                    <span className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xs">{f.icon}</span>
-                    {f.text}
-                  </li>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-6">
+                <Link
+                  href="/onboarding"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] bg-violet-600 px-7 py-4 text-base font-bold text-white shadow-lg shadow-violet-200 hover:-translate-y-0.5 active:translate-y-0 transition-transform"
+                >
+                  Vendre mon premier fichier
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a
+                  href="#argent"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] border border-gray-200 bg-white px-7 py-4 text-base font-bold text-gray-700 hover:-translate-y-0.5 active:translate-y-0 transition-transform"
+                >
+                  Combien je gagne ?
+                </a>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-1.5 mb-6 text-sm text-gray-600">
+                {['Boutique créée en 5 min', 'Depuis ton téléphone', 'Zéro livraison à gérer'].map(r => (
+                  <span key={r}><span className="text-emerald-500 font-bold">✓</span> {r}</span>
                 ))}
-              </ul>
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-md"
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                {['PDF', 'EPUB', 'ZIP', 'DOCX', 'XLSX', 'Jusqu\'à 50 Mo'].map(f => (
+                  <span key={f} className="text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1.5">{f}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Téléphone animé + badges flottants */}
+            <div className="relative flex justify-center lg:justify-end">
+              <style>{`
+                @keyframes tekki-float-digital {
+                  0%, 100% { transform: translateY(0); }
+                  50% { transform: translateY(-8px); }
+                }
+              `}</style>
+              <DigitalProductPhoneMockup />
+
+              <div
+                className="hidden sm:flex absolute top-2 -right-2 lg:-right-6 z-40 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-2.5 shadow-lg shadow-gray-200/60"
+                style={{ animation: 'tekki-float-digital 5s ease-in-out infinite' }}
               >
-                Créer ma boutique
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            {/* Mockup page de téléchargement */}
-            <div className="flex-shrink-0 w-full max-w-xs">
-              <div className="rounded-3xl border border-violet-100 bg-white shadow-xl shadow-violet-100/60 overflow-hidden">
-                {/* Header boutique */}
-                <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-4">
-                  <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wide mb-1">Achat confirmé ✅</p>
-                  <p className="text-white font-black text-base">Coach Aminata — Formations</p>
-                  <p className="text-white/50 text-[10px]">tekki.shop/coach-aminata</p>
-                </div>
-                {/* Produit */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                    <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center text-xl shrink-0">📘</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">Guide business Afrique 2024</p>
-                      <p className="text-[10px] text-gray-400">PDF · 8,4 Mo</p>
-                    </div>
-                    <span className="text-emerald-600 text-[10px] font-bold shrink-0">✓ Payé</span>
-                  </div>
-                  {/* Lien téléchargement */}
-                  <div className="rounded-xl bg-violet-50 border border-violet-100 p-3 space-y-2.5 text-center">
-                    <p className="text-[10px] text-gray-400">Ton fichier est prêt</p>
-                    <div className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 py-2.5">
-                      <Download className="h-3.5 w-3.5 text-white" />
-                      <span className="text-[11px] font-bold text-white">Télécharger mon fichier</span>
-                    </div>
-                    <p className="text-[9px] text-gray-400">Lien sécurisé · Valable 48h</p>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 pt-0.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    <p className="text-[10px] text-emerald-600 font-semibold">5 000 FCFA reçus par Wave ✓</p>
-                  </div>
-                </div>
+                <span className="text-emerald-500 text-sm">✓</span>
+                <p className="text-xs font-bold text-gray-900">Livré automatiquement</p>
               </div>
-              <p className="text-center text-[10px] text-gray-400 mt-3">Livraison instantanée · Zéro intervention manuelle</p>
-            </div>
 
+              <div
+                className="hidden sm:flex absolute bottom-16 -left-4 lg:-left-8 z-40 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-2.5 shadow-lg shadow-gray-200/60"
+                style={{ animation: 'tekki-float-digital 6s ease-in-out 1s infinite' }}
+              >
+                <span className="text-amber-400 text-sm">⭐</span>
+                <p className="text-xs font-bold text-gray-900">Avis collecté après l&apos;achat</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Comment ça marche ────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-violet-50/40">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-3">C&apos;est simple</p>
-            <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Comment ça marche
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-5">
-            {ETAPES.map(e => (
-              <div key={e.num} className="rounded-3xl border border-violet-100 bg-white p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white text-sm font-black mb-4">
-                  {e.num}
-                </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{e.titre}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{e.texte}</p>
-              </div>
-            ))}
-          </div>
+      {/* ── Bande vendeurs ────────────────────────────────────────────────── */}
+      <section className="border-y border-gray-100 py-5 bg-white">
+        <div className="mx-auto max-w-5xl px-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-semibold text-gray-500">
+          {VENDEURS.map(v => <span key={v}>{v}</span>)}
         </div>
       </section>
 
-      {/* ── Qui vend quoi ─────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-white">
+      {/* ── Le contrat ───────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-gray-50/70">
         <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-3">Exemples</p>
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
             <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Qui vend quoi
+              Toi, tu crées. <span className="text-violet-600">Nous, on gère le reste.</span>
             </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {USAGES.map(u => (
-              <div key={u.titre} className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
-                <div className="text-3xl mb-3">{u.icon}</div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1">{u.titre}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{u.texte}</p>
+            <p className="text-gray-500 text-lg mt-3">
+              Vendre un produit digital, c&apos;est 10 % de création et 90 % de logistique invisible. On a automatisé les 90 %.
+            </p>
+          </Reveal>
+
+          <Reveal delay={100} className="grid lg:grid-cols-[1fr_1.4fr] gap-5 max-w-4xl mx-auto">
+            <div className="rounded-[20px] border border-gray-200 bg-white p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-1.5">🫵 Ce que tu fais</h3>
+              <p className="text-sm text-gray-500 mb-4">Une seule fois, en quelques minutes.</p>
+              {[
+                'Tu crées ta boutique depuis ton téléphone',
+                'Tu ajoutes ton fichier, ton prix, ta description',
+                'Tu partages ton lien en statut, Story, bio et dans les groupes',
+              ].map((t, i) => (
+                <div key={t} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-black/10' : ''}`}>
+                  <span className="shrink-0">👉</span>
+                  <p className="text-base text-gray-700 leading-snug">{t}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[20px] p-8 text-white shadow-2xl" style={{ backgroundColor: '#0B1B32' }}>
+              <h3 className="text-xl font-bold mb-1.5">🤝 Ce que TekkiShop gère pour toi</h3>
+              <p className="text-sm text-gray-400 mb-4">À chaque vente, automatiquement, 24h/24.</p>
+              {[
+                { b: 'On encaisse', t: ' — Wave, Orange Money, MTN, Moov… selon ton pays, sans rien configurer' },
+                { b: 'On livre ton fichier', t: ' — page de téléchargement + lien envoyé par e-mail et SMS, instantanément' },
+                { b: 'On sécurise', t: ' — lien valable 48h, 5 téléchargements max : ton fichier ne circule pas librement' },
+                { b: 'On collecte les avis clients', t: ' — et on les affiche sur ta page produit pour convertir les suivants' },
+                { b: 'On te paie', t: ' — retrait instantané de ton argent sur ton mobile money' },
+              ].map((item, i) => (
+                <div key={item.b} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-white/15' : ''}`}>
+                  <span className="shrink-0">✅</span>
+                  <p className="text-base text-gray-200 leading-snug"><strong className="text-white">{item.b}</strong>{item.t}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={150} className="text-center mt-9">
+            <p className="text-lg font-semibold text-gray-900 max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
+              Pas de colis. Pas de livreur. Pas de stock.{' '}
+              <span className="text-violet-600">Le produit digital est le business le plus simple d&apos;Afrique</span> — quand quelqu&apos;un gère la technique pour toi.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Parcours client ──────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-white">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-3">Ce que vivent tes clients</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Une expérience d&apos;achat <span className="text-violet-600">irréprochable.</span>
+            </h2>
+            <p className="text-gray-500 text-lg mt-3">
+              Voici exactement ce qui se passe quand quelqu&apos;un clique sur ton lien. Chaque étape travaille pour ta crédibilité.
+            </p>
+          </Reveal>
+
+          <Reveal delay={100} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {PARCOURS.map(p => (
+              <div key={p.num} className="rounded-2xl border border-gray-200 bg-white p-5 flex flex-col gap-3">
+                <div className="h-8 w-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm font-bold" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
+                  {p.num}
+                </div>
+                <h3 className="text-base font-bold text-gray-900">{p.titre}</h3>
+                <p className="text-sm text-gray-500">{p.texte}</p>
+                <p.Illustration />
               </div>
             ))}
-          </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Combien tu gagnes ────────────────────────────────────────────── */}
+      <section id="argent" className="py-24 px-4 bg-gray-50/70">
+        <div className="mx-auto max-w-5xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-3">Transparence totale</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Combien tu gagnes, <span className="text-violet-600">exactement.</span>
+            </h2>
+            <p className="text-gray-500 text-lg mt-3">
+              Pas de frais cachés, pas de surprise. Voici une vente réelle, chiffre par chiffre.
+            </p>
+          </Reveal>
+
+          <Reveal delay={100} className="grid lg:grid-cols-[1.2fr_1fr] gap-5 max-w-3xl mx-auto items-stretch">
+            <div className="rounded-[20px] border border-gray-200 bg-white p-8">
+              <div className="flex justify-between py-3.5 border-b border-dashed border-gray-200">
+                <span className="text-gray-700">Ton client achète ton ebook</span>
+                <strong className="text-gray-900">4 500 FCFA</strong>
+              </div>
+              <div className="flex justify-between py-3.5 border-b border-dashed border-gray-200">
+                <div>
+                  <span className="text-gray-700">Commission TekkiShop — 3 %</span>
+                  <p className="text-xs text-gray-400 mt-0.5">Elle couvre les frais de paiement mobile money et de transfert. C&apos;est tout.</p>
+                </div>
+                <strong className="text-gray-900 shrink-0 ml-3">− 135 FCFA</strong>
+              </div>
+              <div className="flex justify-between py-3.5">
+                <span className="font-bold text-emerald-600 text-lg" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>Tu reçois</span>
+                <strong className="font-bold text-emerald-600 text-xl" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>4 365 FCFA</strong>
+              </div>
+              <div className="rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-semibold text-center py-3 mt-2">
+                ⚡ Retrait instantané sur ton mobile money (Wave, OM, MTN…) — pas dans 24 ou 48h
+              </div>
+            </div>
+
+            <div className="rounded-[20px] p-8 text-white flex flex-col" style={{ backgroundColor: '#0B1B32' }}>
+              <h3 className="text-lg font-bold mb-4">Ton abonnement boutique</h3>
+              {[
+                { plan: 'Découverte', prix: '2 900' },
+                { plan: 'Business', prix: '4 900' },
+                { plan: 'Pro', prix: '9 900' },
+              ].map(p => (
+                <div key={p.plan} className="flex justify-between items-baseline py-2.5 border-b border-white/10 text-sm">
+                  <span>{p.plan}</span>
+                  <span><strong className="text-base" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>{p.prix}</strong> <span className="text-gray-400 text-xs">FCFA/mois</span></span>
+                </div>
+              ))}
+              <p className="text-sm text-gray-400 mt-auto pt-4">
+                Crée ta boutique et ajoute tes produits <strong className="text-white">gratuitement</strong>. Tu ne paies que pour activer les ventes — et <strong className="text-white">2 ebooks vendus par mois remboursent déjà ton abonnement</strong>.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Personas ─────────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-white">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-3">Qui vend quoi</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Ton savoir vaut de l&apos;argent. <span className="text-violet-600">Lequel vas-tu vendre ?</span>
+            </h2>
+          </Reveal>
+
+          <Reveal delay={100} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {PERSONAS.map(p => (
+              <div key={p.titre} className="rounded-2xl border border-gray-200 bg-white p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                <span className="text-3xl">{p.emo}</span>
+                <h3 className="text-base font-bold text-gray-900 mt-3 mb-1.5">{p.titre}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{p.texte}</p>
+                <span className="inline-block mt-3 text-xs font-bold text-violet-700 bg-violet-100 rounded-full px-3 py-1.5">{p.ex}</span>
+              </div>
+            ))}
+          </Reveal>
         </div>
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="bg-gray-50/60 py-16 sm:py-20 px-4">
+      <section className="bg-gray-50/60 py-24 px-4">
         <div className="mx-auto max-w-2xl">
-          <div className="text-center mb-10">
+          <Reveal className="text-center mb-10">
             <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Questions fréquentes
+              Tes questions, nos réponses.
             </h2>
-          </div>
+          </Reveal>
           <MiniFAQ items={FAQS} />
         </div>
       </section>
 
       <FinalCTA
-        title="Prêt à vendre tes fichiers ?"
-        subtitle="Ajoute ton premier produit digital et reçois ton premier paiement dès aujourd'hui."
+        title="Ton fichier peut se vendre ce soir, pendant que tu dors."
+        subtitle="Crée ta boutique en 5 minutes, ajoute ton premier produit digital, partage ton lien. On s'occupe du reste."
+        ctaLabel="Vendre mon premier fichier"
+        reassurance={['Boutique gratuite à créer', 'Sans carte bancaire', 'Depuis ton téléphone']}
       />
 
       <WhatsAppButton />

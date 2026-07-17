@@ -1,7 +1,17 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
-export function FinalCTA({ title, subtitle }: { title: string; subtitle: string }) {
+export function FinalCTA({
+  title,
+  subtitle,
+  ctaLabel = 'Créer ma boutique gratuitement',
+  reassurance = ['Boutique gratuite à créer', 'Pas besoin de carte bancaire'],
+}: {
+  title: string
+  subtitle: string
+  ctaLabel?: string
+  reassurance?: string[]
+}) {
   return (
     <section className="bg-[#0B1B32] py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 opacity-20 pointer-events-none"
@@ -20,10 +30,14 @@ export function FinalCTA({ title, subtitle }: { title: string; subtitle: string 
           href="/onboarding"
           className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-primary)] px-7 py-4 text-base font-bold text-white shadow-lg shadow-sky-900/30 hover:opacity-90 active:scale-95 transition-all"
         >
-          Créer ma boutique gratuitement
+          {ctaLabel}
           <ArrowRight className="h-4 w-4" />
         </Link>
-        <p className="text-xs text-gray-500 mt-4">✓ Boutique gratuite à créer &nbsp;·&nbsp; ✓ Pas besoin de carte bancaire</p>
+        <p className="text-xs text-gray-500 mt-4">
+          {reassurance.map((r, i) => (
+            <span key={r}>{i > 0 && <>&nbsp;·&nbsp;</>}✓ {r}</span>
+          ))}
+        </p>
       </div>
     </section>
   )
