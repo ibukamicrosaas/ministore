@@ -206,6 +206,7 @@ interface Props {
   targetCountries: string[] | null
   preselectedProductId: string | null
   preselectedVariant: string | null
+  preselectedQuantity?: number
   basePath: string
   isDigital?: boolean
 }
@@ -229,6 +230,7 @@ export function OrderForm({
   targetCountries,
   preselectedProductId,
   preselectedVariant,
+  preselectedQuantity = 1,
   basePath,
   isDigital = false,
 }: Props) {
@@ -284,10 +286,10 @@ export function OrderForm({
   const defaultDial = (availableCountries.find((c) => c.code === shopCountry) ?? availableCountries[0])?.dial ?? '+221'
   const CART_KEY    = `tekki_cart_${shopId}`
 
-  const makeItem = (productId?: string, variantLabel?: string | null): OrderItem => ({
+  const makeItem = (productId?: string, variantLabel?: string | null, qty = 1): OrderItem => ({
     product_id: productId ?? products[0]?.id ?? '',
     variant_label: variantLabel ?? null,
-    quantity: 1,
+    quantity: qty,
     customization_note: '',
   })
 
@@ -319,7 +321,7 @@ export function OrderForm({
   })
 
   const [items, setItems] = useState<OrderItem[]>(
-    saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined, preselectedVariant)]
+    saved.items?.length ? saved.items : [makeItem(preselectedProductId ?? undefined, preselectedVariant, preselectedQuantity)]
   )
 
   // InitiateCheckout : déclenché une seule fois à l'ouverture du formulaire
@@ -807,6 +809,44 @@ export function OrderForm({
 
         {/* ── ÉTAPE 2 : Coordonnées + Livraison ── */}
         {(step === 2 || isDigital) && <>
+
+        {/* Récapitulatif commande — affiché en tête d'étape 2 uniquement */}
+        {step === 2 && (
+          <section className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Votre commande</p>
+            {items.map((it, i) => {
+              const p = getProduct(it.product_id)
+              if (!p) return null
+              let price = p.price
+              if (it.variant_label && p.variants) {
+                const v = p.variants.find(v => v.label === it.variant_label)
+                if (v) price = v.price
+              }
+              return (
+                <div key={i} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                    {it.variant_label && (
+                      <p className="text-xs text-gray-500">{it.variant_label}</p>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-gray-500">×{it.quantity}</p>
+                    <p className="text-sm font-bold" style={{ color: primaryColor }}>
+                      {formatPrice(price * it.quantity, shopCurrency)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+            {itemsSubtotal > 0 && items.length > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-1">
+                <span className="text-xs font-medium text-gray-500">Sous-total</span>
+                <span className="text-sm font-bold text-gray-900">{formatPrice(itemsSubtotal, shopCurrency)}</span>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* 1 — Coordonnées */}
         <section>

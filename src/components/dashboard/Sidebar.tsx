@@ -19,6 +19,7 @@ import {
   Tag,
   CreditCard,
   Shield,
+  Star,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 import { Avatar } from '@/components/ui/Avatar'
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/orders',        label: 'Commandes',       icon: ShoppingBag },
   { href: '/dashboard/products',      label: 'Produits',        icon: Package },
   { href: '/dashboard/clients',       label: 'Clients',         icon: UserCircle },
+  { href: '/dashboard/reviews',       label: 'Avis clients',    icon: Star },
   { href: '/dashboard/revenues',      label: 'Revenus',         icon: Wallet },
   { href: '/dashboard/billing',       label: 'Facturation',     icon: CreditCard },
   { href: '/dashboard/rapports',      label: 'Statistiques',    icon: BarChart2 },

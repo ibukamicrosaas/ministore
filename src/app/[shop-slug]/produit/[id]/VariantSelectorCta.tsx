@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Minus, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -13,7 +13,7 @@ interface Variant {
 }
 
 interface Props {
-  baseHref: string   // ex: /boutique/commander?product=xxx (sans &variant=...)
+  baseHref: string
   color: string
   productId: string
   productName: string
@@ -21,24 +21,33 @@ interface Props {
   minPrice: number
   currency: ShopCurrency
   isDigital?: boolean
+  stockCount?: number | null
 }
 
 export function VariantSelectorCta({
-  baseHref, color, productId, productName, variants, minPrice, currency, isDigital = false,
+  baseHref, color, productId, productName, variants, minPrice, currency, isDigital = false, stockCount,
 }: Props) {
   const [selected, setSelected] = useState<Variant | null>(null)
+  const [quantity, setQuantity]  = useState(1)
   const ref    = useRef<HTMLButtonElement>(null)
   const router = useRouter()
 
-  // Notifie le sticky CTA de l'état inline et de la variante sélectionnée
+  const maxQty = stockCount != null ? Math.min(stockCount, 10) : 10
+
+  const buildHref = (sel: Variant | null, qty: number) => {
+    let h = baseHref
+    if (sel) h += `&variant=${encodeURIComponent(sel.label)}`
+    if (!isDigital) h += `&qty=${qty}`
+    return h
+  }
+
+  // Notifie le sticky CTA de l'état inline
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => {
-        window.dispatchEvent(
-          new CustomEvent('inline-cta-visibility', { detail: { visible: entry.isIntersecting } })
-        )
+        window.dispatchEvent(new CustomEvent('inline-cta-visibility', { detail: { visible: entry.isIntersecting } }))
       },
       { threshold: 0.1 }
     )
@@ -46,24 +55,23 @@ export function VariantSelectorCta({
     return () => observer.disconnect()
   }, [])
 
-  // Propage la variante sélectionnée au sticky CTA
+  // Propage variante + quantité au sticky CTA
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent('variant-selected', {
         detail: {
           label:    selected?.label ?? null,
           price:    selected?.price ?? minPrice,
-          href:     selected ? `${baseHref}&variant=${encodeURIComponent(selected.label)}` : baseHref,
+          href:     buildHref(selected, quantity),
           disabled: variants.length > 0 && !selected,
         },
       })
     )
-  }, [selected, baseHref, minPrice, variants.length])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, quantity, baseHref, minPrice, variants.length])
 
   const allSamePrice = variants.every(v => v.price === variants[0]?.price)
-  const href = selected
-    ? `${baseHref}&variant=${encodeURIComponent(selected.label)}`
-    : baseHref
+  const href = buildHref(selected, quantity)
 
   function handleClick() {
     if (variants.length > 0 && !selected) return
@@ -78,10 +86,7 @@ export function VariantSelectorCta({
   }
 
   const ctaPrefix = isDigital ? 'Acheter' : 'Je le prends'
-  const ctaLabel = variants.length === 0 || selected
-    ? ctaPrefix
-    : 'Choisir une variante'
-
+  const ctaLabel  = variants.length === 0 || selected ? ctaPrefix : 'Choisir une variante'
   const ctaDisabled = variants.length > 0 && !selected
 
   return (
@@ -103,13 +108,9 @@ export function VariantSelectorCta({
                   onClick={() => setSelected(isSelected ? null : v)}
                   className="rounded-xl px-3 py-2 text-xs font-semibold border transition-all"
                   style={isSelected ? {
-                    backgroundColor: color,
-                    borderColor:     color,
-                    color:           '#fff',
+                    backgroundColor: color, borderColor: color, color: '#fff',
                   } : {
-                    backgroundColor: `${color}0D`,
-                    borderColor:     `${color}30`,
-                    color:           '#374151',
+                    backgroundColor: `${color}0D`, borderColor: `${color}30`, color: '#374151',
                   }}
                 >
                   {v.label}
@@ -122,6 +123,34 @@ export function VariantSelectorCta({
                 </button>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Sélecteur de quantité — uniquement pour les produits physiques */}
+      {!isDigital && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-600">Quantité</span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Diminuer la quantité"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="w-6 text-center text-sm font-bold text-gray-900">{quantity}</span>
+            <button
+              type="button"
+              onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
+              disabled={quantity >= maxQty}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Augmenter la quantité"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       )}
