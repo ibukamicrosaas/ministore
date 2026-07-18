@@ -195,8 +195,9 @@ export default async function ProductDetailPage({ params }: Props) {
     ),
     admin
       .from('product_reviews' as never)
-      .select('rating')
-      .eq('product_id', product.id) as unknown as Promise<{ data: { rating: number }[] | null }>,
+      .select('id, rating, comment, client_name, created_at')
+      .eq('product_id', product.id)
+      .order('created_at', { ascending: false }) as unknown as Promise<{ data: { id: string; rating: number; comment: string | null; client_name: string; created_at: string }[] | null }>,
   ])
   const salesCount      = rawSalesCount ?? 0
   const relatedProducts = (relatedResult.data ?? []) as Product[]
@@ -322,7 +323,7 @@ export default async function ProductDetailPage({ params }: Props) {
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 w-fit">
             <span className="text-base">📄</span>
             <div>
-              <p className="text-xs font-semibold text-violet-700">Téléchargement numérique</p>
+              <p className="text-xs font-semibold text-violet-700">Produit digital</p>
               {digitalFileName && (
                 <p className="text-[10px] text-violet-500">
                   {digitalFileName}
@@ -359,7 +360,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {!variants?.length && (
           <div className="mt-3 flex items-baseline gap-3">
-            <p className="text-2xl font-bold" style={{ color }}>{displayPrice}</p>
+            <p className="text-2xl font-bold text-gray-900">{displayPrice}</p>
             {(() => {
               const op = (product as Product & { original_price?: number | null }).original_price
               return op && op > product.price ? (
@@ -477,6 +478,61 @@ export default async function ProductDetailPage({ params }: Props) {
               ? renderProDescription(product.description)
               : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
             }
+          </div>
+        )}
+
+        {/* ── Section avis ── */}
+        {reviews.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Avis clients
+              </p>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <Star
+                      key={s}
+                      className="h-3 w-3"
+                      fill={s <= Math.round(reviewAvg) ? '#F59E0B' : 'none'}
+                      stroke={s <= Math.round(reviewAvg) ? '#F59E0B' : '#D1D5DB'}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-semibold text-gray-700">{reviewAvg}</span>
+                <span className="text-xs text-gray-400">({reviewCount})</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {reviews.map(review => (
+                <div key={review.id} className="rounded-2xl bg-gray-50 px-4 py-3.5">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+                        {review.client_name?.[0]?.toUpperCase() ?? '?'}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800">{review.client_name}</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {[1,2,3,4,5].map(s => (
+                        <Star
+                          key={s}
+                          className="h-3 w-3"
+                          fill={s <= review.rating ? '#F59E0B' : 'none'}
+                          stroke={s <= review.rating ? '#F59E0B' : '#D1D5DB'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {review.comment && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
+                  )}
+                  <p className="mt-2 text-[10px] text-gray-400">
+                    {new Date(review.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
