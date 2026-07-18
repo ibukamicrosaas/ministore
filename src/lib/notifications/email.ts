@@ -69,6 +69,90 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
   }
 }
 
+interface ReviewRequestParams {
+  toEmail: string
+  clientName: string
+  shopName: string
+  shopColor: string
+  shopLogoUrl?: string | null
+  productNames: string[]  // noms des produits commandés
+  reviewUrl: string       // /{shopSlug}/avis/{clientToken}
+}
+
+export async function sendReviewRequestEmail(params: ReviewRequestParams): Promise<void> {
+  if (!resend) return
+
+  const productList = params.productNames
+    .map(n => `<li style="margin:4px 0;color:#374151;font-size:14px;">${n}</li>`)
+    .join('')
+
+  const accentColor = params.shopColor ?? '#0EA5E9'
+
+  const logoBlock = params.shopLogoUrl
+    ? `<img src="${params.shopLogoUrl}" alt="${params.shopName}" style="height:40px;width:40px;object-fit:cover;border-radius:10px;margin-bottom:4px;">`
+    : `<div style="display:inline-flex;align-items:center;justify-content:center;height:40px;width:40px;border-radius:10px;background:${accentColor};color:#fff;font-weight:700;font-size:18px;">${params.shopName[0]?.toUpperCase()}</div>`
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <!-- En-tête -->
+    <div style="padding:28px 28px 20px;text-align:center;border-bottom:1px solid #f3f4f6;">
+      ${logoBlock}
+      <p style="margin:10px 0 0;font-size:13px;font-weight:600;color:#6b7280;">${params.shopName}</p>
+    </div>
+
+    <!-- Corps -->
+    <div style="padding:28px;">
+      <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;">
+        Bonjour ${params.clientName} 👋
+      </h1>
+      <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">
+        Merci pour ta commande ! Ton avis sur ta/tes achat(s) aide les autres clients à choisir.
+        Ça prend moins d'une minute. 😊
+      </p>
+
+      <!-- Produits -->
+      <div style="background:#f9fafb;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+        <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Ta commande</p>
+        <ul style="margin:0;padding-left:16px;">${productList}</ul>
+      </div>
+
+      <!-- CTA -->
+      <a href="${params.reviewUrl}"
+         style="display:block;text-align:center;background:${accentColor};color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:15px 24px;border-radius:12px;margin-bottom:18px;">
+        ⭐ Laisser mon avis →
+      </a>
+
+      <p style="font-size:12px;color:#9ca3af;margin:0;text-align:center;">
+        Ou accède directement à : <a href="${params.reviewUrl}" style="color:${accentColor};">${params.reviewUrl}</a>
+      </p>
+    </div>
+
+    <!-- Pied de page -->
+    <div style="border-top:1px solid #e5e7eb;padding:16px 28px;background:#f9fafb;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+        Cet e-mail t'a été envoyé suite à ta commande sur la boutique <strong>${params.shopName}</strong>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`
+
+  try {
+    await resend.emails.send({
+      from:    FROM_ADDRESS,
+      to:      [params.toEmail],
+      subject: `Ton avis compte ! Comment s'est passée ta commande chez ${params.shopName} ?`,
+      html,
+    })
+  } catch (err) {
+    console.error('[email] sendReviewRequestEmail failed:', err)
+  }
+}
+
 interface OrderConfirmationParams {
   toEmail: string
   clientName: string

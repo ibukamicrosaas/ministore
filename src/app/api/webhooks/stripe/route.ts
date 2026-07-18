@@ -81,7 +81,8 @@ export async function POST(req: NextRequest) {
             }>).filter(i => i.products?.product_type === 'digital')
 
             if (digitalItems.length > 0 && ord.clients) {
-              await (supabase as ReturnType<typeof createServiceClient>).from('orders').update({ status: 'completed' }).eq('id', ord.id)
+              const completedAt = new Date().toISOString()
+              await (supabase as ReturnType<typeof createServiceClient>).from('orders').update({ status: 'completed', delivered_at: completedAt }).eq('id', ord.id)
               const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
               const clientPhone = ord.clients.whatsapp ?? ord.clients.phone
 

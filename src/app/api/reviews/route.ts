@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     .from('orders')
     .select('id, shop_id, status, clients(first_name)')
     .eq('client_token', order_token)
-    .in('status', ['delivered', 'completed'])
+    .in('status', ['confirmed', 'preparing', 'ready', 'delivered', 'completed'])
     .single() as { data: {
       id: string; shop_id: string; status: string
       clients: { first_name: string } | null

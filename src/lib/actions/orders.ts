@@ -55,9 +55,13 @@ export async function advanceOrderStatus(orderId: string) {
   const nextStatus = STATUS_TRANSITIONS[order.status as OrderStatus]
   if (!nextStatus) return { error: 'Statut final atteint.' }
 
+  const now = new Date().toISOString()
+
   const { error } = await supabase
     .from('orders')
-    .update({ status: nextStatus, updated_at: new Date().toISOString() })
+    .update(nextStatus === 'delivered'
+      ? { status: nextStatus, updated_at: now, delivered_at: now }
+      : { status: nextStatus, updated_at: now })
     .eq('id', orderId)
     .eq('shop_id', shopId)
 

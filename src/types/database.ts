@@ -377,6 +377,8 @@ export type Database = {
           delivery_price: number
           client_token: string
           reminder_sent_at: string | null
+          delivered_at: string | null
+          review_request_sent_at: string | null
           created_at: string
           updated_at: string
         }
@@ -401,6 +403,8 @@ export type Database = {
           delivery_price?: number
           client_token?: string
           reminder_sent_at?: string | null
+          delivered_at?: string | null
+          review_request_sent_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -425,6 +429,8 @@ export type Database = {
           delivery_price?: number
           client_token?: string
           reminder_sent_at?: string | null
+          delivered_at?: string | null
+          review_request_sent_at?: string | null
           created_at?: string
           updated_at?: string
         }
