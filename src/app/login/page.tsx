@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { Zap, CreditCard, Smartphone, Bell } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const metadata = {
   title: `Connexion — ${APP_NAME}`,
@@ -21,13 +23,19 @@ const COUNTRIES = [
 ]
 
 const BENEFITS = [
-  { emoji: '⚡', text: 'Ton site en ligne en 5 minutes' },
-  { emoji: '💳', text: 'Wave, Orange Money, paiement à la livraison' },
-  { emoji: '📲', text: 'Gère tout depuis ton téléphone' },
-  { emoji: '🔔', text: 'Confirmations automatiques pour tes clients' },
+  { Icon: Zap, text: 'Ton site en ligne en 5 minutes' },
+  { Icon: CreditCard, text: 'Wave, Orange Money, paiement à la livraison' },
+  { Icon: Smartphone, text: 'Gère tout depuis ton téléphone' },
+  { Icon: Bell, text: 'Confirmations automatiques pour tes clients' },
 ]
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const admin = createAdminClient()
+  const { count: totalShopsCount } = await admin
+    .from('shops')
+    .select('id', { count: 'exact', head: true })
+  const shopsCount = totalShopsCount ?? 0
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
 
@@ -48,11 +56,11 @@ export default function LoginPage() {
 
         {/* Central content */}
         <div className="relative max-w-sm">
-          <p className="text-xs font-bold uppercase tracking-widest text-sky-400 mb-5">
-            +500 marchands nous font confiance
+          <p className="text-sm font-bold uppercase tracking-widest text-sky-400 mb-5">
+            +{shopsCount} marchands nous font confiance
           </p>
           <h2
-            className="text-3xl font-black text-white leading-tight mb-6"
+            className="text-4xl font-black text-white leading-tight mb-7"
             style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
           >
             La façon la plus simple<br />
@@ -62,8 +70,8 @@ export default function LoginPage() {
 
           <ul className="space-y-4 mb-10">
             {BENEFITS.map((b) => (
-              <li key={b.text} className="flex items-center gap-3 text-gray-300 text-sm">
-                <span className="text-xl w-7 shrink-0">{b.emoji}</span>
+              <li key={b.text} className="flex items-center gap-3 text-gray-300 text-base">
+                <b.Icon className="h-5 w-5 text-sky-400 shrink-0" />
                 <span>{b.text}</span>
               </li>
             ))}
@@ -76,7 +84,7 @@ export default function LoginPage() {
               {COUNTRIES.map((c) => (
                 <span
                   key={c.name}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-300"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-gray-300"
                 >
                   <span>{c.flag}</span>
                   <span>{c.name}</span>
@@ -93,14 +101,16 @@ export default function LoginPage() {
               <span key={i} className="text-amber-400 text-sm">★</span>
             ))}
           </div>
-          <p className="text-gray-400 text-sm italic leading-relaxed mb-3">
+          <p className="text-gray-300 text-base italic leading-relaxed mb-3">
             &ldquo;Avant je perdais mes commandes sur WhatsApp. Maintenant tout est organisé et mes clients sont satisfaits.&rdquo;
           </p>
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm">F</div>
+            <div className="relative h-8 w-8 shrink-0 rounded-full overflow-hidden">
+              <Image src="/avatars/2.jpg" alt="Fatou D." fill className="object-cover" sizes="32px" />
+            </div>
             <div>
-              <p className="text-white text-xs font-semibold">Fatou D.</p>
-              <p className="text-gray-500 text-[10px]">Boutique mode · Dakar, Sénégal</p>
+              <p className="text-white text-sm font-semibold">Fatou D.</p>
+              <p className="text-gray-500 text-xs">Boutique mode · Dakar, Sénégal</p>
             </div>
           </div>
         </div>
@@ -126,7 +136,7 @@ export default function LoginPage() {
             {COUNTRIES.map(c => (
               <span key={c.name} title={c.name} className="text-base">{c.flag}</span>
             ))}
-            <span className="text-[10px] text-sky-600">· +500 marchands actifs</span>
+            <span className="text-[10px] text-sky-600">· +{shopsCount} marchands actifs</span>
           </div>
         </div>
 
