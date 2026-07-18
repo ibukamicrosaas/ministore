@@ -22,6 +22,7 @@ export const revalidate = 60
 import type { Metadata } from 'next'
 import { getVideoEmbedUrl } from '@/lib/utils/video'
 import { ProductGallery } from '@/components/pwa/ProductGallery'
+import { ReviewsList } from '@/components/pwa/ReviewsList'
 
 type Props = { params: Promise<{ 'shop-slug': string; id: string }> }
 
@@ -483,63 +484,16 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* ── Section avis ── */}
         {reviews.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Avis clients
-              </p>
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-0.5">
-                  {[1,2,3,4,5].map(s => (
-                    <Star
-                      key={s}
-                      className="h-3 w-3"
-                      fill={s <= Math.round(reviewAvg) ? '#F59E0B' : 'none'}
-                      stroke={s <= Math.round(reviewAvg) ? '#F59E0B' : '#D1D5DB'}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs font-semibold text-gray-700">{reviewAvg}</span>
-                <span className="text-xs text-gray-400">({reviewCount})</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {reviews.map(review => (
-                <div key={review.id} className="rounded-2xl bg-gray-50 px-4 py-3.5">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
-                        {review.client_name?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800">{review.client_name}</span>
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {[1,2,3,4,5].map(s => (
-                        <Star
-                          key={s}
-                          className="h-3 w-3"
-                          fill={s <= review.rating ? '#F59E0B' : 'none'}
-                          stroke={s <= review.rating ? '#F59E0B' : '#D1D5DB'}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  {review.comment && (
-                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
-                  )}
-                  <p className="mt-2 text-[10px] text-gray-400">
-                    {new Date(review.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ReviewsList reviews={reviews} reviewAvg={reviewAvg} reviewCount={reviewCount} />
         )}
+          </div>
+        </div>{/* fin lg:flex */}
 
+        {/* ── Vous aimerez aussi — pleine largeur du container ── */}
         {relatedProducts.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-gray-100">
+          <div className="mt-6 pt-5 border-t border-gray-100 px-5 lg:px-0 lg:mt-10 lg:pt-8">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Vous aimerez aussi</p>
-            <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5">
+            <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
               {relatedProducts.map(rp => {
                 const rpPhotos = Array.isArray(rp.photos) && (rp.photos as unknown as ProductPhoto[]).length > 0
                   ? (rp.photos as unknown as ProductPhoto[])
@@ -552,14 +506,14 @@ export default async function ProductDetailPage({ params }: Props) {
                 const rpSlug = (rp as Product & { slug?: string | null }).slug
                 const rpHref = `${basePath}/produit/${rpSlug ?? rp.id}`
                 return (
-                  <a key={rp.id} href={rpHref} className="shrink-0 w-32 group">
-                    <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                  <a key={rp.id} href={rpHref} className="shrink-0 w-32 lg:w-auto group">
+                    <div className="relative w-32 h-32 lg:w-full lg:h-48 rounded-xl overflow-hidden bg-gray-100">
                       {rpPhoto ? (
                         <Image
                           src={rpPhoto}
                           alt={rp.name}
                           fill
-                          sizes="128px"
+                          sizes="(max-width: 1024px) 128px, 25vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-200"
                           quality={80}
                         />
@@ -576,9 +530,6 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
           </div>
         )}
-          </div>
-
-        </div>{/* fin lg:flex */}
       </div>{/* fin lg:max-w-6xl */}
 
       {/* Sticky CTA — rupture de stock (mobile only) */}
