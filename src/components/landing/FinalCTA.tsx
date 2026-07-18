@@ -6,17 +6,21 @@ export function FinalCTA({
   subtitle,
   ctaLabel = 'Créer ma boutique gratuitement',
   reassurance = ['Boutique gratuite à créer', 'Pas besoin de carte bancaire'],
+  background = '#0B1B32',
+  maxWidth = 'max-w-lg',
 }: {
   title: string
   subtitle: string
   ctaLabel?: string
   reassurance?: string[]
+  background?: string
+  maxWidth?: string
 }) {
   return (
-    <section className="bg-[#0B1B32] py-20 px-4 relative overflow-hidden">
+    <section className="py-20 px-4 relative overflow-hidden" style={{ background }}>
       <div className="absolute inset-0 opacity-20 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, #0EA5E9 0%, transparent 60%)' }} />
-      <div className="relative text-center mx-auto max-w-lg">
+      <div className={`relative text-center mx-auto ${maxWidth}`}>
         <h2
           className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white mb-4 leading-tight"
           style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}

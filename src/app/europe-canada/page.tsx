@@ -33,7 +33,7 @@ const EU_PAYMENTS = [
 
 const AF_PAYMENTS = [
   { name: 'Wave', logo: '/logo-payments/wave_1.svg' },
-  { name: 'Orange Money', logo: '/logo-payments/om_1.svg' },
+  { name: 'MaxIt', logo: '/logo-payments/maxit.webp' },
   { name: 'MTN Money', logo: '/logo-payments/mtn_1.svg' },
 ]
 
@@ -144,7 +144,7 @@ export default function EuropeCanadaPage() {
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-gray-600">
-                {['Boutique en € ou en $ CAD', 'Paiements sécurisés par Stripe', 'Créée en 5 minutes'].map(r => (
+                {['Boutique en € ou en $ CAD', 'Paiements sécurisés par Stripe'].map(r => (
                   <span key={r}><span className="text-emerald-500 font-bold">✓</span> {r}</span>
                 ))}
               </div>
@@ -152,7 +152,12 @@ export default function EuropeCanadaPage() {
 
             {/* Double carte de paiement — visuel signature */}
             <div>
-              <div className="relative">
+              <div className="flex justify-center mb-3.5">
+                <span className="rounded-full bg-[#0B1B32] text-white text-xs font-extrabold px-4 py-2 shadow-lg whitespace-nowrap">
+                  1 seule boutique TEKKIShop
+                </span>
+              </div>
+              <div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="rounded-2xl border border-gray-100 bg-white shadow-xl shadow-indigo-100/60 p-4">
                     <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-gray-400 mb-2.5">
@@ -184,16 +189,10 @@ export default function EuropeCanadaPage() {
                     </div>
                     <div className="flex items-center justify-center flex-wrap gap-x-1.5 gap-y-1 mt-2.5 text-[11px] text-gray-400">
                       <PaymentLogo src="/logo-payments/wave_1.svg" alt="Wave" /> Wave ·
-                      <PaymentLogo src="/logo-payments/om_1.svg" alt="Orange Money" /> Orange Money ·
+                      <PaymentLogo src="/logo-payments/om_1.svg" alt="OM" /> OM ·
                       <Truck className="h-3 w-3" /> à la livraison
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-3 sm:mt-0 sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex justify-center">
-                  <span className="rounded-full bg-[#0B1B32] text-white text-xs font-extrabold px-4 py-2 shadow-lg whitespace-nowrap">
-                    = 1 seule boutique TEKKIShop
-                  </span>
                 </div>
               </div>
               <p className="text-center text-sm text-gray-500 mt-4">
@@ -213,9 +212,6 @@ export default function EuropeCanadaPage() {
               {p.name}
             </span>
           ))}
-          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
-            Stripe
-          </span>
           <span className="text-indigo-600 font-extrabold text-lg px-1">+</span>
           {AF_PAYMENTS.map(p => (
             <span key={p.name} className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
@@ -418,6 +414,8 @@ export default function EuropeCanadaPage() {
         title="Ton business vit entre deux mondes. Ta boutique est prête à faire pareil."
         subtitle="Crée ta boutique en euros ou en dollars canadiens, connecte ton compte Stripe, et vends des deux côtés dès aujourd'hui."
         reassurance={['Boutique gratuite à créer', 'Pas besoin de carte bancaire', 'Support en français']}
+        background="linear-gradient(135deg, #4338CA, #5B5BD6)"
+        maxWidth="max-w-xl"
       />
 
       <WhatsAppButton />
