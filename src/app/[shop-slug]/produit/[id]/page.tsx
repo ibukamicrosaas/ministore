@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Clock, Star, ShieldCheck, Banknote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -32,7 +32,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   const shopRes = await supabase
     .from('shops')
-    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled')
+    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url')
     .eq('slug', shopSlug)
     .single()
 
@@ -134,7 +134,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!shopData || !productData) notFound()
 
-  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color'> & {
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url'> & {
     plan?: string; currency?: string | null
     country?: string | null
     accept_cash_on_delivery?: boolean | null
@@ -240,7 +240,7 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto lg:max-w-none bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -250,36 +250,71 @@ export default async function ProductDetailPage({ params }: Props) {
         productName={product.name}
         price={product.price}
       />
-      {/* Galerie */}
-      <div className="relative">
-        <ProductGallery
-          photos={photos}
-          videoEmbedUrl={embedUrl}
-          productName={product.name}
-          primaryColor={color}
-          isPortrait={isPortrait}
-        />
 
-        <Link
-          href={basePath || '/'}
-          className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors z-10"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-          {shop.name}
-        </Link>
-
-        <div className="absolute top-4 right-4 z-10">
-          <ShareButton
-            url={publicUrl}
-            title={product.name}
-            text={product.description ?? `${product.name} — ${displayPrice}`}
-            primaryColor={color}
-          />
+      {/* ── Desktop sticky nav ── */}
+      <div className="hidden lg:flex sticky top-0 z-50 items-center bg-white/95 backdrop-blur-sm border-b border-gray-100">
+        <div className="w-full max-w-6xl mx-auto px-12 h-14 flex items-center gap-2">
+          <Link href={basePath || '/'} className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
+            {shop.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={shop.logo_url} alt={shop.name} className="h-7 w-7 rounded-md object-cover" />
+            ) : (
+              <div className="h-7 w-7 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color }}>
+                {shop.name[0]?.toUpperCase()}
+              </div>
+            )}
+            <span className="font-semibold text-sm text-gray-900">{shop.name}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+          <span className="text-sm text-gray-500 truncate flex-1">{product.name}</span>
+          <a
+            href={`${basePath}/commander?product=${product.id}`}
+            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 transition-opacity hover:opacity-90"
+            style={{ backgroundColor: color }}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            Commander
+          </a>
         </div>
       </div>
 
-      {/* Info card */}
-      <div className="bg-white px-5 pt-5 pb-24">
+      {/* ── Contenu : 2 colonnes sur desktop ── */}
+      <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
+        <div className="lg:flex lg:gap-10 lg:items-start">
+
+          {/* ── Colonne gauche : galerie ── */}
+          <div className="lg:w-[480px] lg:shrink-0 lg:sticky lg:top-20">
+            <div className="relative">
+              <ProductGallery
+                photos={photos}
+                videoEmbedUrl={embedUrl}
+                productName={product.name}
+                primaryColor={color}
+                isPortrait={isPortrait}
+              />
+
+              {/* Bouton retour boutique — mobile uniquement */}
+              <Link
+                href={basePath || '/'}
+                className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-white hover:bg-black/50 transition-colors z-10 lg:hidden"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                {shop.name}
+              </Link>
+
+              <div className="absolute top-4 right-4 z-10">
+                <ShareButton
+                  url={publicUrl}
+                  title={product.name}
+                  text={product.description ?? `${product.name} — ${displayPrice}`}
+                  primaryColor={color}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Colonne droite : infos produit ── */}
+          <div className="bg-white px-5 pt-5 pb-24 lg:flex-1 lg:px-0 lg:pt-2 lg:pb-12 lg:min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
 
         {/* Badge produit digital */}
@@ -485,11 +520,14 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
           </div>
         )}
-      </div>
+          </div>
 
-      {/* Sticky CTA — rupture de stock (toujours visible) */}
+        </div>{/* fin lg:flex */}
+      </div>{/* fin lg:max-w-6xl */}
+
+      {/* Sticky CTA — rupture de stock (mobile only) */}
       {soldOut && (
-        <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto lg:hidden">
           <div className="space-y-2">
             <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
               Rupture de stock

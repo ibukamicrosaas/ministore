@@ -60,7 +60,7 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto lg:hidden">
       <button
         type="button"
         onClick={handleClick}

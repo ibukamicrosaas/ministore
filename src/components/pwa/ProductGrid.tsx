@@ -178,7 +178,7 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency }: { produc
               src={photo}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 45vw, 200px"
+              sizes="(max-width: 640px) 45vw, (max-width: 1024px) 200px, 300px"
               className="object-cover"
             />
           ) : (
@@ -261,7 +261,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
             <Star className="h-3.5 w-3.5 shrink-0" style={{ color: primaryColor }} />
             <p className="text-xs font-bold uppercase tracking-wider text-gray-600">Coups de cœur</p>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
             {featured.map(p => (
               <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
             ))}
@@ -366,7 +366,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {byCategory[category].map(p => (
                   <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
                 ))}

@@ -88,7 +88,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto bg-white">
       <OrderForm
         shopId={shop.id}
         shopSlug={slug}

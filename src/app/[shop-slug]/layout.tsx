@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { MetaPixelProvider } from '@/components/pwa/MetaPixelProvider'
+import { ShopBranding } from '@/components/pwa/ShopBranding'
 import type { Shop } from '@/types'
 
 export const revalidate = 60
@@ -107,23 +108,12 @@ export default async function ShopLayout({
 
   return (
     <div
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-white"
       style={{ '--color-primary': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
     >
       {shop.meta_pixel_id && <MetaPixelProvider pixelId={shop.meta_pixel_id} />}
       {children}
-      {!shop.hide_branding && (
-        <footer className="max-w-lg mx-auto px-4 py-6 text-center">
-          <a
-            href="/"
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            Toi aussi, ouvre ta boutique en 5 min avec{' '}
-            <span className="font-semibold text-gray-500">TekkiShop</span>{' '}
-            <span aria-hidden>→</span>
-          </a>
-        </footer>
-      )}
+      {!shop.hide_branding && <ShopBranding />}
     </div>
   )
 }
