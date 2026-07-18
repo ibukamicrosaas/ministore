@@ -1,53 +1,103 @@
 import Link from 'next/link'
-import { ArrowRight, ShieldCheck } from 'lucide-react'
+import Image from 'next/image'
+import {
+  ArrowRight,
+  CreditCard,
+  Truck,
+  ShieldCheck,
+  XCircle,
+  CheckCircle2,
+  Check,
+  ShoppingBasket,
+  GraduationCap,
+  Globe2,
+} from 'lucide-react'
 import { SiteHeader } from '@/components/landing/SiteHeader'
 import { SiteFooter } from '@/components/landing/SiteFooter'
 import { WhatsAppButton } from '@/components/landing/WhatsAppButton'
 import { MiniFAQ } from '@/components/landing/MiniFAQ'
 import { FinalCTA } from '@/components/landing/FinalCTA'
+import { Reveal } from '@/components/landing/Reveal'
 import { EU_CA_COUNTRIES } from '@/components/landing/countries'
 import { APP_NAME } from '@/constants'
 
 export const metadata = {
-  title: `Vendre depuis la France ou le Canada — ${APP_NAME}`,
-  description: "TEKKIShop est disponible en Europe francophone et au Canada. Crée ta boutique en euros ou en dollars canadiens, et accepte les paiements par carte bancaire via Stripe.",
+  title: `Vends en euros à Paris, en FCFA à Dakar — ${APP_NAME}`,
+  description: "TEKKIShop est disponible en Europe francophone et au Canada. Encaisse par carte via Stripe en € ou CAD — et sers aussi tes clients en Afrique par mobile money, depuis la même boutique.",
 }
 
-const ETAPES = [
-  { num: '1', titre: 'Crée ta boutique', texte: 'En euros (€) ou en dollars canadiens (CAD), en quelques minutes.' },
-  { num: '2', titre: 'Connecte ton compte Stripe', texte: 'Stripe te guide dans la vérification de ton identité — auto-entrepreneur, indépendant ou société.' },
-  { num: '3', titre: 'Tes clients paient par carte', texte: 'Visa ou Mastercard, directement sur ta boutique.' },
-  { num: '4', titre: 'L\'argent arrive sur ton compte', texte: 'Automatiquement, selon le calendrier standard de Stripe pour ton pays.' },
+const EU_PAYMENTS = [
+  { name: 'Visa', logo: '/logo-payments/visa.svg' },
+  { name: 'Mastercard', logo: '/logo-payments/Mastercard-Logo.wine.svg' },
 ]
 
-const USAGES = [
-  { icon: '🧺', titre: 'Diaspora', texte: 'Vends des produits africains (wax, épicerie, cosmétiques) à la communauté en Europe' },
-  { icon: '🎓', titre: 'Coachs & formateurs', texte: 'Vends tes formations et accompagnements depuis la France ou le Canada' },
-  { icon: '🌍', titre: 'Double marché', texte: 'Sers tes clients en Europe et en Afrique depuis la même activité' },
+const AF_PAYMENTS = [
+  { name: 'Wave', logo: '/logo-payments/wave_1.svg' },
+  { name: 'Orange Money', logo: '/logo-payments/om_1.svg' },
+  { name: 'MTN Money', logo: '/logo-payments/mtn_1.svg' },
+]
+
+const ETAPES = [
+  { num: '1', titre: 'Crée ta boutique', texte: 'En euros (€) ou en dollars canadiens (CAD), en quelques minutes, depuis ton téléphone ou ton ordinateur.' },
+  { num: '2', titre: 'Connecte ton compte Stripe', texte: 'Stripe te guide dans la vérification de ton identité — auto-entrepreneur, indépendant ou société. Pas besoin d\'être une entreprise établie.' },
+  { num: '3', titre: 'Tes clients paient par carte', texte: 'Visa ou Mastercard, directement sur ta boutique. Et tes clients en Afrique, eux, paient par mobile money.' },
+  { num: '4', titre: 'L\'argent arrive sur ton compte', texte: 'Virements automatiques vers ton compte bancaire, selon le calendrier standard de Stripe pour ton pays.' },
+]
+
+const SANS_ITEMS = [
+  'Un Shopify ou Wix pour tes clients en Europe (abonnement + apps + configuration Stripe à faire toi-même)',
+  'Une deuxième solution — ou des DM WhatsApp sans fin — pour tes clients en Afrique',
+  'Aucune plateforme européenne ne gère Wave, Orange Money ou le paiement à la livraison',
+  'Deux catalogues à maintenir, deux fois le travail',
+]
+
+const AVEC_ITEMS: React.ReactNode[] = [
+  <><strong className="text-white">Une seule boutique</strong>, un seul catalogue, un seul tableau de bord</>,
+  <>Tes clients d&apos;Europe et du Canada paient <strong className="text-white">par carte via Stripe</strong> — l&apos;argent va directement sur ton compte</>,
+  <>Tes clients d&apos;Afrique paient <strong className="text-white">par mobile money ou à la livraison</strong> — comme ils ont l&apos;habitude</>,
+  <>Livreurs, WhatsApp, avis clients : <strong className="text-white">tous les outils TEKKIShop</strong> restent inclus</>,
+]
+
+const PERSONAS = [
+  { Icon: ShoppingBasket, titre: 'L\'entrepreneure de la diaspora', texte: 'Wax, épicerie, cosmétiques, artisanat : tu vends les produits du pays à la communauté en Europe — et tu livres aussi la famille restée au pays, depuis la même boutique.', ex: 'Encaisse en € ET en FCFA' },
+  { Icon: GraduationCap, titre: 'Le coach / créateur francophone', texte: 'Formations, guides, ebooks, accompagnements : ton audience est des deux côtés de la Méditerranée. Ton lien boutique aussi.', ex: 'Produits digitaux inclus' },
+  { Icon: Globe2, titre: 'La marque africaine qui exporte', texte: 'Ta marque cartonne à Abidjan ou Dakar ? Ouvre le marché européen sans deuxième plateforme : mêmes produits, prix en euros, paiement par carte.', ex: 'Une boutique, deux continents' },
 ]
 
 const FAQS = [
   {
     q: 'Dois-je avoir une entreprise enregistrée en France, en Belgique ou au Canada ?',
-    a: 'Pas forcément. Que tu sois auto-entrepreneur, indépendant ou société, Stripe te guide dans la vérification de ton identité au moment de connecter ton compte.',
+    a: 'Pas forcément. Que tu sois auto-entrepreneur, indépendant ou société, Stripe te guide dans la vérification de ton identité au moment de connecter ton compte. C\'est lui qui valide ton statut, selon les règles de ton pays.',
   },
   {
     q: 'Quand est-ce que je reçois l\'argent sur mon compte bancaire ?',
-    a: 'Automatiquement, selon le calendrier standard de Stripe pour ton pays — tu n\'as aucune action à faire pour déclencher le virement.',
+    a: 'Les paiements arrivent d\'abord sur ton compte Stripe, puis sont virés automatiquement vers ton compte bancaire selon le calendrier standard de Stripe pour ton pays (généralement quelques jours ouvrés après chaque vente).',
   },
   {
     q: 'Quels moyens de paiement mes clients peuvent-ils utiliser ?',
-    a: 'Carte Visa ou Mastercard, via Stripe — le standard de paiement sécurisé utilisé par des millions de commerçants dans le monde.',
+    a: 'En Europe et au Canada : carte bancaire Visa ou Mastercard, via Stripe, avec 3D Secure. En Afrique : les moyens de paiement mobile money du pays de tes clients (Wave, Orange Money, MTN, Moov…) et le paiement à la livraison.',
   },
   {
     q: 'Puis-je vendre à des clients en Afrique depuis ma boutique en Europe ?',
-    a: 'Oui. Ta boutique est accessible à n\'importe qui avec ton lien — tu choisis simplement la devise d\'affichage (FCFA, € ou CAD) dans tes paramètres.',
+    a: 'Oui — c\'est même toute la force de TEKKIShop. Ta boutique sert tes deux marchés : tes clients d\'Europe paient par carte, tes clients d\'Afrique par mobile money ou à la livraison. Un seul catalogue, un seul tableau de bord.',
   },
   {
-    q: 'TekkiShop garde-t-il une partie de mes paiements ?',
-    a: 'Non. Les paiements passent directement sur ton propre compte Stripe — TekkiShop n\'est jamais intermédiaire financier.',
+    q: 'TekkiShop garde-t-il une partie de mes paiements par carte ?',
+    a: 'Non. Tes paiements Stripe vont directement sur ton compte Stripe — TekkiShop ne prélève aucune commission dessus. Tu paies ton abonnement TekkiShop et les frais standards de Stripe, rien d\'autre.',
+  },
+  {
+    q: 'Pourquoi TekkiShop plutôt que Shopify pour vendre en Europe ?',
+    a: 'Si ton marché est uniquement européen, Shopify est un excellent outil. Mais si ton business vit entre l\'Europe et l\'Afrique, TekkiShop est la seule plateforme qui gère vraiment les deux mondes à la fois : cartes bancaires via Stripe d\'un côté, mobile money et paiement à la livraison de l\'autre — sans apps à empiler ni configuration technique.',
   },
 ]
+
+function PaymentLogo({ src, alt, size = 20 }: { src: string; alt: string; size?: number }) {
+  return (
+    <span className="relative shrink-0" style={{ height: size * 0.6, width: size }}>
+      <Image src={src} alt={alt} fill className="object-contain" sizes={`${size}px`} />
+    </span>
+  )
+}
 
 export default function EuropeCanadaPage() {
   return (
@@ -55,102 +105,196 @@ export default function EuropeCanadaPage() {
       <SiteHeader />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4" style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%)' }}>
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-5 flex-wrap">
+      <section style={{ background: 'linear-gradient(180deg, #EEF0FF 0%, #ffffff 100%)' }}>
+        <div className="mx-auto max-w-6xl px-4 pt-14 pb-16">
+          <div className="grid lg:grid-cols-[1.1fr_1fr] items-center gap-12 lg:gap-14">
+            <div>
+              <div className="flex items-center gap-1.5 mb-4 text-2xl">
                 {EU_CA_COUNTRIES.map(c => (
-                  <span key={c.name} className="text-3xl">{c.flag}</span>
+                  <span key={c.name}>{c.flag}</span>
                 ))}
               </div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Nouveau · Europe & Canada</p>
+              <div className="inline-flex items-center rounded-full bg-indigo-100 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-widest text-indigo-700 mb-5">
+                Nouveau · Europe & Canada
+              </div>
               <h1
-                className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4 leading-tight"
+                className="text-[clamp(2rem,4.8vw,3.2rem)] font-bold text-gray-900 leading-[1.14] tracking-tight mb-5"
                 style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
               >
-                Tu vends depuis<br />
-                <span className="text-indigo-600">la France ou le Canada ?</span>
+                Vends <span className="text-indigo-600">en euros à Paris</span>, <span className="text-amber-600">et en FCFA à Dakar,</span> depuis la même boutique.
               </h1>
-              <p className="text-gray-600 leading-relaxed mb-7 max-w-md text-lg">
-                TEKKIShop est désormais disponible en Europe francophone et au Canada. Crée ta boutique en euros ou en dollars canadiens, et accepte les paiements par carte bancaire via Stripe.
+              <p className="text-lg text-gray-500 mb-7 max-w-lg leading-relaxed">
+                TEKKIShop est en Europe francophone et au Canada.{' '}
+                <strong className="text-gray-700">Encaisse par carte bancaire via Stripe</strong> auprès de tes clients d&apos;ici — et continue de{' '}
+                <strong className="text-gray-700">servir tes clients en Afrique par mobile money</strong>. Une seule boutique, deux mondes.
               </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  { icon: '💳', text: 'Paiements sécurisés par carte Visa / Mastercard via Stripe' },
-                  { icon: '🏦', text: 'Virements vers ton compte bancaire — automatiques' },
-                  { icon: '€', text: 'Boutique en euros (€) ou en dollars canadiens (CAD)' },
-                  { icon: '🌍', text: 'Vends aussi bien en Afrique qu\'en Europe depuis la même boutique' },
-                ].map(f => (
-                  <li key={f.text} className="flex items-start gap-3 text-sm text-gray-700">
-                    <span className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">{f.icon}</span>
-                    {f.text}
-                  </li>
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <Link
+                  href="/onboarding"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] bg-indigo-600 px-7 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-transform"
+                >
+                  Créer ma boutique en Europe
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a
+                  href="#double"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] border border-gray-200 bg-white px-7 py-4 text-base font-bold text-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-transform"
+                >
+                  Voir le double marché
+                </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-gray-600">
+                {['Boutique en € ou en $ CAD', 'Paiements sécurisés par Stripe', 'Créée en 5 minutes'].map(r => (
+                  <span key={r}><span className="text-emerald-500 font-bold">✓</span> {r}</span>
                 ))}
-              </ul>
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-md"
-              >
-                Créer ma boutique en Europe
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              </div>
             </div>
 
-            {/* Mockup carte bancaire + boutique EUR */}
-            <div className="flex-shrink-0 w-full max-w-xs">
-              <div className="rounded-3xl border border-indigo-100 bg-white shadow-xl shadow-indigo-100 overflow-hidden">
-                {/* Header boutique */}
-                <div className="bg-gradient-to-r from-indigo-600 to-sky-600 px-5 py-4">
-                  <p className="text-white/80 text-[10px] font-semibold uppercase tracking-wide mb-1">Boutique en ligne</p>
-                  <p className="text-white font-black text-base">Créations Amina Paris</p>
-                  <p className="text-white/60 text-[10px]">tekki.shop/amina-paris</p>
+            {/* Double carte de paiement — visuel signature */}
+            <div>
+              <div className="relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="rounded-2xl border border-gray-100 bg-white shadow-xl shadow-indigo-100/60 p-4">
+                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-gray-400 mb-2.5">
+                      🇫🇷 Ta cliente à Paris
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">Robe wax premium</p>
+                    <p className="text-xl font-bold text-indigo-600 my-1" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>89,00 €</p>
+                    <div className="rounded-lg bg-indigo-600 text-white text-xs font-bold text-center py-2.5 flex items-center justify-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5" /> Payer par carte
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[11px] text-gray-400">
+                      <PaymentLogo src="/logo-payments/visa.svg" alt="Visa" />
+                      <PaymentLogo src="/logo-payments/Mastercard-Logo.wine.svg" alt="Mastercard" />
+                      <span>· via Stripe</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-100 bg-white shadow-xl shadow-amber-100/60 p-4">
+                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-gray-400 mb-2.5">
+                      🇸🇳 Ta cliente à Dakar
+                    </p>
+                    <p className="text-sm font-bold text-gray-900">Robe wax premium</p>
+                    <p className="text-xl font-bold text-amber-600 my-1" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>45 000 FCFA</p>
+                    <div className="rounded-lg bg-amber-600 text-white text-xs font-bold text-center py-2.5 flex items-center justify-center gap-1.5">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white p-0.5 shrink-0">
+                        <Image src="/logo-payments/wave_1.svg" alt="Wave" width={12} height={12} className="object-contain" />
+                      </span>
+                      Payer par Wave
+                    </div>
+                    <div className="flex items-center justify-center flex-wrap gap-x-1.5 gap-y-1 mt-2.5 text-[11px] text-gray-400">
+                      <PaymentLogo src="/logo-payments/wave_1.svg" alt="Wave" /> Wave ·
+                      <PaymentLogo src="/logo-payments/om_1.svg" alt="Orange Money" /> Orange Money ·
+                      <Truck className="h-3 w-3" /> à la livraison
+                    </div>
+                  </div>
                 </div>
-                {/* Produit */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3 rounded-xl border border-gray-100 p-3">
-                    <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-lg shrink-0">👗</div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-gray-900">Robe wax premium</p>
-                      <p className="text-[11px] text-indigo-600 font-bold">89,00 €</p>
-                    </div>
-                    <button className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-white">Ajouter</button>
-                  </div>
-                  {/* Paiement Stripe */}
-                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-2">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Paiement sécurisé</p>
-                    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                      <span className="text-sm">💳</span>
-                      <span className="text-[11px] text-gray-400">4242 4242 4242 4242</span>
-                    </div>
-                    <button className="w-full rounded-lg bg-indigo-600 py-2 text-[11px] font-bold text-white">
-                      Payer 89,00 € par carte
-                    </button>
-                    <div className="flex items-center justify-center gap-1.5">
-                      <span className="text-[9px] text-gray-400">🔒 Sécurisé par</span>
-                      <span className="text-[10px] font-bold text-indigo-500">Stripe</span>
-                    </div>
-                  </div>
+
+                <div className="mt-3 sm:mt-0 sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex justify-center">
+                  <span className="rounded-full bg-[#0B1B32] text-white text-xs font-extrabold px-4 py-2 shadow-lg whitespace-nowrap">
+                    = 1 seule boutique TEKKIShop
+                  </span>
                 </div>
               </div>
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Deux clientes, deux continents, deux moyens de paiement — <strong className="text-gray-700">zéro complication pour toi.</strong>
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Comment ça marche ────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-white">
+      {/* ── Bande paiements ──────────────────────────────────────────────── */}
+      <section className="border-y border-gray-100 py-5 bg-white">
+        <div className="mx-auto max-w-4xl px-4 flex flex-wrap items-center justify-center gap-2.5">
+          {EU_PAYMENTS.map(p => (
+            <span key={p.name} className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
+              <PaymentLogo src={p.logo} alt={p.name} size={28} />
+              {p.name}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
+            Stripe
+          </span>
+          <span className="text-indigo-600 font-extrabold text-lg px-1">+</span>
+          {AF_PAYMENTS.map(p => (
+            <span key={p.name} className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
+              <PaymentLogo src={p.logo} alt={p.name} size={28} />
+              {p.name}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm font-bold text-gray-700">
+            <Truck className="h-4 w-4 text-emerald-600" /> À la livraison
+          </span>
+        </div>
+      </section>
+
+      {/* ── Double marché ────────────────────────────────────────────────── */}
+      <section id="double" className="py-24 px-4 bg-[#F7F8FF]">
         <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">C&apos;est simple</p>
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">Ce que personne d&apos;autre ne fait</p>
             <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Comment ça marche
+              Un pied ici, un pied là-bas ? <span className="text-indigo-600">Ta boutique aussi.</span>
             </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <p className="text-gray-500 text-lg mt-3">
+              Si tu vis entre deux mondes — la France et le Sénégal, la Belgique et la Côte d&apos;Ivoire, le Canada et le Mali — ton business aussi. Voici ce que ça demandait jusqu&apos;ici.
+            </p>
+          </Reveal>
+
+          <Reveal delay={100} className="grid lg:grid-cols-[1fr_1.3fr] gap-5 max-w-4xl mx-auto">
+            <div className="rounded-[20px] border border-gray-200 bg-white p-7">
+              <div className="flex items-center gap-2.5 mb-4">
+                <XCircle className="h-6 w-6 text-red-500" />
+                <h3 className="text-lg font-bold text-gray-900">Sans TEKKIShop</h3>
+              </div>
+              {SANS_ITEMS.map((t, i) => (
+                <div key={t} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-black/10' : ''}`}>
+                  <XCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-gray-600 leading-snug">{t}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[20px] p-7 text-white shadow-2xl" style={{ backgroundColor: '#0B1B32' }}>
+              <div className="flex items-center gap-2.5 mb-4">
+                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                <h3 className="text-lg font-bold">Avec TEKKIShop</h3>
+              </div>
+              {AVEC_ITEMS.map((node, i) => (
+                <div key={i} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-white/15' : ''}`}>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-gray-200 leading-snug">{node}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={150} className="text-center mt-9">
+            <p className="text-lg font-semibold text-gray-900 max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
+              Les plateformes occidentales connaissent l&apos;Europe.{' '}
+              <span className="text-indigo-600">Nous, on connaît les deux rives.</span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Comment ça marche ────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-white">
+        <div className="mx-auto max-w-5xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">C&apos;est simple</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              4 étapes, et tu encaisses en euros.
+            </h2>
+          </Reveal>
+          <Reveal delay={100} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {ETAPES.map(e => (
               <div key={e.num} className="rounded-3xl border border-indigo-100 bg-indigo-50/30 p-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white text-sm font-black mb-4">
@@ -160,70 +304,120 @@ export default function EuropeCanadaPage() {
                 <p className="text-sm text-gray-500 leading-relaxed">{e.texte}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── Pourquoi Stripe ──────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-indigo-50/40">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 mb-5">
-            <ShieldCheck className="h-6 w-6 text-white" />
-          </div>
-          <h2
-            className="text-2xl sm:text-3xl font-black text-gray-900 mb-4"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            TekkiShop ne touche jamais à ton argent.
-          </h2>
-          <p className="text-gray-600 leading-relaxed max-w-xl mx-auto">
-            Tu connectes ton propre compte Stripe — le standard de paiement utilisé par des millions de commerçants dans le monde. Les paiements de tes clients vont directement dessus. TekkiShop n&apos;est jamais intermédiaire financier : ton argent t&apos;appartient, à chaque instant.
-          </p>
-        </div>
-      </section>
-
-      {/* ── Exemples ─────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-4 bg-white">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Exemples</p>
+      {/* ── Confiance / Stripe ───────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-[#F7F8FF]">
+        <div className="mx-auto max-w-3xl">
+          <Reveal className="text-center rounded-3xl border border-gray-200 bg-white p-10 sm:p-14 shadow-sm">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 mb-5">
+              <ShieldCheck className="h-7 w-7 text-white" />
+            </div>
             <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
+              className="text-[clamp(1.6rem,3.4vw,2.2rem)] font-bold text-gray-900 mb-4"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
-              Qui vend depuis l&apos;Europe et le Canada
+              TEKKIShop ne touche jamais à ton argent.
             </h2>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-5">
-            {USAGES.map(u => (
-              <div key={u.titre} className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm">
-                <div className="text-3xl mb-3">{u.icon}</div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1">{u.titre}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{u.texte}</p>
+            <p className="text-gray-500 leading-relaxed max-w-xl mx-auto">
+              Tu connectes <strong className="text-gray-700">ton propre compte Stripe</strong> — le standard de paiement utilisé par des millions de commerçants dans le monde. Les paiements de tes clients vont <strong className="text-gray-700">directement dessus</strong>. TEKKIShop n&apos;est jamais intermédiaire financier : ton argent t&apos;appartient, à chaque instant.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2.5 mt-7">
+              {['Ton compte Stripe, ton argent', 'Virements automatiques', 'Paiements sécurisés 3D Secure'].map(p => (
+                <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">
+                  <Check className="h-3.5 w-3.5" /> {p}
+                </span>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Personas ─────────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-white">
+        <div className="mx-auto max-w-5xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">Qui vend depuis l&apos;Europe et le Canada</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Des entrepreneurs entre deux mondes. <span className="text-indigo-600">Comme toi.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={100} className="grid sm:grid-cols-3 gap-5">
+            {PERSONAS.map(p => (
+              <div key={p.titre} className="rounded-2xl border border-gray-200 bg-white p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                <p.Icon className="h-8 w-8 text-indigo-600" />
+                <h3 className="text-base font-bold text-gray-900 mt-3 mb-1.5">{p.titre}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{p.texte}</p>
+                <span className="inline-block mt-3 text-xs font-bold text-indigo-700 bg-indigo-100 rounded-full px-3 py-1.5">{p.ex}</span>
               </div>
             ))}
-          </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Ce que ça coûte ──────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-[#F7F8FF]">
+        <div className="mx-auto max-w-5xl">
+          <Reveal className="text-center mb-14 max-w-[62ch] mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">Transparence totale</p>
+            <h2
+              className="text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold text-gray-900"
+              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
+            >
+              Ce que ça te coûte. <span className="text-indigo-600">Et rien de plus.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={100} className="grid lg:grid-cols-2 gap-5 max-w-3xl mx-auto">
+            <div className="rounded-[20px] border border-gray-200 bg-white p-8">
+              <h3 className="text-base font-bold text-gray-900 mb-3">Commission TEKKIShop sur tes ventes Stripe</h3>
+              <p className="text-4xl font-bold text-emerald-600" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>0 %</p>
+              <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                Tes paiements par carte vont sur ton compte Stripe. Tu paies uniquement les frais standards de Stripe (comme sur n&apos;importe quelle plateforme) et ton abonnement TEKKIShop. C&apos;est tout.
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-gray-200 bg-white p-8">
+              <h3 className="text-base font-bold text-gray-900 mb-3">Ton abonnement inclut tout</h3>
+              {[
+                'Ta boutique en € ou CAD, format mobile',
+                'Produits physiques et digitaux illimités selon ton plan',
+                'Collecte automatique des avis clients',
+                'Ton marché Afrique inclus, sans supplément',
+                'Support en français, sur WhatsApp',
+              ].map((t, i) => (
+                <div key={t} className={`flex items-start gap-2.5 py-2 ${i !== 0 ? 'border-t border-dashed border-gray-200' : ''}`}>
+                  <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-gray-600 leading-snug">{t}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="bg-gray-50/60 py-16 sm:py-20 px-4">
+      <section className="bg-gray-50/60 py-24 px-4">
         <div className="mx-auto max-w-2xl">
-          <div className="text-center mb-10">
+          <Reveal className="text-center mb-10">
             <h2
-              className="text-2xl sm:text-3xl font-black text-gray-900"
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900"
               style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
             >
               Questions fréquentes
             </h2>
-          </div>
+          </Reveal>
           <MiniFAQ items={FAQS} />
         </div>
       </section>
 
       <FinalCTA
-        title="Prêt à vendre depuis l'Europe ou le Canada ?"
-        subtitle="Crée ta boutique en euros ou en dollars canadiens et connecte ton compte Stripe en quelques minutes."
+        title="Ton business vit entre deux mondes. Ta boutique est prête à faire pareil."
+        subtitle="Crée ta boutique en euros ou en dollars canadiens, connecte ton compte Stripe, et vends des deux côtés dès aujourd'hui."
+        reassurance={['Boutique gratuite à créer', 'Pas besoin de carte bancaire', 'Support en français']}
       />
 
       <WhatsAppButton />
