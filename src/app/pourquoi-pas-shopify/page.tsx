@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Quote, Receipt, X, Check } from 'lucide-react'
 import { SiteHeader } from '@/components/landing/SiteHeader'
 import { SiteFooter } from '@/components/landing/SiteFooter'
@@ -20,12 +21,12 @@ const CREDS = [
 ]
 
 const TABLE_ROWS = [
-  { theme: "S'inscrire", sub: 'Le premier obstacle', sh: "Carte Visa/Mastercard exigée dès l'inscription", tk: 'Ton numéro WhatsApp suffit — sans carte bancaire' },
+  { theme: "S'inscrire", sub: 'Le premier obstacle', sh: 'E-mail et mot de passe — carte bancaire demandée ensuite pour activer les paiements', tk: 'Ton numéro WhatsApp suffit — sans carte bancaire' },
   { theme: 'Encaisser tes clients', sub: 'Wave, Orange Money, MTN, Moov', sh: 'Aucun paiement mobile money africain', tk: 'Intégrés selon ton pays, dès le 1er jour' },
   { theme: 'Le paiement à la livraison', sub: 'La norme ici', sh: 'Statuts à mettre à jour à la main, cash non réconcilié', tk: 'Confirmation du livreur en 1 clic, paiements comptés automatiquement' },
-  { theme: 'Tes livreurs', sub: 'Livreurs indépendants', sh: "Aucun outil — appels et dictée d'adresses", tk: 'Commande envoyée sur son WhatsApp en 1 clic, avec tout' },
+  { theme: 'Tes livreurs', sub: 'Livreurs indépendants', sh: "Aucun outil — appels et dictée d'adresses", tk: 'Commande envoyée au livreur en 1 clic sur WhatsApp' },
   { theme: 'La langue', sub: 'Toi et ton équipe', sh: 'Interface et support essentiellement en anglais', tk: '100 % en français, pensé pour les marchands africains' },
-  { theme: 'Le prix', sub: 'Et la devise', sh: '≥ 29 $/mois (≈ 18 000 FCFA), facturé en dollars', tk: 'Dès 2 900 FCFA/mois — en FCFA, euros ou CAD' },
+  { theme: 'Le prix', sub: 'Et la devise', sh: '27 $/mois (≈ 17 000 FCFA), facturé en dollars', tk: 'Dès 2 900 FCFA/mois — en FCFA, euros ou CAD' },
   { theme: 'WhatsApp', sub: 'Là où sont tes clients', sh: "Rien d'intégré — apps tierces payantes", tk: 'Notifications automatiques clients, vendeur et livreur incluses' },
   { theme: 'Comprendre tes chiffres', sub: 'Marges, bénéfices, tendances', sh: 'Tableaux de bord complexes, en anglais', tk: 'Assistant IA intégré : pose ta question, il répond simplement' },
   { theme: 'Le support', sub: 'Quand tu es bloqué', sh: "Pas de support francophone dédié à l'Afrique", tk: 'Des humains, en français, sur WhatsApp' },
@@ -47,7 +48,7 @@ const HONNETE = {
 const FAQS = [
   {
     q: 'Est-ce vraiment moins cher que Shopify ?',
-    a: "Oui, nettement — surtout une fois Shopify équipé des apps nécessaires pour l'Afrique (WhatsApp, livraison, suivi). Shopify Basic seul coûte environ 18 000 FCFA/mois, facturé en dollars. TekkiShop démarre à 2 900 FCFA/mois, tout inclus, payable par mobile money.",
+    a: "Oui, nettement — surtout une fois Shopify équipé des apps nécessaires pour l'Afrique (WhatsApp, livraison, suivi). Shopify Basic seul coûte environ 17 000 FCFA/mois, facturé en dollars. TekkiShop démarre à 2 900 FCFA/mois, tout inclus, payable par mobile money.",
   },
   {
     q: 'TekkiShop a-t-il autant de fonctionnalités que Shopify ?',
@@ -118,11 +119,11 @@ export default function PourquoiPasShopifyPage() {
               <p>Chaque fonctionnalité de TekkiShop est née d&apos;une de ces soirées-là.</p>
             </div>
             <div className="flex items-center gap-3.5 mt-7 pt-6 border-t border-white/10">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                IK
+              <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden">
+                <Image src="/avatars/ibuka.jpg" alt="Ibuka Ndjoli" fill className="object-cover" sizes="48px" />
               </div>
               <div>
-                <p className="font-bold">Ibuka Kinkela</p>
+                <p className="font-bold">Ibuka Ndjoli</p>
                 <p className="text-xs text-gray-400">Fondateur de TekkiShop · 11 ans d&apos;e-commerce entre l&apos;Europe et l&apos;Afrique</p>
               </div>
             </div>
@@ -196,7 +197,7 @@ export default function PourquoiPasShopifyPage() {
                 <Receipt className="h-5 w-5 text-red-500" /> Shopify, équipé pour l&apos;Afrique
               </h3>
               {[
-                { l: 'Abonnement Basic', s: 'Facturé en dollars', v: '≈ 18 000 FCFA' },
+                { l: 'Abonnement Basic', s: 'Facturé en dollars', v: '≈ 17 000 FCFA' },
                 { l: 'App notifications WhatsApp', s: 'Application tierce payante', v: '≈ 6 000 FCFA' },
                 { l: 'App paiement à la livraison / suivi', s: 'Application tierce payante', v: '≈ 5 000 FCFA' },
                 { l: 'Paiements Wave / Orange Money', s: 'Toujours pas disponibles', v: '—' },
@@ -207,7 +208,7 @@ export default function PourquoiPasShopifyPage() {
                 </div>
               ))}
               <div className="flex justify-between mt-auto pt-4 font-bold text-lg text-red-600" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                <span>Par mois</span><span>≈ 29 000 FCFA</span>
+                <span>Par mois</span><span>≈ 28 000 FCFA</span>
               </div>
             </div>
 
