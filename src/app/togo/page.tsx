@@ -22,8 +22,8 @@ import type { Metadata } from 'next'
 export const revalidate = 3600
 
 const TOGO_PAYMENT_LOGOS: PaymentLogo[] = [
-  { src: '/logo-payments/moov_1.svg',   name: 'Flooz' },
-  { src: '/logo-payments/togocell.jpg', name: 'T-Money' },
+  { src: '/logo-payments/flooz.png',  name: 'Flooz' },
+  { src: '/logo-payments/tmoney.png', name: 'T-Money' },
   { icon: '🚚', name: 'À la livraison' },
 ]
 

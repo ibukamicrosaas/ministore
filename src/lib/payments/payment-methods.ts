@@ -40,8 +40,8 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
     { id: 'mobicash',     label: 'Mobicash',      description: 'Paiement push mobile',        icon: '/logo-payments/mobicash.png' },
   ],
   TG: [
-    { id: 'moov_money',   label: 'Flooz',    description: 'Flooz (Moov Togo) — push sur ton téléphone',  icon: '/logo-payments/moov_1.svg' },
-    { id: 'togocell',     label: 'T-Money',  description: 'T-Money (Togocel) — push sur ton téléphone',  icon: '/logo-payments/togocell.jpg' },
+    { id: 'moov_money',   label: 'Flooz',    description: 'Flooz (Moov Togo) — push sur ton téléphone',  icon: '/logo-payments/flooz.png' },
+    { id: 'togocell',     label: 'T-Money',  description: 'T-Money (Togocel) — push sur ton téléphone',  icon: '/logo-payments/tmoney.png' },
   ],
   BJ: [
     { id: 'mtn_money',    label: 'MTN Money',     description: 'Paiement push mobile',        icon: '/logo-payments/mtn_1.svg' },
