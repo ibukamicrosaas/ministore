@@ -5,6 +5,8 @@ import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: `Connexion — ${APP_NAME}`,
 }

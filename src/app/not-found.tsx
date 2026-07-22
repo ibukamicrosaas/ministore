@@ -58,7 +58,7 @@ export default function NotFound() {
 
         {/* CTA principal */}
         <Link
-          href="/"
+          href="/start"
           className="inline-flex items-center gap-3 rounded-2xl bg-sky-500 px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-sky-600 active:scale-[0.98] transition-all mb-4"
         >
           <ShoppingBag className="h-5 w-5" />
