@@ -2,7 +2,15 @@
 
 import { Star } from 'lucide-react'
 
-const TESTIMONIALS = [
+type Testimonial = {
+  quote: string
+  name: string
+  role: string
+  initial: string
+  color: string
+}
+
+const TESTIMONIALS: Testimonial[] = [
   {
     quote: "Avant TekkiShop, je prenais les commandes sur WhatsApp et je perdais la moitié. Maintenant mes clients commandent sur mon lien et je vois tout en temps réel.",
     name: "Aminata S.",
@@ -47,7 +55,7 @@ const TESTIMONIALS = [
   },
 ]
 
-function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
+function TestimonialCard({ t }: { t: Testimonial }) {
   return (
     <div
       className="shrink-0 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 sm:p-6 hover:border-white/20 transition-colors"
@@ -75,8 +83,9 @@ function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
   )
 }
 
-export function TestimonialsCarousel() {
-  const doubled = [...TESTIMONIALS, ...TESTIMONIALS]
+export function TestimonialsCarousel({ testimonials }: { testimonials?: Testimonial[] } = {}) {
+  const data = testimonials ?? TESTIMONIALS
+  const doubled = [...data, ...data]
 
   return (
     <>

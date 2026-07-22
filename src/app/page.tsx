@@ -166,7 +166,7 @@ export default async function LandingPage() {
             {/* CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-6">
               <Link
-                href="/onboarding"
+                href="/start"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-7 py-4 text-base font-bold text-white shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-transform"
                 style={{ backgroundColor: 'var(--color-primary)', boxShadow: '0 8px 24px rgba(46,144,250,.35)' }}
               >
@@ -388,7 +388,7 @@ export default async function LandingPage() {
                 <strong className="text-gray-900">{shopsCount}+ boutiques</strong> vendent déjà avec TekkiShop
               </p>
               <Link
-                href="/onboarding"
+                href="/start"
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-white hover:opacity-90 transition-opacity shadow-md"
               >
                 Rejoins-les maintenant

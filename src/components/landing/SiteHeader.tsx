@@ -35,7 +35,7 @@ export async function SiteHeader() {
                 Connexion
               </Link>
               <Link
-                href="/onboarding"
+                href="/start"
                 className="flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-3 sm:px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-sm"
               >
                 <span className="sm:hidden">Commencer</span>

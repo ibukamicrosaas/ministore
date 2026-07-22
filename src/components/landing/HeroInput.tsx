@@ -15,7 +15,7 @@ function toSlug(value: string): string {
     .slice(0, 40)
 }
 
-export function HeroInput() {
+export function HeroInput({ redirectTo = '/onboarding' }: { redirectTo?: string }) {
   const router = useRouter()
   const [value, setValue] = useState('')
   const [focused, setFocused] = useState(false)
@@ -28,7 +28,7 @@ export function HeroInput() {
     const params = new URLSearchParams()
     if (value.trim()) params.set('name', value.trim())
     if (slug) params.set('slug', slug)
-    router.push(`/onboarding?${params.toString()}`)
+    router.push(`${redirectTo}?${params.toString()}`)
   }
 
   return (
