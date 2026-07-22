@@ -2,7 +2,9 @@
 
 import Image from 'next/image'
 
-const LOGOS: { src?: string; icon?: string; name: string }[] = [
+export type PaymentLogo = { src?: string; icon?: string; name: string }
+
+const DEFAULT_LOGOS: PaymentLogo[] = [
   { src: '/logo-payments/wave_1.svg', name: 'Wave' },
   { src: '/logo-payments/maxit.webp', name: 'MaxIt' },
   { src: '/logo-payments/om_1.svg', name: 'Orange Money' },
@@ -26,7 +28,8 @@ function LogoBadge({ src, icon, name }: { src?: string; icon?: string; name: str
   )
 }
 
-export function PaymentScroll() {
+export function PaymentScroll({ logos }: { logos?: PaymentLogo[] } = {}) {
+  const LOGOS = logos ?? DEFAULT_LOGOS
   const doubled = [...LOGOS, ...LOGOS]
 
   return (

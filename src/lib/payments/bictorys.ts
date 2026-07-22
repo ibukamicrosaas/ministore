@@ -278,8 +278,8 @@ export function getPaymentMethodsByCountry(country: BictorysCountry): PaymentMet
       { type: 'mobicash',     label: 'Mobicash',      requiresOtp: false, description: 'Paiement push sur votre téléphone' },
     ],
     TG: [
-      { type: 'moov',         label: 'Moov Money',    requiresOtp: false, description: 'Paiement push sur votre téléphone' },
-      { type: 'togocell',     label: 'Togocell',      requiresOtp: false, description: 'Paiement push sur votre téléphone' },
+      { type: 'moov',         label: 'Flooz',    requiresOtp: false, description: 'Flooz (Moov Togo) — push sur votre téléphone' },
+      { type: 'togocell',     label: 'T-Money',  requiresOtp: false, description: 'T-Money (Togocel) — push sur votre téléphone' },
     ],
     BJ: [
       { type: 'mtn_money',    label: 'MTN Money',     requiresOtp: false, description: 'Paiement push sur votre téléphone' },

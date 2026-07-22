@@ -69,7 +69,7 @@ export const PAYS_DATA: Record<QuizPays, PaysData> = {
   SN: { name: 'Sénégal',       flag: '🇸🇳', dialCode: '+221', shopCountry: 'SN', paieText: 'Wave et MaxIt',                            badges: ['Wave', 'MaxIt'] },
   CI: { name: "Côte d'Ivoire", flag: '🇨🇮', dialCode: '+225', shopCountry: 'CI', paieText: 'Wave, Orange Money, MTN Money et Moov',    badges: ['Wave', 'Orange Money', 'MTN Money', 'Moov'] },
   BJ: { name: 'Bénin',         flag: '🇧🇯', dialCode: '+229', shopCountry: 'BJ', paieText: 'MTN Money et Moov Money',                  badges: ['MTN Money', 'Moov Money'] },
-  TG: { name: 'Togo',          flag: '🇹🇬', dialCode: '+228', shopCountry: 'TG', paieText: 'Moov Money et Togocell',                   badges: ['Moov Money', 'Togocell'] },
+  TG: { name: 'Togo',          flag: '🇹🇬', dialCode: '+228', shopCountry: 'TG', paieText: 'Flooz et T-Money',                         badges: ['Flooz', 'T-Money'] },
   ML: { name: 'Mali',          flag: '🇲🇱', dialCode: '+223', shopCountry: 'ML', paieText: 'Orange Money et Mobicash',                 badges: ['Orange Money', 'Mobicash'] },
   BF: { name: 'Burkina Faso',  flag: '🇧🇫', dialCode: '+226', shopCountry: 'BF', paieText: 'Wave, Orange Money et Moov Money',         badges: ['Wave', 'Orange Money', 'Moov Money'] },
 }

@@ -6,7 +6,7 @@ import {
   Smartphone, TrendingUp, Zap, Users, Sparkles,
   Link2, Wallet, Truck, Star,
 } from 'lucide-react'
-import { PaymentScroll } from '@/components/landing/PaymentScroll'
+import { PaymentScroll, type PaymentLogo } from '@/components/landing/PaymentScroll'
 import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
 import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup'
 import { OrderFlowPhoneMockup } from '@/components/landing/OrderFlowPhoneMockup'
@@ -21,10 +21,16 @@ import type { Metadata } from 'next'
 
 export const revalidate = 3600
 
+const TOGO_PAYMENT_LOGOS: PaymentLogo[] = [
+  { src: '/logo-payments/moov_1.svg',   name: 'Flooz' },
+  { src: '/logo-payments/togocell.jpg', name: 'T-Money' },
+  { icon: '🚚', name: 'À la livraison' },
+]
+
 export const metadata: Metadata = {
   title: 'TEKKIShop Togo — Crée ta boutique en ligne à Lomé en 5 minutes',
   description:
-    'Vends en ligne depuis Lomé, Kara ou Sokodé. Tes clients paient par Flooz, T-Money ou Wave. Tu reçois l\'argent sur ton téléphone. Boutique en ligne en 5 minutes, sans développeur.',
+    'Vends en ligne depuis Lomé, Kara ou Sokodé. Tes clients paient par Flooz ou T-Money. Tu reçois l\'argent sur ton téléphone. Boutique en ligne en 5 minutes, sans développeur.',
   openGraph: {
     title: 'TEKKIShop Togo — Boutique en ligne en 5 minutes',
     description: 'La façon la plus simple de vendre en ligne au Togo.',
@@ -75,8 +81,8 @@ const FEATURES = [
   },
   {
     icon: Wallet,
-    title: 'Flooz, T-Money & Wave intégrés',
-    description: 'Les paiements mobiles togolais sont déjà disponibles. Tes clients paient comme ils le désirent — Flooz, T-Money, Wave — et tu retires ton argent instantanément.',
+    title: 'Flooz & T-Money intégrés',
+    description: 'Les paiements mobiles togolais sont déjà disponibles. Tes clients paient par Flooz (Moov) ou T-Money (Togocel), et tu retires ton argent instantanément.',
     color: 'bg-emerald-500',
   },
   {
@@ -232,7 +238,7 @@ export default async function TogoPage() {
               Tu vends à Lomé, Kara, Sokodé ou ailleurs ?{' '}
               <strong className="text-gray-700">Tes clients commandent seuls</strong>,
               même quand tu dors, paient par{' '}
-              <strong className="text-gray-700">Flooz, T-Money ou Wave</strong>, et{' '}
+              <strong className="text-gray-700">Flooz ou T-Money</strong>, et{' '}
               <strong className="text-gray-700">tu retires ton argent directement sur ton téléphone.</strong>
             </p>
 
@@ -362,9 +368,9 @@ export default async function TogoPage() {
       {/* ── Paiements ─────────────────────────────────────────────────────── */}
       <section className="border-y border-gray-100 py-8 bg-gray-50/60">
         <p className="text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-5">
-          Tes clients paient comme ils veulent — Flooz, T-Money, Wave et plus :
+          Tes clients paient comme ils veulent — Flooz, T-Money, paiement à la livraison :
         </p>
-        <PaymentScroll />
+        <PaymentScroll logos={TOGO_PAYMENT_LOGOS} />
       </section>
 
       {/* ── Avant / Après ─────────────────────────────────────────────────── */}
@@ -644,7 +650,7 @@ export default async function TogoPage() {
             Prêt à vendre tes produits en ligne au Togo ?
           </h2>
           <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto leading-relaxed">
-            Ta boutique prête en 5 minutes. Tes clients commandent et paient par Flooz, T-Money ou Wave.
+            Ta boutique prête en 5 minutes. Tes clients commandent et paient par Flooz ou T-Money.
           </p>
 
           {/* Pays Togo + drapeaux */}

@@ -127,8 +127,8 @@ export const PAYOUT_METHODS_BY_COUNTRY: Record<string, PayoutMethod[]> = {
     { label: 'Moov Money',       key: 'moov', col: 'payout_om_number'   },
   ],
   TG: [
-    { label: 'TMoney (Togocel)', key: 'tmoney', col: 'payout_wave_number' },
-    { label: 'Flooz (Moov)',     key: 'flooz',  col: 'payout_om_number'   },
+    { label: 'T-Money', key: 'tmoney', col: 'payout_wave_number' },
+    { label: 'Flooz',   key: 'flooz',  col: 'payout_om_number'   },
   ],
   CM: [
     { label: 'MTN Mobile Money', key: 'mtn',         col: 'payout_wave_number' },

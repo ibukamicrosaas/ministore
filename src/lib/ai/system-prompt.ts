@@ -64,7 +64,7 @@ MOYENS DE PAIEMENT DISPONIBLES PAR PAYS :
 - Côte d'Ivoire : Wave, Orange Money, MTN Money, Moov Money
 - Burkina Faso : Wave, Orange Money, Moov Money
 - Mali : Wave, Orange Money
-- Togo : Moov Money (Flooz)
+- Togo : Flooz (Moov Togo), T-Money (Togocel)
 - Bénin : MTN Money, Moov Money
 
 REVERSEMENTS (PAYOUTS) :
