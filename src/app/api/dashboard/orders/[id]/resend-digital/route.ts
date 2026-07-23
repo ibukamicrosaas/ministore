@@ -47,15 +47,13 @@ export async function POST(
   // Récupérer les produits digitaux de la commande
   const { data: orderItems } = await (supabase as any)
     .from('order_items')
-    .select('product_id, products(product_type, digital_file_path, digital_file_name)')
+    .select('product_id, products(product_type, digital_file_name)')
     .eq('order_id', orderId)
 
   const digitalItems = ((orderItems ?? []) as Array<{
     product_id: string
-    products: { product_type: string | null; digital_file_path: string | null; digital_file_name: string | null } | null
-  }>).filter(item =>
-    item.products?.product_type === 'digital' || !!item.products?.digital_file_path
-  )
+    products: { product_type: string | null; digital_file_name: string | null } | null
+  }>).filter(item => item.products?.product_type === 'digital')
 
   if (digitalItems.length === 0) {
     return NextResponse.json({ error: 'Aucun produit digital dans cette commande' }, { status: 400 })

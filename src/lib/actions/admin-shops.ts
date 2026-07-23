@@ -131,8 +131,6 @@ export async function resetUserPin(
     return { error: 'Utilisateur Auth introuvable — contactez le support technique.' }
   }
 
-  console.log('[resetUserPin] Mise à jour PIN pour', authData.user.email, '| shop:', shopId)
-
   const { error: updateError } = await admin.auth.admin.updateUserById(
     profile.id,
     { password: newPin },
@@ -142,8 +140,6 @@ export async function resetUserPin(
     console.error('[resetUserPin] updateUserById error:', updateError.message, { userId: profile.id })
     return { error: `Échec de la mise à jour : ${updateError.message}` }
   }
-
-  console.log('[resetUserPin] ✅ PIN réinitialisé pour', authData.user.email)
 
   // Masquer le numéro pour l'afficher dans l'UI (ex: +221 77 ***45 67 → +221 77 ***)
   const phone = (profile as { id: string; phone: string | null }).phone ?? authData.user.email ?? ''
