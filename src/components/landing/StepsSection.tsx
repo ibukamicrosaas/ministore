@@ -3,33 +3,19 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useInView } from '@/hooks/useInView'
+import type { StepsConfig } from '@/data/country-configs'
 
-const MARKET_CONFIG = {
-  default: {
-    boutiqueName:     'Keur Mode Dakar',
-    phone:            '+221 77 000 00 00',
-    slug:             'keur-mode',
-    pay1:             { method: 'Wave',    logo: '/logo-payments/wave_1.svg', color: 'text-blue-600'  },
-    pay2:             { method: 'MaxIt',   logo: '/logo-payments/maxit.webp', color: 'text-orange-500' },
-    step4PayText:     'Wave, Orange Money, ou à la livraison.',
-    step4Bullets:     ['Wave, Orange Money, Maxit', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'],
-  },
-  TG: {
-    boutiqueName:     'Abla Mode Lomé',
-    phone:            '+228 90 00 00 00',
-    slug:             'abla-mode',
-    pay1:             { method: 'Flooz',   logo: '/logo-payments/flooz.png',   color: 'text-blue-700'  },
-    pay2:             { method: 'T-Money', logo: '/logo-payments/tmoney.png',   color: 'text-green-600' },
-    step4PayText:     'Flooz, T-Money, ou à la livraison.',
-    step4Bullets:     ['Flooz (Moov Togo), T-Money (Togocel)', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'],
-  },
-} satisfies Record<string, object>
+const DEFAULT_CONFIG: StepsConfig = {
+  boutiqueName:  'Keur Mode Dakar',
+  phone:         '+221 77 000 00 00',
+  slug:          'keur-mode',
+  pay1:          { method: 'Wave',  logo: '/logo-payments/wave_1.svg', color: 'text-blue-600'  },
+  pay2:          { method: 'MaxIt', logo: '/logo-payments/maxit.webp', color: 'text-orange-500' },
+  step4PayText:  'Wave, Orange Money, ou à la livraison.',
+  step4Bullets:  ['Wave, Orange Money, Maxit', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'],
+}
 
-type Market = keyof typeof MARKET_CONFIG
-type Config = typeof MARKET_CONFIG['default']
-
-export function StepsSection({ market }: { market?: Market } = {}) {
-  const cfg: Config = market && market in MARKET_CONFIG ? MARKET_CONFIG[market] : MARKET_CONFIG.default
+export function StepsSection({ config: cfg = DEFAULT_CONFIG }: { config?: StepsConfig } = {}) {
 
   return (
     <section id="comment" className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%)' }}>
@@ -369,7 +355,7 @@ function useCountUp(target: number, inView: boolean, duration = 1300) {
   return value
 }
 
-function Step4Illustration({ pay1, pay2 }: { pay1: Config['pay1']; pay2: Config['pay2'] }) {
+function Step4Illustration({ pay1, pay2 }: { pay1: StepsConfig['pay1']; pay2: StepsConfig['pay2'] }) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const today = useCountUp(47500, inView, 1300)
   const month = useCountUp(312000, inView, 1700)

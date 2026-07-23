@@ -2,33 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { ChevronLeft, Truck, Phone, CheckCircle2, Share2 } from 'lucide-react'
+import type { OrderFlowConfig } from '@/data/country-configs'
 
 const SCREEN_DURATION = 3600
 const PRIMARY = '#2E90FA'
 
-const MOCKUP_CONFIG = {
-  default: {
-    boutiqueName:    'Keur Mode Dakar',
-    initial:         'K',
-    slug:            'keur-mode-dakar',
-    customerName:    'Aïcha Ndiaye',
-    address:         'Sacré-Cœur 3, Dakar',
-    delivererPhone:  '+221 77 000 00 00',
-  },
-  TG: {
-    boutiqueName:    'Abla Mode Lomé',
-    initial:         'A',
-    slug:            'abla-mode',
-    customerName:    'Yawa Agbeko',
-    address:         'Tokoin, Lomé',
-    delivererPhone:  '+228 90 00 00 00',
-  },
-} satisfies Record<string, object>
+const DEFAULT_CONFIG: OrderFlowConfig = {
+  boutiqueName:   'Keur Mode Dakar',
+  initial:        'K',
+  slug:           'keur-mode-dakar',
+  customerName:   'Aïcha Ndiaye',
+  address:        'Sacré-Cœur 3, Dakar',
+  delivererPhone: '+221 77 000 00 00',
+}
 
-type Market = keyof typeof MOCKUP_CONFIG
-
-export function OrderFlowPhoneMockup({ market }: { market?: Market } = {}) {
-  const cfg = market && market in MOCKUP_CONFIG ? MOCKUP_CONFIG[market] : MOCKUP_CONFIG.default
+export function OrderFlowPhoneMockup({ config: cfg = DEFAULT_CONFIG }: { config?: OrderFlowConfig } = {}) {
   const [screen, setScreen] = useState(0)
 
   useEffect(() => {

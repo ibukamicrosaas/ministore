@@ -11,17 +11,19 @@ import {
   Bell,
   ArrowLeft,
   Bot,
+  Globe,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
 const NAV = [
-  { href: '/admin',               label: 'Vue d\'ensemble',   icon: LayoutDashboard },
-  { href: '/admin/analytics',     label: 'Analytics',         icon: TrendingUp },
-  { href: '/admin/shops',         label: 'Boutiques',         icon: Building2 },
-  { href: '/admin/payments',      label: 'Paiements',         icon: CreditCard },
-  { href: '/admin/payouts',       label: 'Reversements',      icon: Wallet },
-  { href: '/admin/notifications', label: 'Notifications',     icon: Bell },
-  { href: '/admin/ai-expert',     label: 'Assistant IA',      icon: Bot },
+  { href: '/admin',                  label: 'Vue d\'ensemble',  icon: LayoutDashboard },
+  { href: '/admin/analytics',        label: 'Analytics',        icon: TrendingUp },
+  { href: '/admin/shops',            label: 'Boutiques',        icon: Building2 },
+  { href: '/admin/payments',         label: 'Paiements',        icon: CreditCard },
+  { href: '/admin/payouts',          label: 'Reversements',     icon: Wallet },
+  { href: '/admin/notifications',    label: 'Notifications',    icon: Bell },
+  { href: '/admin/country-managers', label: 'Country Managers', icon: Globe },
+  { href: '/admin/ai-expert',        label: 'Assistant IA',     icon: Bot },
 ]
 
 export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }) {
