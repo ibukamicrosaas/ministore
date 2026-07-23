@@ -6,7 +6,29 @@ import { ChevronLeft, Truck, Phone, CheckCircle2, Share2 } from 'lucide-react'
 const SCREEN_DURATION = 3600
 const PRIMARY = '#2E90FA'
 
-export function OrderFlowPhoneMockup() {
+const MOCKUP_CONFIG = {
+  default: {
+    boutiqueName:    'Keur Mode Dakar',
+    initial:         'K',
+    slug:            'keur-mode-dakar',
+    customerName:    'Aïcha Ndiaye',
+    address:         'Sacré-Cœur 3, Dakar',
+    delivererPhone:  '+221 77 000 00 00',
+  },
+  TG: {
+    boutiqueName:    'Abla Mode Lomé',
+    initial:         'A',
+    slug:            'abla-mode',
+    customerName:    'Yawa Agbeko',
+    address:         'Tokoin, Lomé',
+    delivererPhone:  '+228 90 00 00 00',
+  },
+} satisfies Record<string, object>
+
+type Market = keyof typeof MOCKUP_CONFIG
+
+export function OrderFlowPhoneMockup({ market }: { market?: Market } = {}) {
+  const cfg = market && market in MOCKUP_CONFIG ? MOCKUP_CONFIG[market] : MOCKUP_CONFIG.default
   const [screen, setScreen] = useState(0)
 
   useEffect(() => {
@@ -46,7 +68,7 @@ export function OrderFlowPhoneMockup() {
           <Screen active={screen === 0}>
             <div className="pt-8 px-3.5">
               <p className="text-[8px] text-gray-400 mb-0.5">Aujourd&apos;hui</p>
-              <p className="text-[11px] font-bold text-gray-900 mb-3">Bonsoir, Keur Mode Dakar</p>
+              <p className="text-[11px] font-bold text-gray-900 mb-3">Bonsoir, {cfg.boutiqueName}</p>
 
               <div className="rounded-xl p-3 mb-2.5" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #175CD3 100%)` }}>
                 <p className="text-[8px] text-white/70">Ventes — Aujourd&apos;hui · 4 ventes</p>
@@ -69,13 +91,13 @@ export function OrderFlowPhoneMockup() {
                   <Share2 className="h-3 w-3" style={{ color: PRIMARY }} />
                   <p className="text-[8px] font-bold text-gray-700">Lien de ta boutique</p>
                 </div>
-                <p className="text-[7px] text-gray-400 truncate">tekki.shop/keur-mode-dakar</p>
+                <p className="text-[7px] text-gray-400 truncate">tekki.shop/{cfg.slug}</p>
               </div>
 
               <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Commandes en cours</p>
               <div className="rounded-lg border border-gray-100 bg-white p-2 flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-semibold text-gray-800">Aïcha Ndiaye</p>
+                  <p className="text-[9px] font-semibold text-gray-800">{cfg.customerName}</p>
                   <p className="text-[7px] text-gray-400">2 articles</p>
                 </div>
                 <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">Confirmée</span>
@@ -91,7 +113,7 @@ export function OrderFlowPhoneMockup() {
                 <p className="text-[9px] text-gray-400">Commandes</p>
               </div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-gray-900">Aïcha Ndiaye</p>
+                <p className="text-[11px] font-bold text-gray-900">{cfg.customerName}</p>
                 <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-600">Confirmée</span>
               </div>
 
@@ -140,7 +162,7 @@ export function OrderFlowPhoneMockup() {
                   <ChevronLeft className="h-3.5 w-3.5 text-gray-400" />
                   <p className="text-[9px] text-gray-400">Commandes</p>
                 </div>
-                <p className="text-[11px] font-bold text-gray-900 mb-3">Aïcha Ndiaye</p>
+                <p className="text-[11px] font-bold text-gray-900 mb-3">{cfg.customerName}</p>
               </div>
 
               {/* Modal */}
@@ -152,12 +174,12 @@ export function OrderFlowPhoneMockup() {
                 <div className="rounded-lg p-2.5 mb-2.5" style={{ backgroundColor: '#0B1B32' }}>
                   <p className="text-[7px] text-white/50 mb-1">APERÇU</p>
                   <p className="text-[8px] text-white font-semibold">🛵 Livraison à effectuer</p>
-                  <p className="text-[7px] text-white/70 mt-1">Aïcha Ndiaye · Sacré-Cœur 3, Dakar</p>
+                  <p className="text-[7px] text-white/70 mt-1">{cfg.customerName} · {cfg.address}</p>
                   <p className="text-[7px] text-white/70">2 articles · 22 500 F</p>
                 </div>
                 <div className="rounded-lg border border-gray-200 px-2.5 py-2 mb-2.5">
                   <p className="text-[7px] text-gray-400">Numéro WhatsApp du livreur</p>
-                  <p className="text-[8px] text-gray-700 font-medium">+221 77 000 00 00</p>
+                  <p className="text-[8px] text-gray-700 font-medium">{cfg.delivererPhone}</p>
                 </div>
                 <button className="w-full rounded-lg py-2 text-[9px] font-bold text-white bg-[#12B76A]">
                   Envoyer sur WhatsApp
@@ -170,27 +192,27 @@ export function OrderFlowPhoneMockup() {
           <Screen active={screen === 3}>
             <div className="pt-8 px-3.5">
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-6 w-6 rounded-lg bg-[#0B1B32] flex items-center justify-center text-white text-[9px] font-bold">K</div>
+                <div className="h-6 w-6 rounded-lg bg-[#0B1B32] flex items-center justify-center text-white text-[9px] font-bold">{cfg.initial}</div>
                 <div>
-                  <p className="text-[9px] font-bold text-gray-900">Keur Mode Dakar</p>
+                  <p className="text-[9px] font-bold text-gray-900">{cfg.boutiqueName}</p>
                   <p className="text-[7px] text-gray-400">Fiche de livraison</p>
                 </div>
               </div>
 
               <div className="rounded-xl p-3 mb-2.5" style={{ backgroundColor: PRIMARY }}>
                 <p className="text-[8px] text-white/70">🛵 À livrer</p>
-                <p className="text-[11px] font-bold text-white">Aïcha Ndiaye</p>
+                <p className="text-[11px] font-bold text-white">{cfg.customerName}</p>
               </div>
 
               <div className="rounded-lg border border-gray-100 bg-white p-2.5 mb-2">
                 <p className="text-[7px] text-gray-400">Adresse</p>
-                <p className="text-[9px] font-semibold text-gray-800 mb-1">Sacré-Cœur 3, Dakar</p>
+                <p className="text-[9px] font-semibold text-gray-800 mb-1">{cfg.address}</p>
                 <p className="text-[7px] text-gray-400">Date</p>
                 <p className="text-[9px] font-semibold text-gray-800">Aujourd&apos;hui</p>
               </div>
 
               <div className="rounded-lg border border-gray-100 bg-white p-2.5 mb-3 flex items-center justify-between">
-                <p className="text-[9px] font-semibold text-gray-800">Aïcha Ndiaye</p>
+                <p className="text-[9px] font-semibold text-gray-800">{cfg.customerName}</p>
                 <div className="flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
                   <Phone className="h-2.5 w-2.5 text-gray-500" />
                   <span className="text-[7px] font-semibold text-gray-600">Appeler</span>
@@ -209,7 +231,7 @@ export function OrderFlowPhoneMockup() {
           <Screen active={screen === 4}>
             <div className="pt-8 px-3.5">
               <p className="text-[8px] text-gray-400 mb-0.5">Aujourd&apos;hui</p>
-              <p className="text-[11px] font-bold text-gray-900 mb-3">Bonsoir, Keur Mode Dakar</p>
+              <p className="text-[11px] font-bold text-gray-900 mb-3">Bonsoir, {cfg.boutiqueName}</p>
 
               <div className="rounded-xl p-3 mb-2.5" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #175CD3 100%)` }}>
                 <p className="text-[8px] text-white/70">Ventes — Aujourd&apos;hui · 5 ventes</p>
@@ -230,7 +252,7 @@ export function OrderFlowPhoneMockup() {
               <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Dernières commandes</p>
               <div className="rounded-lg border border-gray-100 bg-white p-2 flex items-center justify-between mb-1.5">
                 <div>
-                  <p className="text-[9px] font-semibold text-gray-800">Aïcha Ndiaye</p>
+                  <p className="text-[9px] font-semibold text-gray-800">{cfg.customerName}</p>
                   <p className="text-[7px] text-gray-400">22 500 F</p>
                 </div>
                 <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Livrée</span>

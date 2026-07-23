@@ -534,7 +534,7 @@ export default async function TogoPage() {
             </Reveal>
 
             <Reveal delay={150} className="flex justify-center lg:justify-end">
-              <OrderFlowPhoneMockup />
+              <OrderFlowPhoneMockup market="TG" />
             </Reveal>
           </div>
         </div>
