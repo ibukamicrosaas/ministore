@@ -244,8 +244,8 @@ export default async function TogoPage() {
 
             {/* Drapeau Togo + pays couverts */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-7">
-              <span className="text-xs text-gray-400 font-medium mr-1">Disponible au Togo et dans 10 autres pays :</span>
-              {['🇹🇬', '🇸🇳', '🇨🇮', '🇧🇯', '🇲🇱', '🇧🇫', '🇨🇲', '🇫🇷', '🇧🇪', '🇨🇭', '🇨🇦'].map((flag) => (
+              <span className="text-xs text-gray-400 font-medium mr-1">Disponible au Togo et dans 6 autres pays africains :</span>
+              {['🇹🇬', '🇸🇳', '🇨🇮', '🇧🇯', '🇲🇱', '🇧🇫', '🇨🇲'].map((flag) => (
                 <span
                   key={flag}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-100 bg-white text-sm shadow-sm"
@@ -384,7 +384,7 @@ export default async function TogoPage() {
               Ta journée de vendeur au Togo, <span className="text-sky-500">avant et après</span> TEKKIShop.
             </h2>
             <p className="text-gray-500 text-lg mt-3.5">
-              Si tu vends déjà sur WhatsApp ou au marché à Lomé, tu connais la colonne de gauche par cœur.
+              Si tu vends déjà sur WhatsApp ou en boutique physique, tu connais la colonne de gauche par cœur.
             </p>
           </Reveal>
           <Reveal delay={100} className="grid sm:grid-cols-2 gap-[22px] max-w-[980px] mx-auto">
@@ -427,9 +427,7 @@ export default async function TogoPage() {
       </section>
 
       {/* ── Comment ça marche ─────────────────────────────────────────────── */}
-      <section id="comment">
-        <StepsSection />
-      </section>
+      <StepsSection market="TG" />
 
       {/* ── Boutiques togolaises ───────────────────────────────────────────── */}
       {shops.length > 0 && (

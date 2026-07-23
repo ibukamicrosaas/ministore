@@ -4,7 +4,33 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useInView } from '@/hooks/useInView'
 
-export function StepsSection() {
+const MARKET_CONFIG = {
+  default: {
+    boutiqueName:     'Keur Mode Dakar',
+    phone:            '+221 77 000 00 00',
+    slug:             'keur-mode',
+    pay1:             { method: 'Wave',    logo: '/logo-payments/wave_1.svg', color: 'text-blue-600'  },
+    pay2:             { method: 'MaxIt',   logo: '/logo-payments/maxit.webp', color: 'text-orange-500' },
+    step4PayText:     'Wave, Orange Money, ou à la livraison.',
+    step4Bullets:     ['Wave, Orange Money, Maxit', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'],
+  },
+  TG: {
+    boutiqueName:     'Abla Mode Lomé',
+    phone:            '+228 90 00 00 00',
+    slug:             'abla-mode',
+    pay1:             { method: 'Flooz',   logo: '/logo-payments/flooz.png',   color: 'text-blue-700'  },
+    pay2:             { method: 'T-Money', logo: '/logo-payments/tmoney.png',   color: 'text-green-600' },
+    step4PayText:     'Flooz, T-Money, ou à la livraison.',
+    step4Bullets:     ['Flooz (Moov Togo), T-Money (Togocel)', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'],
+  },
+} satisfies Record<string, object>
+
+type Market = keyof typeof MARKET_CONFIG
+type Config = typeof MARKET_CONFIG['default']
+
+export function StepsSection({ market }: { market?: Market } = {}) {
+  const cfg: Config = market && market in MARKET_CONFIG ? MARKET_CONFIG[market] : MARKET_CONFIG.default
+
   return (
     <section id="comment" className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%)' }}>
       <style>{`
@@ -51,7 +77,7 @@ export function StepsSection() {
               </ul>
             </div>
             <div className="flex-shrink-0 lg:order-2 order-1 w-full max-w-xs lg:max-w-sm">
-              <Step1Illustration />
+              <Step1Illustration boutiqueName={cfg.boutiqueName} phone={cfg.phone} />
             </div>
           </div>
 
@@ -105,14 +131,14 @@ export function StepsSection() {
               </ul>
             </div>
             <div className="flex-shrink-0 lg:order-2 order-1 w-full max-w-xs lg:max-w-sm">
-              <Step3Illustration />
+              <Step3Illustration slug={cfg.slug} />
             </div>
           </div>
 
           {/* Étape 4 */}
           <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
             <div className="flex-shrink-0 w-full max-w-xs lg:max-w-sm">
-              <Step4Illustration />
+              <Step4Illustration pay1={cfg.pay1} pay2={cfg.pay2} />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
@@ -123,10 +149,10 @@ export function StepsSection() {
                 Reçois tes paiements
               </h3>
               <p className="text-gray-500 leading-relaxed mb-5">
-                Tes clients paient par Wave, Orange Money, ou à la livraison. <strong className="text-gray-700">L&apos;argent arrive directement sur ton téléphone. C&apos;est automatique.</strong>
+                Tes clients paient par {cfg.step4PayText} <strong className="text-gray-700">L&apos;argent arrive directement sur ton téléphone. C&apos;est automatique.</strong>
               </p>
               <ul className="space-y-2">
-                {['Wave, Orange Money, Maxit', 'Paiement à la livraison possible', 'Tu vois tout dans ton tableau de bord'].map(item => (
+                {cfg.step4Bullets.map(item => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                     {item}
@@ -143,9 +169,8 @@ export function StepsSection() {
 
 /* ── Illustrations animées ── */
 
-function Step1Illustration() {
+function Step1Illustration({ boutiqueName, phone }: { boutiqueName: string; phone: string }) {
   const [ref, inView] = useInView<HTMLDivElement>()
-  const fullText = 'Keur Mode Dakar'
   const [typed, setTyped] = useState('')
 
   useEffect(() => {
@@ -153,11 +178,11 @@ function Step1Illustration() {
     let i = 0
     const interval = setInterval(() => {
       i++
-      setTyped(fullText.slice(0, i))
-      if (i >= fullText.length) clearInterval(interval)
+      setTyped(boutiqueName.slice(0, i))
+      if (i >= boutiqueName.length) clearInterval(interval)
     }, 70)
     return () => clearInterval(interval)
-  }, [inView])
+  }, [inView, boutiqueName])
 
   return (
     <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-sky-100 border border-sky-100">
@@ -185,7 +210,7 @@ function Step1Illustration() {
             <div>
               <p className="text-[9px] text-gray-400 mb-1">Ton WhatsApp</p>
               <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                <span className="text-[11px] text-gray-600">+221 77 000 00 00</span>
+                <span className="text-[11px] text-gray-600">{phone}</span>
               </div>
             </div>
             <div>
@@ -266,7 +291,7 @@ function Step2Illustration() {
   )
 }
 
-function Step3Illustration() {
+function Step3Illustration({ slug }: { slug: string }) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const [step, setStep] = useState(0)
 
@@ -301,7 +326,7 @@ function Step3Illustration() {
               <div className="max-w-[85%] ml-auto rounded-tl-lg rounded-tr-lg rounded-bl-lg bg-[#005c4b] p-2.5" style={{ animation: 'tekki-msg-in .35s ease-out' }}>
                 <p className="text-white text-[10px]">Voilà ma boutique 👇</p>
                 <div className="mt-1.5 rounded-md bg-[#025C4C] p-2 border border-white/10">
-                  <p className="text-amber-300 text-[9px] font-bold">🛍️ tekki.shop/keur-mode</p>
+                  <p className="text-amber-300 text-[9px] font-bold">🛍️ tekki.shop/{slug}</p>
                   <p className="text-white/60 text-[8px]">Commande directement ici !</p>
                 </div>
                 <p className="text-white/30 text-[8px] text-right mt-1">18:33 ✓✓</p>
@@ -344,7 +369,7 @@ function useCountUp(target: number, inView: boolean, duration = 1300) {
   return value
 }
 
-function Step4Illustration() {
+function Step4Illustration({ pay1, pay2 }: { pay1: Config['pay1']; pay2: Config['pay2'] }) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const today = useCountUp(47500, inView, 1300)
   const month = useCountUp(312000, inView, 1700)
@@ -353,9 +378,9 @@ function Step4Illustration() {
   const amount3 = useCountUp(15000, inView, 1100)
 
   const payments = [
-    { method: 'Wave', logo: '/logo-payments/wave_1.svg', amount: amount1, time: 'Il y a 5 min', color: 'text-blue-600' },
-    { method: 'MaxIt', logo: '/logo-payments/maxit.webp', amount: amount2, time: 'Il y a 23 min', color: 'text-orange-500' },
-    { method: 'Wave', logo: '/logo-payments/wave_1.svg', amount: amount3, time: 'Il y a 1h', color: 'text-blue-600' },
+    { method: pay1.method, logo: pay1.logo, amount: amount1, time: 'Il y a 5 min', color: pay1.color },
+    { method: pay2.method, logo: pay2.logo, amount: amount2, time: 'Il y a 23 min', color: pay2.color },
+    { method: pay1.method, logo: pay1.logo, amount: amount3, time: 'Il y a 1h', color: pay1.color },
   ]
 
   return (
