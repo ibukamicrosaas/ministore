@@ -17,21 +17,23 @@ async function assertAdmin() {
 export async function addCountryManager(formData: FormData) {
   await assertAdmin()
 
-  const email   = (formData.get('email')   as string | null)?.trim().toLowerCase()
+  const phone   = (formData.get('phone')   as string | null)?.trim().replace(/\s+/g, '')
   const country = (formData.get('country') as string | null)?.trim().toUpperCase()
 
-  if (!email || !country) {
+  if (!phone || !country) {
     redirect('/admin/country-managers?error=missing_fields')
   }
 
   const admin = createAdminClient()
 
-  // Trouver l'utilisateur par email via l'API admin Supabase
+  // Trouver l'utilisateur par téléphone via l'API admin Supabase
   const { data: { users }, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
   if (listError) redirect('/admin/country-managers?error=lookup_failed')
 
-  const targetUser = users.find(u => u.email?.toLowerCase() === email)
-  if (!targetUser) redirect(`/admin/country-managers?error=user_not_found&email=${encodeURIComponent(email)}`)
+  // Supabase stocke le téléphone en format E.164 (+22690000000)
+  const normalize = (p: string) => p.replace(/\s+/g, '')
+  const targetUser = users.find(u => u.phone && normalize(u.phone) === normalize(phone))
+  if (!targetUser) redirect(`/admin/country-managers?error=user_not_found&phone=${encodeURIComponent(phone)}`)
 
   const { error: insertError } = await admin
     .from('country_managers' as never)

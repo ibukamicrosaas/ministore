@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
@@ -124,6 +124,8 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
   const [savingBusiness, setSavingBusiness]     = useState(false)
   const coverInputRef                           = useRef<HTMLInputElement>(null)
   const aboutInputRef                           = useRef<HTMLInputElement>(null)
+  const [productLayout, setProductLayout]       = useState<'list' | 'grid'>((shopAny.product_layout as 'list' | 'grid' | null) ?? 'list')
+  const [savingLayout, setSavingLayout]         = useState(false)
 
   const [country, setCountry] = useState(shop.country ?? '')
 
@@ -651,6 +653,82 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
           className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-none"
           placeholder="Décris ton site en quelques mots..."
         />
+      </div>
+
+      {/* ── Affichage du catalogue ───────────────────────── */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">Affichage des produits</p>
+          <p className="text-xs text-gray-500 mt-0.5">Vue par défaut sur ta page d&apos;accueil — le client peut toujours la changer.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            { value: 'list', label: 'Liste', preview: (
+              <div className="space-y-1.5">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded bg-gray-200 shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-2 w-3/4 rounded bg-gray-200" />
+                      <div className="h-2 w-1/2 rounded bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )},
+            { value: 'grid', label: 'Grille', preview: (
+              <div className="grid grid-cols-2 gap-1.5">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="space-y-1">
+                    <div className="aspect-square rounded bg-gray-200" />
+                    <div className="h-2 w-3/4 rounded bg-gray-200" />
+                  </div>
+                ))}
+              </div>
+            )},
+          ] as const).map(({ value, label, preview }) => {
+            const isActive = productLayout === value
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={async () => {
+                  if (isActive || savingLayout) return
+                  setSavingLayout(true)
+                  setProductLayout(value)
+                  const res = await updateProductLayout(value)
+                  if (res.error) {
+                    toast.error(res.error)
+                    setProductLayout(productLayout)
+                  } else {
+                    toast.success('Affichage mis à jour.')
+                  }
+                  setSavingLayout(false)
+                }}
+                className={`relative rounded-xl border-2 p-3 text-left transition-all ${
+                  isActive
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+                style={{ '--color-primary': primaryColor } as React.CSSProperties}
+              >
+                {isActive && (
+                  <span
+                    className="absolute top-2 right-2 h-4 w-4 rounded-full flex items-center justify-center text-white text-[10px]"
+                    style={{ backgroundColor: primaryColor }}
+                  >✓</span>
+                )}
+                <div className="mb-2 pointer-events-none">{preview}</div>
+                <p className={`text-xs font-semibold ${isActive ? '' : 'text-gray-600'}`} style={isActive ? { color: primaryColor } : {}}>
+                  {label}
+                </p>
+              </button>
+            )
+          })}
+        </div>
+        {savingLayout && (
+          <p className="text-xs text-gray-400">Sauvegarde en cours…</p>
+        )}
       </div>
       </div>{/* /boutique */}
 

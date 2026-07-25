@@ -19,12 +19,12 @@ const SUPPORTED_COUNTRIES: Record<string, { name: string; flag: string }> = {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  missing_fields:  'Email et pays sont requis.',
+  missing_fields:  'Numéro de téléphone et pays sont requis.',
   lookup_failed:   'Impossible de rechercher cet utilisateur.',
   insert_failed:   'Erreur lors de l\'ajout. Réessaie.',
   already_exists:  'Ce manager a déjà accès à ce pays.',
   missing_id:      'Identifiant manquant.',
-  user_not_found:  'Aucun compte TEKKIShop trouvé avec cet email.',
+  user_not_found:  'Aucun compte TEKKIShop trouvé avec ce numéro.',
 }
 
 type RawManager = {
@@ -42,7 +42,7 @@ export default async function CountryManagersPage({
   const params  = await searchParams
   const error   = params.error
   const success = params.success
-  const email   = params.email
+  const phone   = params.phone
 
   const admin = createAdminClient()
 
@@ -53,12 +53,12 @@ export default async function CountryManagersPage({
 
   const managers = rawManagers ?? []
 
-  // Récupère les emails via l'API admin pour chaque manager
-  const userEmails: Record<string, string> = {}
+  // Récupère le téléphone via l'API admin pour chaque manager
+  const userPhones: Record<string, string> = {}
   await Promise.all(
     managers.map(async (m) => {
       const { data: { user } } = await admin.auth.admin.getUserById(m.user_id)
-      if (user?.email) userEmails[m.user_id] = user.email
+      if (user?.phone) userPhones[m.user_id] = user.phone
     }),
   )
 
@@ -75,8 +75,8 @@ export default async function CountryManagersPage({
       {error && (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {ERROR_MESSAGES[error] ?? 'Une erreur est survenue.'}
-          {error === 'user_not_found' && email && (
-            <span className="font-semibold"> ({decodeURIComponent(email)})</span>
+          {error === 'user_not_found' && phone && (
+            <span className="font-semibold"> ({decodeURIComponent(phone)})</span>
           )}
         </div>
       )}
@@ -118,7 +118,7 @@ export default async function CountryManagersPage({
                       <span className="text-2xl shrink-0">{country?.flag ?? '🌍'}</span>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">
-                          {userEmails[m.user_id] ?? m.user_id}
+                          {userPhones[m.user_id] ?? m.user_id}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-bold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5">
@@ -157,19 +157,19 @@ export default async function CountryManagersPage({
 
           <form action={addCountryManager} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Email du Country Manager
+              <label htmlFor="phone" className="block text-xs font-semibold text-gray-600 mb-1.5">
+                Téléphone du Country Manager
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="phone"
+                name="phone"
+                type="tel"
                 required
-                placeholder="manager@exemple.com"
+                placeholder="+228 90 00 00 00"
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-100 transition"
               />
               <p className="text-[11px] text-gray-400 mt-1">
-                Le manager doit déjà avoir un compte TEKKIShop.
+                Format international — le manager doit déjà avoir un compte TEKKIShop.
               </p>
             </div>
 

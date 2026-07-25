@@ -13,6 +13,7 @@ interface ProductGridProps {
   shopSlug: string
   primaryColor: string
   currency?: ShopCurrency
+  defaultView?: 'list' | 'grid'
 }
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
@@ -209,8 +210,8 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency }: { produc
   )
 }
 
-export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF' }: ProductGridProps) {
-  const [view, setView] = useState<'list' | 'grid'>('list')
+export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF', defaultView = 'list' }: ProductGridProps) {
+  const [view, setView] = useState<'list' | 'grid'>(defaultView)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 

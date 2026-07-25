@@ -238,6 +238,8 @@ export function OrderForm({
   const [step, setStep] = useState(1)
   const justTransitionedRef = useRef(false)
   const [submitting, setSubmitting] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const pendingOrderBody = useRef<Record<string, unknown> | null>(null)
   const [errors, setErrors] = useState<{
     firstName?: string
     phone?: string
@@ -523,6 +525,22 @@ export function OrderForm({
             : 'on_site',
     }
 
+    // Pour les paiements en ligne (acompte ou complet), afficher le modal d'engagement
+    // avant de soumettre — réduit les commandes fantômes.
+    const willPayOnline =
+      (isDigital && acceptOnlinePayment) ||
+      (!isDigital && paymentType === 'online')
+
+    if (willPayOnline) {
+      pendingOrderBody.current = body
+      setShowPaymentModal(true)
+      return
+    }
+
+    await submitOrder(body)
+  }
+
+  async function submitOrder(body: Record<string, unknown>) {
     setSubmitting(true)
     try {
       const res = await fetch('/api/orders', {
@@ -1185,6 +1203,72 @@ export function OrderForm({
           </p>
         )}
       </div>
+
+      {/* ── Modal engagement paiement mobile money ───────────────────────── */}
+      {showPaymentModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowPaymentModal(false)}
+        >
+          <div
+            className="w-full max-w-sm mx-4 mb-4 sm:mb-0 bg-white rounded-2xl shadow-2xl overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* En-tête */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center text-white text-lg shrink-0"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  💳
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-base leading-tight">Confirme ton paiement</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Mobile money requis</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Corps */}
+            <div className="px-6 py-5">
+              <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                En cliquant sur <strong>Continuer</strong>, tu t&apos;engages à payer{' '}
+                <strong className="text-gray-900">
+                  {formatPrice(hasDeposit ? deposit : total, shopCurrency)}
+                </strong>{' '}
+                {hasDeposit ? "d'acompte " : ''}par mobile money (Wave, Orange Money, etc.).
+              </p>
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+                ⚠️ Si tu n&apos;effectues pas le paiement, la commande sera automatiquement annulée.
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  setShowPaymentModal(false)
+                  if (pendingOrderBody.current) submitOrder(pendingOrderBody.current)
+                }}
+                className="flex-1 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {submitting ? 'Envoi...' : 'Continuer →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   )
 }

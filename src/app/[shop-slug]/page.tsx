@@ -59,12 +59,12 @@ export default async function ShopPage({ params }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, product_layout')
     .eq('slug', slug)
     .single()
 
   if (!shopData) notFound()
-  const shop     = shopData as unknown as Shop & { currency?: string | null }
+  const shop     = shopData as unknown as Shop & { currency?: string | null; product_layout?: 'list' | 'grid' | null }
   const color    = shop.primary_color ?? '#0EA5E9'
   const currency = (shop.currency ?? 'XOF') as ShopCurrency
 
@@ -263,6 +263,7 @@ export default async function ShopPage({ params }: Props) {
               shopSlug={slug}
               primaryColor={color}
               currency={currency}
+              defaultView={shop.product_layout ?? 'list'}
             />
           )}
         </div>

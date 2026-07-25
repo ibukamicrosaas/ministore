@@ -4,7 +4,12 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
 
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? 'TEKKIShop <noreply@tekkishop.com>'
+// Si l'env contient seulement un email (ex: support@tekki.shop), on ajoute le display name.
+// Si quelqu'un a copié la ligne .env entière comme valeur (ex: RESEND_FROM_EMAIL=support@...),
+// on tombe sur le fallback — ça évite un from malformé en prod.
+const _rawFrom = process.env.RESEND_FROM_EMAIL ?? ''
+const _fromEmail = _rawFrom.includes('@') ? _rawFrom : 'noreply@tekki.shop'
+const FROM_ADDRESS = `TEKKIShop <${_fromEmail}>`
 
 interface NewOrderAlertParams {
   toEmail: string

@@ -394,7 +394,10 @@ export async function POST(req: NextRequest) {
   }
 
   // E-mail de confirmation client (fire-and-forget, ne bloque pas la réponse)
-  if (client_email) {
+  // Pour les paiements en ligne, l'email part depuis le webhook après confirmation du paiement —
+  // pas ici, pour ne pas laisser croire au client que sa commande est validée avant qu'il ait payé.
+  const isOnlinePayment = payment_type === 'online_full' || payment_type === 'online_deposit'
+  if (client_email && !isOnlinePayment) {
     void sendOrderConfirmationEmail({
       toEmail:      client_email,
       clientName:   client_first_name,

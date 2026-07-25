@@ -54,6 +54,7 @@ export type Database = {
           hide_branding: boolean
           custom_domain: string | null
           previous_slug: string | null
+          product_layout: 'list' | 'grid' | null
           created_at: string
           updated_at: string
         }
@@ -94,6 +95,7 @@ export type Database = {
           bictorys_webhook_secret?: string | null
           accept_cash_on_delivery?: boolean
           subscription_ends_at?: string | null
+          product_layout?: 'list' | 'grid' | null
           created_at?: string
           updated_at?: string
         }
@@ -137,6 +139,7 @@ export type Database = {
           hide_branding?: boolean
           custom_domain?: string | null
           previous_slug?: string | null
+          product_layout?: 'list' | 'grid' | null
           created_at?: string
           updated_at?: string
         }

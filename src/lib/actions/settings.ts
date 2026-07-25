@@ -593,6 +593,32 @@ export async function updateMetaPixelId(
   return {}
 }
 
+export async function updateProductLayout(layout: 'list' | 'grid'): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
+
+  const { error } = await supabase
+    .from('shops')
+    .update({ product_layout: layout, updated_at: new Date().toISOString() })
+    .eq('id', profile.shop_id)
+
+  if (error) return { error: 'Impossible de sauvegarder.' }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}
+
 export async function updateShopCurrency(currency: string): Promise<{ error?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
