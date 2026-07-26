@@ -6,7 +6,7 @@ export default function PrivacyPage() {
   return (
     <div className="prose prose-sm max-w-none text-gray-700">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Politique de Confidentialité</h1>
-      <p className="text-sm text-gray-400 mb-8">Dernière mise à jour : mai 2026</p>
+      <p className="text-sm text-gray-400 mb-8">Dernière mise à jour : juillet 2026</p>
 
       <Section title="1. Responsable du traitement">
         <p><strong>Tekki Studio</strong>, éditeur de TekkiShop, est le responsable du traitement de vos données personnelles.</p>
@@ -27,6 +27,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Nom, prénom</li>
           <li>Numéro de téléphone et WhatsApp</li>
+          <li>Adresse e-mail (optionnel, si fournie lors de la commande)</li>
           <li>Historique de commandes et produits commandés</li>
         </ul>
         <p><strong>Données de navigation :</strong></p>
@@ -43,6 +44,7 @@ export default function PrivacyPage() {
           <li>Fourniture du service de vente en ligne</li>
           <li>Traitement des paiements et reversements</li>
           <li>Envoi de notifications WhatsApp (confirmations de commande, rappels de livraison)</li>
+          <li>Envoi d&apos;e-mails transactionnels (confirmation de commande, si adresse e-mail fournie)</li>
           <li>Amélioration du service et détection d'erreurs</li>
           <li>Communication sur les évolutions du service</li>
         </ul>
@@ -71,6 +73,7 @@ export default function PrivacyPage() {
           <li><strong>Vercel</strong> (hébergement application, UE)</li>
           <li><strong>Bictorys</strong> (traitement des paiements, Sénégal)</li>
           <li><strong>Lafricamobile</strong> (envoi de notifications SMS, Sénégal)</li>
+          <li><strong>Resend</strong> (envoi d&apos;e-mails transactionnels, USA)</li>
           <li><strong>Sentry</strong> (monitoring erreurs, USA)</li>
         </ul>
         <p>Ces prestataires sont soumis à des engagements contractuels de protection des données. Aucune donnée n'est vendue à des tiers.</p>
@@ -92,8 +95,9 @@ export default function PrivacyPage() {
         <p>TekkiShop met en œuvre des mesures techniques et organisationnelles pour protéger vos données : chiffrement des communications (HTTPS), authentification par code PIN, accès limité aux données en production, monitoring des erreurs et des accès.</p>
       </Section>
 
-      <Section title="9. Cookies">
-        <p>TekkiShop utilise uniquement des cookies strictement nécessaires au fonctionnement du service (session d'authentification). Aucun cookie publicitaire ou de tracking n'est utilisé.</p>
+      <Section title="9. Cookies et pixels de suivi">
+        <p>TekkiShop utilise uniquement des cookies strictement nécessaires au fonctionnement du service (session d&apos;authentification).</p>
+        <p>Certains marchands peuvent activer leur propre <strong>Meta Pixel</strong> sur leur boutique TekkiShop. Dans ce cas, votre navigation sur cette boutique peut être transmise à Meta (Facebook) conformément à la politique de confidentialité du marchand. TekkiShop n&apos;a pas accès à ces données et n&apos;en est pas responsable au titre du RGPD ; le marchand est responsable de traitement pour ce suivi.</p>
       </Section>
 
       <Section title="10. Modifications">
