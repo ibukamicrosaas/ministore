@@ -38,7 +38,7 @@ export async function activatePlan(
   // 1er paiement mensuel → 1 mois offert (62 jours au lieu de 31)
   // Critère : aucune transaction déjà activée pour cette boutique
   let effectiveDurationDays = durationDays
-  if (durationDays === 31) {
+  if (durationDays === 31 && planKey === 'business') {
     const { count: prevActivated } = await (supabase
       .from('subscription_transactions' as never)
       .select('*', { count: 'exact', head: true })
