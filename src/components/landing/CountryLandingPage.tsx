@@ -106,7 +106,6 @@ export async function CountryLandingPage({ config: cfg }: { config: CountryConfi
             <a href="#comment" className="hover:text-gray-900 transition-colors">Comment ça marche</a>
             <a href="#tarifs" className="hover:text-gray-900 transition-colors">Tarifs</a>
             <a href="#faq" className="hover:text-gray-900 transition-colors">FAQ</a>
-            <Link href="/" className="hover:text-gray-900 transition-colors">Site principal</Link>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-2 sm:px-3 py-2 transition-colors">
