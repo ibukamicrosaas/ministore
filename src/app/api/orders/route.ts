@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   const { data: dbProducts } = await supabase
     .from('products')
-    .select('id, name, price, variants, deposit_percentage, stock_count')
+    .select('id, name, price, variants, deposit_percentage, stock_count, quantity_discounts')
     .in('id', productIds)
     .eq('shop_id', shopId)
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Produits introuvables.' }, { status: 400 })
   }
 
-  type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null }
+  type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null; quantity_discounts: { min_qty: number; discount_pct: number }[] | null }
   const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
 
   // Stock check + calcul des prix serveur
@@ -161,6 +161,14 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    }
+    // Remise par quantité — calculée serveur depuis les règles en DB
+    if (Array.isArray(p.quantity_discounts) && p.quantity_discounts.length > 0) {
+      const applicable = p.quantity_discounts
+        .filter((d: { min_qty: number; discount_pct: number }) => it.quantity >= d.min_qty)
+        .sort((a: { min_qty: number }, b: { min_qty: number }) => b.min_qty - a.min_qty)
+      const discountPct = applicable[0]?.discount_pct ?? 0
+      if (discountPct > 0) unit_price = Math.floor(unit_price * (100 - discountPct) / 100)
     }
     serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null })
   }

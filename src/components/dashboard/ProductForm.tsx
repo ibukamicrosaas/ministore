@@ -9,10 +9,10 @@ import {
   deleteProduct,
   uploadProductPhoto,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload, Percent } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-import type { Product, ProductVariant, ProductPhoto } from '@/types'
+import type { Product, ProductVariant, ProductPhoto, QuantityDiscount } from '@/types'
 import { slugify } from '@/lib/utils/slugify'
 
 interface ProductFormProps {
@@ -113,6 +113,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [costPrice, setCostPrice] = useState<string>(
     String((product as Product & { cost_price?: number | null })?.cost_price ?? '')
   )
+
+  const initialDiscounts = (product as Product & { quantity_discounts?: QuantityDiscount[] | null })?.quantity_discounts ?? []
+  const [qtyDiscounts, setQtyDiscounts] = useState<QuantityDiscount[]>(initialDiscounts)
   const descRef           = useRef<HTMLTextAreaElement>(null)
   const descImageInputRef = useRef<HTMLInputElement>(null)
   const descCursorRef     = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
@@ -314,6 +317,11 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       digital_file_path: productType === 'digital' ? digitalFilePath : null,
       digital_file_name: productType === 'digital' ? digitalFileName : null,
       digital_file_size: productType === 'digital' ? digitalFileSize : null,
+      quantity_discounts: productType === 'digital' ? null : (
+        qtyDiscounts.filter(d => d.min_qty >= 2 && d.discount_pct > 0 && d.discount_pct <= 80).length > 0
+          ? qtyDiscounts.filter(d => d.min_qty >= 2 && d.discount_pct > 0 && d.discount_pct <= 80)
+          : null
+      ),
     }
 
     let result
@@ -952,6 +960,82 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
           )}
         </div>
       </Card>
+
+      {/* Remises sur quantité — physique uniquement */}
+      {productType === 'physical' && (
+        <Card>
+          <div className="flex items-center gap-2 mb-1">
+            <Percent className="h-4 w-4 text-gray-400" />
+            <p className="text-sm font-semibold text-gray-900">Remises sur quantité</p>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">Optionnel</span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Réduction automatique pour les clients qui achètent en grande quantité. Max 3 paliers.
+          </p>
+
+          {qtyDiscounts.length > 0 && (
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2 px-1 mb-1">
+                <span className="flex-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider">Dès X pièces</span>
+                <span className="w-28 text-[10px] font-medium text-gray-400 uppercase tracking-wider text-right">Remise (%)</span>
+                <span className="w-5 shrink-0" />
+              </div>
+              {qtyDiscounts.map((d, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="2"
+                      max="999"
+                      value={d.min_qty || ''}
+                      onChange={e => setQtyDiscounts(prev => prev.map((x, j) => j === i ? { ...x, min_qty: parseInt(e.target.value, 10) || 2 } : x))}
+                      placeholder="Ex : 3"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">pcs</span>
+                  </div>
+                  <div className="relative w-28 shrink-0">
+                    <input
+                      type="number"
+                      min="1"
+                      max="80"
+                      value={d.discount_pct || ''}
+                      onChange={e => setQtyDiscounts(prev => prev.map((x, j) => j === i ? { ...x, discount_pct: parseInt(e.target.value, 10) || 0 } : x))}
+                      placeholder="Ex : 10"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-7 text-sm outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">%</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQtyDiscounts(prev => prev.filter((_, j) => j !== i))}
+                    className="p-1 text-gray-400 hover:text-red-500 shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {qtyDiscounts.length < 3 && (
+            <button
+              type="button"
+              onClick={() => setQtyDiscounts(prev => [...prev, { min_qty: prev.length === 0 ? 3 : (prev[prev.length - 1].min_qty + 2), discount_pct: 10 }])}
+              className="flex items-center gap-1.5 text-xs text-[var(--color-primary)] font-medium hover:opacity-75"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Ajouter un palier
+            </button>
+          )}
+
+          {qtyDiscounts.length > 0 && (
+            <p className="mt-3 text-[10px] text-gray-400">
+              Ex&nbsp;: dès&nbsp;3&nbsp;pièces&nbsp;→&nbsp;-10%&nbsp;· dès&nbsp;5&nbsp;pièces&nbsp;→&nbsp;-15%. Affiché automatiquement sur la page de commande.
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* Badges produit */}
       <Card>

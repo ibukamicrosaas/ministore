@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
-import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone } from '@/types'
+import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone, QuantityDiscount } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 type Props = {
@@ -65,14 +65,14 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const { data: productsData } = await supabase
     .from('products')
-    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count, customization_enabled, customization_label' as never)
+    .select('id, name, price, photos, photo_url, variants, deposit_percentage, category, stock_count, customization_enabled, customization_label, quantity_discounts' as never)
     .eq('shop_id', shop.id)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
 
   const products = (productsData ?? []) as unknown as (Pick<Product,
     'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category' | 'stock_count'
-  > & { customization_enabled?: boolean; customization_label?: string | null })[]
+  > & { customization_enabled?: boolean; customization_label?: string | null; quantity_discounts?: QuantityDiscount[] | null })[]
 
   const deliveryOptions = (shop.delivery_options ?? { home_delivery: true, store_pickup: true }) as {
     home_delivery: boolean
@@ -106,6 +106,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
           stock_count: p.stock_count ?? null,
           customization_enabled: p.customization_enabled ?? false,
           customization_label: p.customization_label ?? null,
+          quantity_discounts: (p.quantity_discounts as QuantityDiscount[] | null) ?? null,
         }))}
 
         deliveryOptions={deliveryOptions}

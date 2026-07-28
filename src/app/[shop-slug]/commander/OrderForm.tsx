@@ -178,6 +178,7 @@ interface ProductOption {
   stock_count: number | null
   customization_enabled: boolean
   customization_label: string | null
+  quantity_discounts: { min_qty: number; discount_pct: number }[] | null
 }
 
 interface OrderItem {
@@ -420,26 +421,38 @@ export function OrderForm({
       if (!p) return sum
       const pct = p.deposit_percentage != null ? p.deposit_percentage : shopDepositPct
       if (pct === 0) return sum
-      let price = p.price
-      if (it.variant_label && p.variants) {
-        const v = p.variants.find((v) => v.label === it.variant_label)
-        if (v) price = v.price
-      }
+      const basePrice   = getItemBasePrice(p, it.variant_label)
+      const qtyDiscount = getQtyDiscountPct(p, it.quantity)
+      const price       = qtyDiscount > 0 ? Math.floor(basePrice * (100 - qtyDiscount) / 100) : basePrice
       return sum + Math.floor((price * it.quantity * pct) / 100)
     }, 0)
     // Appliquer la remise promo à l'acompte (cohérent avec le serveur)
     return promoDiscount > 0 ? Math.floor(rawDeposit * (100 - promoDiscount) / 100) : rawDeposit
   }
 
+  function getItemBasePrice(p: ProductOption, variantLabel: string | null): number {
+    if (variantLabel && p.variants) {
+      const v = p.variants.find(v => v.label === variantLabel)
+      if (v) return v.price
+    }
+    return p.price
+  }
+
+  function getQtyDiscountPct(p: ProductOption, qty: number): number {
+    if (!p.quantity_discounts?.length) return 0
+    const applicable = p.quantity_discounts
+      .filter(d => qty >= d.min_qty)
+      .sort((a, b) => b.min_qty - a.min_qty)
+    return applicable[0]?.discount_pct ?? 0
+  }
+
   const itemsSubtotal  = items.reduce((sum, it) => {
     const p = getProduct(it.product_id)
     if (!p) return sum
-    let price = p.price
-    if (it.variant_label && p.variants) {
-      const v = p.variants.find(v => v.label === it.variant_label)
-      if (v) price = v.price
-    }
-    return sum + price * it.quantity
+    const basePrice  = getItemBasePrice(p, it.variant_label)
+    const discountPct = getQtyDiscountPct(p, it.quantity)
+    const unitPrice  = discountPct > 0 ? Math.floor(basePrice * (100 - discountPct) / 100) : basePrice
+    return sum + unitPrice * it.quantity
   }, 0)
   const promoAmount    = promoDiscount > 0 ? Math.floor(itemsSubtotal * promoDiscount / 100) : 0
   const total          = itemsSubtotal - promoAmount + deliveryPrice
@@ -784,16 +797,41 @@ export function OrderForm({
                       <button
                         type="button"
                         onClick={() => {
-                          const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 5) : 5
+                          const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 99) : 99
                           updateItem(i, { quantity: Math.min(maxQty, item.quantity + 1) })
                         }}
-                        disabled={p?.stock_count != null && item.quantity >= Math.min(p.stock_count, 5)}
+                        disabled={p?.stock_count != null && item.quantity >= p.stock_count}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +
                       </button>
                     </div>
                   </div>
+
+                  {/* Remises sur quantité */}
+                  {p?.quantity_discounts && p.quantity_discounts.length > 0 && (() => {
+                    const activePct = getQtyDiscountPct(p, item.quantity)
+                    const basePrice = getItemBasePrice(p, item.variant_label)
+                    const nextTier  = p.quantity_discounts
+                      .filter(d => d.min_qty > item.quantity)
+                      .sort((a, b) => a.min_qty - b.min_qty)[0]
+                    return (
+                      <div className="space-y-1">
+                        {activePct > 0 ? (
+                          <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5">
+                            <span className="text-xs font-bold text-emerald-700">-{activePct}% appliqué</span>
+                            <span className="text-[10px] text-emerald-600">
+                              ({formatPrice(basePrice, shopCurrency)} → {formatPrice(Math.floor(basePrice * (100 - activePct) / 100), shopCurrency)})
+                            </span>
+                          </div>
+                        ) : nextTier ? (
+                          <p className="text-[10px] text-gray-400">
+                            Achetez {nextTier.min_qty} pièces ou plus et économisez {nextTier.discount_pct}%
+                          </p>
+                        ) : null}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}

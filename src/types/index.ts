@@ -27,6 +27,11 @@ export interface ProductVariant {
   stock_count?: number | null
 }
 
+export interface QuantityDiscount {
+  min_qty: number
+  discount_pct: number
+}
+
 export interface ProductPhoto {
   url: string
   is_primary: boolean
@@ -100,6 +105,7 @@ export interface CreateProductInput {
   digital_file_path?: string | null
   digital_file_name?: string | null
   digital_file_size?: number | null
+  quantity_discounts?: QuantityDiscount[] | null
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {

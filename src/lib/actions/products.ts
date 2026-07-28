@@ -107,6 +107,7 @@ export async function createProduct(input: CreateProductInput) {
     digital_file_path:     input.product_type === 'digital' ? (input.digital_file_path ?? null) : null,
     digital_file_name:     input.product_type === 'digital' ? (input.digital_file_name ?? null) : null,
     digital_file_size:     input.product_type === 'digital' ? (input.digital_file_size ?? null) : null,
+    quantity_discounts:    input.quantity_discounts?.length ? input.quantity_discounts : null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
   if (error) {
@@ -206,6 +207,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.digital_file_path !== undefined)  updates.digital_file_path  = input.product_type === 'digital' ? input.digital_file_path : null
   if (input.digital_file_name !== undefined)  updates.digital_file_name  = input.product_type === 'digital' ? input.digital_file_name : null
   if (input.digital_file_size !== undefined)  updates.digital_file_size  = input.product_type === 'digital' ? input.digital_file_size : null
+  if (input.quantity_discounts !== undefined) updates.quantity_discounts = input.quantity_discounts?.length ? input.quantity_discounts : null
 
   if (input.slug !== undefined) {
     const newSlug = input.slug?.trim() || null

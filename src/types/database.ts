@@ -218,6 +218,7 @@ export type Database = {
           digital_file_name?: string | null
           digital_file_size?: number | null
           cost_price?: number | null
+          quantity_discounts?: Json | null
         }
         Insert: {
           id?: string
@@ -243,6 +244,7 @@ export type Database = {
           digital_file_name?: string | null
           digital_file_size?: number | null
           cost_price?: number | null
+          quantity_discounts?: Json | null
         }
         Update: {
           id?: string
@@ -268,6 +270,7 @@ export type Database = {
           digital_file_name?: string | null
           digital_file_size?: number | null
           cost_price?: number | null
+          quantity_discounts?: Json | null
         }
       Relationships: []
       }
