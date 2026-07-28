@@ -3,13 +3,35 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@/lib/supabase/server'
 import { sendSMS } from '@/lib/notifications/whatsapp'
 
+export const maxDuration = 300
+
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean)
 
+const BATCH_SIZE = 10
+
+async function sendBatch(
+  batch: { id: string; phone_whatsapp: string | null }[],
+  message: string,
+): Promise<{ sent: number; failed: number; skipped: number }> {
+  let sent = 0, failed = 0, skipped = 0
+  await Promise.allSettled(
+    batch.map(async (shop) => {
+      if (!shop.phone_whatsapp) { skipped++; return }
+      try {
+        const result = await sendSMS(shop.phone_whatsapp, message)
+        if (result.success) { sent++ } else { failed++ }
+      } catch {
+        failed++
+      }
+    })
+  )
+  return { sent, failed, skipped }
+}
+
 export async function POST(req: NextRequest) {
-  // 1. Session admin
   const supabaseUser = await createServerClient()
   const { data: { user } } = await supabaseUser.auth.getUser()
   if (!user || !ADMIN_USER_IDS.includes(user.id)) {
@@ -40,14 +62,12 @@ export async function POST(req: NextRequest) {
 
   let sent = 0, failed = 0, skipped = 0
 
-  for (const shop of rows) {
-    if (!shop.phone_whatsapp) { skipped++; continue }
-    try {
-      const result = await sendSMS(shop.phone_whatsapp, message.trim())
-      if (result.success) { sent++ } else { failed++ }
-    } catch {
-      failed++
-    }
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE)
+    const result = await sendBatch(batch, message.trim())
+    sent    += result.sent
+    failed  += result.failed
+    skipped += result.skipped
   }
 
   return NextResponse.json({ sent, failed, skipped })

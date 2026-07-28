@@ -57,7 +57,7 @@ export default function AdminShopsPage() {
   const [campaignOpen, setCampaignOpen] = useState(false)
   const [campaignMessage, setCampaignMessage] = useState('')
   const [campaignSending, setCampaignSending] = useState(false)
-  const [campaignResult, setCampaignResult] = useState<{ sent: number; failed: number; skipped: number } | null>(null)
+  const [campaignResult, setCampaignResult] = useState<{ sent: number; failed: number; skipped: number; error?: string } | null>(null)
 
   useEffect(() => { loadData() }, [])
 
@@ -187,9 +187,11 @@ export default function AdminShopsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: campaignMessage, shopIds: recipients.map((s: any) => s.id) }),
       })
+      const data = await res.json() as { sent: number; failed: number; skipped: number; error?: string }
       if (res.ok) {
-        const data = await res.json() as { sent: number; failed: number; skipped: number }
         setCampaignResult(data)
+      } else {
+        setCampaignResult({ sent: 0, failed: 0, skipped: 0, error: data.error ?? `Erreur ${res.status}` })
       }
     } finally {
       setCampaignSending(false)
@@ -732,10 +734,17 @@ export default function AdminShopsPage() {
 
             {campaignResult ? (
               <div className="space-y-3">
-                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
-                  <p className="text-2xl font-bold text-emerald-700">{campaignResult.sent}</p>
-                  <p className="text-sm text-emerald-600">SMS envoyés avec succès</p>
-                </div>
+                {campaignResult.error ? (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-center">
+                    <p className="text-sm font-semibold text-red-700">Erreur lors de l&apos;envoi</p>
+                    <p className="text-xs text-red-500 mt-1">{campaignResult.error}</p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
+                    <p className="text-2xl font-bold text-emerald-700">{campaignResult.sent}</p>
+                    <p className="text-sm text-emerald-600">SMS envoyés avec succès</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-center">
                     <p className="text-lg font-bold text-red-600">{campaignResult.failed}</p>
