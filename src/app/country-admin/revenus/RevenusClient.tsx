@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Wallet, ArrowDownToLine, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { PayoutRequestModal } from './PayoutRequestModal'
-import { CM_PAYOUT_MIN } from '@/lib/actions/country-admin'
+import { CM_PAYOUT_MIN } from '@/lib/country-manager-config'
 
 type Payout = {
   id: string

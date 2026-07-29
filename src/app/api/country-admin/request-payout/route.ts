@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireCountryManagerFull, getCMSubscriptionBalance, CM_PAYOUT_MIN } from '@/lib/actions/country-admin'
+import { requireCountryManagerFull, getCMSubscriptionBalance } from '@/lib/actions/country-admin'
+import { CM_PAYOUT_MIN } from '@/lib/country-manager-config'
 import { getPayoutMethods, type PayoutMethodKey } from '@/lib/utils/country-groups'
 
 export async function POST(req: NextRequest) {

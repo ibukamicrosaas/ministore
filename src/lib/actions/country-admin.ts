@@ -4,15 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-// Montant par plan_key en FCFA — source de vérité pour le calcul du solde CM
-export const CM_PLAN_PRICES: Record<string, number> = {
-  decouverte: 2900,
-  business:   4900,
-  pro:        9900,
-}
-
-// Montant minimum pour une demande de retrait
-export const CM_PAYOUT_MIN = 5000
+import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
 
 // ── Auth helper ──────────────────────────────────────────────────────────────
 // Vérifie que l'utilisateur courant est bien country manager.
