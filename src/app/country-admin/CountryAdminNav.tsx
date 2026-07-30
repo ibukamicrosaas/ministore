@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Building2 } from 'lucide-react'
+import { LayoutDashboard, Building2, Wallet } from 'lucide-react'
 
 const NAV = [
-  { href: '/country-admin',           label: 'Vue d\'ensemble', icon: LayoutDashboard },
-  { href: '/country-admin/boutiques', label: 'Boutiques',        icon: Building2 },
+  { href: '/country-admin',          label: 'Vue d\'ensemble', icon: LayoutDashboard },
+  { href: '/country-admin/boutiques', label: 'Boutiques',       icon: Building2 },
+  { href: '/country-admin/revenus',   label: 'Mes revenus',     icon: Wallet },
 ]
 
 export function CountryAdminNav({ variant, country: _country }: { variant: 'sidebar' | 'topbar'; country: string }) {

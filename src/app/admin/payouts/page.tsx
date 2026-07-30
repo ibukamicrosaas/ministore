@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { MarkPayoutDoneButton } from './MarkPayoutDoneButton'
+import { CMPayoutRow } from './CMPayoutRow'
 import { PAYOUT_METHODS_BY_COUNTRY } from '@/lib/utils/country-groups'
 
 export const metadata = { title: 'Reversements — Admin TekkiShop' }
@@ -21,10 +22,45 @@ function methodLabel(key: string): string {
 export default async function AdminPayoutsPage() {
   const supabase = createAdminClient()
 
+  // Reversements marchands
   const { data } = await supabase
     .from('payouts')
     .select('*, shops(name, slug)')
     .order('requested_at', { ascending: true })
+
+  // Reversements Country Managers (en attente uniquement)
+  const { data: cmPayoutsData } = await (supabase
+    .from('country_manager_payouts' as never)
+    .select('id, country_manager_id, country, amount, provider, mobile_money_number, status, requested_at')
+    .eq('status' as never, 'pending')
+    .order('requested_at' as never, { ascending: true }) as unknown as Promise<{
+      data: {
+        id: string
+        country_manager_id: string
+        country: string
+        amount: number
+        provider: string
+        mobile_money_number: string
+        status: string
+        requested_at: string
+      }[] | null
+    }>)
+
+  // Récupérer les noms des CMs
+  const cmIds = [...new Set((cmPayoutsData ?? []).map(p => p.country_manager_id))]
+  const cmNames: Record<string, string> = {}
+  if (cmIds.length > 0) {
+    const { data: cms } = await (supabase
+      .from('country_managers' as never)
+      .select('id, name')
+      .in('id' as never, cmIds) as unknown as Promise<{ data: { id: string; name: string }[] | null }>)
+    for (const cm of cms ?? []) cmNames[cm.id] = cm.name
+  }
+
+  const cmPayouts = (cmPayoutsData ?? []).map(p => ({
+    ...p,
+    cmName: cmNames[p.country_manager_id] ?? 'Country Manager',
+  }))
 
   const payouts = (data ?? []) as unknown as {
     id: string
@@ -47,10 +83,31 @@ export default async function AdminPayoutsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Reversements</h1>
-        <p className="text-sm text-gray-500 mt-1">{pending.length} en attente · {done.length} effectués</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {pending.length + cmPayouts.length} en attente · {done.length} effectués
+        </p>
       </div>
 
-      {/* En attente */}
+      {/* ── Reversements Country Managers ── */}
+      {cmPayouts.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Country Managers — À traiter</h2>
+          {cmPayouts.map(p => (
+            <CMPayoutRow
+              key={p.id}
+              payoutId={p.id}
+              cmName={p.cmName}
+              country={p.country}
+              amount={p.amount}
+              provider={p.provider}
+              mobileNumber={p.mobile_money_number}
+              requestedAt={p.requested_at}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* En attente marchands */}
       {pending.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">À traiter</h2>
