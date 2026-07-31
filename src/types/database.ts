@@ -13,6 +13,42 @@ export type Database = {
   public: {
     PostgrestVersion: '12'
     Tables: {
+      admin_withdrawals: {
+        Row: {
+          id:                   string
+          amount:               number
+          method:               string
+          phone_number:         string
+          status:               'processing' | 'completed' | 'failed'
+          bictorys_transfer_id: string | null
+          notes:                string | null
+          withdrawn_at:         string
+          created_at:           string
+        }
+        Insert: {
+          id?:                   string
+          amount:                number
+          method:                string
+          phone_number:          string
+          status?:               'processing' | 'completed' | 'failed'
+          bictorys_transfer_id?: string | null
+          notes?:                string | null
+          withdrawn_at?:         string
+          created_at?:           string
+        }
+        Update: {
+          id?:                   string
+          amount?:               number
+          method?:               string
+          phone_number?:         string
+          status?:               'processing' | 'completed' | 'failed'
+          bictorys_transfer_id?: string | null
+          notes?:                string | null
+          withdrawn_at?:         string
+          created_at?:           string
+        }
+        Relationships: []
+      }
       shops: {
         Row: {
           id: string

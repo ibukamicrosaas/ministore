@@ -1,8 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { AdminWithdrawSection } from './AdminWithdrawSection'
 
 export const metadata = { title: 'Finances — Admin TEKKIShop' }
-export const revalidate = 300
+export const revalidate = 0
 
 type Period = 'today' | '7d' | '30d' | '3m' | '6m' | '1y'
 
@@ -21,9 +24,9 @@ function getPeriodStart(period: Period): string {
     case 'today': {
       const d = new Date(now); d.setHours(0, 0, 0, 0); return d.toISOString()
     }
-    case '7d':  return new Date(now.getTime() - 7  * 86400000).toISOString()
-    case '30d': return new Date(now.getTime() - 30 * 86400000).toISOString()
-    case '3m':  return new Date(now.getTime() - 91 * 86400000).toISOString()
+    case '7d':  return new Date(now.getTime() - 7   * 86400000).toISOString()
+    case '30d': return new Date(now.getTime() - 30  * 86400000).toISOString()
+    case '3m':  return new Date(now.getTime() - 91  * 86400000).toISOString()
     case '6m':  return new Date(now.getTime() - 182 * 86400000).toISOString()
     case '1y':  return new Date(now.getTime() - 365 * 86400000).toISOString()
   }
@@ -41,6 +44,12 @@ function StatCard({ label, value, sub, color = 'text-gray-900' }: {
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
   )
+}
+
+const METHOD_LABELS: Record<string, string> = {
+  wave: 'Wave', orange_money: 'Orange Money', mtn: 'MTN', moov: 'Moov',
+  tmoney: 'T-Money', flooz: 'Flooz', mobicash: 'Mobicash', maxit: 'Maxit',
+  airtel: 'Airtel', mvola: 'MVola',
 }
 
 export default async function AdminFinancesPage({
@@ -61,6 +70,7 @@ export default async function AdminFinancesPage({
     { data: paymentsAll },
     { data: payoutsCompleted },
     { data: payoutsPending },
+    adminWithdrawalsResult,
   ] = await Promise.all([
     // Abonnements sur la période
     (admin
@@ -71,7 +81,7 @@ export default async function AdminFinancesPage({
         data: { plan_key: string; activated_at: string }[] | null
       }>),
 
-    // Abonnements all-time (pour le solde global)
+    // Abonnements all-time
     (admin
       .from('subscription_transactions' as never)
       .select('plan_key')
@@ -103,12 +113,35 @@ export default async function AdminFinancesPage({
       .from('payouts')
       .select('net_amount')
       .in('status', ['pending', 'processing']),
+
+    // Retraits admin all-time
+    admin
+      .from('admin_withdrawals')
+      .select('id, amount, method, phone_number, status, bictorys_transfer_id, notes, withdrawn_at')
+      .order('withdrawn_at', { ascending: false }),
   ])
 
+  const adminWithdrawals = (adminWithdrawalsResult.data ?? []) as {
+    id: string
+    amount: number
+    method: string
+    phone_number: string
+    status: 'processing' | 'completed' | 'failed'
+    bictorys_transfer_id: string | null
+    notes: string | null
+    withdrawn_at: string
+  }[]
+
   // ── Abonnements ──
-  const subRevPeriod = (subTxns ?? []).reduce((s, t) => s + (CM_PLAN_PRICES[t.plan_key] ?? 0), 0)
+  const subRevPeriod  = (subTxns ?? []).reduce((s, t) => s + (CM_PLAN_PRICES[t.plan_key] ?? 0), 0)
   const subRevAllTime = (subTxnsAll ?? []).reduce((s, t) => s + (CM_PLAN_PRICES[t.plan_key] ?? 0), 0)
-  const subCount = (subTxns ?? []).length
+  const subCount      = (subTxns ?? []).length
+
+  // Total retraits admin déjà effectués
+  const totalAdminWithdrawn  = adminWithdrawals
+    .filter(w => w.status === 'completed')
+    .reduce((s, w) => s + w.amount, 0)
+  const subAvailable = Math.max(0, subRevAllTime - totalAdminWithdrawn)
 
   // ── Paiements marchands ──
   const COMMISSION_RATE = 3
@@ -116,25 +149,18 @@ export default async function AdminFinancesPage({
   const orderCommPeriod  = Math.floor(orderGrossPeriod * COMMISSION_RATE / 100)
   const orderNetPeriod   = orderGrossPeriod - orderCommPeriod
 
-  const orderGrossAll  = (paymentsAll ?? []).reduce((s, p) => s + p.amount, 0)
-  const orderCommAll   = Math.floor(orderGrossAll * COMMISSION_RATE / 100)
-  const orderNetAll    = orderGrossAll - orderCommAll
+  const orderGrossAll = (paymentsAll ?? []).reduce((s, p) => s + p.amount, 0)
+  const orderCommAll  = Math.floor(orderGrossAll * COMMISSION_RATE / 100)
+  const orderNetAll   = orderGrossAll - orderCommAll
 
-  // ── Reversements ──
+  // ── Reversements marchands ──
   const totalPaidOutNet   = (payoutsCompleted ?? []).reduce((s, p) => s + p.net_amount, 0)
   const totalPaidOutGross = (payoutsCompleted ?? []).reduce((s, p) => s + p.gross_amount, 0)
   const totalPendingNet   = (payoutsPending ?? []).reduce((s, p) => s + p.net_amount, 0)
 
-  // ── Soldes globaux (all-time) ──
-  // Argent des abonnements : appartient à TEKKIShop
-  const subBalance = subRevAllTime
-
-  // Argent des marchands actuellement détenu par TEKKIShop
-  // = total net dû − total déjà reversé − total en attente
-  const merchantHeld = Math.max(0, orderNetAll - totalPaidOutNet - totalPendingNet)
-
-  // Solde total TEKKIShop (abonnements + commission sur commandes)
-  const tekkishopBalance = subBalance + orderCommAll - totalPaidOutGross + totalPaidOutNet
+  // ── Soldes globaux ──
+  const merchantHeld     = Math.max(0, orderNetAll - totalPaidOutNet - totalPendingNet)
+  const tekkishopBalance = subAvailable + orderCommAll - totalPaidOutGross + totalPaidOutNet
 
   const periods: Period[] = ['today', '7d', '30d', '3m', '6m', '1y']
 
@@ -142,25 +168,30 @@ export default async function AdminFinancesPage({
     <div className="space-y-8 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Finances</h1>
-        <p className="text-sm text-gray-500 mt-1">Séparation abonnements vs paiements marchands</p>
+        <p className="text-sm text-gray-500 mt-1">Abonnements · Paiements marchands · Retraits</p>
       </div>
+
+      {/* ── Retrait revenus abonnements ── */}
+      <AdminWithdrawSection availableBalance={subAvailable} />
 
       {/* ── Soldes globaux (all-time) ── */}
       <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-6">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Soldes globaux (toutes périodes)</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-gray-400 mb-1">Abonnements TEKKIShop</p>
-            <p className="text-2xl font-black text-emerald-400">{fmt(subBalance)} F</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">Appartient à TEKKIShop</p>
+            <p className="text-xs text-gray-400 mb-0.5">Revenus abonnements disponibles</p>
+            <p className="text-2xl font-black text-emerald-400">{fmt(subAvailable)} F</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">
+              {fmt(subRevAllTime)} F générés · {fmt(totalAdminWithdrawn)} F retirés
+            </p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">Argent marchands détenu</p>
+            <p className="text-xs text-gray-400 mb-0.5">Argent marchands détenu</p>
             <p className="text-2xl font-black text-amber-400">{fmt(merchantHeld)} F</p>
             <p className="text-[10px] text-gray-500 mt-0.5">À reverser ({fmt(totalPendingNet)} F en attente)</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">Commission sur commandes</p>
+            <p className="text-xs text-gray-400 mb-0.5">Commission sur commandes</p>
             <p className="text-2xl font-black text-sky-400">{fmt(orderCommAll)} F</p>
             <p className="text-[10px] text-gray-500 mt-0.5">{COMMISSION_RATE}% sur {fmt(orderGrossAll)} F collectés</p>
           </div>
@@ -249,7 +280,7 @@ export default async function AdminFinancesPage({
         </div>
       </div>
 
-      {/* ── Reversements — all-time ── */}
+      {/* ── Reversements marchands — all-time ── */}
       <div>
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
           Reversements marchands (toutes périodes)
@@ -273,6 +304,65 @@ export default async function AdminFinancesPage({
             color={merchantHeld > 0 ? 'text-red-600' : 'text-gray-900'}
           />
         </div>
+      </div>
+
+      {/* ── Historique retraits admin ── */}
+      <div>
+        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
+          Mes retraits de revenus abonnements
+        </h2>
+        {adminWithdrawals.length === 0 ? (
+          <div className="rounded-xl border border-gray-100 bg-gray-50 py-8 text-center">
+            <p className="text-sm text-gray-400">Aucun retrait enregistré.</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Date</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Méthode</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 hidden md:table-cell">Numéro</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">Montant</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Statut</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {adminWithdrawals.map(w => (
+                  <tr key={w.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {format(new Date(w.withdrawn_at), 'd MMM yyyy', { locale: fr })}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 font-medium">
+                      {METHOD_LABELS[w.method] ?? w.method}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 font-mono text-xs hidden md:table-cell">
+                      {w.phone_number}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-gray-900">
+                      {fmt(w.amount)} F
+                    </td>
+                    <td className="px-4 py-3">
+                      {w.status === 'completed' ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
+                          Effectué
+                        </span>
+                      ) : w.status === 'failed' ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 uppercase">
+                          Échoué
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase">
+                          En cours
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <p className="text-xs text-gray-400">
