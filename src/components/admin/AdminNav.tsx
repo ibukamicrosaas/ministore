@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Bot,
   Globe,
+  BarChart3,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
@@ -21,6 +22,7 @@ const NAV = [
   { href: '/admin/shops',            label: 'Boutiques',        icon: Building2 },
   { href: '/admin/payments',         label: 'Paiements',        icon: CreditCard },
   { href: '/admin/payouts',          label: 'Reversements',     icon: Wallet },
+  { href: '/admin/finances',         label: 'Finances',         icon: BarChart3 },
   { href: '/admin/notifications',    label: 'Notifications',    icon: Bell },
   { href: '/admin/country-managers', label: 'Country Managers', icon: Globe },
   { href: '/admin/ai-expert',        label: 'Assistant IA',     icon: Bot },

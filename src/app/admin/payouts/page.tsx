@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { MarkPayoutDoneButton } from './MarkPayoutDoneButton'
 import { CMPayoutRow } from './CMPayoutRow'
+import { AdminManualPayoutSection } from './AdminManualPayoutSection'
 import { PAYOUT_METHODS_BY_COUNTRY } from '@/lib/utils/country-groups'
 
 export const metadata = { title: 'Reversements — Admin TekkiShop' }
@@ -87,6 +88,9 @@ export default async function AdminPayoutsPage() {
           {pending.length + cmPayouts.length} en attente · {done.length} effectués
         </p>
       </div>
+
+      {/* ── Reversement manuel pour un marchand ── */}
+      <AdminManualPayoutSection />
 
       {/* ── Reversements Country Managers ── */}
       {cmPayouts.length > 0 && (
