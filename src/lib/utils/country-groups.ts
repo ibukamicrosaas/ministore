@@ -92,7 +92,7 @@ export const CURRENCY_LABEL: Record<ShopCurrency, string> = {
   CAD: 'CAD (Dollar canadien)',
 }
 
-export type PayoutMethodKey = 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'airtel' | 'mvola'
+export type PayoutMethodKey = 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'airtel' | 'mvola' | 'mobicash' | 'maxit'
 
 export interface PayoutMethod {
   label: string
@@ -116,7 +116,8 @@ export const PAYOUT_METHODS_BY_COUNTRY: Record<string, PayoutMethod[]> = {
     { label: 'Orange Money', key: 'orange_money',  col: 'payout_om_number'   },
   ],
   ML: [
-    { label: 'Orange Money', key: 'orange_money',  col: 'payout_wave_number' },
+    { label: 'Orange Money', key: 'orange_money', col: 'payout_wave_number' },
+    { label: 'Mobicash',     key: 'mobicash',     col: 'payout_om_number'   },
   ],
   BF: [
     { label: 'Orange Money', key: 'orange_money',  col: 'payout_wave_number' },

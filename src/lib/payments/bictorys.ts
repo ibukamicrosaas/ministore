@@ -196,7 +196,7 @@ export interface BictorysPayoutPayload {
   merchant?: { secretCode: string }  // optionnel — non requis par l'API
 }
 
-export type BictorysPayoutPaymentType = 'wave_money' | 'orange_money' | 'mtn_money' | 'moov'
+export type BictorysPayoutPaymentType = 'wave_money' | 'orange_money' | 'mtn_money' | 'moov' | 'togocell' | 'mobicash' | 'maxit'
 
 export async function createBictorysPayout(
   privateKey: string,  // BICTORYS_PRIVATE_KEY — la clé publique retourne 401 sur les payouts

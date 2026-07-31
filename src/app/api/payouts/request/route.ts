@@ -12,8 +12,10 @@ const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
   orange_money: 'orange_money',
   mtn:          'mtn_money',
   moov:         'moov',
-  tmoney:       'moov',
   flooz:        'moov',
+  tmoney:       'togocell',
+  mobicash:     'mobicash',
+  maxit:        'maxit',
 }
 
 export async function POST(req: NextRequest) {

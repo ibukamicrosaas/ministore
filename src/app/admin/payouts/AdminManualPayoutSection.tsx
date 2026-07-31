@@ -10,8 +10,10 @@ const ALL_METHODS = [
   { key: 'orange_money', label: 'Orange Money' },
   { key: 'mtn',          label: 'MTN Mobile Money' },
   { key: 'moov',         label: 'Moov Money' },
-  { key: 'tmoney',       label: 'T-Money' },
-  { key: 'flooz',        label: 'Flooz' },
+  { key: 'tmoney',       label: 'T-Money (Togocel)' },
+  { key: 'flooz',        label: 'Flooz (Moov Togo)' },
+  { key: 'mobicash',     label: 'Mobicash' },
+  { key: 'maxit',        label: 'Maxit' },
   { key: 'airtel',       label: 'Airtel Money' },
   { key: 'mvola',        label: 'MVola' },
 ]

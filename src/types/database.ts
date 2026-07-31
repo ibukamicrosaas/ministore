@@ -566,7 +566,7 @@ export type Database = {
           gross_amount: number
           commission_amount: number
           net_amount: number
-          payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'airtel' | 'mvola'
+          payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number: string
           status: 'pending' | 'processing' | 'completed' | 'failed'
           bictorys_transfer_id: string | null
@@ -582,7 +582,7 @@ export type Database = {
           gross_amount: number
           commission_amount?: number
           net_amount: number
-          payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'airtel' | 'mvola'
+          payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number: string
           status?: 'pending' | 'processing' | 'completed' | 'failed'
           bictorys_transfer_id?: string | null
@@ -598,7 +598,7 @@ export type Database = {
           gross_amount?: number
           commission_amount?: number
           net_amount?: number
-          payout_method?: 'wave' | 'orange_money'
+          payout_method?: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number?: string
           status?: 'pending' | 'processing' | 'completed' | 'failed'
           bictorys_transfer_id?: string | null
