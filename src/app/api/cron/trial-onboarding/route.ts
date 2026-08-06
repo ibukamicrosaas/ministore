@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
       .select('id, name, phone_whatsapp, slug, onboarding_completed')
       .eq('plan', 'trial')
       .eq('is_active', true)
+      .eq('trial_model', 'legacy') // free_orders : /start a son propre funnel de relance, pas ces textes-ci
       .gte('created_at', windowStart)
       .lte('created_at', windowEnd)
 

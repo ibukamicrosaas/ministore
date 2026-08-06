@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 import { sendWhatsApp, buildPlanActivatedMessage } from '@/lib/notifications/whatsapp'
+import { setShopStatus } from '@/lib/billing/shop-status'
 
 const VALID_PLAN_KEYS = new Set(['decouverte', 'business', 'pro'])
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -31,7 +32,7 @@ export async function activatePlan(
   // Récupérer la date de fin actuelle pour ne pas pénaliser les renouvellements anticipés
   const { data: currentShop } = await supabase
     .from('shops')
-    .select('subscription_ends_at')
+    .select('subscription_ends_at, trial_model')
     .eq('id', shopId)
     .single()
 
@@ -77,6 +78,18 @@ export async function activatePlan(
   revalidatePath('/dashboard/upgrade')
   revalidatePath('/dashboard/settings')
   if (data?.slug) revalidatePath(`/${data.slug}`)
+
+  // Boutique free_orders : setShopStatus pose status='active', libère les
+  // commandes retenues et notifie le marchand avec le cumul (§6 de la spec) —
+  // remplace la notification générique ci-dessous, plus précise pour ce cas.
+  if (currentShop?.trial_model === 'free_orders') {
+    const result = await setShopStatus(shopId, 'active')
+    if (result.error) {
+      console.error('[activatePlan] setShopStatus', result.error)
+      Sentry.captureException(new Error(result.error), { extra: { shopId, planKey } })
+    }
+    return {}
+  }
 
   // Notifier le marchand par WhatsApp — permet de confirmer l'activation même si
   // le navigateur est resté sur la page de succès de Bictorys

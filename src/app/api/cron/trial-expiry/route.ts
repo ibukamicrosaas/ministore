@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
     .select('id, name, slug, phone_whatsapp')
     .eq('plan', 'trial')
     .eq('is_active', true)
+    .eq('trial_model', 'legacy') // free_orders a son propre cron (free-orders-trial-expiry) : une
+    // boutique expired de ce modèle doit rester is_active=true (boutique publique), jamais désactivée ici
     .lt('trial_ends_at', new Date().toISOString())
 
   if (error) {

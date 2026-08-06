@@ -1,7 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
+import { MAX_HELD_ORDERS } from '@/constants'
 import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone, QuantityDiscount } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
@@ -27,6 +29,27 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     .single()
 
   if (!shopData) notFound()
+
+  // Fermeture du bouton de commande : uniquement pertinent pour une boutique
+  // free_orders en 'expired' avec trop de commandes retenues non résolues
+  // (§5 de la spec). Nécessite l'admin client : aucune policy RLS ne permet à
+  // un visiteur anonyme de compter les commandes d'une boutique.
+  let acceptingOrders = true
+  const { data: statusData } = await supabase
+    .from('shops')
+    .select('status')
+    .eq('id', shopData.id)
+    .single()
+  if (statusData?.status === 'expired') {
+    const admin = createAdminClient()
+    const { count: heldCount } = await admin
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shopData.id)
+      .eq('is_held', true)
+      .is('released_at', null)
+    if ((heldCount ?? 0) >= MAX_HELD_ORDERS) acceptingOrders = false
+  }
 
   // accept_cash_on_delivery may not exist yet in older DB instances — default true if missing
   let acceptCashOnDelivery = true
@@ -122,6 +145,7 @@ export default async function CommanderPage({ params, searchParams }: Props) {
         preselectedQuantity={preselectedQuantity}
         basePath={await getShopBasePath(slug)}
         isDigital={isDigital}
+        acceptingOrders={acceptingOrders}
       />
     </div>
   )

@@ -31,7 +31,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     .from('orders')
     .select(`
       id, status, delivery_type, delivery_address, delivery_date,
-      payment_type, deposit_amount, total_price, notes,
+      payment_type, deposit_amount, total_price, notes, is_held,
       clients(first_name, phone, whatsapp),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
       shops(id, name, slug, primary_color, phone_whatsapp, currency)
@@ -52,6 +52,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     deposit_amount: number
     total_price: number
     notes: string | null
+    is_held: boolean
     clients: { first_name: string; phone: string; whatsapp: string | null } | null
     order_items: OrderItem[]
     shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
@@ -137,14 +138,18 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
-        {isDigitalOrder && isPaid
+        {order.is_held
+          ? 'Commande enregistrée'
+          : isDigitalOrder && isPaid
           ? 'Achat confirmé ✓'
           : isOnline && isPaid
           ? 'Paiement reçu ✓'
           : 'Commande confirmée !'}
       </h1>
       <p className="text-sm text-gray-500 mb-3">
-        {isDigitalOrder && isPaid
+        {order.is_held
+          ? 'Le vendeur va te contacter pour confirmer.'
+          : isDigitalOrder && isPaid
           ? 'Votre paiement a été reçu. Téléchargez votre fichier ci-dessous.'
           : isOnline && isPaid
           ? 'Votre paiement a été reçu. La boutique prépare votre commande.'

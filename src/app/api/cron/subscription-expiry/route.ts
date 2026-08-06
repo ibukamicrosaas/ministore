@@ -8,6 +8,7 @@ import {
 import { recordCronRun } from '@/lib/cron/health'
 import { APP_URL, PLAN_LABELS } from '@/constants'
 import { revalidatePath } from 'next/cache'
+import { setShopStatus } from '@/lib/billing/shop-status'
 
 export async function GET(req: NextRequest) {
   if (!verifyCronRequest(req)) {
@@ -16,12 +17,31 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Boutiques dont l'abonnement est expiré et qui sont encore actives
+  // Boutiques free_orders payantes dont l'abonnement est résilié : repassent en
+  // 'expired' (§3/§12 de la spec — reste publique, commandes de nouveau retenues,
+  // celles déjà libérées le restent) via setShopStatus, jamais is_active=false
+  // directement (qui les rendrait invisibles, contraire au modèle).
+  const { data: freeOrdersExpired } = await supabase
+    .from('shops')
+    .select('id')
+    .eq('trial_model', 'free_orders')
+    .eq('status', 'active')
+    .not('subscription_ends_at', 'is', null)
+    .lt('subscription_ends_at', new Date().toISOString())
+
+  let freeOrdersResiliated = 0
+  for (const shop of freeOrdersExpired ?? []) {
+    const result = await setShopStatus(shop.id, 'expired')
+    if (!result.error) freeOrdersResiliated++
+  }
+
+  // Boutiques legacy dont l'abonnement est expiré et qui sont encore actives
   const { data: expired, error } = await supabase
     .from('shops')
     .select('id, name, slug, plan, phone_whatsapp')
     .neq('plan', 'trial')
     .eq('is_active', true)
+    .eq('trial_model', 'legacy')
     .not('subscription_ends_at', 'is', null)
     .lt('subscription_ends_at', new Date().toISOString())
 
@@ -31,7 +51,10 @@ export async function GET(req: NextRequest) {
   }
 
   const shops = expired ?? []
-  if (shops.length === 0) return NextResponse.json({ deactivated: 0, notified: 0 })
+  if (shops.length === 0) {
+    void recordCronRun('subscription-expiry', 'ok', { deactivated: 0, notified: 0, freeOrdersResiliated })
+    return NextResponse.json({ deactivated: 0, notified: 0, freeOrdersResiliated })
+  }
 
   // Désactiver toutes les boutiques expirées en une seule requête
   const ids = shops.map(s => s.id)
@@ -69,6 +92,6 @@ export async function GET(req: NextRequest) {
     console.log(`[cron/subscription-expiry] ${shop.name} (${shop.id}) désactivé`)
   }
 
-  void recordCronRun('subscription-expiry', 'ok', { deactivated: shops.length, notified })
-  return NextResponse.json({ deactivated: shops.length, notified })
+  void recordCronRun('subscription-expiry', 'ok', { deactivated: shops.length, notified, freeOrdersResiliated })
+  return NextResponse.json({ deactivated: shops.length, notified, freeOrdersResiliated })
 }

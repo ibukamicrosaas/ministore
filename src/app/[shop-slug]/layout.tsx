@@ -18,11 +18,11 @@ export default async function ShopLayout({
 
   const { data } = await supabase
     .from('shops')
-    .select('id, name, logo_url, primary_color, is_active, plan, trial_ends_at, hide_branding, phone_whatsapp, previous_slug, meta_pixel_id')
+    .select('id, name, logo_url, primary_color, is_active, plan, trial_model, trial_ends_at, hide_branding, phone_whatsapp, previous_slug, meta_pixel_id')
     .eq('slug', slug)
     .single()
 
-  let shop = data as Pick<Shop, 'id' | 'name' | 'logo_url' | 'primary_color' | 'is_active' | 'plan' | 'trial_ends_at' | 'hide_branding' | 'phone_whatsapp'> & { previous_slug?: string | null; meta_pixel_id?: string | null } | null
+  let shop = data as Pick<Shop, 'id' | 'name' | 'logo_url' | 'primary_color' | 'is_active' | 'plan' | 'trial_ends_at' | 'hide_branding' | 'phone_whatsapp'> & { trial_model?: string; previous_slug?: string | null; meta_pixel_id?: string | null } | null
 
   // Slug introuvable — vérifier si c'est un ancien slug renommé
   if (!shop) {
@@ -38,8 +38,12 @@ export default async function ShopLayout({
 
   const color = shop.primary_color ?? '#0EA5E9'
 
-  // Site inactif : plan essai (jamais activé) ou abonnement expiré/désactivé
-  const isTrial    = shop.plan === 'trial'
+  // Site inactif : plan essai (jamais activé) ou abonnement expiré/désactivé.
+  // trial_model='free_orders' n'entre JAMAIS dans cette branche "isTrial" : ces
+  // boutiques restent en plan='trial' jusqu'au vrai paiement (le modèle pilote
+  // leur visibilité via status/is_active, pas via plan) — sans cette condition,
+  // toute boutique free_orders publiée serait verrouillée dès sa création.
+  const isTrial    = shop.trial_model !== 'free_orders' && shop.plan === 'trial'
   const isInactive = isTrial || !shop.is_active
 
   if (isInactive) {

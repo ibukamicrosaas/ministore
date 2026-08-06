@@ -5,10 +5,13 @@ import {
   buildOrderConfirmationMessage,
   buildNewOrderAlertMessage,
   buildLowStockAlertMessage,
+  buildHeldOrderClientConfirmationMessage,
+  buildHeldOrderMerchantAlertMessage,
+  buildQuotaWarningMessage,
 } from '@/lib/notifications/whatsapp'
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
 import { sendPushToShop } from '@/lib/push/send'
-import { APP_URL } from '@/constants'
+import { APP_URL, MAX_HELD_ORDERS } from '@/constants'
 
 interface OrderItemInput {
   product_id: string
@@ -101,13 +104,28 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
 
   if (!shop) {
     return NextResponse.json({ error: 'Boutique introuvable.' }, { status: 404 })
+  }
+
+  // Filet de sécurité serveur : le bouton de commande est déjà masqué côté UI
+  // (§5 de la spec), mais une boutique expired avec trop de commandes retenues
+  // ne doit pas non plus accepter une requête directe à cette route.
+  if (shop.status === 'expired') {
+    const { count: heldCount } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shopId)
+      .eq('is_held', true)
+      .is('released_at', null)
+    if ((heldCount ?? 0) >= MAX_HELD_ORDERS) {
+      return NextResponse.json({ error: 'Cette boutique ne prend pas de commandes en ce moment.' }, { status: 403 })
+    }
   }
 
   // Vérifier le stock et récupérer les prix réels depuis la DB (ignorer les prix du client)
@@ -312,13 +330,35 @@ export async function POST(req: NextRequest) {
       total_price,
       notes:              notes ?? null,
     })
-    .select('id, client_token')
+    .select('id, client_token, is_held')
     .single()
 
   if (orderError || !order) {
     console.error('[api/orders]', orderError?.message)
     await rollbackStock()
     return NextResponse.json({ error: 'Impossible de créer la commande.' }, { status: 500 })
+  }
+
+  // Commande retenue (§5/§13 de la spec) : le montant/nombre d'articles est
+  // acceptable pour le marchand, mais jamais l'identité du client tant qu'il
+  // n'a pas activé sa boutique — même via cette notification WhatsApp.
+  const isHeld = order.is_held === true
+
+  // À une commande du quota (§6) : le marchand reçoit l'alerte normale PLUS ce
+  // rappel, pour qu'il ait le temps d'activer avant de perdre la suivante.
+  let quotaWarningRemaining: number | null = null
+  if (!isHeld) {
+    const { data: quotaShop } = await supabase
+      .from('shops')
+      .select('trial_model, free_orders_used, free_orders_quota')
+      .eq('id', shopId)
+      .single()
+    if (
+      quotaShop?.trial_model === 'free_orders' &&
+      quotaShop.free_orders_used === quotaShop.free_orders_quota - 1
+    ) {
+      quotaWarningRemaining = quotaShop.free_orders_quota - quotaShop.free_orders_used
+    }
   }
 
   // Construction commune orderUrl + itemsSummary — utilisés par email + WhatsApp
@@ -423,21 +463,29 @@ export async function POST(req: NextRequest) {
   }
 
   // Si paiement en ligne → renvoyer vers la page de paiement
+  // NOTE : le paiement en ligne confirmé (webhooks Bictorys/Stripe) n'a pas été
+  // audité pour la fuite de coordonnées client sur commande retenue — seul ce
+  // chemin paiement-à-la-réception l'est, ci-dessous. À vérifier avant que le
+  // modèle free_orders traite un vrai paiement en ligne retenu.
   if (payment_type === 'online_full' || payment_type === 'online_deposit') {
-    return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'pay' })
+    return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'pay', isHeld })
   }
 
   // Paiement à la réception → envoyer les notifications WhatsApp
-  const confirmMsg = buildOrderConfirmationMessage({
-    shopName:     shop.name,
-    clientName:   client_first_name,
-    items:        itemsSummary,
-    totalPrice:   total_price,
-    deliveryType: delivery_type,
-    deliveryDate: delivery_date ?? undefined,
-    paymentType:  payment_type,
-    orderUrl,
-  })
+  const upgradeUrl = `${APP_URL}/dashboard/upgrade`
+
+  const confirmMsg = isHeld
+    ? buildHeldOrderClientConfirmationMessage({ shopName: shop.name })
+    : buildOrderConfirmationMessage({
+        shopName:     shop.name,
+        clientName:   client_first_name,
+        items:        itemsSummary,
+        totalPrice:   total_price,
+        deliveryType: delivery_type,
+        deliveryDate: delivery_date ?? undefined,
+        paymentType:  payment_type,
+        orderUrl,
+      })
 
   const clientNotif = await sendWhatsApp(client_whatsapp, confirmMsg)
   await supabase.from('notification_logs').insert({
@@ -452,28 +500,43 @@ export async function POST(req: NextRequest) {
   })
 
   if (shop.phone_whatsapp) {
-    const alertMsg = buildNewOrderAlertMessage({
-      clientName:   client_first_name,
-      clientPhone:  client_phone,
-      items:        itemsSummary,
-      totalPrice:   total_price,
-      deliveryType: delivery_type,
-      deliveryDate: delivery_date ?? undefined,
-      paymentType:  payment_type,
-    })
+    // Commande retenue : jamais le nom ni le téléphone du client dans cette
+    // notification tant que la boutique n'est pas activée (§13 de la spec).
+    const alertMsg = isHeld
+      ? buildHeldOrderMerchantAlertMessage({ totalPrice: total_price, itemCount: serverItems.length, upgradeUrl })
+      : buildNewOrderAlertMessage({
+          clientName:   client_first_name,
+          clientPhone:  client_phone,
+          items:        itemsSummary,
+          totalPrice:   total_price,
+          deliveryType: delivery_type,
+          deliveryDate: delivery_date ?? undefined,
+          paymentType:  payment_type,
+        })
 
     const shopNotif = await sendWhatsApp(shop.phone_whatsapp, alertMsg)
     await supabase.from('notification_logs').insert({
       shop_id:           shopId,
       order_id:          order.id,
       recipient_phone:   shop.phone_whatsapp,
-      notification_type: 'new_order_shop',
+      notification_type: 'new_order_shop', // pas de valeur dédiée 'held' dans la contrainte existante
       channel:           'sms',
       message:           alertMsg,
       status:            shopNotif.success ? 'sent' : 'failed',
       error_message:     shopNotif.error ?? null,
     })
+
+    // À une commande du quota gratuit : rappel séparé, en plus de l'alerte normale.
+    if (quotaWarningRemaining !== null) {
+      const warningMsg = buildQuotaWarningMessage({
+        shopName:   shop.name,
+        orderTotal: total_price,
+        remaining:  quotaWarningRemaining,
+        upgradeUrl,
+      })
+      void sendWhatsApp(shop.phone_whatsapp, warningMsg)
+    }
   }
 
-  return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'success' })
+  return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'success', isHeld })
 }

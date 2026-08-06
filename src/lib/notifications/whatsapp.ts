@@ -159,6 +159,58 @@ export function buildSubscriptionExpiredMessage(params: {
   return `TekkiShop - ${params.shopName}: abonnement ${params.planLabel} expire. Boutique suspendue. Renouvelez: ${params.renewUrl}`
 }
 
+// ─── Modèle "boutique publique + commandes offertes" (trial_model='free_orders') ──
+
+export function buildFreeOrdersActivatedMessage(params: {
+  shopName: string
+  releasedCount: number
+  releasedTotal: string // déjà formaté dans la devise de la boutique, ex. "37 500 FCFA"
+}): string {
+  if (params.releasedCount === 0) {
+    return `TekkiShop - ${params.shopName}: boutique activee ! Tu peux desormais recevoir des commandes sans limite.`
+  }
+  const plural = params.releasedCount > 1 ? 's' : ''
+  return `TekkiShop - ${params.shopName}: boutique activee ! ${params.releasedCount} commande${plural} t'attend${params.releasedCount > 1 ? 'ent' : ''}, pour un total de ${params.releasedTotal}.`
+}
+
+export function buildFreeOrdersTrialExpiredMessage(params: {
+  shopName: string
+  upgradeUrl: string
+}): string {
+  return `TekkiShop - ${params.shopName}: tes 14 jours sont ecoules. Active ta boutique pour continuer a recevoir des commandes: ${params.upgradeUrl}`
+}
+
+export function buildHeldOrderClientConfirmationMessage(params: {
+  shopName: string
+}): string {
+  return `Commande enregistree chez ${params.shopName}. Le vendeur va te contacter pour confirmer.`
+}
+
+export function buildHeldOrderMerchantAlertMessage(params: {
+  totalPrice: number
+  itemCount: number
+  upgradeUrl: string
+}): string {
+  const plural = params.itemCount > 1 ? 's' : ''
+  return `TekkiShop: une commande de ${params.totalPrice.toLocaleString('fr-FR')} FCFA (${params.itemCount} article${plural}) t'attend. Active ta boutique pour voir le client et la traiter: ${params.upgradeUrl}`
+}
+
+export function buildQuotaWarningMessage(params: {
+  shopName: string
+  orderTotal: number
+  remaining: number
+  upgradeUrl: string
+}): string {
+  return `TekkiShop - ${params.shopName}: nouvelle commande de ${params.orderTotal.toLocaleString('fr-FR')} FCFA. Il te reste ${params.remaining} commande offerte. Active ta boutique maintenant pour ne pas rater la suivante: ${params.upgradeUrl}`
+}
+
+export function buildHeldOrderClientNoticeMessage(params: {
+  shopName: string
+  merchantPhone: string
+}): string {
+  return `Bonjour, ta commande chez ${params.shopName} n'a pas pu etre traitee. Tu peux contacter le vendeur au ${params.merchantPhone}.`
+}
+
 export function buildDigitalDownloadMessage(params: {
   shopName: string
   clientName: string

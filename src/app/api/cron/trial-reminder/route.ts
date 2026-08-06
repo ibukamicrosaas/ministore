@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     .select('id, name, slug, phone_whatsapp, trial_ends_at')
     .eq('plan', 'trial')
     .eq('is_active', true)
+    .eq('trial_model', 'legacy') // free_orders : pas de rappel à J-3 équivalent pour l'instant, hors spec
     .gte('trial_ends_at', from)
     .lte('trial_ends_at', to)
 

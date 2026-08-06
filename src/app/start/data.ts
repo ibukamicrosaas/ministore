@@ -5,59 +5,67 @@ import {
 import { getPaymentMethodsByCountry } from '@/lib/payments/bictorys'
 
 // ── Catégories (Q2) ─────────────────────────────────────────────────────────────
-// ⚠️ Liste provisoire reprise telle quelle de la maquette v4, en attendant la
-// validation du classement réel (GROUP BY specialty) par l'équipe produit.
-export type QuizCat = 'mode' | 'beaute' | 'cheveux' | 'chaussures' | 'alimentaire' | 'digital' | 'electro' | 'autre'
+// Liste finale validée sur la base du GROUP BY specialty réel (voir migration 071
+// et son historique) — dix catégories, le reste tombe dans "Autre chose" + specialty_other.
+export type QuizCat = 'mode' | 'chaussures' | 'beaute' | 'cheveux' | 'alimentaire' | 'electro' | 'digital' | 'services' | 'maison' | 'autre'
 
 export const CAT_LABEL: Record<QuizCat, string> = {
   mode:        'Mode & vêtements',
+  chaussures:  'Chaussures & sacs',
   beaute:      'Cosmétiques & soins',
   cheveux:     'Cheveux & perruques',
-  chaussures:  'Chaussures & sacs',
-  alimentaire: 'Alimentaire',
-  digital:     'Produits digitaux',
+  alimentaire: 'Alimentaire & boissons',
   electro:     'Électronique',
+  digital:     'Produits digitaux',
+  services:    'Services',
+  maison:      'Maison & déco',
   autre:       'Autre chose',
 }
 
 // Placeholder pour le nom du premier produit (écran 10), selon la catégorie choisie
 export const CAT_EXAMPLE: Record<QuizCat, string> = {
   mode:        'Robe wax grande taille',
+  chaussures:  'Sac en cuir artisanal',
   beaute:      'Huile de karité pure',
   cheveux:     'Perruque lace frontale',
-  chaussures:  'Sac en cuir artisanal',
   alimentaire: 'Bissap artisanal 1 L',
-  digital:     'Guide PDF — 30 recettes',
   electro:     'Écouteurs sans fil',
+  digital:     'Guide PDF — 30 recettes',
+  services:    'Séance de coaching (1h)',
+  maison:      'Bougie parfumée artisanale',
   autre:       'Mon premier produit',
 }
 
 // Correspondance catégorie /start → valeur stockée dans shops.specialty.
-// 'cheveux' est stocké dans sa propre valeur 'hair' dès maintenant — le fusionner
-// avec 'beauty' aurait rendu impossible de mesurer combien de boutiques en
-// relèvent, ce qui est précisément ce que Q2 doit permettre de savoir.
-// 'chaussures' reste fusionné dans 'fashion', comme le sont déjà les 331 lignes
-// existantes en base : décision déjà actée, en attente du classement complet
-// pour savoir si ça vaut la peine de les séparer.
+// 'chaussures' → 'shoes' : nouvelle valeur, séparée de 'fashion' dès maintenant.
+// Les 333 lignes 'fashion' existantes ne sont pas rétro-réparties (décision actée).
+// 'services' correspond à la même valeur que /onboarding (coaching, réparation,
+// livraison, prestations) — TekkiShop ne vend pas de services numériques complexes
+// au sens SaaS (ça, c'est TekkiPro), mais les prestations locales type coaching/
+// réparation/livraison sont bien vendables en boutique TekkiShop.
 export const CAT_TO_SPECIALTY: Record<QuizCat, string> = {
   mode:        'fashion',
+  chaussures:  'shoes',
   beaute:      'beauty',
   cheveux:     'hair',
-  chaussures:  'fashion',
   alimentaire: 'food',
-  digital:     'digital',
   electro:     'electronics',
+  digital:     'digital',
+  services:    'services',
+  maison:      'home',
   autre:       'other',
 }
 
 export const PREUVES_CAT: Record<QuizCat, string> = {
   mode:        "Bon choix. La mode est l'une des <b>catégories les plus vendues sur TekkiShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
+  chaussures:  "Top. Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
   beaute:      "Excellent. Les vendeuses de cosmétiques reçoivent souvent leurs <b>premières commandes en quelques jours</b> — leurs clientes rachètent régulièrement.",
   cheveux:     "Top choix. Photos par modèle, longueurs et textures affichées : <b>fini les mêmes questions en boucle</b> sur WhatsApp.",
-  chaussures:  "Top. Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
   alimentaire: "Miam. Menus, prix et zones de livraison affichés : tes clients <b>commandent directement</b>, toi tu cuisines.",
-  digital:     "Malin. Ebooks, guides, formations : le client paie et <b>reçoit son fichier automatiquement</b>. Tu n'envoies plus rien à la main.",
   electro:     "Excellent choix. Accessoires, gadgets, électronique : tes clients voient le stock disponible et <b>commandent directement</b> sans avoir à te déranger pour chaque question.",
+  digital:     "Malin. Ebooks, guides, formations : le client paie et <b>reçoit son fichier automatiquement</b>. Tu n'envoies plus rien à la main.",
+  services:    "Bonne idée. Coaching, réparation, livraison, prestation à domicile : tes clients voient tes créneaux et <b>réservent directement</b>, sans échange de messages interminable.",
+  maison:      "Joli choix. Déco, linge de maison, objets artisanaux : les <b>photos font vendre</b> — ta boutique met tes produits en valeur bien mieux qu'un post WhatsApp.",
   autre:       "Parfait. Quoi que tu vendes, ta boutique l'affiche proprement avec photos et prix.",
 }
 

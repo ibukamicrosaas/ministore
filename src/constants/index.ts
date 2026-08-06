@@ -11,10 +11,16 @@ export const DEFAULT_CURRENCY            = 'XOF'
 export const TEKKISHOP_COMMISSION_RATE   = 3    // % prélevé sur les paiements en ligne
 export const PAYOUT_MIN_AMOUNT           = 2000 // montant minimum pour déclencher un retrait (FCFA)
 
-// Parcours /start — nombre de commandes offertes affiché à l'écran "boutique en ligne".
-// Purement informatif ici : aucune logique de plafond/blocage n'est branchée dessus
-// (spécifiée séparément).
-export const FREE_ORDERS = 3
+// Modèle "boutique publique + 3 commandes offertes" (trial_model='free_orders' uniquement).
+// FREE_ORDERS n'est qu'un affichage par défaut avant que la boutique existe (écran 11 de
+// /start) — la vraie limite appliquée est shops.free_orders_quota (voir migration 072),
+// pour permettre une restitution manuelle par le support sans redéploiement.
+export const FREE_ORDERS               = 3
+// N'affecte PAS TRIAL_DAYS (modèle legacy, inchangé) — uniquement activateTrialShop.
+export const FREE_ORDERS_TRIAL_DAYS    = 14
+export const TRIAL_EXTENSION_DAYS      = 7
+export const HELD_ORDER_NOTICE_HOURS   = 48
+export const MAX_HELD_ORDERS           = 3
 
 // Plans
 export const TRIAL_DAYS            = 30

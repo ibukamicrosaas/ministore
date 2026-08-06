@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Shirt, Sparkles, Scissors, ShoppingBag, UtensilsCrossed, BookOpen, Smartphone, Package,
   Store, Rocket, Magnet, Settings, Truck, Wallet, ArrowLeft, ArrowRight, Bell, KeyRound,
-  Check, Circle, Camera, Plus, Link2, QrCode,
+  Check, Circle, Camera, Plus, Link2, QrCode, Briefcase, Home,
 } from 'lucide-react'
 import styles from './start.module.css'
 import { PinInput } from '@/components/ui/PinInput'
@@ -90,12 +90,14 @@ function IgIcon() {
 
 const CAT_ICONS: Record<QuizCat, React.ReactNode> = {
   mode:        <Shirt />,
+  chaussures:  <ShoppingBag />,
   beaute:      <Sparkles />,
   cheveux:     <Scissors />,
-  chaussures:  <ShoppingBag />,
   alimentaire: <UtensilsCrossed />,
-  digital:     <BookOpen />,
   electro:     <Smartphone />,
+  digital:     <BookOpen />,
+  services:    <Briefcase />,
+  maison:      <Home />,
   autre:       <Package />,
 }
 

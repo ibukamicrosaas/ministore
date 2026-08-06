@@ -51,6 +51,14 @@
     {
       "path": "/api/cron/purge-draft-shops",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/free-orders-trial-expiry",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/notify-held-orders",
+      "schedule": "0 * * * *"
     }
   ]
 }

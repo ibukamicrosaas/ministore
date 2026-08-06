@@ -4,6 +4,7 @@ import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
 import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
+import { setShopStatus } from '@/lib/billing/shop-status'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +50,13 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: session.subscription as string | null,
             })
             .eq('id', shopId)
+
+          // Boutique free_orders payée via Stripe (diaspora EU/CA) : même
+          // traitement qu'un paiement Bictorys — status='active', libère les
+          // commandes retenues. setShopStatus no-op silencieusement pour une
+          // boutique trial_model='legacy'.
+          const activation = await setShopStatus(shopId, 'active')
+          if (activation.error) console.error('[Webhook Stripe] setShopStatus', activation.error)
         }
 
         if (meta.type === 'order_payment') {
@@ -117,14 +125,30 @@ export async function POST(req: NextRequest) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
 
         if (customerId) {
-          await supabase
+          const { data: shop } = await supabase
             .from('shops')
-            .update({
-              plan:                   'decouverte',
-              is_active:              false,
-              stripe_subscription_id: null,
-            })
+            .select('id, trial_model')
             .eq('stripe_customer_id', customerId)
+            .single()
+
+          if (shop?.trial_model === 'free_orders') {
+            // Résiliation (§12 de la spec) : 'expired', pas is_active=false direct —
+            // la boutique reste publique, ses commandes sont de nouveau retenues,
+            // celles déjà libérées le restent. plan repassé à 'decouverte' quand
+            // même : ce n'est plus un plan payant actif.
+            await supabase.from('shops').update({ plan: 'decouverte', stripe_subscription_id: null }).eq('id', shop.id)
+            const result = await setShopStatus(shop.id, 'expired')
+            if (result.error) console.error('[Webhook Stripe] setShopStatus', result.error)
+          } else {
+            await supabase
+              .from('shops')
+              .update({
+                plan:                   'decouverte',
+                is_active:              false,
+                stripe_subscription_id: null,
+              })
+              .eq('stripe_customer_id', customerId)
+          }
         }
         break
       }
@@ -135,10 +159,25 @@ export async function POST(req: NextRequest) {
         const isActive   = sub.status === 'active' || sub.status === 'trialing'
 
         if (customerId) {
-          await supabase
+          const { data: shop } = await supabase
             .from('shops')
-            .update({ is_active: isActive })
+            .select('id, trial_model')
             .eq('stripe_customer_id', customerId)
+            .single()
+
+          if (shop?.trial_model === 'free_orders') {
+            // Même logique que la résiliation : jamais is_active=false direct pour
+            // ce modèle. isActive=false ici (impayé/en pause) → 'expired', jamais
+            // un hard-hide — voir migration 078, is_active=false est réservé à un
+            // masquage volontaire (admin), pas à un aléa de paiement Stripe.
+            const result = await setShopStatus(shop.id, isActive ? 'active' : 'expired')
+            if (result.error) console.error('[Webhook Stripe] setShopStatus', result.error)
+          } else {
+            await supabase
+              .from('shops')
+              .update({ is_active: isActive })
+              .eq('stripe_customer_id', customerId)
+          }
         }
         break
       }

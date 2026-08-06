@@ -210,6 +210,7 @@ interface Props {
   preselectedQuantity?: number
   basePath: string
   isDigital?: boolean
+  acceptingOrders?: boolean
 }
 
 export function OrderForm({
@@ -228,6 +229,7 @@ export function OrderForm({
   acceptOnlinePayment,
   acceptCashOnDelivery,
   deliveryZones,
+  acceptingOrders = true,
   targetCountries,
   preselectedProductId,
   preselectedVariant,
@@ -1209,7 +1211,11 @@ export function OrderForm({
         )}
 
         {/* Bouton Continuer (étapes 1-2) ou Confirmer (étape 3 ou page unique digital) */}
-        {step < 3 && !isDigital ? (
+        {!acceptingOrders ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+            Cette boutique ne prend pas de commandes en ce moment.
+          </div>
+        ) : step < 3 && !isDigital ? (
           <button
             type="button"
             onClick={step === 1 ? goToStep2 : goToStep3}

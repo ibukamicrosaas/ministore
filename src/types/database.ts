@@ -96,6 +96,11 @@ export type Database = {
           selling_channel: 'whatsapp' | 'social' | 'physique' | null
           pain_point: 'clients' | 'auto' | 'gestion' | 'paiement' | null
           specialty_other: string | null
+          trial_model: 'legacy' | 'free_orders'
+          trial_started_at: string | null
+          trial_extended_at: string | null
+          free_orders_used: number
+          free_orders_quota: number
           created_at: string
           updated_at: string
         }
@@ -142,6 +147,11 @@ export type Database = {
           selling_channel?: 'whatsapp' | 'social' | 'physique' | null
           pain_point?: 'clients' | 'auto' | 'gestion' | 'paiement' | null
           specialty_other?: string | null
+          trial_model?: 'legacy' | 'free_orders'
+          trial_started_at?: string | null
+          trial_extended_at?: string | null
+          free_orders_used?: number
+          free_orders_quota?: number
           created_at?: string
           updated_at?: string
         }
@@ -191,6 +201,11 @@ export type Database = {
           selling_channel?: 'whatsapp' | 'social' | 'physique' | null
           pain_point?: 'clients' | 'auto' | 'gestion' | 'paiement' | null
           specialty_other?: string | null
+          trial_model?: 'legacy' | 'free_orders'
+          trial_started_at?: string | null
+          trial_extended_at?: string | null
+          free_orders_used?: number
+          free_orders_quota?: number
           created_at?: string
           updated_at?: string
         }
@@ -436,6 +451,9 @@ export type Database = {
           reminder_sent_at: string | null
           delivered_at: string | null
           review_request_sent_at: string | null
+          is_held: boolean
+          held_notified_at: string | null
+          released_at: string | null
           created_at: string
           updated_at: string
         }
@@ -462,6 +480,9 @@ export type Database = {
           reminder_sent_at?: string | null
           delivered_at?: string | null
           review_request_sent_at?: string | null
+          is_held?: boolean
+          held_notified_at?: string | null
+          released_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -488,6 +509,9 @@ export type Database = {
           reminder_sent_at?: string | null
           delivered_at?: string | null
           review_request_sent_at?: string | null
+          is_held?: boolean
+          held_notified_at?: string | null
+          released_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -748,6 +772,30 @@ export type Database = {
         }
       Relationships: []
       }
+      shop_events: {
+        Row: {
+          id: string
+          shop_id: string
+          event_name: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          shop_id: string
+          event_name: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          shop_id?: string
+          event_name?: string
+          metadata?: Json
+          created_at?: string
+        }
+      Relationships: []
+      }
       waitlist: {
         Row: {
           id: string
@@ -793,6 +841,10 @@ export type Database = {
       purge_draft_shops: {
         Args: Record<string, never>
         Returns: number
+      }
+      activate_free_orders_shop: {
+        Args: { p_shop_id: string }
+        Returns: { released_count: number; released_total: number }[]
       }
       upsert_client_from_order: {
         Args: {

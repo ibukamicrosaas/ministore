@@ -2,7 +2,7 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { TRIAL_DAYS } from '@/constants'
+import { FREE_ORDERS_TRIAL_DAYS } from '@/constants'
 import { getCurrencyForCountry } from '@/lib/utils/country-groups'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
 import { CAT_TO_SPECIALTY, makeSlug, type QuizCat, type QuizPays, type Segment, type Canal, type QuizBlocage } from './data'
@@ -67,6 +67,7 @@ export async function createDraftShop(
       country: input.country,
       currency,
       status: 'draft',
+      trial_model: 'free_orders',
       is_active: false, // ceinture et bretelles : shops_public_read exclut déjà status='draft'
       business_type: 'individual',
       specialty,
@@ -137,6 +138,7 @@ async function resolveShop(
       country: seg.country,
       currency,
       status: 'draft',
+      trial_model: 'free_orders',
       is_active: false,
       business_type: 'individual',
       specialty,
@@ -175,17 +177,27 @@ export async function activateTrialShop(): Promise<{ error?: string }> {
   if (!profile?.shop_id) return { error: 'Boutique introuvable.' }
 
   const admin = createAdminClient()
+  const now = new Date()
   const { error } = await admin
     .from('shops')
     .update({
       status: 'trial',
       is_active: true,
-      trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+      trial_started_at: now.toISOString(),
+      trial_ends_at: new Date(now.getTime() + FREE_ORDERS_TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
       onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
+      onboarding_completed_at: now.toISOString(),
     })
     .eq('id', profile.shop_id)
     .eq('status', 'draft') // n'écrase pas une boutique déjà active (idempotent)
+
+  if (!error) {
+    void admin.from('shop_events').insert({
+      shop_id: profile.shop_id,
+      event_name: 'shop_published',
+      metadata: {},
+    })
+  }
 
   if (error) {
     console.error('[activateTrialShop]', error.message)
