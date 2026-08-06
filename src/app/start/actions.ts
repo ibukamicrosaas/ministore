@@ -2,11 +2,12 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
 import { TRIAL_DAYS } from '@/constants'
 import { getCurrencyForCountry } from '@/lib/utils/country-groups'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
-import { CAT_TO_SPECIALTY } from './data'
+import { CAT_TO_SPECIALTY, makeSlug, type QuizCat, type QuizPays, type Segment, type Canal, type QuizBlocage } from './data'
+
+type AdminClient = ReturnType<typeof createAdminClient>
 
 function phoneToEmail(phone: string): string {
   const digits = phone.replace(/\D/g, '')
@@ -18,15 +19,193 @@ function normalizePhone(raw: string): string {
   return digits.startsWith('00') ? `+${digits.slice(2)}` : `+${digits}`
 }
 
-export async function signUpFromStart(input: {
-  phone:    string
-  pin:      string
-  name:     string
-  country:  string  // QuizPays: 'SN' | 'CI' | 'BJ' | 'TG' | 'ML' | 'BF'
-  category: string  // QuizCat
-  painPoint: string // QuizDouleur
-}): Promise<{ error?: string }> {
-  const { phone, pin, name, country, category } = input
+// N'considère que les boutiques non-brouillon comme "prises" — cohérent avec
+// l'index unique partiel shops_slug_unique_non_draft (migration 070) : un
+// brouillon abandonné ne doit jamais bloquer le nom pour quelqu'un d'autre.
+async function generateUniqueShopSlug(admin: AdminClient, base: string): Promise<string> {
+  let slug = base
+  let attempt = 0
+  while (attempt < 10) {
+    const { data: exists } = await admin.from('shops').select('id').eq('slug', slug).neq('status', 'draft').maybeSingle()
+    if (!exists) return slug
+    attempt++
+    slug = `${base}-${Math.random().toString(36).slice(2, 6)}`
+  }
+  return `${base}-${Date.now()}`
+}
+
+interface ShopSegmentation {
+  category:        QuizCat
+  specialtyOther?: string
+  country:         QuizPays
+  sellerStage:     Segment
+  sellingChannel:  Canal
+  painPoint?:      QuizBlocage
+}
+
+/**
+ * Écran 7 (construction) : crée une boutique en brouillon dès que le quiz est
+ * terminé, avant même que le marchand ait un compte. Permet de récupérer un
+ * parcours abandonné entre l'écran 7 et l'écran 9 (même session navigateur).
+ */
+export async function createDraftShop(
+  input: ShopSegmentation & { name: string },
+): Promise<{ shopId?: string; slug?: string; error?: string }> {
+  const trimmed = input.name.trim()
+  if (trimmed.length < 2) return { error: 'Nom de boutique trop court.' }
+
+  const admin = createAdminClient()
+  const slug = await generateUniqueShopSlug(admin, makeSlug(trimmed))
+  const specialty = CAT_TO_SPECIALTY[input.category] ?? 'other'
+  const currency = getCurrencyForCountry(input.country)
+
+  const { data: shop, error } = await admin
+    .from('shops')
+    .insert({
+      slug,
+      name: trimmed,
+      country: input.country,
+      currency,
+      status: 'draft',
+      is_active: false, // ceinture et bretelles : shops_public_read exclut déjà status='draft'
+      business_type: 'individual',
+      specialty,
+      specialty_other: input.category === 'autre' ? (input.specialtyOther?.trim() || null) : null,
+      seller_stage: input.sellerStage,
+      selling_channel: input.sellingChannel,
+      pain_point: input.painPoint,
+    })
+    .select('id, slug')
+    .single()
+
+  if (error || !shop) {
+    console.error('[createDraftShop]', error?.message)
+    return { error: 'Impossible de créer la boutique.' }
+  }
+  return { shopId: shop.id, slug: shop.slug }
+}
+
+/**
+ * Rattache le compte à un brouillon existant s'il est encore valide, sinon crée
+ * la boutique directement (parcours de secours si le brouillon a échoué ou expiré).
+ *
+ * Reste en status='draft' dans les deux cas : une boutique sans produit n'est
+ * jamais publique. Le passage à 'trial' (et l'activation) n'a lieu qu'à la
+ * publication du premier produit — voir activateTrialShop, appelée à l'écran 10.
+ */
+async function resolveShop(
+  admin: AdminClient,
+  draftShopId: string | null | undefined,
+  trimmedName: string,
+  normalizedPhone: string,
+  seg: ShopSegmentation,
+): Promise<{ id: string; slug: string } | { error: string }> {
+  if (draftShopId) {
+    const { data: draft } = await admin
+      .from('shops')
+      .select('id, slug')
+      .eq('id', draftShopId)
+      .eq('status', 'draft')
+      .maybeSingle()
+
+    if (draft) {
+      const { data: updated, error } = await admin
+        .from('shops')
+        .update({
+          name: trimmedName,
+          phone_whatsapp: normalizedPhone,
+        })
+        .eq('id', draft.id)
+        .select('id, slug')
+        .single()
+
+      if (!error && updated) return { id: updated.id, slug: updated.slug }
+    }
+  }
+
+  // Brouillon introuvable/déjà récupéré/jamais créé : on crée la boutique maintenant,
+  // toujours en brouillon — même logique que createDraftShop.
+  const slug = await generateUniqueShopSlug(admin, makeSlug(trimmedName))
+  const specialty = CAT_TO_SPECIALTY[seg.category] ?? 'other'
+  const currency = getCurrencyForCountry(seg.country)
+
+  const { data: created, error } = await admin
+    .from('shops')
+    .insert({
+      slug,
+      name: trimmedName,
+      country: seg.country,
+      currency,
+      status: 'draft',
+      is_active: false,
+      business_type: 'individual',
+      specialty,
+      specialty_other: seg.category === 'autre' ? (seg.specialtyOther?.trim() || null) : null,
+      seller_stage: seg.sellerStage,
+      selling_channel: seg.sellingChannel,
+      pain_point: seg.painPoint,
+      phone_whatsapp: normalizedPhone,
+    })
+    .select('id, slug')
+    .single()
+
+  if (error || !created) {
+    console.error('[resolveShop]', error?.message)
+    return { error: 'Impossible de créer la boutique. Réessaie.' }
+  }
+  return { id: created.id, slug: created.slug }
+}
+
+/**
+ * Écran 10 (premier produit) : bascule la boutique de 'draft' à 'trial' et
+ * l'active publiquement — seulement une fois qu'elle a quelque chose à vendre.
+ * Dérive la boutique de la session (comme getOwnerShopId dans lib/actions/products),
+ * jamais d'un id transmis par le client.
+ */
+export async function activateTrialShop(): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.shop_id) return { error: 'Boutique introuvable.' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('shops')
+    .update({
+      status: 'trial',
+      is_active: true,
+      trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+      onboarding_completed: true,
+      onboarding_completed_at: new Date().toISOString(),
+    })
+    .eq('id', profile.shop_id)
+    .eq('status', 'draft') // n'écrase pas une boutique déjà active (idempotent)
+
+  if (error) {
+    console.error('[activateTrialShop]', error.message)
+    return { error: "Impossible d'activer la boutique." }
+  }
+  return {}
+}
+
+/**
+ * Écran 9 (compte) : crée le compte auth + récupère/rattache la boutique.
+ * Ne redirige pas — le parcours continue vers l'écran 10 (premier produit)
+ * puis 11 (boutique en ligne) côté client.
+ */
+export async function completeSignupFromStart(input: ShopSegmentation & {
+  phone:       string
+  pin:         string
+  name:        string
+  draftShopId?: string | null
+}): Promise<{ error?: string; shopId?: string; slug?: string }> {
+  const { phone, pin, name } = input
 
   if (!phone?.trim() || !pin?.trim()) return { error: 'Numéro et code PIN requis.' }
   if (!/^\d{6}$/.test(pin))           return { error: 'Le code PIN doit contenir 6 chiffres.' }
@@ -71,66 +250,44 @@ export async function signUpFromStart(input: {
   const userId  = data.user.id
   const trimmed = name.trim()
 
-  // Profil : phone + role
   await supabase
     .from('profiles')
     .update({ phone: normalizedPhone, role: 'owner' })
     .eq('id', userId)
 
-  // Slug unique pour la boutique
-  const baseSlug = trimmed
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50) || 'boutique'
+  const shopResult = await resolveShop(admin, input.draftShopId, trimmed, normalizedPhone, input)
+  if ('error' in shopResult) return { error: shopResult.error }
+  const { id: shopId, slug: shopSlug } = shopResult
 
-  let slug    = baseSlug
-  let attempt = 0
-  while (attempt < 10) {
-    const { data: exists } = await admin.from('shops').select('id').eq('slug', slug).single()
-    if (!exists) break
-    attempt++
-    slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
-  }
-
-  const specialty = (CAT_TO_SPECIALTY as Record<string, string>)[category] ?? 'other'
-  const currency  = getCurrencyForCountry(country)
-
-  const { data: shop, error: shopError } = await admin
-    .from('shops')
-    .insert({
-      slug,
-      name:                    trimmed,
-      country,
-      currency,
-      business_type:           'individual',
-      specialty,
-      phone_whatsapp:          normalizedPhone,
-      trial_ends_at:           new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
-      onboarding_completed:    true,
-      onboarding_completed_at: new Date().toISOString(),
-    })
-    .select('id, slug')
-    .single()
-
-  if (shopError || !shop) {
-    console.error('[signUpFromStart shop]', shopError?.message)
-    return { error: 'Impossible de créer la boutique. Réessaie.' }
-  }
-
-  // Lier la boutique au profil + marquer l'onboarding terminé
   await supabase
     .from('profiles')
-    .update({ shop_id: shop.id, onboarding_step: 5, onboarding_completed: true })
+    .update({ shop_id: shopId, onboarding_step: 5, onboarding_completed: true })
     .eq('id', userId)
 
-  // Événements Meta (Lead + CompleteRegistration)
   await Promise.all([
     sendMetaConversionEvent({ eventName: 'Lead',                 eventId: generateMetaEventId(), phone: normalizedPhone, externalId: userId }),
     sendMetaConversionEvent({ eventName: 'CompleteRegistration', eventId: generateMetaEventId(), phone: normalizedPhone, externalId: userId }),
   ])
 
-  redirect('/dashboard?welcome=start')
+  return { shopId, slug: shopSlug }
+}
+
+/** Écran 4bis : liste d'attente pour un pays non encore couvert. */
+export async function joinWaitlist(input: { country: string; phone: string }): Promise<{ error?: string; success?: boolean }> {
+  const country = input.country.trim()
+  const phone   = input.phone.trim()
+
+  if (country.length < 2) return { error: 'Indique ton pays.' }
+  if (phone.replace(/\D/g, '').length < 6) return { error: 'Numéro invalide.' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('waitlist')
+    .upsert({ country, phone, source: 'start_flow' }, { onConflict: 'phone,country', ignoreDuplicates: true })
+
+  if (error) {
+    console.error('[joinWaitlist]', error.message)
+    return { error: "Impossible d'enregistrer ta demande. Réessaie." }
+  }
+  return { success: true }
 }

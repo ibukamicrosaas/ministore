@@ -11,6 +11,11 @@ export const DEFAULT_CURRENCY            = 'XOF'
 export const TEKKISHOP_COMMISSION_RATE   = 3    // % prélevé sur les paiements en ligne
 export const PAYOUT_MIN_AMOUNT           = 2000 // montant minimum pour déclencher un retrait (FCFA)
 
+// Parcours /start — nombre de commandes offertes affiché à l'écran "boutique en ligne".
+// Purement informatif ici : aucune logique de plafond/blocage n'est branchée dessus
+// (spécifiée séparément).
+export const FREE_ORDERS = 3
+
 // Plans
 export const TRIAL_DAYS            = 30
 export const SUBSCRIPTION_DAYS     = 31 // durée d'un abonnement mensuel (en jours)

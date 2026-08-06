@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('name, description, logo_url')
     .eq('slug', slug)
     .eq('is_active', true)
+    .neq('status', 'draft')
     .single()
   if (!data) return {}
 
@@ -61,6 +62,7 @@ export default async function ShopPage({ params }: Props) {
     .from('shops')
     .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, product_layout')
     .eq('slug', slug)
+    .neq('status', 'draft')
     .single()
 
   if (!shopData) notFound()

@@ -91,6 +91,11 @@ export type Database = {
           custom_domain: string | null
           previous_slug: string | null
           product_layout: 'list' | 'grid' | null
+          status: 'draft' | 'trial' | 'active' | 'expired'
+          seller_stage: 'A' | 'B' | 'C' | null
+          selling_channel: 'whatsapp' | 'social' | 'physique' | null
+          pain_point: 'clients' | 'auto' | 'gestion' | 'paiement' | null
+          specialty_other: string | null
           created_at: string
           updated_at: string
         }
@@ -132,6 +137,11 @@ export type Database = {
           accept_cash_on_delivery?: boolean
           subscription_ends_at?: string | null
           product_layout?: 'list' | 'grid' | null
+          status?: 'draft' | 'trial' | 'active' | 'expired'
+          seller_stage?: 'A' | 'B' | 'C' | null
+          selling_channel?: 'whatsapp' | 'social' | 'physique' | null
+          pain_point?: 'clients' | 'auto' | 'gestion' | 'paiement' | null
+          specialty_other?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -176,6 +186,11 @@ export type Database = {
           custom_domain?: string | null
           previous_slug?: string | null
           product_layout?: 'list' | 'grid' | null
+          status?: 'draft' | 'trial' | 'active' | 'expired'
+          seller_stage?: 'A' | 'B' | 'C' | null
+          selling_channel?: 'whatsapp' | 'social' | 'physique' | null
+          pain_point?: 'clients' | 'auto' | 'gestion' | 'paiement' | null
+          specialty_other?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -733,6 +748,33 @@ export type Database = {
         }
       Relationships: []
       }
+      waitlist: {
+        Row: {
+          id: string
+          country: string
+          phone: string
+          source: string
+          notified_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          country: string
+          phone: string
+          source?: string
+          notified_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          country?: string
+          phone?: string
+          source?: string
+          notified_at?: string | null
+          created_at?: string
+        }
+      Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -745,6 +787,10 @@ export type Database = {
         Returns: string
       }
       expire_pending_orders: {
+        Args: Record<string, never>
+        Returns: number
+      }
+      purge_draft_shops: {
         Args: Record<string, never>
         Returns: number
       }
