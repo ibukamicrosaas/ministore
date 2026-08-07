@@ -1,104 +1,185 @@
-import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import Link from 'next/link'
+import { createServerClient } from '@/lib/supabase/server'
+import Link  from 'next/link'
 import Image from 'next/image'
-import {
-  ShoppingBag, CheckCircle2, ArrowRight,
-  Smartphone, TrendingUp, Zap, Users, Sparkles,
-  Link2, Wallet, Truck, Star,
-} from 'lucide-react'
-import { PaymentScroll } from '@/components/landing/PaymentScroll'
-import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel'
-import { AnimatedPhoneMockup } from '@/components/landing/AnimatedPhoneMockup'
-import { OrderFlowPhoneMockup } from '@/components/landing/OrderFlowPhoneMockup'
-import { Reveal } from '@/components/landing/Reveal'
-import { FAQAccordion } from '@/components/landing/FAQAccordion'
-import { HeroInput } from '@/components/landing/HeroInput'
-import { PricingSection } from '@/components/landing/PricingSection'
-import { StepsSection } from '@/components/landing/StepsSection'
-import { SiteHeader } from '@/components/landing/SiteHeader'
-import { SiteFooter } from '@/components/landing/SiteFooter'
-import { WhatsAppButton } from '@/components/landing/WhatsAppButton'
-import { COUNTRIES, EU_CA_COUNTRIES } from '@/components/landing/countries'
-import { APP_NAME } from '@/constants'
+import { LandingNav }    from '@/components/landing-v6/LandingNav'
+import { PricingV6 }     from '@/components/landing-v6/PricingV6'
+import { FAQv6 }         from '@/components/landing-v6/FAQv6'
+import { DemoModal }     from '@/components/landing-v6/DemoModal'
+import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
+import './landing-v6.css'
 
 export const metadata = {
-  title: `${APP_NAME} — Crée ta boutique en ligne en 5 minutes`,
-  description: "Tu vends sur WhatsApp ? Crée ta boutique en ligne en 5 minutes. Tes clients commandent et paient par Wave ou Orange Money. Tu reçois l'argent directement sur ton téléphone.",
+  title: 'TEKKIShop — Crée ta boutique en ligne en 5 minutes, depuis ton téléphone',
+  description: 'Mets tes produits en ligne, partage ton lien sur WhatsApp et reçois ton argent par Wave, Orange Money ou à la livraison. Déjà 1 400+ boutiques créées. Sans ordinateur, sans développeur.',
 }
 
-const JOURNEE = [
-  {
-    heure: '07h30',
-    titre: 'Tu publies ton lien dans ton statut WhatsApp',
-    texte: '« Nouveaux arrivages 🔥 commandez ici » — et tu pars au marché chercher ta marchandise.',
-  },
-  {
-    heure: '10h15',
-    titre: 'Première commande, déjà payée',
-    texte: 'Aïssatou a commandé 2 robes et payé par Wave. Tu reçois la notification. Tu n’as parlé à personne.',
-  },
-  {
-    heure: '10h17',
-    titre: 'Tu envoies les livraisons en 1 clic',
-    texte: 'Les 4 commandes du matin partent sur le WhatsApp de ton livreur, avec les adresses et les montants.',
-  },
-  {
-    heure: '11h20',
-    titre: 'Le livreur confirme, tout est compté',
-    texte: 'Il clique « Livraison effectuée ✅ », le paiement à la livraison est enregistré. Tu sais exactement qui a payé quoi.',
-  },
-  {
-    heure: '22h00',
-    titre: 'Tu regardes tes chiffres du jour',
-    texte: '7 commandes, 84 500 FCFA. Et pendant que tu dors, la boutique reste ouverte.',
-  },
-]
+// ── Icônes SVG (zéro emoji sur la landing page) ─────────────────────────────
 
-const FEATURES = [
-  {
-    icon: Link2,
-    title: 'Ta boutique, accessible partout',
-    description: 'Le lien de ta boutique permet à n\'importe qui de voir et commander tes produits. Mets-le dans ta bio sur les réseaux sociaux et partage-le sur WhatsApp et dans les groupes Facebook.',
-    color: 'bg-sky-500',
-  },
-  {
-    icon: Sparkles,
-    title: 'Un Assistant IA intégré',
-    description: "Il connaît et comprend toute ton activité. Pose-lui des questions sur tes ventes, tes produits, ta stratégie : il répond à tout et t'aide à vendre mieux et plus, même si tu pars de zéro.",
-    color: 'bg-violet-500',
-  },
-  {
-    icon: Wallet,
-    title: 'Le paiement mobile intégré',
-    description: 'Les moyens de paiement mobile sont déjà disponibles pour tous les pays couverts par TekkiShop. Tes clients paient comme ils le désirent, et tu retires ton argent instantanément.',
-    color: 'bg-emerald-500',
-  },
-  {
-    icon: Truck,
-    title: 'Tes livraisons, simplifiées',
-    description: 'Chaque commande part sur le WhatsApp de ton livreur en 1 clic, avec toutes les infos de la commande. Ton livreur confirme la livraison en 1 clic, et met à jour le statut de la commande.',
-    color: 'bg-amber-500',
-  },
-  {
-    icon: Star,
-    title: 'Tes avis, collectés facilement',
-    description: 'Envoie en 1 clic une demande d\'avis aux clients qui ont commandé sur ta boutique, et affiche-les sur les pages de tes produits pour augmenter la preuve sociale et tes ventes.',
-    color: 'bg-pink-500',
-  },
-  {
-    icon: Smartphone,
-    title: 'Tout depuis ton téléphone',
-    description: 'Pas besoin d\'ordinateur ou de développeur. Tu peux créer et gérer toute ta boutique en ligne depuis ton téléphone, même si tu n\'as jamais vendu sur un site e-commerce.',
-    color: 'bg-indigo-500',
-  },
-]
+const IC = {
+  check: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  ),
+  checkCircle: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 12.5l2.6 2.6L16 9.7" />
+    </svg>
+  ),
+  checkVerified: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  ),
+  arrowRight: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+  ),
+  shoppingBag: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  ),
+  creditCard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  ),
+  truck: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13"/>
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  ),
+  dollarSign: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+  ),
+  shoppingCart: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+    </svg>
+  ),
+  camera: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  ),
+  search: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+  ),
+  tag: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  ),
+  bell: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+  ),
+  eye: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  ),
+  box: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  ),
+  gear: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
+  home: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  moon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  ),
+  globe: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  ),
+  bolt: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  ),
+  inbox: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+    </svg>
+  ),
+  smartphone: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+      <line x1="12" y1="18" x2="12.01" y2="18"/>
+    </svg>
+  ),
+  store: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  sparkle: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6z"/>
+    </svg>
+  ),
+  tiktok: (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 1 1 .77-5.06V9.66a5.67 5.67 0 0 0-.77-.05A5.69 5.69 0 1 0 15.54 15.3V8.9a7.35 7.35 0 0 0 4.3 1.38V7.19a4.29 4.29 0 0 1-3.24-1.37Z" />
+    </svg>
+  ),
+  heart: (
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ),
+  star: (
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  ),
+}
 
 export default async function LandingPage() {
   const supabase = await createServerClient()
+  const admin    = createAdminClient()
 
-  // createAdminClient pour bypasser le RLS et obtenir le vrai total (790 vs 717)
-  const admin = createAdminClient()
   const { count: totalShopsCount } = await admin
     .from('shops')
     .select('id', { count: 'exact', head: true })
@@ -112,479 +193,874 @@ export default async function LandingPage() {
     .order('created_at', { ascending: false })
     .limit(8)
 
-  const shops = allShops || []
+  const shops      = allShops ?? []
   const shopsCount = totalShopsCount ?? 0
 
-  const STATS = [
-    { value: `+${shopsCount}`, label: 'boutiques créées',  icon: Users },
-    { value: '11',             label: 'pays couverts',      icon: ShoppingBag },
-    { value: 'IA',             label: 'assistant intégré',  icon: Sparkles },
-  ]
-
   return (
-    <div className="landing-scope min-h-screen bg-white" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
+    <div className="lv6" id="top">
 
-      <SiteHeader />
+      {/* ── Bannière TEKKIPro ──────────────────────────────────────── */}
+      <div className="announcement-bar">
+        <span>Tu proposes des services ?</span>
+        <a href="https://tekki.pro" target="_blank" rel="noopener noreferrer">
+          Découvre TEKKIPro →
+        </a>
+      </div>
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section style={{ background: 'linear-gradient(180deg, #F5F9FF 0%, #ffffff 100%)' }}>
-        <div className="mx-auto max-w-6xl px-4 pt-12 pb-16 lg:pt-16 grid lg:grid-cols-[1.15fr_1fr] items-center gap-12 lg:gap-14">
+      {/* ── Navigation ──────────────────────────────────────────────── */}
+      <LandingNav />
 
-          {/* Texte gauche */}
-          <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/8 px-4 py-2 text-sm font-bold text-[var(--color-primary-dark)] mb-6">
-              <Zap className="h-3.5 w-3.5" />
-              Déjà +{shopsCount} boutiques créées en Afrique
+      {/* ── Hero ──────────────────────────────────────────────────── */}
+      <section className="hero">
+        <div className="container hero-grid">
+          {/* Texte */}
+          <div className="hero-copy">
+            <div className="social-proof">
+              <div className="avatars">
+                <Image src="/avatars/1.jpg" alt="" width={36} height={36} className="avatar" />
+                <Image src="/avatars/2.jpg" alt="" width={36} height={36} className="avatar" />
+                <Image src="/avatars/3.jpg" alt="" width={36} height={36} className="avatar" />
+                <Image src="/avatars/4.jpg" alt="" width={36} height={36} className="avatar" />
+                <Image src="/avatars/5.jpg" alt="" width={36} height={36} className="avatar" />
+              </div>
+              <div>
+                <b>{shopsCount}+ boutiques créées</b>
+                <span>Côte d&rsquo;Ivoire, Sénégal, Bénin, Togo, Mali et Burkina Faso</span>
+              </div>
             </div>
 
-            <h1
-              className="text-[clamp(2.2rem,5.2vw,3.6rem)] font-bold text-gray-900 leading-[1.14] tracking-tight mb-5"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Crée ta boutique en ligne <span className="text-[var(--color-primary)]">en 5 minutes</span>, avec ton téléphone.
+            <h1>
+              Crée ta boutique en ligne en <span className="grad">5&nbsp;minutes,</span> avec ton téléphone.
             </h1>
 
-            <p className="text-lg text-gray-500 mb-6 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Ajoute tes produits, partage ton lien, et c&apos;est tout. <strong className="text-gray-700">Tes clients commandent seuls</strong>,
-              même quand tu dors, paient à la livraison ou par mobile money, et <strong className="text-gray-700">tu retires ton argent instantanément sur ton téléphone.</strong>
+            <p className="lead">
+              Ajoute tes produits, partage ton lien, et c&rsquo;est tout. Tes clients commandent seuls, paient par mobile money, et tu retires ton argent directement sur ton mobile money.
             </p>
 
-            {/* Pays disponibles */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 mb-7">
-              <span className="text-xs text-gray-400 font-medium mr-1">Disponible dans 11 pays :</span>
-              {[...COUNTRIES, ...EU_CA_COUNTRIES].map((c) => (
-                <span
-                  key={c.name}
-                  title={c.name}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-100 bg-white text-sm shadow-sm"
-                >
-                  {c.flag}
-                </span>
-              ))}
+            <div className="hero-ctas">
+              <Link href="/start" className="btn btn-primary">
+                Créer ma boutique gratuitement
+                {IC.arrowRight}
+              </Link>
+              <a href="#probleme" className="btn btn-secondary">Voir comment ça marche</a>
             </div>
 
-            {/* CTA */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-6">
-              <Link
-                href="/start"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-7 py-4 text-base font-bold text-white shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-transform"
-                style={{ backgroundColor: 'var(--color-primary)', boxShadow: '0 8px 24px rgba(46,144,250,.35)' }}
-              >
-                Créer ma boutique gratuitement
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#comment"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] border border-gray-200 bg-white px-7 py-4 text-base font-bold text-gray-700 hover:-translate-y-0.5 active:translate-y-0 transition-transform"
-              >
-                Voir comment ça marche
+            <div className="objections">
+              <span>{IC.check} Pas besoin de développeur</span>
+              <span>{IC.check} Pas besoin d&rsquo;ordinateur</span>
+              <span>{IC.check} 30 jours gratuits</span>
+            </div>
+          </div>
+
+          {/* Téléphone */}
+          <div className="hero-stage">
+            <div className="phone">
+              <div className="phone-notch" />
+              <div className="phone-screen">
+                <div className="st-cover">
+                  <div className="st-cover-logo">
+                    <span style={{ color: '#e05a7a', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <svg viewBox="0 0 24 24" fill="#e05a7a" stroke="none" style={{ width: 9, height: 9 }}>
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                    </span>
+                    Viens on s&rsquo;connaît
+                  </div>
+                  <div className="st-cover-txt">Des jeux de cartes pour tisser des liens plus forts avec vos proches.</div>
+                  <div className="st-boxes" aria-hidden="true">
+                    <i /><i /><i /><i /><i />
+                  </div>
+                  <div className="st-share">↗</div>
+                </div>
+                <div className="st-ava">Viens on<br />s&rsquo;connaît</div>
+                <div className="st-body">
+                  <div className="st-name">
+                    Viens on s&rsquo;connaît
+                    <span className="st-check">{IC.checkVerified}</span>
+                  </div>
+                  <div className="st-cat">Jeux de société</div>
+                  <p className="st-desc">Les jeux de cartes qui vous rapprochent de vos proches | Couples – Amis – Famille</p>
+                  <div className="st-pills">
+                    <span className="st-pill">+8000 jeux vendus</span>
+                    <span className="st-pill">Livraison gratuite à Dakar</span>
+                  </div>
+                  <div className="st-social">
+                    <span className="st-ig">Instagram</span>
+                    <span className="st-tt">TikTok</span>
+                    <span className="st-fb">Facebook</span>
+                  </div>
+                  <button className="st-order" type="button" tabIndex={-1}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                      </svg>
+                      Commander
+                    </span>
+                  </button>
+                  <div className="st-sec">
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ width: 9, height: 9, color: '#ffb020' }}>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Coups de cœur
+                  </div>
+                  <div className="st-favs">
+                    <div className="st-fav">
+                      <i />
+                      <div><b>Pour Les Amoureux</b><span>14 000 FCFA</span></div>
+                    </div>
+                    <div className="st-fav">
+                      <i />
+                      <div><b>Et pourtant, on s&rsquo;aimait</b><span>4 500 FCFA</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="float float-1">
+              <i style={{ background: '#fff', overflow: 'hidden', padding: 4, boxSizing: 'border-box' }}>
+                <Image src="/logo-payments/wave_1.svg" alt="Wave" width={21} height={21} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </i>
+              <div>
+                <b>Paiement reçu</b>
+                <small>Wave · 14 000 FCFA</small>
+              </div>
+            </div>
+            <div className="float float-2">
+              <i style={{ background: '#176bff' }}>{IC.shoppingBag}</i>
+              <div>
+                <b>Nouvelle commande</b>
+                <small>2 articles · il y a 1 min</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bandeau paiements ──────────────────────────────────────── */}
+      <div className="strip">
+        <div className="strip-label">Tes clients paient comme ils veulent :</div>
+        <div className="pay-row">
+          <span className="pay">
+            <Image src="/logo-payments/wave_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
+            Wave
+          </span>
+          <span className="pay">
+            <Image src="/logo-payments/om_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
+            Orange Money
+          </span>
+          <span className="pay">
+            <Image src="/logo-payments/mtn_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
+            MTN MoMo
+          </span>
+          <span className="pay">
+            <Image src="/logo-payments/moov_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
+            Moov Money
+          </span>
+          <span className="pay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
+              <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/>
+              <circle cx="15" cy="5" r="1"/>
+              <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+            </svg>
+            À la livraison
+          </span>
+          <span className="pay">
+            <Image src="/logo-payments/visa.svg" alt="" aria-hidden width={40} height={20} style={{ height: 20, width: 'auto' }} />
+            <Image src="/logo-payments/Mastercard-Logo.wine.svg" alt="" aria-hidden width={40} height={20} style={{ height: 20, width: 'auto' }} />
+            Carte bancaire
+          </span>
+        </div>
+      </div>
+
+      {/* ── Le problème ──────────────────────────────────────────── */}
+      <section className="section" id="probleme">
+        <div className="container problem-grid">
+          <div className="reveal">
+            <span className="label">Le vrai problème</span>
+            <h2>WhatsApp t&rsquo;aide à commencer. Mais il t&rsquo;oblige à <span className="grad">tout faire toi-même.</span></h2>
+            <p className="lead">Renvoyer les mêmes photos, répéter les prix, vérifier ce qu&rsquo;il te reste en stock, noter l&rsquo;adresse, confirmer que le client a bien payé, appeler le livreur, attendre qu&rsquo;il confirme le paiement et la livraison. Chaque vente te coûte une demi-heure de messages.</p>
+            <div className="callout"><strong>Avec TEKKIShop, ta boutique se gère toute seule : ton client voit tout, choisit et paie tout seul. Toi, tu prépares la commande.</strong></div>
+          </div>
+          <div className="compare reveal">
+            <div className="cmp cmp-bad">
+              <span className="cmp-tag">Aujourd&rsquo;hui, sans TEKKIShop</span>
+              <h3>Ta journée dépend de tes messages</h3>
+              <ul>
+                <li><b>✕</b> Tes photos et tes prix sont éparpillés dans les statuts et les discussions.</li>
+                <li><b>✕</b> Tu répètes la même chose à chaque client.</li>
+                <li><b>✕</b> Une commande se perd vite entre deux conversations.</li>
+                <li><b>✕</b> Tu vérifies chaque paiement toi-même.</li>
+                <li><b>✕</b> Si tu n&rsquo;es pas en ligne, la vente n&rsquo;avance pas.</li>
+              </ul>
+            </div>
+            <div className="cmp cmp-good">
+              <span className="cmp-tag">Demain, avec TEKKIShop</span>
+              <h3>Ta boutique fait le premier travail</h3>
+              <ul>
+                <li><b>✓</b> Tous tes produits sont dans un seul lien.</li>
+                <li><b>✓</b> Le client voit le prix, la description et ce qu&rsquo;il reste en stock.</li>
+                <li><b>✓</b> Les commandes arrivent au même endroit, bien rangées.</li>
+                <li><b>✓</b> Le client peut payer par mobile money ou à la livraison.</li>
+                <li><b>✓</b> Tu gères tout depuis ton téléphone, n&rsquo;importe où.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Les 5 étapes ──────────────────────────────────────────── */}
+      <section className="section" id="etapes" style={{ background: 'var(--sky)' }}>
+        <div className="container">
+          <div className="section-head center reveal">
+            <span className="label">Aussi simple que ça</span>
+            <h2>Ta boutique est prête en <span className="grad">5 étapes.</span></h2>
+            <p className="lead">Pas besoin d&rsquo;ordinateur, ni de développeur. Tu gères tout depuis ton téléphone.</p>
+          </div>
+
+          {/* Étape 1 */}
+          <div className="step-row reveal">
+            <div className="step-media">
+              <div className="app">
+                <div className="app-bar">
+                  <span className="app-logo">TEKKI<span>Shop</span></span>
+                  <span className="app-step">Étape 1/5</span>
+                </div>
+                <div className="app-in">
+                  <div className="prog"><i data-prog="20:400,40:2900" /></div>
+                  <div className="qtitle">Comment s&rsquo;appelle ton business ?</div>
+                  <div className="qsub">C&rsquo;est le nom que tes clients verront. Tu pourras le changer plus tard.</div>
+                  <div className="qinput"><span data-type="Chez Fatou" data-delay="900" data-caret="1" /></div>
+                  <div className="qchips"><span>Chez Fatou</span><span>Adja Cosmétiques</span><span>Dakar Sneakers</span></div>
+                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/chez-fatou</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
+                  <div className="qbtn" data-ready="2600">Continuer</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="step-num"><i>01</i><span>60 secondes chrono</span></div>
+              <h3>Réponds à 5 questions</h3>
+              <p>Pas de blabla, pas de formulaire compliqué. Tu réponds, et ta boutique se construit pendant ce temps.</p>
+              <ul className="step-pts">
+                <li>{IC.check} Le nom de ton business, et ton adresse tekki.shop/tonnom est réservée</li>
+                <li>{IC.check} Ce que tu vends, où tu vends déjà, dans quel pays tu es</li>
+                <li>{IC.check} Quel est ton plus gros blocage pour vendre en ligne aujourd&rsquo;hui</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Étape 2 */}
+          <div className="step-row reveal flip">
+            <div className="step-media">
+              <div className="app">
+                <div className="app-bar">
+                  <span className="app-logo">TEKKI<span>Shop</span></span>
+                  <span className="app-step">Ton compte</span>
+                </div>
+                <div className="app-in">
+                  <div className="prog"><i data-prog="100:400" /></div>
+                  <div className="qtitle">Crée ton compte</div>
+                  <div className="qsub">Pour retrouver ta boutique depuis n&rsquo;importe quel téléphone.</div>
+                  <div className="fld" style={{ marginBottom: 11 }}>
+                    <small>Ton numéro WhatsApp</small>
+                    <b data-type="+221 77 123 46 78" data-delay="800" />
+                  </div>
+                  <span className="pinlab">Choisis un code PIN à 6 chiffres</span>
+                  <div className="pin" data-pin="6" data-delay="1900"><i /><i /><i /><i /><i /><i /></div>
+                  <div className="trust" data-appear="3450"><span>Création gratuite</span><span>Aucun engagement</span></div>
+                  <div className="qbtn green" data-ready="3700">Ouvrir ma boutique</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="step-num"><i>02</i><span>Environ 30 secondes</span></div>
+              <h3>Crée ton compte</h3>
+              <p>Insère ton numéro WhatsApp et choisis un code PIN de 6 chiffres. Pas de mot de passe à retenir, pas d&rsquo;e-mail à confirmer.</p>
+              <ul className="step-pts">
+                <li>{IC.check} Ton numéro te sert d&rsquo;identifiant, comme sur ton mobile money</li>
+                <li>{IC.check} Ton code PIN à 6 chiffres te sert de mot de passe</li>
+                <li>{IC.check} Ta boutique existe déjà : le compte sert juste à y accéder</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Étape 3 */}
+          <div className="step-row reveal">
+            <div className="step-media">
+              <div className="app">
+                <div className="app-bar">
+                  <span className="app-back">←</span>
+                  <b>Nouveau produit</b>
+                  <span className="app-step">Brouillon</span>
+                </div>
+                <div className="app-in">
+                  {/* Type de produit */}
+                  <div className="type-tabs">
+                    <span className="on">Physique</span>
+                    <span>Digital</span>
+                  </div>
+                  {/* Zone upload */}
+                  <div className="upload" style={{ height: 52, flexDirection: 'row', gap: 7 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, opacity: 0.45 }}>
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span style={{ fontSize: 10, color: 'var(--muted)' }}>Ajouter des photos (max 5 · JPG, PNG)</span>
+                  </div>
+                  {/* Thumbnails (photos en cours d'ajout) */}
+                  <div className="thumbs" style={{ marginTop: 7 }}>
+                    <i data-appear="250" /><i data-appear="420" /><i data-appear="590" />
+                  </div>
+                  {/* Champs */}
+                  <div className="fld"><small>Nom du produit *</small><b data-type="Pour Les Amoureux" data-delay="900" /></div>
+                  <div className="fld-row">
+                    <div className="fld"><small>Prix de base (FCFA) *</small><b data-count="14000" data-suffix=" FCFA" data-delay="1600">5 000 FCFA</b></div>
+                    <div className="fld"><small>Stock</small><b data-count="12" data-delay="1900">0</b></div>
+                  </div>
+                  {/* Produit en vedette */}
+                  <div className="feat-row" data-appear="2150">
+                    <span>Produit en vedette — Coups de cœur</span>
+                    <div className="toggle-sw" />
+                  </div>
+                  <div className="app-btn" data-ready="2500">Créer le produit</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="step-num"><i>03</i><span>Environ 1 minute par produit</span></div>
+              <h3>Ajoute tes produits</h3>
+              <p>Une photo, un prix, une description. Exactement comme quand tu publies un statut, sauf que là, ça se vend tout seul.</p>
+              <ul className="step-pts">
+                <li>{IC.check} Prends la photo directement avec ton téléphone</li>
+                <li>{IC.check} Indique ton stock : tes clients voient ce qu&rsquo;il reste</li>
+                <li>{IC.check} Produits à livrer ou fichiers à télécharger, au choix</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Étape 4 */}
+          <div className="step-row reveal flip">
+            <div className="step-media">
+              <div className="app">
+                <div className="app-bar">
+                  <span className="app-back">←</span>
+                  <b>Paramètres</b>
+                  <span className="app-step">Boutique</span>
+                </div>
+                <div className="app-in">
+                  {/* Logo + Nom */}
+                  <div className="sett-logo-row" data-appear="300">
+                    <span className="bl on" style={{ background: 'linear-gradient(145deg,#7c3aed,#5b21b6)', width: 36, height: 36, borderRadius: '50%', display: 'block', flexShrink: 0 }} />
+                    <div className="sett-logo-info">
+                      <b>Chez Fatou</b>
+                      <small>Logo de la boutique</small>
+                      <span className="sett-change">Changer le logo</span>
+                    </div>
+                  </div>
+                  {/* Nom + Ville */}
+                  <div className="fld"><small>Nom de la boutique *</small><b>Chez Fatou</b></div>
+                  <div className="fld-row">
+                    <div className="fld"><small>Ville *</small><b>Dakar</b></div>
+                    <div className="fld"><small>Pays</small><b>Sénégal</b></div>
+                  </div>
+                  {/* Couleur principale */}
+                  <div className="brandbox" style={{ marginBottom: 0 }}>
+                    <b style={{ fontSize: 10.5, display: 'block', marginBottom: 8 }}>Couleur principale</b>
+                    <div className="swatches" data-swatch="3:1100,2:1450,0:1800">
+                      <i style={{ background: '#002568' }} />
+                      <i style={{ background: '#e4572e' }} />
+                      <i style={{ background: '#12b981' }} />
+                      <i style={{ background: '#1f6fd0' }} />
+                      <i style={{ background: '#ffb020' }} />
+                      <i style={{ background: '#f0575f' }} />
+                      <i style={{ background: '#7c3aed' }} />
+                      <i style={{ background: '#374151' }} />
+                    </div>
+                    <div className="saved" data-appear="2250">Enregistré</div>
+                  </div>
+                  <div className="app-btn" data-ready="2700">Enregistrer les modifications</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="step-num"><i>04</i><span>Environ 2 minutes</span></div>
+              <h3>Personnalise ta boutique</h3>
+              <p>Ton logo, ta photo de couverture, tes couleurs, tes zones de livraison. Ta boutique ressemble à ta marque, pas à un modèle.</p>
+              <ul className="step-pts">
+                <li>{IC.check} Logo, couverture et couleurs en quelques clics</li>
+                <li>{IC.check} Tes boutons Appeler, Écrire, Instagram et TikTok</li>
+                <li>{IC.check} Tes zones et tes frais de livraison</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Étape 5 */}
+          <div className="step-row reveal">
+            <div className="step-media">
+              <div className="app">
+                <div className="app-bar">
+                  <span className="app-back">←</span>
+                  <b>Choisir un plan</b>
+                  <span className="app-step">Activation</span>
+                </div>
+                <div className="app-in">
+                  <p className="plans-intro" data-appear="200">Active ton site pour recevoir des commandes</p>
+
+                  {/* Plan Découverte */}
+                  <div className="plan-mini" data-appear="350">
+                    <div className="plan-mini-head">
+                      <span className="plan-mini-name">Découverte</span>
+                      <span className="plan-mini-price">2 900 <small>FCFA/mois</small></span>
+                    </div>
+                    <small className="plan-mini-note">Jusqu&rsquo;à 10 produits · Wave &amp; Orange Money</small>
+                    <div className="plan-mini-cta">Activer ce plan</div>
+                  </div>
+
+                  {/* Plan Business */}
+                  <div className="plan-mini best" data-appear="550">
+                    <div className="plan-mini-badge">1 mois offert</div>
+                    <div className="plan-mini-head">
+                      <span className="plan-mini-name">Business</span>
+                      <span className="plan-mini-price">4 900 <small>FCFA/mois</small></span>
+                    </div>
+                    <small className="plan-mini-note">Produits illimités · Confirmations WhatsApp auto</small>
+                    <div className="plan-mini-cta">Activer ce plan</div>
+                  </div>
+
+                  {/* Plan Pro */}
+                  <div className="plan-mini" data-appear="750">
+                    <div className="plan-mini-head">
+                      <span className="plan-mini-name">Pro</span>
+                      <span className="plan-mini-price">9 900 <small>FCFA/mois</small></span>
+                    </div>
+                    <small className="plan-mini-note">0% commission · Domaine personnalisé</small>
+                    <div className="plan-mini-cta">Activer ce plan</div>
+                  </div>
+
+                  <p className="plan-mini-foot" data-appear="950">Paiement par mobile money ou carte bancaire</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="step-num"><i>05</i><span>Une fois, puis c&rsquo;est fait</span></div>
+              <h3>Active ta boutique et commence à vendre</h3>
+              <p>Ta boutique existe. Il ne reste qu&rsquo;à l&rsquo;activer pour que tes clients puissent y accéder et passer commande. Tu choisis ton plan, tu paies, et ta boutique est en ligne.</p>
+              <ul className="step-pts">
+                <li>{IC.check} Choisis le plan qui te convient dès 2 900 FCFA/mois</li>
+                <li>{IC.check} Ta boutique est en ligne dès que le paiement est confirmé</li>
+                <li>{IC.check} Partage ton lien, ton QR code et commence à recevoir des commandes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── La vitrine vue par tes clients ──────────────────────────── */}
+      <section className="section">
+        <div className="container split">
+          <div className="split-media reveal">
+            <div className="db-wrap">
+              <div className="phone" style={{ position: 'relative', zIndex: 2 }}>
+                <div className="phone-notch" />
+                <div className="phone-screen">
+                  {/* Vue boutique complète — Chez Fatou */}
+                  <div className="st-cover" style={{ background: 'linear-gradient(150deg,#ffd6e8,#c49af5 60%,#8b5cf6)' }}>
+                    <div className="st-cover-logo" style={{ color: '#5b21b6' }}>Chez Fatou</div>
+                    <div className="st-cover-txt" style={{ color: '#3b0764' }}>Mode féminine & Cosmétiques naturels · Dakar</div>
+                    <div className="st-boxes" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+                    <div className="st-share">↗</div>
+                  </div>
+                  <div className="st-ava" style={{ background: 'linear-gradient(150deg,#7c3aed,#5b21b6)', color: '#e9d5ff' }}>CF</div>
+                  <div className="st-body">
+                    <div className="st-name">
+                      Chez Fatou
+                      <span className="st-check">{IC.checkVerified}</span>
+                    </div>
+                    <div className="st-cat">Mode &amp; Beauté</div>
+                    <p className="st-desc">Prêt-à-porter féminin haut de gamme et cosmétiques 100% naturels fabriqués au Sénégal.</p>
+                    <div className="st-pills">
+                      <span className="st-pill">Livraison Dakar &amp; Banlieue</span>
+                      <span className="st-pill">+500 clientes satisfaites</span>
+                    </div>
+                    <div className="st-social">
+                      <span className="st-ig">Instagram</span>
+                      <span className="st-tt">TikTok</span>
+                      <span className="st-fb">Appeler</span>
+                    </div>
+                    <button className="st-order" type="button" tabIndex={-1}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                          <line x1="3" y1="6" x2="21" y2="6"/>
+                          <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                        Commander
+                      </span>
+                    </button>
+                    <div className="st-sec">
+                      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ width: 9, height: 9, color: '#ffb020' }}>
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                      Coups de cœur
+                    </div>
+                    <div className="st-favs">
+                      <div className="st-fav">
+                        <i style={{ background: 'linear-gradient(150deg,#fce7f3,#f9a8d4)' }} />
+                        <div><b>Robe Wax Imprimé</b><span>18 500 FCFA</span></div>
+                      </div>
+                      <div className="st-fav">
+                        <i style={{ background: 'linear-gradient(150deg,#ede9fe,#c4b5fd)' }} />
+                        <div><b>Huile Argan Pure</b><span>7 500 FCFA</span></div>
+                      </div>
+                    </div>
+                    <div className="mfoot">Toi aussi, ouvre ta boutique en 5 min avec <b>TEKKIShop →</b></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="reveal">
+            <span className="label">Une vraie boutique</span>
+            <h2>Une boutique qui inspire confiance. <span className="grad">Sans rien faire de technique.</span></h2>
+            <p className="lead">Ton client ouvre ton lien, voit tous tes produits avec les prix, choisit, remplit son adresse et paie. Il n&rsquo;a pas besoin de t&rsquo;écrire pour acheter.</p>
+            <ul className="checks">
+              <li>
+                {IC.checkCircle}
+                <div><b>Un seul lien pour toute ta boutique</b><p>Fini les 10 photos et les prix envoyés un par un dans la discussion WhatsApp ou en DM.</p></div>
+              </li>
+              <li>
+                {IC.checkCircle}
+                <div><b>Du produit au paiement, sans sortir de la page</b><p>Ton client choisit le produit, commande et paie par mobile money ou à la livraison.</p></div>
+              </li>
+              <li>
+                {IC.checkCircle}
+                <div><b>Tes boutons Appeler et WhatsApp restent là</b><p>Ceux qui préfèrent te parler avant d&rsquo;acheter peuvent toujours le faire en un clic.</p></div>
+              </li>
+            </ul>
+            <button className="btn btn-secondary" data-open-demo>Voir une vraie boutique</button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Timeline 24h/24 ──────────────────────────────────────── */}
+      <section className="timeline-sec">
+        <div className="container">
+          <div className="section-head center reveal">
+            <span className="label label--dark">Pendant que tu vis ta vie</span>
+            <h2>Ta boutique travaille pour toi, <span style={{ color: 'var(--amber)' }}>24h/24.</span></h2>
+            <p className="lead">Une journée réelle d&rsquo;un vendeur TEKKIShop. Regarde bien l&rsquo;heure de la vente la plus intéressante.</p>
+          </div>
+          <div className="tl-grid">
+            <div className="tl reveal">
+              {[
+                { time: '07:12', bold: 'Tu mets ton lien dans ton statut', text: 'Une seule adresse à partager, au lieu de dix photos envoyées une par une.', night: false },
+                { time: '09:40', bold: 'Première commande, déjà payée', text: 'Le client a choisi, commandé et payé par Wave. Tu n\'as répondu à aucun message.', night: false },
+                { time: '12:05', bold: 'Pendant que tu es occupé, ta boutique répond', text: 'Le prix, les couleurs, ce qu\'il reste en stock, les frais de livraison : le client voit déjà tout sur ta boutique.', night: false },
+                { time: '16:30', bold: 'Tu prépares toutes tes livraisons d\'un coup', text: 'Les commandes du jour sont dans un seul écran, avec toutes les infos nécessaires.', night: false },
+                { time: '21:18', bold: 'Le livreur a reçu les commandes et validé les livraisons', text: 'Chaque commande est envoyée en 1 clic au livreur, et il valide chaque livraison en 1 clic, ce qui met à jour automatiquement le statut de la commande.', night: false },
+                { time: '02:47', bold: 'Tu dors. Une cliente commande depuis Abidjan.', text: 'Elle regarde ton catalogue, paie par Orange Money et reçoit son reçu. Tu découvriras la commande au réveil.', night: true, badge: 'Ça, tu ne peux pas le faire toi-même' },
+                { time: '08:00', bold: 'Tu retires ton argent', text: 'Ton argent arrive dans ta page Revenus, et tu le retires sur ton mobile money de manière instantanée.', night: false },
+              ].map((row) => (
+                <div key={row.time} className={`tl-row${row.night ? ' night' : ''}`}>
+                  <div className="tl-time">{row.time}</div>
+                  <div className="tl-body">
+                    <b>{row.bold}</b>
+                    <p>{row.text}</p>
+                    {row.badge && <span className="tl-badge">{row.badge}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <aside className="tl-aside reveal">
+              <div className="tl-card">
+                <div className="tl-stat">1 commande sur 3</div>
+                <p>arrive en dehors de tes heures de travail. Sans boutique en ligne, ce sont des ventes que tu ne verras jamais.</p>
+                <hr />
+                <div className="tl-mini"><i>{IC.moon}</i> Ta boutique reste ouverte la nuit</div>
+                <div className="tl-mini"><i>{IC.globe}</i> Tes clients commandent même quand tu dors</div>
+                <div className="tl-mini"><i>{IC.bolt}</i> Le paiement se fait sans toi</div>
+                <div className="tl-mini"><i>{IC.inbox}</i> La commande t&rsquo;attend au réveil</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Espace vendeur ──────────────────────────────────────────── */}
+      <section className="section">
+        <div className="container split">
+          <div className="split-media reveal">
+            <div className="db-wrap">
+              <div className="phone" style={{ position: 'relative', zIndex: 2 }}>
+                <div className="phone-notch" />
+                <div className="phone-screen">
+                  <div className="db-screen">
+                    <div className="db-top">
+                      <span className="db-burger">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ width: 14, height: 14 }}>
+                          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                      </span>
+                      <div className="db-icons">
+                        <span style={{ position: 'relative' }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                            <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          <i className="db-dot" />
+                        </span>
+                        <span className="db-bell">{IC.bell}</span>
+                        <span>{IC.eye}</span>
+                      </div>
+                    </div>
+                    <div className="db-body">
+                      <div className="db-date">Lundi 3 Août</div>
+                      <div className="db-hello">Bonsoir, Viens on s&rsquo;connaît</div>
+                      <div className="db-sales">
+                        <div className="db-sales-head">Ventes &mdash; Auj. · 1 vente <i>↗</i></div>
+                        <div className="db-amount">14 000 <small>F</small></div>
+                        <div className="db-chips">
+                          <span className="on">Auj.</span><span>Hier</span><span>Semaine</span><span>Mois</span><span>Trimestre</span>
+                        </div>
+                      </div>
+                      <div className="db-two">
+                        <div className="db-mini"><small>Produits</small><b>7</b><span>actifs</span><i>{IC.box}</i></div>
+                        <div className="db-mini"><small>En attente</small><b>0</b><span>commandes</span><i>{IC.shoppingCart}</i></div>
+                      </div>
+                      <div className="db-link">
+                        <div className="db-link-head">
+                          <i>↗</i>
+                          <div><b>Lien de ton site</b><small>Partage ce lien à tes clients</small></div>
+                        </div>
+                        <div className="db-url">https://www.tekki.shop/viensonsconnait <span>↗</span></div>
+                        <div className="db-btns"><span className="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
+                        <div className="db-btns"><span>Copier le lien</span><span className="blue">Voir mon site</span></div>
+                      </div>
+                      <div className="db-oh"><b>Commandes en cours</b><span>Voir toutes →</span></div>
+                      <div className="db-orders">
+                        <div className="db-order">
+                          <i /><div><b>Ndeye Marie Diaw <em>#B1DF87</em></b><p>Pour les Mariés</p></div>
+                          <div className="db-order-right"><strong>14 000 F</strong><span className="db-badge">Confirmée</span></div>
+                        </div>
+                        <div className="db-order">
+                          <i /><div><b>Moïse Junior <em>#0B8132</em></b><p>Et Pourtant, on s&rsquo;aimait</p></div>
+                          <div className="db-order-right"><strong>225 F</strong><span className="db-badge">Confirmée</span></div>
+                        </div>
+                        <div className="db-order">
+                          <i /><div><b>Penda Barhama <em>#ABFBAC</em></b><p>Et Pourtant, on s&rsquo;aimait</p></div>
+                          <div className="db-order-right"><strong>4 500 F</strong><span className="db-badge">Confirmée</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="db-nav">
+                      <div className="on"><i>{IC.home}</i>Accueil</div>
+                      <div><i>{IC.shoppingCart}</i>Commandes</div>
+                      <div className="db-ia"><i>{IC.sparkle}</i></div>
+                      <div><i>{IC.box}</i>Produits</div>
+                      <div><i>{IC.gear}</i>Paramètres</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span className="label">Ton activité dans ta poche</span>
+            <h2>La même boutique, vue de ton côté.</h2>
+            <p className="lead">Tes ventes du jour, tes commandes, tes produits, tes clients, tes revenus, tes codes promo, ton suivi livreur : tout tient dans un écran, sur le même téléphone que tu as déjà dans la main.</p>
+            <div className="feat-list">
+              <div className="feat"><span className="feat-n">01</span><b>Tes ventes du jour</b><p>Aujourd&rsquo;hui, hier, la semaine, le mois. Tu sais toujours où tu en es.</p></div>
+              <div className="feat"><span className="feat-n">02</span><b>Tes commandes en cours</b><p>Qui a commandé, quel produit, combien, et si c&rsquo;est confirmé.</p></div>
+              <div className="feat"><span className="feat-n">03</span><b>Ton lien, prêt à partager</b><p>Un bouton pour l&rsquo;envoyer sur WhatsApp, un QR code à imprimer, une carte à publier.</p></div>
+              <div className="feat"><span className="feat-n">04</span><b>Ton Assistant IA</b><p>Il t&rsquo;explique ce que tu ne comprends pas, te guide pas à pas et te conseille pour vendre plus.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ce que tu peux vendre ──────────────────────────────────── */}
+      <section className="section" style={{ background: 'var(--sky)' }}>
+        <div className="container">
+          <div className="section-head center reveal">
+            <span className="label">Une boutique pour ton commerce</span>
+            <h2>Vends ce que tu sais créer, fabriquer ou revendre.</h2>
+            <p className="lead">Que tu vendes des objets à livrer ou des fichiers à télécharger, ça marche pareil.</p>
+          </div>
+          <div className="cards-3 reveal">
+            <article className="card">
+              <div className="card-ico" style={{ background: '#ffeee3', color: '#e4572e' }}>{IC.shoppingBag}</div>
+              <h3>Produits à livrer</h3>
+              <p>Mode, beauté, alimentation, décoration, accessoires, artisanat, électronique.</p>
+            </article>
+            <article className="card">
+              <div className="card-ico" style={{ background: '#e9ecff', color: '#4039c9' }}>{IC.smartphone}</div>
+              <h3>Produits à télécharger</h3>
+              <p>Ebooks, guides, formations, modèles. Le client les reçoit juste après avoir payé.</p>
+            </article>
+            <article className="card">
+              <div className="card-ico" style={{ background: '#e3f9ee', color: '#078959' }}>{IC.store}</div>
+              <h3>Boutiques et commerces</h3>
+              <p>Mets ton catalogue en ligne et transforme tes abonnés en vrais clients.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Témoignages ──────────────────────────────────────────── */}
+      <section className="section testi-sec">
+        <div className="container">
+          <div className="section-head center reveal">
+            <span className="label">Ils l&rsquo;ont fait avant toi</span>
+            <h2>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></h2>
+            <p className="lead">Des vendeurs qui ont arrêté de gérer leurs commandes dans une discussion WhatsApp.</p>
+          </div>
+          <div className="testi-grid reveal">
+            {[
+              { stars: '★★★★★', text: 'J\'ai créé ma boutique un dimanche soir. Le lundi matin, j\'avais déjà deux ventes payées sans avoir répondu à un seul message.', name: 'Aminata S.', role: 'Mode féminine · Dakar', initials: 'AS', bg: 'linear-gradient(145deg,#ff955b,#e4572e)' },
+              { stars: '★★★★★', text: 'Avant, je passais mes soirées à renvoyer les mêmes photos et les mêmes prix. Maintenant j\'envoie un lien et je m\'occupe de mes livraisons.', name: 'Fatou K.', role: 'Cosmétiques naturels · Abidjan', initials: 'FK', bg: 'linear-gradient(145deg,#6e78ff,#4039c9)' },
+              { stars: '★★★★★', text: 'Je vends des formations. Orange Money marche directement et mes clients téléchargent tout de suite. C\'est ça qui manquait ici.', name: 'Marie N.', role: 'Formations en ligne · Cotonou', initials: 'MN', bg: 'linear-gradient(145deg,#23c78c,#078959)' },
+              { stars: '★★★★★', text: 'Ce qui m\'a convaincue, c\'est que tout se fait au téléphone. Je n\'ai pas d\'ordinateur et je n\'en ai jamais eu besoin.', name: 'Rokhaya D.', role: 'Artisanat · Thiès', initials: 'RD', bg: 'linear-gradient(145deg,#ffca57,#de8c00)' },
+              { stars: '★★★★★', text: 'Mes commandes ne se perdent plus. Je vois qui a payé, qui attend, ce qu\'il me reste. Avant je notais tout dans un cahier.', name: 'Ibrahim T.', role: 'Électronique · Ouagadougou', initials: 'IT', bg: 'linear-gradient(145deg,#4fb0ff,#1160c4)' },
+              { stars: '★★★★★', text: 'Mes clientes en France commandent maintenant elles aussi. Une boutique, un lien, et je vends des deux côtés.', name: 'Khadija M.', role: 'Épicerie fine · Bamako', initials: 'KM', bg: 'linear-gradient(145deg,#4fc3d9,#1a7f96)' },
+            ].map((t) => (
+              <article key={t.name} className="testi">
+                <div className="stars">{t.stars}</div>
+                <p>{t.text}</p>
+                <div className="testi-who">
+                  <i style={{ background: t.bg }}>{t.initials}</i>
+                  <div><b>{t.name}</b><small>{t.role}</small></div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="swipe-hint">← Fais glisser pour lire la suite →</p>
+
+          {shops.length > 0 && (
+            <div className="merchants reveal">
+              {shops.map(s => <span key={s.id}>{s.name}</span>)}
+            </div>
+          )}
+
+          <div className="stats-bar reveal">
+            <div className="stat"><b>{shopsCount.toLocaleString('fr-FR')}</b><small>boutiques créées</small></div>
+            <div className="stat"><b>6</b><small>pays d&rsquo;Afrique</small></div>
+            <div className="stat"><b>5</b><small>pays d&rsquo;Occident</small></div>
+            <div className="stat"><b>4,7<span style={{ fontSize: '.5em' }}>/5</span></b><small>note des vendeurs</small></div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Tarifs ──────────────────────────────────────────────────── */}
+      <PricingV6 />
+
+      {/* ── Fondateur ───────────────────────────────────────────────── */}
+      <section className="section" style={{ background: 'var(--sky)' }}>
+        <div className="container founder">
+          <div className="founder-card reveal">
+            <div className="founder-ava" style={{ overflow: 'hidden' }}>
+              <Image src="/avatars/ibuka.jpg" alt="Ibuka Ndjoli" width={100} height={100} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <b>Ibuka Ndjoli</b>
+            <small>Fondateur de TEKKIShop &amp; entrepreneur e-commerce</small>
+          </div>
+          <div className="reveal">
+            <span className="label">Conçu à partir du terrain</span>
+            <h2>Fait par des gens qui ont vendu en ligne ici, avant toi.</h2>
+            <p className="quote">« Vendre en ligne depuis l&rsquo;Afrique ne devrait pas demander un ordinateur, un développeur ou des connaissances techniques. »</p>
+            <p className="lead">TEKKIShop est né de plusieurs années passées à vendre en ligne et à accompagner des marques africaines. Notre travail, c&rsquo;est de faire disparaître la partie technique pour que tu t&rsquo;occupes de tes produits, de tes clients et de ton argent.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────── */}
+      <FAQv6 />
+
+      {/* ── CTA final ──────────────────────────────────────────────── */}
+      <section className="cta-sec">
+        <div className="container">
+          <div className="cta-card reveal">
+            <h2>Ton téléphone peut devenir ta boutique. Aujourd&rsquo;hui.</h2>
+            <p>Crée ta boutique, ajoute tes produits, partage ton lien, et commence à vendre sans prise de tête.</p>
+            <div className="cta-actions">
+              <Link href="/start" className="btn btn-light">Créer ma boutique gratuitement</Link>
+              <button className="btn btn-ghost" data-open-demo>Voir une vraie boutique</button>
+            </div>
+            <p className="cta-micro">Pas besoin d&rsquo;ordinateur · Tu paies seulement quand tu ouvres ta boutique</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pied de page ───────────────────────────────────────────── */}
+      <footer>
+        <div className="container">
+          <div className="foot-grid">
+            <div className="foot-brand">
+              <a href="#top" aria-label="TEKKIShop — Accueil">
+                <Image src="/logo_white.svg" alt="TEKKIShop" width={140} height={40} style={{ height: 40, width: 'auto' }} />
+              </a>
+              <p>La manière simple de créer une boutique en ligne, encaisser par mobile money et gérer ses ventes depuis son téléphone.</p>
+              <a className="foot-tt" href="https://www.tiktok.com/@tekkishop" target="_blank" rel="noopener noreferrer">
+                {IC.tiktok}
+                Suis-nous sur TikTok
               </a>
             </div>
-
-            {/* Réassurance */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-1.5 mb-7 text-sm text-gray-600">
-              {['Pas besoin de développeur', 'Pas besoin d\'ordinateur', 'Pas besoin de CB'].map(r => (
-                <span key={r}><span className="text-emerald-500 font-bold">✓</span> {r}</span>
-              ))}
+            <div className="foot-col">
+              <h4>Produit</h4>
+              <a href="#probleme">Pourquoi TEKKIShop</a>
+              <a href="#etapes">Comment ça marche</a>
+              <a href="#tarifs">Tarifs</a>
+              <a href="#faq">FAQ</a>
             </div>
-
-            {/* Avatars + note */}
-            <div className="flex items-center justify-center lg:justify-start gap-3.5 mb-7">
-              <div className="flex -space-x-2.5 shrink-0">
-                {['1', '2', '3'].map((n, i) => (
-                  <div
-                    key={n}
-                    className="relative h-9 w-9 rounded-full border-2 border-white shadow-sm overflow-hidden"
-                    style={{ zIndex: 3 - i }}
-                  >
-                    <Image src={`/avatars/${n}.jpg`} alt="" fill className="object-cover" sizes="36px" />
-                  </div>
-                ))}
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-bold text-gray-500 shadow-sm">+</span>
-              </div>
-              <p className="text-sm text-gray-500 text-left">
-                <strong className="text-gray-900">4,9★</strong> — noté par des marchands au Sénégal, en Côte d&apos;Ivoire, au Bénin, au Togo, au Mali et au Burkina Faso
-              </p>
+            <div className="foot-col">
+              <h4>Ressources</h4>
+              <Link href="/pourquoi-pas-shopify">Pourquoi pas Shopify ?</Link>
+              <Link href="/produits-digitaux">Vendre des produits digitaux</Link>
+              <Link href="/europe-canada">Vendre depuis la Diaspora</Link>
+              <Link href="/licence">Devenir licencié TEKKIShop</Link>
             </div>
-
-            {/* Stats réelles */}
-            <div className="flex items-center justify-center lg:justify-start gap-6 flex-wrap">
-              {STATS.map((s, i) => {
-                const Icon = s.icon
-                return (
-                  <div key={i} className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0 text-[var(--color-primary)]" />
-                    <div>
-                      <span className="text-sm font-black text-gray-900">{s.value}</span>
-                      <span className="text-xs text-gray-400 ml-1">{s.label}</span>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="foot-col">
+              <h4>Aide</h4>
+              <Link href="/aide">Centre d&rsquo;aide</Link>
+              <a href="https://www.tiktok.com/@tekkishop" target="_blank" rel="noopener noreferrer">Nos tutoriels vidéo</a>
+              <a href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}>Support WhatsApp</a>
+              <Link href="/contact">Nous contacter</Link>
+            </div>
+            <div className="foot-col">
+              <h4>Légal</h4>
+              <Link href="/legal/cgu">Conditions d&rsquo;utilisation</Link>
+              <Link href="/legal/privacy">Confidentialité</Link>
+              <Link href="/mentions-legales">Mentions légales</Link>
             </div>
           </div>
-
-          {/* Phone mockup + badges flottants */}
-          <div className="relative flex justify-center lg:justify-end">
-            <style>{`
-              @keyframes tekki-float {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-8px); }
-              }
-            `}</style>
-            <AnimatedPhoneMockup />
-
-            {/* Badge — Nouvelle commande */}
-            <div
-              className="hidden sm:flex absolute top-6 -left-4 lg:-left-10 items-center gap-2.5 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-lg shadow-gray-200/60 max-w-[210px]"
-              style={{ animation: 'tekki-float 5s ease-in-out infinite' }}
-            >
-              <div className="h-8 w-8 shrink-0 rounded-xl bg-sky-50 flex items-center justify-center text-base">🛍️</div>
-              <div>
-                <p className="text-xs font-bold text-gray-900 leading-tight">Nouvelle commande</p>
-                <p className="text-[11px] text-gray-400 leading-tight">2 articles — il y a 1 min</p>
-              </div>
-            </div>
-
-            {/* Badge — Paiement Wave reçu */}
-            <div
-              className="hidden sm:flex absolute top-1/2 -translate-y-1/2 -right-4 lg:-right-10 items-center gap-2.5 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-lg shadow-gray-200/60 max-w-[200px]"
-              style={{ animation: 'tekki-float 6s ease-in-out 1s infinite' }}
-            >
-              <div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-50 flex items-center justify-center text-base">💰</div>
-              <div>
-                <p className="text-xs font-bold text-gray-900 leading-tight">Paiement Wave reçu</p>
-                <p className="text-[11px] text-gray-400 leading-tight">15 000 FCFA — Awa D.</p>
-              </div>
-            </div>
-
-            {/* Badge — Commande envoyée au livreur */}
-            <div
-              className="hidden sm:flex absolute bottom-8 -left-2 lg:-left-8 items-center gap-2.5 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-lg shadow-gray-200/60 max-w-[210px]"
-              style={{ animation: 'tekki-float 5.5s ease-in-out .5s infinite' }}
-            >
-              <div className="h-8 w-8 shrink-0 rounded-xl bg-amber-50 flex items-center justify-center text-base">🛵</div>
-              <div>
-                <p className="text-xs font-bold text-gray-900 leading-tight">Commande envoyée au livreur</p>
-                <p className="text-[11px] text-gray-400 leading-tight">en 1 clic, sur WhatsApp</p>
-              </div>
-            </div>
+          <div className="foot-bottom">
+            <span>© {new Date().getFullYear()} TEKKIShop. Tous droits réservés.</span>
+            <span>Une solution de <a href="https://getdukka.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline' }}>Dukka</a>, pensée pour l&rsquo;e-commerce en Afrique.</span>
           </div>
         </div>
-      </section>
+      </footer>
 
-      {/* ── Paiements ─────────────────────────────────────────────────────── */}
-      <section className="border-y border-gray-100 py-8 bg-gray-50/60">
-        <p className="text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-5">
-          Tes clients paient comme ils veulent :
-        </p>
-        <PaymentScroll />
-      </section>
+      {/* ── Éléments flottants / modale ─────────────────────────────── */}
+      <DemoModal />
 
-      {/* ── Avant / Après ─────────────────────────────────────────────────── */}
-      <section className="py-24 px-4 bg-white">
-        <div className="mx-auto max-w-5xl">
-          <Reveal className="text-center mb-14 max-w-[60ch] mx-auto">
-            <h2
-              className="text-[clamp(1.8rem,4vw,2.7rem)] font-bold text-gray-900"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Ta journée de vendeur, <span className="text-[var(--color-primary)]">avant et après</span> TEKKIShop.
-            </h2>
-            <p className="text-gray-500 text-lg mt-3.5">
-              Si tu vends déjà sur WhatsApp ou Instagram, tu connais la colonne de gauche par cœur.
-            </p>
-          </Reveal>
-          <Reveal delay={100} className="grid sm:grid-cols-2 gap-[22px] max-w-[980px] mx-auto">
-            {/* Sans TekkiShop */}
-            <div className="rounded-[20px] border border-red-100 bg-red-50/60 px-[30px] py-[34px]">
-              <h3 className="text-xl font-bold text-red-600 mb-5">😮‍💨 Aujourd&apos;hui, sans TEKKIShop</h3>
-              {[
-                'Tu réponds aux mêmes questions toute la journée : « C\'est combien ? Il reste quelle taille ? C\'est où ? »',
-                'Tu envoies les photos produit une par une, à chaque client',
-                'Tu perds des ventes quand tu dors, quand tu pries, quand tu es occupé·e',
-                'Tu notes les commandes dans un cahier ou dans ta tête',
-                'Tu appelles le livreur, tu lui dictes l\'adresse, tu attends',
-                'À la fin du mois, impossible de savoir combien tu as vraiment gagné',
-              ].map((t, i) => (
-                <div key={t} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-black/10' : ''}`}>
-                  <span className="text-red-400 font-bold shrink-0">✕</span>
-                  <p className="text-base text-red-700 leading-snug">{t}</p>
-                </div>
-              ))}
-            </div>
-            {/* Avec TekkiShop */}
-            <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/60 px-[30px] py-[34px]">
-              <h3 className="text-xl font-bold text-emerald-700 mb-5">😌 Demain, avec TEKKIShop</h3>
-              {[
-                'Tes produits, prix et photos sont sur ta boutique : le client regarde tout seul',
-                'Tu partages un seul lien sur WhatsApp, Instagram, TikTok ou Facebook',
-                'Les clients commandent et paient à toute heure, même à 3h du matin',
-                'Chaque commande est enregistrée automatiquement, avec l\'adresse du client',
-                'Tu envoies la commande à ton livreur en 1 clic, sur son WhatsApp',
-                'Tu vois tes ventes du jour, de la semaine et du mois en un coup d\'œil',
-              ].map((t, i) => (
-                <div key={t} className={`flex items-start gap-3 py-2.5 ${i !== 0 ? 'border-t border-dashed border-black/10' : ''}`}>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-1 shrink-0" />
-                  <p className="text-base text-emerald-700 leading-snug">{t}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      {/* ── Initialisation JS (IntersectionObserver + animations) ────── */}
+      <LandingV6Init />
 
-      {/* ── Comment ça marche — StepsSection ──────────────────────────────── */}
-      <StepsSection />
-
-      {/* ── Ils font confiance à TekkiShop ────────────────────────────────── */}
-      {shops && shops.length > 0 && (
-        <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 60%, #f0f9ff 100%)' }}>
-          <div className="mx-auto max-w-6xl">
-            <Reveal className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Ils vendent déjà avec TEKKIShop</p>
-              <h2
-                className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
-                style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-              >
-                Des marchands comme toi.
-              </h2>
-              <p className="text-gray-500 max-w-md mx-auto text-lg">
-                Découvre les boutiques qui vendent avec succès via TekkiShop
-              </p>
-            </Reveal>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {shops.map((shop) => (
-                <Link
-                  key={shop.id}
-                  href={`/${shop.slug}`}
-                  target="_blank"
-                  className="rounded-2xl border border-white/80 bg-white/70 backdrop-blur p-3 sm:p-4 text-center hover:shadow-md hover:border-sky-300 hover:bg-white transition-all group"
-                >
-                  <div className="flex items-center justify-center h-12 sm:h-14 mb-2 group-hover:scale-110 transition-transform">
-                    {shop.logo_url ? (
-                      <Image
-                        src={shop.logo_url}
-                        alt={shop.name}
-                        width={56}
-                        height={56}
-                        className="h-12 sm:h-14 w-auto max-w-[90%] object-contain rounded-lg"
-                      />
-                    ) : (
-                      <div className="text-2xl sm:text-3xl">🏪</div>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-sky-600">{shop.name}</p>
-                  <p className="text-[10px] text-gray-400 mt-1 capitalize">
-                    {shop.city || 'Localité inconnue'}
-                  </p>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-12 text-center">
-              <p className="text-sm text-gray-600 mb-4">
-                <strong className="text-gray-900">{shopsCount}+ boutiques</strong> vendent déjà avec TekkiShop
-              </p>
-              <Link
-                href="/start"
-                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 py-3 font-bold text-white hover:opacity-90 transition-opacity shadow-md"
-              >
-                Rejoins-les maintenant
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Section "Journée type" — Dark ─────────────────────────────────── */}
-      <section className="bg-[#0B1B32] py-24 px-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
-        <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #22D3EE 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
-
-        <div className="mx-auto max-w-6xl relative">
-          <Reveal className="text-center max-w-2xl mx-auto mb-16">
-            <span
-              className="inline-block rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest mb-5"
-              style={{ backgroundColor: 'rgba(46,144,250,.15)', color: '#7DB8FC' }}
-            >
-              Pendant que tu vis ta vie
-            </span>
-            <h2
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white leading-tight mb-4"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Ta boutique travaille pour toi, 24h/24.
-            </h2>
-            <p className="text-gray-400 text-lg">
-              Voici une vraie journée avec TekkiShop.
-            </p>
-          </Reveal>
-
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
-            <Reveal>
-              <div>
-                {JOURNEE.map((m, i) => (
-                  <div key={m.heure} className={`flex gap-5 py-5 ${i !== 0 ? 'border-t border-white/10' : ''}`}>
-                    <span className="shrink-0 font-bold text-sm w-14 pt-0.5" style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                      {m.heure}
-                    </span>
-                    <div>
-                      <p className="text-white font-bold text-base mb-1.5">{m.titre}</p>
-                      <p className="text-gray-400 text-sm leading-relaxed">{m.texte}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-
-            {/* Téléphone animé — flux de commande */}
-            <Reveal delay={150} className="flex justify-center lg:justify-end">
-              <OrderFlowPhoneMockup />
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ─────────────────────────────────────────────────────── */}
-      <section className="py-20 px-4 bg-gray-50/70">
-        <div className="mx-auto max-w-6xl">
-          <Reveal className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tout est inclus</p>
-            <h2
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Tout ce qu&apos;il te faut. <span className="text-[var(--color-primary)]">Rien de compliqué.</span>
-            </h2>
-            <p className="text-gray-500 text-lg max-w-md mx-auto">Chaque fonctionnalité de TEKKIShop existe pour te faire gagner du temps ou de l&apos;argent. Sinon, on ne la construit pas.</p>
-          </Reveal>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon
-              return (
-                <div
-                  key={i}
-                  className="group relative rounded-3xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
-                >
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                    style={{ background: 'radial-gradient(circle at top right, rgba(14,165,233,0.04) 0%, transparent 60%)' }} />
-                  <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${f.color} mb-4 shadow-sm`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-2">{f.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Témoignages ──────────────────────────────────────────────────── */}
-      <section className="py-16 bg-[#0B1B32] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-5"
-          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #0EA5E9 0%, transparent 50%), radial-gradient(circle at 80% 50%, #22D3EE 0%, transparent 50%)' }} />
-        <div className="relative">
-          <Reveal className="text-center mb-10">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Nos marchands en parlent mieux</p>
-            <h2
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              Vendre en ligne n&apos;a jamais été aussi simple
-            </h2>
-          </Reveal>
-          <TestimonialsCarousel />
-
-          <Reveal delay={100} className="mt-14 flex flex-wrap items-center justify-center gap-x-14 gap-y-8 text-center px-4">
-            <div>
-              <p className="text-3xl font-black text-white">+{shopsCount}</p>
-              <p className="text-sm text-gray-400 mt-1">boutiques créées</p>
-            </div>
-            <div>
-              <p className="text-3xl font-black text-white">6 pays d&apos;Afrique</p>
-              <p className="text-sm text-gray-400 mt-1 max-w-[280px]">Côte d&apos;Ivoire, Sénégal, Bénin, Togo, Mali & Burkina Faso</p>
-            </div>
-            <div>
-              <p className="text-3xl font-black text-white">5 pays d&apos;Occident</p>
-              <p className="text-sm text-gray-400 mt-1 max-w-[280px]">France, Belgique, Suisse, Luxembourg & Canada</p>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── Tarifs ───────────────────────────────────────────────────────── */}
-      <PricingSection />
-
-      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section id="faq" className="bg-gray-50/60 py-20 px-4">
-        <div className="mx-auto max-w-2xl">
-          <Reveal className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] mb-3">Tu as des questions ?</p>
-            <h2
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900"
-              style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-            >
-              On répond à tout
-            </h2>
-          </Reveal>
-          <FAQAccordion />
-        </div>
-      </section>
-
-      {/* ── CTA Final ────────────────────────────────────────────────────── */}
-      <section className="bg-[#0B1B32] py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at center, var(--color-primary) 0%, transparent 60%)' }} />
-
-        <Reveal className="relative text-center mx-auto max-w-2xl">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--color-primary)] shadow-2xl mb-6 mx-auto">
-            <TrendingUp className="h-8 w-8 text-white" />
-          </div>
-          <h2
-            className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-white mb-4 leading-tight"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            Prêt à vendre tes produits en ligne ?
-          </h2>
-          <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto leading-relaxed">
-            Ta boutique prête en 5 minutes. Tes clients commandent et paient directement en ligne.
-          </p>
-
-          {/* Pays disponibles - footer CTA */}
-          <div className="flex flex-col items-center gap-2 mb-8">
-            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-              <span className="text-xs text-gray-500">Afrique :</span>
-              {COUNTRIES.map(c => (
-                <span key={c.name} title={c.name} className="text-lg" aria-label={c.name}>{c.flag}</span>
-              ))}
-            </div>
-            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-              <span className="text-xs text-gray-500">Europe & Canada :</span>
-              {['🇫🇷', '🇧🇪', '🇱🇺', '🇨🇭', '🇨🇦'].map(flag => (
-                <span key={flag} className="text-lg" aria-label={flag}>{flag}</span>
-              ))}
-            </div>
-          </div>
-
-          <div className="max-w-md mx-auto mb-6">
-            <HeroInput />
-          </div>
-
-          <p className="text-xs text-gray-500">
-            ✓ Boutique gratuite à créer &nbsp;·&nbsp; ✓ Pas besoin d&apos;ordinateur &nbsp;·&nbsp; ✓ Annulation à tout moment
-          </p>
-        </Reveal>
-      </section>
-
-      <WhatsAppButton />
-      <SiteFooter />
+      {/* ── Données structurées ─────────────────────────────────────── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: [
+            { '@type': 'Question', name: 'Les 30 jours gratuits permettent-ils de vendre ?', acceptedAnswer: { '@type': 'Answer', text: 'Pendant 30 jours, la boutique se crée et se prépare sans payer. Pour la rendre visible aux clients et encaisser, il faut choisir un plan.' } },
+            { '@type': 'Question', name: 'Faut-il un ordinateur pour utiliser TEKKIShop ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. Tout se fait depuis un téléphone, sans connaissance technique et sans développeur.' } },
+            { '@type': 'Question', name: 'Combien de temps faut-il pour créer sa boutique ?', acceptedAnswer: { '@type': 'Answer', text: 'Environ 5 minutes pour ouvrir la boutique et publier les premiers produits.' } },
+            { '@type': 'Question', name: 'Comment les clients paient-ils ?', acceptedAnswer: { '@type': 'Answer', text: 'Par Wave, Orange Money, MTN MoMo, Moov Money, carte bancaire ou paiement à la livraison, selon le pays.' } },
+          ],
+        })}}
+      />
     </div>
   )
 }
