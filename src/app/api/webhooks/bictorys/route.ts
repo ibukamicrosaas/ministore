@@ -10,7 +10,7 @@ import {
 import { APP_URL } from '@/constants'
 import { activatePlan } from '@/lib/billing/activate-plan'
 import { sendOrderConfirmationEmail } from '@/lib/notifications/email'
-import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
+import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
@@ -430,8 +430,10 @@ async function handleOrderWebhook(
 
   // Alerte → vendeur. Commande retenue : jamais nom/téléphone tant que la
   // boutique n'est pas activée (§13 de la spec) — voir src/lib/orders/redact.ts.
+  // (o.clients ci-dessus reste volontairement non redacté : c'est le message
+  // de confirmation envoyé AU CLIENT à propos de sa propre commande.)
   if (o.shops.phone_whatsapp) {
-    const merchantClient = redactClient(o.clients, { is_held: o.is_held, released_at: o.released_at })
+    const merchantClient = loadOrderForMerchant(o).merchantClient
     const alertMsg = merchantClient.clientName === REDACTED_LABEL
       ? buildHeldOrderMerchantAlertMessage({
           totalPrice: o.total_price,

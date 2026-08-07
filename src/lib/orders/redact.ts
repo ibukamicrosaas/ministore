@@ -10,15 +10,20 @@
  * n'empêche pas `` `Nouvelle commande de ${nom}` `` d'interpoler une vraie
  * valeur dans un gabarit de chaîne, qui compile très bien.
  *
- * Règle : toute lecture de clients.first_name / last_name / phone /
- * whatsapp / email, ou de orders.delivery_address / delivery_zone_name /
- * notes, destinée à un usage marchand (affichage dashboard, export CSV,
- * notification WhatsApp/e-mail, envoi au livreur, push) DOIT passer par les
- * fonctions de ce fichier immédiatement après la requête — avant toute
- * autre utilisation de la donnée. Ne relis jamais ces colonnes brutes pour
- * les montrer, les exporter ou les inclure dans un message. Une fois passée
- * par ces fonctions, la commande retenue ne porte plus l'original : rien de
- * ce qui la consomme ensuite ne peut donc la faire fuiter.
+ * RÈGLE — point de passage unique : toute lecture d'une commande destinée à
+ * un usage marchand (affichage dashboard, export CSV, notification
+ * WhatsApp/e-mail, fiche livreur, push) DOIT passer le résultat par
+ * `loadOrderForMerchant()` (ou `loadOrdersForMerchant()` pour une liste)
+ * immédiatement après la requête — avant toute autre utilisation. Ne jamais
+ * appeler `redactClient`/`redactLocation`/`redactNotes` séparément dans du
+ * nouveau code : c'est exactly ce détour, un site qui n'appelle qu'une
+ * partie du masquage (ou aucune), qui a produit les fuites déjà trouvées
+ * dans ce projet (alerte WhatsApp, widget dashboard, fiche livreur, liste
+ * clients). Les fonctions individuelles restent exportées parce que
+ * `loadOrderForMerchant` s'appuie dessus et que `isOrderBlocked` seul reste
+ * légitime comme garde d'action (bloquer un changement de statut) quand
+ * aucune donnée client n'est affichée. Mais pour tout affichage, le seul
+ * appel à faire est `loadOrderForMerchant`.
  */
 
 export const REDACTED_LABEL = 'Masqué jusqu\'à l\'activation'
@@ -70,4 +75,50 @@ export function redactLocation(value: string | null | undefined, order: HeldGuar
 /** Notes libres du client — peuvent contenir un numéro écrit à la main. */
 export function redactNotes(notes: string | null | undefined, order: HeldGuard): string | null {
   return isOrderBlocked(order) ? null : (notes ?? null)
+}
+
+interface RawOrderForMerchant extends HeldGuard {
+  clients?:            RawClientFields | null
+  delivery_address?:   string | null
+  delivery_zone_name?: string | null
+  notes?:              string | null
+  /** Jeton exploitable (fiche livreur) — ne doit jamais quitter le serveur sur une commande retenue. */
+  delivery_token?:     string | null
+}
+
+type MerchantOrder<T extends RawOrderForMerchant> =
+  Omit<T, 'clients' | 'delivery_address' | 'delivery_zone_name' | 'notes' | 'delivery_token'> & {
+    blocked:            boolean
+    merchantClient:     RedactedClient
+    delivery_address:   string | null
+    delivery_zone_name: string | null
+    notes:              string | null
+    delivery_token:     string | null
+  }
+
+/**
+ * Point de passage unique pour toute lecture de commande à usage marchand —
+ * voir la règle en tête de fichier. Remplace en un seul appel les
+ * coordonnées client, l'adresse, la zone, les notes et le jeton livreur si
+ * la commande est retenue ; ne modifie rien d'autre. `clients` est retiré
+ * du résultat (pas juste masqué) : impossible de relire la valeur brute par
+ * erreur après ce point, il faut passer par `.merchantClient`.
+ */
+export function loadOrderForMerchant<T extends RawOrderForMerchant>(order: T): MerchantOrder<T> {
+  const blocked = isOrderBlocked(order)
+  const { clients, ...rest } = order
+  return {
+    ...rest,
+    blocked,
+    merchantClient:     redactClient(clients, order),
+    delivery_address:   redactLocation(order.delivery_address, order),
+    delivery_zone_name: redactLocation(order.delivery_zone_name, order),
+    notes:              redactNotes(order.notes, order),
+    delivery_token:     blocked ? null : (order.delivery_token ?? null),
+  } as MerchantOrder<T>
+}
+
+/** Variante liste de `loadOrderForMerchant` — mêmes garanties, appliquées à chaque ligne. */
+export function loadOrdersForMerchant<T extends RawOrderForMerchant>(orders: T[]): MerchantOrder<T>[] {
+  return orders.map(loadOrderForMerchant)
 }

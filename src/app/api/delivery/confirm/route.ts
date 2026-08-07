@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
-import { isOrderBlocked, redactClient } from '@/lib/orders/redact'
+import { isOrderBlocked, loadOrderForMerchant } from '@/lib/orders/redact'
 
 const CONFIRMABLE_STATUSES = new Set(['confirmed', 'preparing', 'ready'])
 
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Notification push au marchand (fire-and-forget)
-  const clientName  = redactClient(orderData.clients, orderData).clientName || 'Client'
+  const clientName  = loadOrderForMerchant(orderData).merchantClient.clientName || 'Client'
   const orderRef    = `#${orderData.id.slice(0, 8).toUpperCase()}`
   const slug        = orderData.shops?.slug ?? ''
 

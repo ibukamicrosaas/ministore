@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import type { Profile, Client } from '@/types'
+import { isOrderBlocked, REDACTED_LABEL } from '@/lib/orders/redact'
 
 export const metadata = { title: 'Clients — TekkiShop' }
 
@@ -85,6 +86,22 @@ export default async function ClientsPage({ searchParams }: Props) {
     }
   }
 
+  // `clients` est upserté dès la création d'une commande (upsert_client_from_order),
+  // indépendamment de is_held — cette liste contourne donc le modèle de masquage
+  // par commande. Un client dont TOUTES les commandes sont encore retenues ne doit
+  // pas apparaître ici en clair. Voir src/lib/orders/redact.ts.
+  const unmaskedClientIds = new Set<string>()
+  if (clientIds.length > 0) {
+    const { data: heldCheckData } = await supabase
+      .from('orders')
+      .select('client_id, is_held, released_at')
+      .eq('shop_id', profile.shop_id)
+      .in('client_id', clientIds)
+    for (const o of heldCheckData ?? []) {
+      if (o.client_id && !isOrderBlocked(o)) unmaskedClientIds.add(o.client_id)
+    }
+  }
+
   // Statistiques globales
   const goldCount   = clients.filter(c => (c.total_orders ?? 0) >= 10).length
   const silverCount = clients.filter(c => (c.total_orders ?? 0) >= 3 && (c.total_orders ?? 0) < 10).length
@@ -155,6 +172,8 @@ export default async function ClientsPage({ searchParams }: Props) {
               const orders     = client.total_orders ?? 0
               const tier       = getLoyaltyTier(orders)
               const totalSpent = totalSpentMap[client.id] ?? 0
+              const masked     = !unmaskedClientIds.has(client.id)
+              const displayName = masked ? REDACTED_LABEL : `${client.first_name} ${client.last_name ?? ''}`
 
               return (
                 <div key={client.id} className="flex items-center gap-3 px-4 py-3">
@@ -162,7 +181,7 @@ export default async function ClientsPage({ searchParams }: Props) {
                   <div className="relative shrink-0">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100">
                       <span className="text-sm font-semibold text-[var(--color-primary)]">
-                        {client.first_name[0]?.toUpperCase()}
+                        {masked ? '🔒' : client.first_name[0]?.toUpperCase()}
                       </span>
                     </div>
                     {tier && (
@@ -175,7 +194,7 @@ export default async function ClientsPage({ searchParams }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-medium text-gray-900">
-                        {client.first_name} {client.last_name ?? ''}
+                        {displayName}
                       </p>
                       {tier && (
                         <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${tier.color} ${tier.bg}`}>
@@ -183,7 +202,7 @@ export default async function ClientsPage({ searchParams }: Props) {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 truncate">{client.phone}</p>
+                    <p className="text-xs text-gray-500 truncate">{masked ? '' : client.phone}</p>
                   </div>
 
                   <div className="text-right shrink-0">

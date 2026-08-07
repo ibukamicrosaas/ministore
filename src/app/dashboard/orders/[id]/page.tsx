@@ -15,7 +15,7 @@ import { SendToDeliveryButton } from './SendToDeliveryButton'
 import { DigitalDeliveryCard } from './DigitalDeliveryCard'
 import type { Profile, OrderItem } from '@/types'
 import { APP_URL } from '@/constants'
-import { redactClient, redactLocation, redactNotes, isOrderBlocked } from '@/lib/orders/redact'
+import { loadOrderForMerchant } from '@/lib/orders/redact'
 
 export const metadata = { title: 'Commande — TekkiShop' }
 
@@ -107,15 +107,17 @@ export default async function OrderDetailPage({
 
   const order = data as unknown as OrderRow
 
-  // Toute donnée client/adresse/notes affichée ou transmise à un composant
-  // enfant (SendToDeliveryButton, CopyReviewLinkButton, DigitalDeliveryCard)
-  // passe par ici — jamais order.clients / order.delivery_address / order.notes
+  // Toute donnée client/adresse/notes/jeton livreur affichée ou transmise à
+  // un composant enfant (SendToDeliveryButton, CopyReviewLinkButton,
+  // DigitalDeliveryCard) passe par ici — jamais order.clients /
+  // order.delivery_address / order.notes / order.delivery_token
   // directement. Voir src/lib/orders/redact.ts.
-  const blocked = isOrderBlocked(order)
-  const merchantClient = redactClient(order.clients, order)
-  const visibleAddress = redactLocation(order.delivery_address, order)
-  const visibleZone    = redactLocation(order.delivery_zone_name, order)
-  const visibleNotes   = redactNotes(order.notes, order)
+  const merchantOrder  = loadOrderForMerchant(order)
+  const blocked        = merchantOrder.blocked
+  const merchantClient = merchantOrder.merchantClient
+  const visibleAddress = merchantOrder.delivery_address
+  const visibleZone    = merchantOrder.delivery_zone_name
+  const visibleNotes   = merchantOrder.notes
 
   // Detect digital order — all items must be digital products
   const isDigitalOrder = order.order_items.length > 0 &&
@@ -262,7 +264,7 @@ export default async function OrderDetailPage({
         <SendToDeliveryButton
           blocked={blocked}
           shopSlug={shopSlug}
-          deliveryToken={order.delivery_token}
+          deliveryToken={merchantOrder.delivery_token ?? ''}
           clientName={merchantClient.clientName}
           clientPhone={merchantClient.clientPhone ?? ''}
           deliveryAddress={visibleAddress}

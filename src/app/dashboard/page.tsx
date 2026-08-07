@@ -12,7 +12,7 @@ import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { APP_URL, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile, Shop } from '@/types'
-import { redactClient } from '@/lib/orders/redact'
+import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 import { displayedQuotaProgress } from '@/lib/billing/quota'
 import { getPlansForCountry } from '@/lib/billing/plans'
@@ -118,12 +118,12 @@ export default async function DashboardPage({ searchParams }: Props) {
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const recentOrders = (recentData ?? []) as unknown as {
+  const recentOrders = loadOrdersForMerchant((recentData ?? []) as unknown as {
     id: string; status: string; total_price: number; created_at: string
     is_held: boolean; released_at: string | null
     clients: { first_name: string; last_name: string | null } | null
     order_items: { product_name: string; quantity: number }[]
-  }[]
+  }[])
 
   // ── Modèle free_orders — quota, alertes et fin d'essai (SPEC-dashboard-fins-essai) ──
   const isFreeOrders = shop?.trial_model === 'free_orders'
@@ -354,7 +354,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         ) : (
           <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
             {recentOrders.map(order => {
-              const name    = order.clients ? redactClient(order.clients, order).clientName : 'Client'
+              const name    = order.merchantClient.clientName
               const ref     = `#${order.id.slice(0, 6).toUpperCase()}`
               const items   = order.order_items
                 .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)

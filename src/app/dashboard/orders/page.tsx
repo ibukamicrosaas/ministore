@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile } from '@/types'
-import { redactClient, isOrderBlocked } from '@/lib/orders/redact'
+import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 import { logShopEvent } from '@/lib/billing/events'
 
@@ -90,7 +90,7 @@ export default async function OrdersPage({
   const { data, error } = await query
   if (error) return <ErrorState message="Impossible de charger les commandes." />
 
-  const orders = (data ?? []) as unknown as OrderRow[]
+  const orders = loadOrdersForMerchant((data ?? []) as unknown as OrderRow[])
 
   const { data: allOrders } = await supabase
     .from('orders')
@@ -196,8 +196,8 @@ export default async function OrdersPage({
       ) : (
         <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
           {orders.map(order => {
-            const blocked      = isOrderBlocked(order)
-            const clientName   = redactClient(order.clients, order).clientName
+            const { blocked, merchantClient } = order
+            const clientName   = merchantClient.clientName
             const ref          = `#${order.id.slice(0, 6).toUpperCase()}`
             const itemsSummary = order.order_items
               .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)

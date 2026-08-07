@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redactClient, redactLocation, redactNotes } from '@/lib/orders/redact'
+import { loadOrdersForMerchant } from '@/lib/orders/redact'
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
@@ -47,7 +47,15 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Erreur serveur', { status: 500 })
   }
 
-  const orders = data ?? []
+  type RawOrder = {
+    id: string; created_at: string; status: string; total_price: number; payment_type: string
+    delivery_type: string; delivery_address: string | null; delivery_date: string | null; notes: string | null
+    is_held: boolean; released_at: string | null
+    clients: { first_name: string; last_name: string | null; phone: string } | null
+    order_items: { product_name: string; variant_label: string | null; quantity: number; unit_price: number; line_total: number }[]
+  }
+
+  const orders = loadOrdersForMerchant((data ?? []) as unknown as RawOrder[])
 
   const STATUS_LABELS: Record<string, string> = {
     pending:   'En attente',
@@ -77,20 +85,17 @@ export async function GET(req: NextRequest) {
   ]
 
   type OrderItem = { product_name: string; variant_label: string | null; quantity: number; unit_price: number; line_total: number }
-  type Client    = { first_name: string; last_name: string | null; phone: string } | null
 
   const rows = orders.map(o => {
-    const client = o.clients as unknown as Client
     const items  = (o.order_items as unknown as OrderItem[] | null) ?? []
     const products = items.map(i => {
       const name = i.variant_label ? `${i.product_name} (${i.variant_label})` : i.product_name
       return `${name} x${i.quantity} = ${i.line_total.toLocaleString('fr-FR')} FCFA`
     }).join(' | ')
 
-    const guard         = { is_held: o.is_held, released_at: o.released_at }
-    const merchantClient = redactClient(client, guard)
-    const visibleAddress = redactLocation(o.delivery_address, guard)
-    const visibleNotes   = redactNotes(o.notes, guard)
+    const merchantClient = o.merchantClient
+    const visibleAddress = o.delivery_address
+    const visibleNotes   = o.notes
 
     const date         = new Date(o.created_at).toLocaleDateString('fr-FR')
     const ref          = `#${o.id.slice(0, 8).toUpperCase()}`

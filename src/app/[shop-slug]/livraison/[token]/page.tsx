@@ -7,6 +7,7 @@ import type { Shop, OrderItem } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { DeliveryConfirmButton } from './DeliveryConfirmButton'
+import { loadOrderForMerchant } from '@/lib/orders/redact'
 
 export const revalidate = 30
 
@@ -34,7 +35,7 @@ export default async function DeliveryPage({ params }: Props) {
     .from('orders')
     .select(`
       id, status, delivery_type, delivery_address, delivery_date, delivery_zone_name,
-      payment_type, total_price, created_at, delivery_token,
+      payment_type, total_price, created_at, delivery_token, is_held, released_at,
       clients(first_name, last_name, phone),
       order_items(product_name, variant_label, quantity, line_total),
       shops(name, slug, primary_color, logo_url, currency)
@@ -44,7 +45,7 @@ export default async function DeliveryPage({ params }: Props) {
 
   if (!orderData) notFound()
 
-  const order = orderData as unknown as {
+  const rawOrder = orderData as unknown as {
     id: string
     status: string
     delivery_type: 'home_delivery' | 'store_pickup'
@@ -55,23 +56,44 @@ export default async function DeliveryPage({ params }: Props) {
     total_price: number
     created_at: string
     delivery_token: string
+    is_held: boolean
+    released_at: string | null
     clients: { first_name: string; last_name: string | null; phone: string } | null
     order_items: Pick<OrderItem, 'product_name' | 'variant_label' | 'quantity' | 'line_total'>[]
     shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'logo_url'> & { currency?: string | null }) | null
   }
 
-  const shop = order.shops
+  const shop = rawOrder.shops
   // Vérifier que le token appartient bien à cette boutique
   if (!shop || shop.slug !== slug) notFound()
 
   const color    = shop.primary_color ?? '#0EA5E9'
   const currency = (shop.currency ?? 'XOF') as ShopCurrency
+
+  // Fiche de livraison = outil marchand/livreur, jamais envoyée au client —
+  // mêmes garanties que le dashboard sur une commande retenue. Voir
+  // src/lib/orders/redact.ts.
+  const order = loadOrderForMerchant(rawOrder)
+
+  if (order.blocked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-sm text-center space-y-2">
+          <p className="text-4xl">🔒</p>
+          <p className="text-base font-semibold text-gray-900">Fiche pas encore disponible</p>
+          <p className="text-sm text-gray-500">
+            Cette commande sera visible dès que la boutique aura activé son plan.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const isDelivered  = ALREADY_DELIVERED_STATUSES.has(order.status)
   const canConfirm   = CONFIRMABLE_STATUSES.has(order.status)
   const isCashOnDelivery = order.payment_type === 'on_delivery'
 
-  const clientName = [order.clients?.first_name, order.clients?.last_name]
-    .filter(Boolean).join(' ')
+  const clientName = order.merchantClient.clientName
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -144,9 +166,9 @@ export default async function DeliveryPage({ params }: Props) {
         </div>
 
         {/* Contact client */}
-        {order.clients?.phone && (
+        {order.merchantClient.clientPhone && (
           <a
-            href={`tel:${order.clients.phone}`}
+            href={`tel:${order.merchantClient.clientPhone}`}
             className="flex items-center justify-between rounded-2xl bg-white border border-gray-100 shadow-sm p-4"
           >
             <div className="flex items-center gap-3">
@@ -154,11 +176,11 @@ export default async function DeliveryPage({ params }: Props) {
                 className="flex h-9 w-9 items-center justify-center rounded-full text-white font-bold text-sm shrink-0"
                 style={{ backgroundColor: color }}
               >
-                {order.clients.first_name?.[0]?.toUpperCase() ?? 'C'}
+                {clientName?.[0]?.toUpperCase() ?? 'C'}
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">{clientName}</p>
-                <p className="text-xs text-gray-500">{order.clients.phone}</p>
+                <p className="text-xs text-gray-500">{order.merchantClient.clientPhone}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 rounded-xl bg-gray-100 px-3 py-1.5">
@@ -214,7 +236,7 @@ export default async function DeliveryPage({ params }: Props) {
           </div>
         ) : canConfirm ? (
           <DeliveryConfirmButton
-            deliveryToken={order.delivery_token}
+            deliveryToken={order.delivery_token ?? ''}
             primaryColor={color}
           />
         ) : (
