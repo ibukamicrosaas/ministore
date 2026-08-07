@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile } from '@/types'
+import { redactClient, isOrderBlocked } from '@/lib/orders/redact'
 
 export const metadata = { title: 'Commandes — TekkiShop' }
 
@@ -30,6 +31,8 @@ type OrderRow = {
   payment_type: string
   deposit_paid: boolean
   created_at: string
+  is_held: boolean
+  released_at: string | null
   clients: { first_name: string; last_name: string | null; phone: string } | null
   order_items: { product_name: string; quantity: number }[]
 }
@@ -62,7 +65,7 @@ export default async function OrdersPage({
     .from('orders')
     .select(`
       id, status, delivery_type, delivery_date, total_price,
-      payment_type, deposit_paid, created_at,
+      payment_type, deposit_paid, created_at, is_held, released_at,
       clients(first_name, last_name, phone),
       order_items(product_name, quantity)
     `)
@@ -157,9 +160,8 @@ export default async function OrdersPage({
       ) : (
         <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
           {orders.map(order => {
-            const clientName   = order.clients
-              ? [order.clients.first_name, order.clients.last_name].filter(Boolean).join(' ')
-              : 'Client inconnu'
+            const blocked      = isOrderBlocked(order)
+            const clientName   = redactClient(order.clients, order).clientName
             const ref          = `#${order.id.slice(0, 6).toUpperCase()}`
             const itemsSummary = order.order_items
               .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)

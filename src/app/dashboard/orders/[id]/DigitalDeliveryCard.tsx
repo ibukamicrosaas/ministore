@@ -20,9 +20,10 @@ interface Props {
   clientPhone: string
   clientName: string
   appUrl: string
+  blocked?: boolean
 }
 
-export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, appUrl }: Props) {
+export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, appUrl, blocked = false }: Props) {
   const [copied, setCopied]       = useState<string | null>(null)
   const [resending, setResending] = useState(false)
   const [resendError, setResendError] = useState<string | null>(null)
@@ -32,6 +33,17 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
   const hasValidToken = tokens.some(dt =>
     new Date(dt.expires_at) > new Date() && dt.download_count < dt.max_downloads
   )
+
+  if (blocked) {
+    return (
+      <Card>
+        <p className="text-sm font-semibold text-gray-900 mb-2">📄 Liens de téléchargement</p>
+        <p className="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
+          Commande retenue — active ta boutique pour envoyer l&apos;accès au client.
+        </p>
+      </Card>
+    )
+  }
 
   async function copyLink(token: string) {
     const url = `${appUrl}/telechargement/${token}`

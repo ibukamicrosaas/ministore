@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
+import { isOrderBlocked, redactClient } from '@/lib/orders/redact'
 
 const CONFIRMABLE_STATUSES = new Set(['confirmed', 'preparing', 'ready'])
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const { data: orderData } = await admin
     .from('orders')
     .select(`
-      id, status, shop_id, total_price, payment_type,
+      id, status, shop_id, total_price, payment_type, is_held, released_at,
       clients(first_name),
       order_items(product_name, quantity),
       shops(name, slug)
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
       shop_id: string
       total_price: number
       payment_type: string
+      is_held: boolean
+      released_at: string | null
       clients: { first_name: string } | null
       order_items: { product_name: string; quantity: number }[]
       shops: { name: string; slug: string } | null
@@ -45,6 +48,15 @@ export async function POST(req: NextRequest) {
 
   if (orderData.status === 'delivered') {
     return NextResponse.json({ ok: true, already: true })
+  }
+
+  // Une commande retenue ne peut pas être confirmée livrée — elle n'a jamais
+  // dû quitter la boutique tant que celle-ci n'est pas activée.
+  if (isOrderBlocked(orderData)) {
+    return NextResponse.json(
+      { error: 'Cette commande ne peut pas encore être confirmée comme livrée.' },
+      { status: 409 }
+    )
   }
 
   if (!CONFIRMABLE_STATUSES.has(orderData.status)) {
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Notification push au marchand (fire-and-forget)
-  const clientName  = orderData.clients?.first_name ?? 'Client'
+  const clientName  = redactClient(orderData.clients, orderData).clientName || 'Client'
   const orderRef    = `#${orderData.id.slice(0, 8).toUpperCase()}`
   const slug        = orderData.shops?.slug ?? ''
 

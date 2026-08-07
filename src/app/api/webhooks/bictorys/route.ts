@@ -10,6 +10,8 @@ import {
 import { APP_URL } from '@/constants'
 import { activatePlan } from '@/lib/billing/activate-plan'
 import { sendOrderConfirmationEmail } from '@/lib/notifications/email'
+import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
+import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
@@ -359,7 +361,7 @@ async function handleOrderWebhook(
     .eq('id', orderId)
     .eq('status', 'pending')
     .select(`
-      id, shop_id, total_price, deposit_amount, payment_type, delivery_type, delivery_date, client_token,
+      id, shop_id, total_price, deposit_amount, payment_type, delivery_type, delivery_date, client_token, is_held, released_at,
       clients(first_name, last_name, whatsapp, phone, email),
       order_items(product_name, quantity, line_total),
       shops(name, phone_whatsapp, slug)
@@ -380,6 +382,8 @@ async function handleOrderWebhook(
     delivery_type: 'home_delivery' | 'store_pickup'
     delivery_date: string | null
     client_token: string
+    is_held: boolean
+    released_at: string | null
     clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string; email: string | null } | null
     order_items: { product_name: string; quantity: number; line_total: number }[]
     shops: { name: string; phone_whatsapp: string | null; slug: string } | null
@@ -424,17 +428,25 @@ async function handleOrderWebhook(
     error_message:     clientNotif.error ?? null,
   })
 
-  // Alerte → vendeur
+  // Alerte → vendeur. Commande retenue : jamais nom/téléphone tant que la
+  // boutique n'est pas activée (§13 de la spec) — voir src/lib/orders/redact.ts.
   if (o.shops.phone_whatsapp) {
-    const alertMsg = buildNewOrderAlertMessage({
-      clientName,
-      clientPhone:  o.clients.phone,
-      items:        itemsSummary,
-      totalPrice:   o.total_price,
-      deliveryType: o.delivery_type,
-      deliveryDate: o.delivery_date ?? undefined,
-      paymentType:  o.payment_type,
-    })
+    const merchantClient = redactClient(o.clients, { is_held: o.is_held, released_at: o.released_at })
+    const alertMsg = merchantClient.clientName === REDACTED_LABEL
+      ? buildHeldOrderMerchantAlertMessage({
+          totalPrice: o.total_price,
+          itemCount:  o.order_items.length,
+          upgradeUrl: `${APP_URL}/dashboard/upgrade`,
+        })
+      : buildNewOrderAlertMessage({
+          clientName:   merchantClient.clientName,
+          clientPhone:  merchantClient.clientPhone ?? '',
+          items:        itemsSummary,
+          totalPrice:   o.total_price,
+          deliveryType: o.delivery_type,
+          deliveryDate: o.delivery_date ?? undefined,
+          paymentType:  o.payment_type,
+        })
 
     const shopNotif = await sendWhatsApp(o.shops.phone_whatsapp, alertMsg)
     await supabase.from('notification_logs').insert({

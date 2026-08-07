@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
+import { isOrderBlocked } from '@/lib/orders/redact'
 
 export async function POST(
   req: NextRequest,
@@ -33,7 +34,7 @@ export async function POST(
   // Vérifier que la commande appartient à cette boutique
   const { data: orderData } = await supabase
     .from('orders')
-    .select('id, shop_id, status')
+    .select('id, shop_id, status, is_held, released_at')
     .eq('id', orderId)
     .eq('shop_id', profileData.shop_id)
     .single()
@@ -42,7 +43,11 @@ export async function POST(
     return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
   }
 
-  const o = orderData as unknown as { id: string; shop_id: string; status: string }
+  const o = orderData as unknown as { id: string; shop_id: string; status: string; is_held: boolean; released_at: string | null }
+
+  if (isOrderBlocked(o)) {
+    return NextResponse.json({ error: 'Commande retenue — active ta boutique pour l\'envoyer au client.' }, { status: 403 })
+  }
 
   // Récupérer les produits digitaux de la commande
   const { data: orderItems } = await (supabase as any)

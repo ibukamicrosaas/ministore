@@ -9,6 +9,7 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 import type { OrderStatus } from '@/types'
+import { isOrderBlocked } from '@/lib/orders/redact'
 
 async function getOwnerShopId() {
   const supabase = await createServerClient()
@@ -42,7 +43,7 @@ export async function advanceOrderStatus(orderId: string) {
   const { data: order } = await supabase
     .from('orders')
     .select(`
-      status, delivery_type, delivery_date,
+      status, delivery_type, delivery_date, is_held, released_at,
       clients(phone, whatsapp, first_name),
       shops!inner(name, slug)
     `)
@@ -51,6 +52,10 @@ export async function advanceOrderStatus(orderId: string) {
     .single()
 
   if (!order) return { error: 'Commande introuvable.' }
+
+  if (isOrderBlocked(order)) {
+    return { error: 'Commande retenue — active ta boutique pour la traiter.' }
+  }
 
   const nextStatus = STATUS_TRANSITIONS[order.status as OrderStatus]
   if (!nextStatus) return { error: 'Statut final atteint.' }
@@ -110,7 +115,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
   const { data: order } = await supabase
     .from('orders')
     .select(`
-      status,
+      status, is_held, released_at,
       clients(phone, whatsapp),
       shops!inner(name)
     `)
@@ -119,6 +124,10 @@ export async function cancelOrder(orderId: string, reason?: string) {
     .single()
 
   if (!order) return { error: 'Commande introuvable.' }
+
+  if (isOrderBlocked(order)) {
+    return { error: 'Commande retenue — active ta boutique pour la traiter.' }
+  }
 
   const { error } = await supabase
     .from('orders')

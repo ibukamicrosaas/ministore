@@ -22,6 +22,7 @@ interface Props {
   totalPrice: number
   currency: string
   orderId: string
+  blocked?: boolean
 }
 
 export function SendToDeliveryButton({
@@ -36,9 +37,24 @@ export function SendToDeliveryButton({
   totalPrice,
   currency,
   orderId,
+  blocked = false,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [phone, setPhone] = useState('')
+
+  if (blocked) {
+    return (
+      <button
+        type="button"
+        disabled
+        title="Active ta boutique pour traiter cette commande"
+        className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-400 cursor-not-allowed"
+      >
+        <Truck className="h-3.5 w-3.5" />
+        Envoyer au livreur
+      </button>
+    )
+  }
 
   const deliveryUrl = `${APP_URL}/${shopSlug}/livraison/${deliveryToken}`
   const orderRef    = `#${orderId.slice(0, 8).toUpperCase()}`

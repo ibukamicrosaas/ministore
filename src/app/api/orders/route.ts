@@ -12,6 +12,7 @@ import {
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL, MAX_HELD_ORDERS } from '@/constants'
+import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
 
 interface OrderItemInput {
   product_id: string
@@ -367,10 +368,19 @@ export async function POST(req: NextRequest) {
     .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${(i.unit_price * i.quantity).toLocaleString('fr-FR')} FCFA`)
     .join('\n')
 
+  // Toute donnée client destinée au marchand passe par redactClient — voir
+  // src/lib/orders/redact.ts. Ne jamais réutiliser client_first_name/client_phone
+  // (saisie brute du formulaire) directement dans une notification marchand
+  // à partir d'ici.
+  const merchantClient = redactClient(
+    { first_name: client_first_name, phone: client_phone },
+    { is_held: isHeld, released_at: null },
+  )
+
   // Notification push au marchand (fire-and-forget)
   void sendPushToShop(shopId, {
     title: `Nouvelle commande — ${shop.name}`,
-    body:  `${client_first_name} • ${total_price.toLocaleString('fr-FR')} FCFA`,
+    body:  `${merchantClient.clientName} • ${total_price.toLocaleString('fr-FR')} FCFA`,
     url:   `${APP_URL}/dashboard/orders`,
   })
 
@@ -380,8 +390,8 @@ export async function POST(req: NextRequest) {
     void sendNewOrderAlertEmail({
       toEmail:           shopEmail,
       shopName:          shop.name,
-      clientName:        client_first_name,
-      clientPhone:       client_phone,
+      clientName:        merchantClient.clientName,
+      clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
       items:             itemsSummary,
       totalPrice:        total_price,
       deliveryType:      delivery_type,
@@ -505,8 +515,8 @@ export async function POST(req: NextRequest) {
     const alertMsg = isHeld
       ? buildHeldOrderMerchantAlertMessage({ totalPrice: total_price, itemCount: serverItems.length, upgradeUrl })
       : buildNewOrderAlertMessage({
-          clientName:   client_first_name,
-          clientPhone:  client_phone,
+          clientName:   merchantClient.clientName,
+          clientPhone:  merchantClient.clientPhone ?? '',
           items:        itemsSummary,
           totalPrice:   total_price,
           deliveryType: delivery_type,

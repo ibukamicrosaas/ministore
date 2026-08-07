@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { redactClient, redactLocation, redactNotes } from '@/lib/orders/redact'
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     .from('orders')
     .select(`
       id, created_at, status, total_price, payment_type, delivery_type, delivery_address, delivery_date, notes,
+      is_held, released_at,
       clients(first_name, last_name, phone),
       order_items(product_name, variant_label, quantity, unit_price, line_total)
     `)
@@ -85,9 +87,13 @@ export async function GET(req: NextRequest) {
       return `${name} x${i.quantity} = ${i.line_total.toLocaleString('fr-FR')} FCFA`
     }).join(' | ')
 
+    const guard         = { is_held: o.is_held, released_at: o.released_at }
+    const merchantClient = redactClient(client, guard)
+    const visibleAddress = redactLocation(o.delivery_address, guard)
+    const visibleNotes   = redactNotes(o.notes, guard)
+
     const date         = new Date(o.created_at).toLocaleDateString('fr-FR')
     const ref          = `#${o.id.slice(0, 8).toUpperCase()}`
-    const clientName   = client ? `${client.first_name} ${client.last_name ?? ''}`.trim() : ''
     const deliveryDate = o.delivery_date
       ? new Date(o.delivery_date + 'T12:00:00').toLocaleDateString('fr-FR')
       : ''
@@ -95,16 +101,16 @@ export async function GET(req: NextRequest) {
     return [
       date,
       ref,
-      clientName,
-      client?.phone ?? '',
+      merchantClient.clientName,
+      merchantClient.clientPhone ?? '',
       products,
       (o.total_price ?? 0).toString(),
       STATUS_LABELS[o.status] ?? o.status,
       PAYMENT_LABELS[o.payment_type] ?? o.payment_type,
       DELIVERY_LABELS[o.delivery_type] ?? o.delivery_type,
-      o.delivery_address ?? '',
+      visibleAddress ?? '',
       deliveryDate,
-      o.notes ?? '',
+      visibleNotes ?? '',
     ].map(cell => `"${String(cell).replace(/"/g, '""')}"`)
   })
 

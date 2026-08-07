@@ -15,6 +15,7 @@ import { SendToDeliveryButton } from './SendToDeliveryButton'
 import { DigitalDeliveryCard } from './DigitalDeliveryCard'
 import type { Profile, OrderItem } from '@/types'
 import { APP_URL } from '@/constants'
+import { redactClient, redactLocation, redactNotes, isOrderBlocked } from '@/lib/orders/redact'
 
 export const metadata = { title: 'Commande — TekkiShop' }
 
@@ -50,6 +51,8 @@ type OrderRow = {
   notes: string | null
   internal_notes: string | null
   created_at: string
+  is_held: boolean
+  released_at: string | null
   clients: {
     id: string; first_name: string; last_name: string | null
     phone: string; whatsapp: string | null
@@ -84,7 +87,7 @@ export default async function OrderDetailPage({
     .select(`
       id, status, client_token, delivery_token, delivery_type, delivery_address,
       delivery_date, delivery_zone_name, payment_type, payment_method,
-      deposit_amount, deposit_paid, total_price, notes, internal_notes, created_at,
+      deposit_amount, deposit_paid, total_price, notes, internal_notes, created_at, is_held, released_at,
       clients(id, first_name, last_name, phone, whatsapp),
       order_items(id, product_name, variant_label, unit_price, quantity, line_total, customization_note, products(name, product_type))
     `)
@@ -103,6 +106,16 @@ export default async function OrderDetailPage({
   const shopCurrency = (shopData as { slug?: string; currency?: string | null } | null)?.currency ?? 'XOF'
 
   const order = data as unknown as OrderRow
+
+  // Toute donnée client/adresse/notes affichée ou transmise à un composant
+  // enfant (SendToDeliveryButton, CopyReviewLinkButton, DigitalDeliveryCard)
+  // passe par ici — jamais order.clients / order.delivery_address / order.notes
+  // directement. Voir src/lib/orders/redact.ts.
+  const blocked = isOrderBlocked(order)
+  const merchantClient = redactClient(order.clients, order)
+  const visibleAddress = redactLocation(order.delivery_address, order)
+  const visibleZone    = redactLocation(order.delivery_zone_name, order)
+  const visibleNotes   = redactNotes(order.notes, order)
 
   // Detect digital order — all items must be digital products
   const isDigitalOrder = order.order_items.length > 0 &&
@@ -126,7 +139,7 @@ export default async function OrderDetailPage({
     products: { name: string; digital_file_name: string | null } | null
   }>
 
-  const clientWhatsapp = order.clients?.whatsapp ?? order.clients?.phone
+  const clientWhatsapp = merchantClient.clientWhatsapp ?? merchantClient.clientPhone
   const waLink = clientWhatsapp
     ? `https://wa.me/${clientWhatsapp.replace(/\D/g, '')}`
     : null
@@ -173,9 +186,7 @@ export default async function OrderDetailPage({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            {order.clients
-              ? [order.clients.first_name, order.clients.last_name].filter(Boolean).join(' ')
-              : 'Commande'}
+            {order.clients ? merchantClient.clientName : 'Commande'}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {format(new Date(order.created_at), 'd MMMM yyyy à HH:mm', { locale: fr })}
@@ -216,8 +227,17 @@ export default async function OrderDetailPage({
         </div>
       </Card>
 
+      {/* Commande retenue : toutes les actions sont désactivées tant que la
+          boutique n'est pas activée — un marchand ne doit pas pouvoir la
+          faire avancer (livraison, statut, annulation) en contournant le blocage. */}
+      {blocked && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Commande retenue — {merchantClient.clientName}. Active ta boutique pour la traiter.
+        </div>
+      )}
+
       {/* Actions */}
-      {(canAdvance || canCancel) && (
+      {!blocked && (canAdvance || canCancel) && (
         <div className="flex gap-2">
           {canAdvance && (
             <form action={async () => { 'use server'; await advanceOrderStatus(id) }} className="flex-1">
@@ -238,14 +258,15 @@ export default async function OrderDetailPage({
         order.delivery_type === 'home_delivery' &&
         order.delivery_token &&
         shopSlug &&
-        ['confirmed', 'preparing', 'ready'].includes(order.status) && (
+        (blocked || ['confirmed', 'preparing', 'ready'].includes(order.status)) && (
         <SendToDeliveryButton
+          blocked={blocked}
           shopSlug={shopSlug}
           deliveryToken={order.delivery_token}
-          clientName={[order.clients?.first_name, order.clients?.last_name].filter(Boolean).join(' ')}
-          clientPhone={order.clients?.phone ?? ''}
-          deliveryAddress={order.delivery_address}
-          deliveryZone={(order as OrderRow & { delivery_zone_name?: string | null }).delivery_zone_name ?? null}
+          clientName={merchantClient.clientName}
+          clientPhone={merchantClient.clientPhone ?? ''}
+          deliveryAddress={visibleAddress}
+          deliveryZone={visibleZone}
           items={order.order_items.map(i => ({
             product_name:  i.product_name,
             variant_label: i.variant_label,
@@ -291,10 +312,11 @@ export default async function OrderDetailPage({
       {/* Téléchargements digitaux — mis en avant pour les commandes numériques */}
       {isDigitalOrder && (
         <DigitalDeliveryCard
+          blocked={blocked}
           tokens={downloadTokens}
           orderId={id}
-          clientPhone={order.clients?.whatsapp ?? order.clients?.phone ?? ''}
-          clientName={order.clients?.first_name ?? 'le client'}
+          clientPhone={merchantClient.clientWhatsapp ?? merchantClient.clientPhone ?? ''}
+          clientName={merchantClient.clientName || 'le client'}
           appUrl={APP_URL}
         />
       )}
@@ -326,8 +348,8 @@ export default async function OrderDetailPage({
                   <span>{format(new Date(order.delivery_date + 'T12:00:00'), 'EEEE d MMMM yyyy', { locale: fr })}</span>
                 </div>
               )}
-              {order.delivery_address && (
-                <p className="pl-6 text-xs text-gray-500">{order.delivery_address}</p>
+              {visibleAddress && (
+                <p className="pl-6 text-xs text-gray-500">{visibleAddress}</p>
               )}
             </>
           )}
@@ -336,10 +358,10 @@ export default async function OrderDetailPage({
             <span>{paymentLabel}</span>
           </div>
         </div>
-        {order.notes && (
+        {visibleNotes && (
           <div className="mt-3 rounded-xl bg-gray-50 px-3 py-2">
             <p className="text-xs font-medium text-gray-500 mb-0.5">Note du client</p>
-            <p className="text-sm text-gray-700">{order.notes}</p>
+            <p className="text-sm text-gray-700">{visibleNotes}</p>
           </div>
         )}
       </Card>
@@ -351,9 +373,11 @@ export default async function OrderDetailPage({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {[order.clients.first_name, order.clients.last_name].filter(Boolean).join(' ')}
+                {merchantClient.clientName}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">{order.clients.phone}</p>
+              {merchantClient.clientPhone && (
+                <p className="text-xs text-gray-500 mt-0.5">{merchantClient.clientPhone}</p>
+              )}
             </div>
             {waLink && (
               <a
@@ -367,11 +391,11 @@ export default async function OrderDetailPage({
               </a>
             )}
           </div>
-          {shopSlug && order.client_token && ['confirmed', 'preparing', 'ready', 'delivered', 'completed'].includes(order.status) && (
+          {!blocked && shopSlug && order.client_token && ['confirmed', 'preparing', 'ready', 'delivered', 'completed'].includes(order.status) && (
             <CopyReviewLinkButton
               reviewUrl={`${APP_URL}/${shopSlug}/avis/${order.client_token}`}
-              clientName={order.clients.first_name}
-              waNumber={order.clients.whatsapp ?? order.clients.phone}
+              clientName={merchantClient.clientName}
+              waNumber={merchantClient.clientWhatsapp ?? merchantClient.clientPhone ?? ''}
             />
           )}
         </Card>
@@ -380,10 +404,11 @@ export default async function OrderDetailPage({
       {/* Téléchargements digitaux — pour commandes mixtes */}
       {!isDigitalOrder && downloadTokens.length > 0 && (
         <DigitalDeliveryCard
+          blocked={blocked}
           tokens={downloadTokens}
           orderId={id}
-          clientPhone={order.clients?.whatsapp ?? order.clients?.phone ?? ''}
-          clientName={order.clients?.first_name ?? 'le client'}
+          clientPhone={merchantClient.clientWhatsapp ?? merchantClient.clientPhone ?? ''}
+          clientName={merchantClient.clientName || 'le client'}
           appUrl={APP_URL}
         />
       )}
