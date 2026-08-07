@@ -3,12 +3,22 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
-import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download } from 'lucide-react'
+import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile } from '@/types'
 import { redactClient, isOrderBlocked } from '@/lib/orders/redact'
+import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
+import { logShopEvent } from '@/lib/billing/events'
+
+function relativeTime(dateStr: string): string {
+  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / 36e5)
+  if (hours < 1) return "à l'instant"
+  if (hours < 24) return `il y a ${hours} h`
+  const days = Math.floor(hours / 24)
+  return `il y a ${days} j`
+}
 
 export const metadata = { title: 'Commandes — TekkiShop' }
 
@@ -95,6 +105,14 @@ export default async function OrdersPage({
 
   const activeFilter = filterStatus ?? 'all'
 
+  const heldSummary = await getFreeOrdersSummary(supabase, profile.shop_id)
+  if (heldSummary.heldCount > 0) {
+    logShopEvent(profile.shop_id, 'held_orders_banner_shown', {
+      count: heldSummary.heldCount,
+      total: heldSummary.heldTotal,
+    })
+  }
+
   return (
     <div className="space-y-5 pb-4">
 
@@ -146,6 +164,24 @@ export default async function OrdersPage({
         })}
       </div>
 
+      {/* Commandes retenues — SPEC-dashboard-fins-essai §4 */}
+      {heldSummary.heldCount > 0 && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-100 px-4 py-3.5">
+          <p className="text-sm font-bold text-amber-900">
+            {heldSummary.heldCount} commande{heldSummary.heldCount > 1 ? 's' : ''} t&apos;attend{heldSummary.heldCount > 1 ? 'ent' : ''}, pour un total de {heldSummary.heldTotal.toLocaleString('fr-FR')} F.
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5 mb-3">
+            Active ta boutique pour voir tes clients et traiter tes commandes.
+          </p>
+          <Link
+            href="/dashboard/upgrade"
+            className="block w-full rounded-xl bg-amber-500 py-2.5 text-center text-xs font-bold text-white hover:bg-amber-600 transition-colors"
+          >
+            Activer ma boutique
+          </Link>
+        </div>
+      )}
+
       {/* Liste */}
       {orders.length === 0 ? (
         <Card>
@@ -167,6 +203,31 @@ export default async function OrdersPage({
               .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
               .join(', ')
             const isHomeDelivery = order.delivery_type === 'home_delivery'
+
+            if (blocked) {
+              return (
+                <Link
+                  key={order.id}
+                  href={`/dashboard/orders/${order.id}`}
+                  className="flex items-start gap-3 px-4 py-4 bg-amber-50/60 hover:bg-amber-50 active:bg-amber-100 transition-colors"
+                >
+                  <Lock className="mt-0.5 h-4 w-4 text-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-sm font-semibold text-amber-900">Commande en attente</p>
+                      <span className="text-[10px] font-mono text-amber-400 shrink-0">{ref}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                      <p className="text-xs text-amber-700">
+                        {order.order_items.length} article{order.order_items.length > 1 ? 's' : ''} · {order.total_price.toLocaleString('fr-FR')} F
+                      </p>
+                      <span className="text-[11px] text-amber-500 shrink-0">{relativeTime(order.created_at)}</span>
+                    </div>
+                    <p className="text-xs text-amber-600 mt-0.5">Client masqué jusqu&apos;à l&apos;activation</p>
+                  </div>
+                </Link>
+              )
+            }
 
             return (
               <Link

@@ -12,6 +12,15 @@ import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import { APP_URL, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile, Shop } from '@/types'
+import { redactClient } from '@/lib/orders/redact'
+import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
+import { displayedQuotaProgress } from '@/lib/billing/quota'
+import { getPlansForCountry } from '@/lib/billing/plans'
+import { QuotaCounter } from '@/components/dashboard/QuotaCounter'
+import { SecondOrderAlert } from '@/components/dashboard/SecondOrderAlert'
+import { TrialEndScreen } from '@/components/dashboard/TrialEndScreen'
+import { SPECIALTY_TO_LABEL } from '@/app/start/data'
+import { logShopEvent } from '@/lib/billing/events'
 
 interface Props {
   searchParams: Promise<{ welcome?: string }>
@@ -34,11 +43,19 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('slug, name, payout_wave_number, payout_om_number, plan')
+    .select(`
+      id, slug, name, payout_wave_number, payout_om_number, plan, currency, country,
+      status, trial_model, trial_ends_at, trial_started_at, trial_extended_at,
+      free_orders_used, free_orders_quota, specialty, specialty_other
+    `)
     .eq('id', profile.shop_id)
     .single()
 
-  const shop = shopData as (Pick<Shop, 'slug' | 'name' | 'payout_wave_number' | 'payout_om_number' | 'plan'>) | null
+  const shop = shopData as (Pick<Shop,
+    'id' | 'slug' | 'name' | 'payout_wave_number' | 'payout_om_number' | 'plan' | 'currency' | 'country' |
+    'status' | 'trial_model' | 'trial_ends_at' | 'trial_started_at' | 'trial_extended_at' |
+    'free_orders_used' | 'free_orders_quota' | 'specialty' | 'specialty_other'
+  >) | null
 
   const { count: productCount } = await supabase
     .from('products')
@@ -94,7 +111,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   // Commandes actives (pas livrées, pas annulées)
   const { data: recentData } = await supabase
     .from('orders')
-    .select('id, status, total_price, created_at, clients(first_name, last_name), order_items(product_name, quantity)')
+    .select('id, status, total_price, created_at, is_held, released_at, clients(first_name, last_name), order_items(product_name, quantity)')
     .eq('shop_id', profile.shop_id)
     .not('status', 'eq', 'delivered')
     .not('status', 'eq', 'cancelled')
@@ -103,9 +120,65 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const recentOrders = (recentData ?? []) as unknown as {
     id: string; status: string; total_price: number; created_at: string
+    is_held: boolean; released_at: string | null
     clients: { first_name: string; last_name: string | null } | null
     order_items: { product_name: string; quantity: number }[]
   }[]
+
+  // ── Modèle free_orders — quota, alertes et fin d'essai (SPEC-dashboard-fins-essai) ──
+  const isFreeOrders = shop?.trial_model === 'free_orders'
+  const quota = shop ? displayedQuotaProgress(shop.free_orders_used, shop.free_orders_quota) : null
+  const daysLeft = shop?.trial_ends_at
+    ? Math.ceil((new Date(shop.trial_ends_at).getTime() - Date.now()) / 86_400_000)
+    : null
+
+  const quotaVisible = isFreeOrders && shop?.status === 'trial'
+  const showSecondOrderAlert = isFreeOrders && shop?.status === 'trial' &&
+    shop!.free_orders_used === shop!.free_orders_quota - 1
+
+  if (quotaVisible && shop) logShopEvent(shop.id, 'quota_counter_shown', {})
+
+  let trialEndScreen: React.ReactNode = null
+  if (isFreeOrders && shop?.status === 'expired') {
+    const isCasA = shop.free_orders_used >= shop.free_orders_quota
+    if (isCasA) {
+      const summary = await getFreeOrdersSummary(supabase, shop.id)
+      const { plans, isEuCa } = getPlansForCountry(shop.country)
+      trialEndScreen = (
+        <TrialEndScreen
+          shopId={shop.id}
+          caseType="A"
+          collectedTotal={summary.collectedTotal}
+          heldCount={summary.heldCount}
+          currency={shop.currency ?? 'XOF'}
+          plans={plans}
+          currentPlan={shop.plan}
+          isEuCa={isEuCa}
+          subscriptionEndsAt={null}
+        />
+      )
+    } else {
+      let visitsQuery = supabase.from('shop_visits').select('views').eq('shop_id', shop.id)
+      if (shop.trial_started_at) visitsQuery = visitsQuery.gte('day', shop.trial_started_at.slice(0, 10))
+      const { data: visitsData } = await visitsQuery
+      const visitCount = (visitsData ?? []).reduce((sum: number, v: { views: number }) => sum + v.views, 0)
+      const category = shop.specialty === 'other'
+        ? (shop.specialty_other ?? 'des produits')
+        : (SPECIALTY_TO_LABEL[shop.specialty ?? ''] ?? 'des produits')
+      trialEndScreen = (
+        <TrialEndScreen
+          shopId={shop.id}
+          caseType="B"
+          visitCount={visitCount}
+          category={category}
+          country={shop.country ?? null}
+          shopSlug={shop.slug}
+          shopName={shop.name}
+          trialExtendedAt={shop.trial_extended_at}
+        />
+      )
+    }
+  }
 
   const hoursSince = (dateStr: string) => {
     return Math.floor((Date.now() - new Date(dateStr).getTime()) / 36e5)
@@ -118,6 +191,8 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-5 pb-4">
+
+      {trialEndScreen}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
@@ -247,6 +322,12 @@ export default async function DashboardPage({ searchParams }: Props) {
         </Link>
       </div>
 
+      {/* Commandes offertes — modèle free_orders, pendant l'essai uniquement */}
+      {quotaVisible && quota && (
+        <QuotaCounter used={quota.used} quota={quota.quota} daysLeft={daysLeft} />
+      )}
+      {showSecondOrderAlert && <SecondOrderAlert />}
+
       {/* Lien boutique */}
       {shop && <ShopLinkCard shopSlug={shop.slug} appUrl={APP_URL} shopName={shop.name} />}
 
@@ -273,9 +354,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         ) : (
           <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
             {recentOrders.map(order => {
-              const name    = order.clients
-                ? [order.clients.first_name, order.clients.last_name].filter(Boolean).join(' ')
-                : 'Client'
+              const name    = order.clients ? redactClient(order.clients, order).clientName : 'Client'
               const ref     = `#${order.id.slice(0, 6).toUpperCase()}`
               const items   = order.order_items
                 .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)

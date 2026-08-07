@@ -7,6 +7,7 @@ import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { PushNotificationManager } from './PushNotificationManager'
 import { ChatWidget } from '@/components/ai/ChatWidget'
+import { ChatAssistantContext } from './ChatAssistantContext'
 import type { Shop, Profile } from '@/types'
 
 interface DashboardShellProps {
@@ -18,13 +19,22 @@ interface DashboardShellProps {
   isAdmin?: boolean
   renewalBanner?: React.ReactNode
   isTrial?: boolean
+  /** Bandeau permanent §7 (essai free_orders expiré) — calculé dans le layout, qui seul a accès aux commandes retenues. */
+  expiredBanner?: React.ReactNode
 }
 
-export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false, renewalBanner, isTrial = false }: DashboardShellProps) {
+export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false, renewalBanner, isTrial = false, expiredBanner }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | null>(null)
+
+  function openChatWithPrompt(prompt: string) {
+    setChatInitialPrompt(prompt)
+    setChatOpen(true)
+  }
 
   return (
+    <ChatAssistantContext.Provider value={{ openChatWithPrompt }}>
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar
         shop={shop}
@@ -44,6 +54,8 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
         <div className="h-14 shrink-0 lg:hidden" aria-hidden />
         {/* Bannière renouvellement — placée ici pour être visible sous le header fixe */}
         {renewalBanner}
+        {/* Bandeau permanent essai free_orders expiré (§7) */}
+        {expiredBanner}
         {/* Bandeau essai — visible dès J1, disparaît quand la bannière urgence prend le relais */}
         {isTrial && !renewalBanner && (
           <div className="flex items-center gap-2.5 border-b border-amber-100 bg-amber-50 px-4 py-2 shrink-0">
@@ -74,8 +86,11 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
         isOpen={chatOpen}
         onOpen={() => setChatOpen(true)}
         onClose={() => setChatOpen(false)}
+        initialPrompt={chatInitialPrompt}
+        onInitialPromptConsumed={() => setChatInitialPrompt(null)}
       />
       <PushNotificationManager />
     </div>
+    </ChatAssistantContext.Provider>
   )
 }

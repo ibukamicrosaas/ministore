@@ -8,6 +8,7 @@ import type { Shop, Product } from '@/types'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
+import { VisitBeacon } from './VisitBeacon'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -60,7 +61,7 @@ export default async function ShopPage({ params }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, product_layout')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, product_layout, trial_model')
     .eq('slug', slug)
     .neq('status', 'draft')
     .single()
@@ -81,7 +82,12 @@ export default async function ShopPage({ params }: Props) {
       .order('created_at', { ascending: true })
 
     const products = (productsData ?? []) as Product[]
-    return <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} />
+    return (
+      <>
+        {shop.trial_model === 'free_orders' && <VisitBeacon shopId={shop.id} />}
+        <ShopBusinessLayout shop={shop} products={products} shopSlug={slug} />
+      </>
+    )
   }
 
   const { data: productsData } = await supabase
@@ -123,6 +129,7 @@ export default async function ShopPage({ params }: Props) {
 
   return (
     <div className="max-w-lg mx-auto lg:max-w-none">
+      {shop.trial_model === 'free_orders' && <VisitBeacon shopId={shop.id} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

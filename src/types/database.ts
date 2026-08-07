@@ -796,6 +796,24 @@ export type Database = {
         }
       Relationships: []
       }
+      shop_visits: {
+        Row: {
+          shop_id: string
+          day: string
+          views: number
+        }
+        Insert: {
+          shop_id: string
+          day: string
+          views?: number
+        }
+        Update: {
+          shop_id?: string
+          day?: string
+          views?: number
+        }
+      Relationships: []
+      }
       waitlist: {
         Row: {
           id: string
@@ -845,6 +863,10 @@ export type Database = {
       activate_free_orders_shop: {
         Args: { p_shop_id: string }
         Returns: { released_count: number; released_total: number }[]
+      }
+      increment_shop_visit: {
+        Args: { p_shop_id: string }
+        Returns: undefined
       }
       upsert_client_from_order: {
         Args: {

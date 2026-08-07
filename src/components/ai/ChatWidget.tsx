@@ -77,9 +77,13 @@ interface ChatWidgetProps {
   isOpen: boolean
   onOpen: () => void
   onClose: () => void
+  /** Message à envoyer automatiquement à l'ouverture (ex : plan d'acquisition
+   *  préparé depuis le tableau de bord) — consommé une seule fois. */
+  initialPrompt?: string | null
+  onInitialPromptConsumed?: () => void
 }
 
-export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProps) {
+export function ChatWidget({ shopName, isOpen, onOpen, onClose, initialPrompt, onInitialPromptConsumed }: ChatWidgetProps) {
   const pathname = usePathname()
   const [messages, setMessages] = useState<Message[]>([])
   const [sessionId] = useState<string>(() => generateSessionId())
@@ -102,7 +106,7 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProp
   useEffect(() => {
     if (!isOpen) return
 
-    if (messages.length === 0) {
+    if (messages.length === 0 && !initialPrompt) {
       setMessages([{ role: 'assistant', content: getWelcomeMessage(pathname) }])
     }
 
@@ -113,7 +117,7 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProp
         if (data.remaining !== null && data.remaining <= 0) setLimitReached(true)
       })
       .catch(() => null)
-  }, [isOpen, pathname]) // messages volontairement exclu
+  }, [isOpen, pathname, initialPrompt]) // messages volontairement exclu
 
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 100)
@@ -197,6 +201,13 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose }: ChatWidgetProp
       abortRef.current = null
     }
   }, [isStreaming, limitReached, messages])
+
+  useEffect(() => {
+    if (!isOpen || !initialPrompt || messages.length > 0) return
+    handleSend(initialPrompt)
+    onInitialPromptConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialPrompt])
 
   const sendMessage = useCallback(() => {
     handleSend(input.trim())

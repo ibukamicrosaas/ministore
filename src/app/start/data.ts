@@ -56,6 +56,12 @@ export const CAT_TO_SPECIALTY: Record<QuizCat, string> = {
   autre:       'other',
 }
 
+// Label FR déduit de CAT_TO_SPECIALTY, pour réafficher shops.specialty sans
+// repasser par le code quiz (ex : préremplissage de l'Assistant IA).
+export const SPECIALTY_TO_LABEL: Record<string, string> = Object.fromEntries(
+  Object.entries(CAT_TO_SPECIALTY).map(([cat, spec]) => [spec, CAT_LABEL[cat as QuizCat]])
+)
+
 export const PREUVES_CAT: Record<QuizCat, string> = {
   mode:        "Bon choix. La mode est l'une des <b>catégories les plus vendues sur TekkiShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
   chaussures:  "Top. Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",

@@ -6,6 +6,7 @@ import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { Toaster } from 'react-hot-toast'
 import type { Profile, Shop } from '@/types'
 import Link from 'next/link'
+import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
@@ -50,7 +51,12 @@ export default async function DashboardLayout({
     .is('read_at', null) as unknown as { count: number | null }
 
   const isAdmin    = ADMIN_IDS.includes(user.id)
-  const isTrial    = shop.plan === 'trial'
+  // trial_model='free_orders' n'entre JAMAIS dans les branches isTrial/trialExpired
+  // ci-dessous : ces boutiques ont leur propre fin d'essai (§5/§6/§7 de
+  // SPEC-dashboard-fins-essai.md), pilotée par shops.status, rendue dans la page
+  // du tableau de bord elle-même — jamais par cet écran de blocage générique, qui
+  // masquerait l'écran cas B avant que le marchand ne le voie.
+  const isTrial    = shop.trial_model !== 'free_orders' && shop.plan === 'trial'
   const isPaid     = !isTrial
 
   // Banners essai gratuit
@@ -199,9 +205,32 @@ export default async function DashboardLayout({
     return null
   })()
 
+  // Bandeau permanent §7 — essai free_orders expiré, sur toutes les pages du
+  // tableau de bord (indépendant de l'écran cas A/B, refermable lui, qui ne
+  // s'affiche qu'à l'accueil).
+  let expiredBanner: React.ReactNode = null
+  if (shop.trial_model === 'free_orders' && shop.status === 'expired') {
+    const { heldCount } = await getFreeOrdersSummary(supabase, shop.id)
+    expiredBanner = (
+      <div className="flex items-center gap-3 bg-gray-800 px-4 py-2.5 shrink-0">
+        <p className="flex-1 text-sm font-medium text-white">
+          {heldCount > 0
+            ? `${heldCount} commande${heldCount > 1 ? 's' : ''} t'attend${heldCount > 1 ? 'ent' : ''}. Active ta boutique pour les traiter.`
+            : 'Ta boutique reste visible, mais elle ne peut plus recevoir de commandes.'}
+        </p>
+        <Link
+          href="/dashboard/upgrade"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-gray-800 hover:bg-gray-100 transition-colors"
+        >
+          Activer →
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <>
-      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin} renewalBanner={renewalBanner} isTrial={isTrial}>
+      <DashboardShell shop={shop} profile={profile} unreadNotifications={unreadCount ?? 0} isAdmin={isAdmin} renewalBanner={renewalBanner} isTrial={isTrial} expiredBanner={expiredBanner}>
         {children}
       </DashboardShell>
       <Toaster
