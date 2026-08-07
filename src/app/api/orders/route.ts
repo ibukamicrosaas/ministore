@@ -345,8 +345,9 @@ export async function POST(req: NextRequest) {
   // n'a pas activé sa boutique — même via cette notification WhatsApp.
   const isHeld = order.is_held === true
 
-  // À une commande du quota (§6) : le marchand reçoit l'alerte normale PLUS ce
-  // rappel, pour qu'il ait le temps d'activer avant de perdre la suivante.
+  // À une commande du quota (§3 de SPEC-dashboard-fins-essai) : un seul message
+  // qui contient les deux informations (nouvelle commande + avertissement quota),
+  // jamais un message séparé en plus de l'alerte normale.
   let quotaWarningRemaining: number | null = null
   if (!isHeld) {
     const { data: quotaShop } = await supabase
@@ -512,8 +513,18 @@ export async function POST(req: NextRequest) {
   if (shop.phone_whatsapp) {
     // Commande retenue : jamais le nom ni le téléphone du client dans cette
     // notification tant que la boutique n'est pas activée (§13 de la spec).
+    // À une commande du quota gratuit : un seul message combiné (nouvelle
+    // commande + avertissement), jamais l'alerte normale suivie d'un second
+    // message séparé.
     const alertMsg = isHeld
       ? buildHeldOrderMerchantAlertMessage({ totalPrice: total_price, itemCount: serverItems.length, upgradeUrl })
+      : quotaWarningRemaining !== null
+      ? buildQuotaWarningMessage({
+          shopName:   shop.name,
+          orderTotal: total_price,
+          remaining:  quotaWarningRemaining,
+          upgradeUrl,
+        })
       : buildNewOrderAlertMessage({
           clientName:   merchantClient.clientName,
           clientPhone:  merchantClient.clientPhone ?? '',
@@ -529,23 +540,12 @@ export async function POST(req: NextRequest) {
       shop_id:           shopId,
       order_id:          order.id,
       recipient_phone:   shop.phone_whatsapp,
-      notification_type: 'new_order_shop', // pas de valeur dédiée 'held' dans la contrainte existante
+      notification_type: 'new_order_shop', // pas de valeur dédiée 'held'/'quota_warning' dans la contrainte existante
       channel:           'sms',
       message:           alertMsg,
       status:            shopNotif.success ? 'sent' : 'failed',
       error_message:     shopNotif.error ?? null,
     })
-
-    // À une commande du quota gratuit : rappel séparé, en plus de l'alerte normale.
-    if (quotaWarningRemaining !== null) {
-      const warningMsg = buildQuotaWarningMessage({
-        shopName:   shop.name,
-        orderTotal: total_price,
-        remaining:  quotaWarningRemaining,
-        upgradeUrl,
-      })
-      void sendWhatsApp(shop.phone_whatsapp, warningMsg)
-    }
   }
 
   return NextResponse.json({ orderId: order.id, clientToken: order.client_token, redirect: 'success', isHeld })

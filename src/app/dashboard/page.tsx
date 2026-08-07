@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { ShopLinkCard } from '@/components/dashboard/ShopLinkCard'
 import { SetupChecklist } from '@/components/dashboard/SetupChecklist'
@@ -158,7 +159,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         />
       )
     } else {
-      let visitsQuery = supabase.from('shop_visits').select('views').eq('shop_id', shop.id)
+      // shop_visits est verrouillée par RLS (service_role uniquement, voir
+      // 079_shop_visits.sql) — le client de requête (RLS) n'y a jamais accès.
+      const admin = createAdminClient()
+      let visitsQuery = admin.from('shop_visits').select('views').eq('shop_id', shop.id)
       if (shop.trial_started_at) visitsQuery = visitsQuery.gte('day', shop.trial_started_at.slice(0, 10))
       const { data: visitsData } = await visitsQuery
       const visitCount = (visitsData ?? []).reduce((sum: number, v: { views: number }) => sum + v.views, 0)
