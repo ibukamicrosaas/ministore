@@ -66,8 +66,11 @@ export async function POST(req: NextRequest) {
 
   const { shopId, items, delivery_date, delivery_type, delivery_address,
     delivery_zone_name,
-    client_first_name, client_phone, client_whatsapp, client_email, notes, payment_type,
+    client_first_name, client_phone, client_whatsapp, client_email, notes,
     promo_code } = body
+  // let (pas const) : peut être rétrogradé server-side pour un panier physique
+  // sur une boutique expired — voir ADDITIF-argent-commandes-retenues.md.
+  let payment_type = body.payment_type
 
   // ── Validation des entrées ────────────────────────────────────────────
   if (!shopId || !UUID_RE.test(shopId)) {
@@ -114,21 +117,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Boutique introuvable.' }, { status: 404 })
   }
 
-  // Filet de sécurité serveur : le bouton de commande est déjà masqué côté UI
-  // (§5 de la spec), mais une boutique expired avec trop de commandes retenues
-  // ne doit pas non plus accepter une requête directe à cette route.
-  if (shop.status === 'expired') {
-    const { count: heldCount } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('shop_id', shopId)
-      .eq('is_held', true)
-      .is('released_at', null)
-    if ((heldCount ?? 0) >= MAX_HELD_ORDERS) {
-      return NextResponse.json({ error: 'Cette boutique ne prend pas de commandes en ce moment.' }, { status: 403 })
-    }
-  }
-
   // Vérifier le stock et récupérer les prix réels depuis la DB (ignorer les prix du client)
   const productIds = items.map(i => i.product_id).filter(Boolean)
   if (!productIds.length) {
@@ -137,7 +125,7 @@ export async function POST(req: NextRequest) {
 
   const { data: dbProducts } = await supabase
     .from('products')
-    .select('id, name, price, variants, deposit_percentage, stock_count, quantity_discounts')
+    .select('id, name, price, variants, deposit_percentage, stock_count, quantity_discounts, product_type')
     .in('id', productIds)
     .eq('shop_id', shopId)
 
@@ -145,7 +133,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Produits introuvables.' }, { status: 400 })
   }
 
-  type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null; quantity_discounts: { min_qty: number; discount_pct: number }[] | null }
+  type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null; quantity_discounts: { min_qty: number; discount_pct: number }[] | null; product_type: string | null }
   const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
 
   // Stock check + calcul des prix serveur
@@ -190,6 +178,48 @@ export async function POST(req: NextRequest) {
       if (discountPct > 0) unit_price = Math.floor(unit_price * (100 - discountPct) / 100)
     }
     serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null })
+  }
+
+  // On ne prend l'argent du client que si on peut le livrer sans le marchand
+  // (ADDITIF-argent-commandes-retenues.md). Un produit digital se livre tout
+  // seul : le paiement en ligne reste autorisé, l'argent est bloqué côté
+  // marchand jusqu'à l'activation. Un produit physique dépend du marchand
+  // pour être expédié : sur une boutique expired, le paiement en ligne est
+  // désactivé pour tout le panier dès qu'il contient un seul article
+  // physique — la règle du plus contraignant s'applique, on ne scinde jamais
+  // une commande.
+  const hasPhysicalItem = items.some(it => productMap.get(it.product_id)?.product_type !== 'digital')
+  const isOnlinePaymentRequested = payment_type === 'online_full' || payment_type === 'online_deposit'
+  if (shop.status === 'expired' && hasPhysicalItem && isOnlinePaymentRequested) {
+    payment_type = delivery_type === 'home_delivery' ? 'on_delivery' : 'on_site'
+  }
+
+  // Filet de sécurité serveur : le bouton de commande est déjà masqué côté UI
+  // (§5 de la spec), mais une boutique expired avec trop de commandes retenues
+  // ne doit pas non plus accepter une requête directe à cette route.
+  //
+  // Ne s'applique qu'aux paniers contenant du physique, et ne compte que les
+  // commandes retenues qui en contiennent aussi (ADDITIF-argent-commandes-
+  // retenues.md) : une commande digitale retenue est payée et livrée
+  // normalement, elle ne laisse personne en attente — elle ne doit ni fermer
+  // la boutique, ni être bloquée par une fermeture due à des commandes
+  // physiques en attente.
+  if (shop.status === 'expired' && hasPhysicalItem) {
+    const { data: heldOrders } = await supabase
+      .from('orders')
+      .select('id, order_items(products(product_type))')
+      .eq('shop_id', shopId)
+      .eq('is_held', true)
+      .is('released_at', null)
+
+    type HeldOrderRow = { id: string; order_items: { products: { product_type: string | null } | null }[] }
+    const heldPhysicalCount = ((heldOrders ?? []) as unknown as HeldOrderRow[])
+      .filter(o => o.order_items.some(oi => oi.products?.product_type !== 'digital'))
+      .length
+
+    if (heldPhysicalCount >= MAX_HELD_ORDERS) {
+      return NextResponse.json({ error: 'Cette boutique ne prend pas de commandes en ce moment.' }, { status: 403 })
+    }
   }
 
   // Prix de livraison depuis la DB — ignorer delivery_price envoyé par le client

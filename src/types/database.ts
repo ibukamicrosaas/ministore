@@ -862,7 +862,7 @@ export type Database = {
       }
       activate_free_orders_shop: {
         Args: { p_shop_id: string }
-        Returns: { released_count: number; released_total: number }[]
+        Returns: { released_count: number; released_total: number; released_funds_gross: number }[]
       }
       increment_shop_visit: {
         Args: { p_shop_id: string }

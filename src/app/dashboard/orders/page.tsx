@@ -6,7 +6,7 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, TEKKISHOP_COMMISSION_RATE } from '@/constants'
 import type { Profile } from '@/types'
 import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
@@ -44,7 +44,7 @@ type OrderRow = {
   is_held: boolean
   released_at: string | null
   clients: { first_name: string; last_name: string | null; phone: string } | null
-  order_items: { product_name: string; quantity: number }[]
+  order_items: { product_name: string; quantity: number; products: { product_type: string | null } | null }[]
 }
 
 export default async function OrdersPage({
@@ -77,7 +77,7 @@ export default async function OrdersPage({
       id, status, delivery_type, delivery_date, total_price,
       payment_type, deposit_paid, created_at, is_held, released_at,
       clients(first_name, last_name, phone),
-      order_items(product_name, quantity)
+      order_items(product_name, quantity, products(product_type))
     `)
     .eq('shop_id', profile.shop_id)
     .order('created_at', { ascending: false })
@@ -91,6 +91,24 @@ export default async function OrdersPage({
   if (error) return <ErrorState message="Impossible de charger les commandes." />
 
   const orders = loadOrdersForMerchant((data ?? []) as unknown as OrderRow[])
+
+  // Commandes digitales retenues et payées : l'argent existe, il est bloqué
+  // côté marchand jusqu'à l'activation — voir ADDITIF-argent-commandes-retenues.md.
+  const heldIds = orders.filter(o => o.blocked).map(o => o.id)
+  let paidAmountByOrder = new Map<string, number>()
+  if (heldIds.length > 0) {
+    const { data: paymentsData } = await supabase
+      .from('payments')
+      .select('order_id, amount')
+      .in('order_id', heldIds)
+      .eq('status', 'completed')
+    paidAmountByOrder = new Map((paymentsData ?? []).map(p => [p.order_id, p.amount]))
+  }
+  function heldFundsNet(orderId: string): number | null {
+    const gross = paidAmountByOrder.get(orderId)
+    if (gross === undefined) return null
+    return gross - Math.floor(gross * (TEKKISHOP_COMMISSION_RATE / 100))
+  }
 
   const { data: allOrders } = await supabase
     .from('orders')
@@ -205,6 +223,9 @@ export default async function OrdersPage({
             const isHomeDelivery = order.delivery_type === 'home_delivery'
 
             if (blocked) {
+              const netFunds = heldFundsNet(order.id)
+              const isPaidDigital = netFunds !== null
+
               return (
                 <Link
                   key={order.id}
@@ -214,7 +235,9 @@ export default async function OrdersPage({
                   <Lock className="mt-0.5 h-4 w-4 text-amber-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-semibold text-amber-900">Commande en attente</p>
+                      <p className="text-sm font-semibold text-amber-900">
+                        {isPaidDigital ? '💰 Payée. Fichier envoyé au client.' : 'Commande en attente'}
+                      </p>
                       <span className="text-[10px] font-mono text-amber-400 shrink-0">{ref}</span>
                     </div>
                     <div className="flex items-baseline justify-between gap-2 mt-0.5">
@@ -223,7 +246,11 @@ export default async function OrdersPage({
                       </p>
                       <span className="text-[11px] text-amber-500 shrink-0">{relativeTime(order.created_at)}</span>
                     </div>
-                    <p className="text-xs text-amber-600 mt-0.5">Client masqué jusqu&apos;à l&apos;activation</p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      {isPaidDigital
+                        ? `Les ${netFunds.toLocaleString('fr-FR')} F sont bloqués jusqu'à l'activation de ta boutique.`
+                        : 'Client masqué jusqu\'à l\'activation'}
+                    </p>
                   </div>
                 </Link>
               )

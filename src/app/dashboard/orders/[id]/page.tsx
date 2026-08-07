@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale'
 import {
   ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock, Download,
 } from 'lucide-react'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, TEKKISHOP_COMMISSION_RATE } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
 import { CancelOrderButton } from './CancelOrderButton'
 import { CopyReviewLinkButton } from './CopyReviewLinkButton'
@@ -130,6 +130,21 @@ export default async function OrderDetailPage({
   const canAdvance = !isDigitalOrder && NEXT_ACTION_LABEL[order.status] !== undefined
   const canCancel  = ['pending', 'confirmed', 'preparing'].includes(order.status)
 
+  // Commande digitale retenue et payée : l'argent existe, il est bloqué côté
+  // marchand jusqu'à l'activation — voir ADDITIF-argent-commandes-retenues.md.
+  let heldFundsNet: number | null = null
+  if (blocked && isDigitalOrder) {
+    const { data: paymentData } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('order_id', id)
+      .eq('status', 'completed')
+      .maybeSingle()
+    if (paymentData) {
+      heldFundsNet = paymentData.amount - Math.floor(paymentData.amount * (TEKKISHOP_COMMISSION_RATE / 100))
+    }
+  }
+
   // Tokens de téléchargement pour les commandes digitales
   const { data: downloadTokensData } = await supabase
     .from('download_tokens' as never)
@@ -234,7 +249,9 @@ export default async function OrderDetailPage({
           faire avancer (livraison, statut, annulation) en contournant le blocage. */}
       {blocked && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Commande retenue — {merchantClient.clientName}. Active ta boutique pour la traiter.
+          {heldFundsNet !== null
+            ? <>💰 Payée. Fichier envoyé au client. Les {heldFundsNet.toLocaleString('fr-FR')} F sont bloqués jusqu&apos;à l&apos;activation de ta boutique.</>
+            : <>Commande retenue — {merchantClient.clientName}. Active ta boutique pour la traiter.</>}
         </div>
       )}
 

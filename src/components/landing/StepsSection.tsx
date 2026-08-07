@@ -246,15 +246,18 @@ function Step2Illustration() {
     <div ref={ref} className="relative rounded-3xl overflow-hidden shadow-xl shadow-violet-100 border border-violet-100">
       <div className="bg-gradient-to-br from-violet-50 to-white p-6">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-1">
             <p className="text-[10px] font-bold text-gray-800">Mon tableau de bord</p>
             <div className="flex items-center gap-1">
               <div className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${online ? 'bg-emerald-400 animate-pulse' : 'bg-gray-300'}`} />
               <span className={`text-[9px] font-semibold transition-colors duration-300 ${online ? 'text-emerald-600' : 'text-gray-400'}`}>
-                {online ? 'En ligne' : 'Hors ligne'}
+                {online ? 'En ligne' : 'Brouillon'}
               </span>
             </div>
           </div>
+          <p className={`text-[8px] text-right text-gray-400 mb-3 transition-opacity duration-300 ${online ? 'opacity-100' : 'opacity-0'}`}>
+            Déclenché par ton premier produit publié
+          </p>
           {/* Products list */}
           {STEP2_PRODUCTS.map((p, i) => (
             <div key={p.name} className="flex items-center gap-2.5 py-2 border-b border-gray-50 last:border-0">

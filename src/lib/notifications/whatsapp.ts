@@ -165,12 +165,21 @@ export function buildFreeOrdersActivatedMessage(params: {
   shopName: string
   releasedCount: number
   releasedTotal: string // déjà formaté dans la devise de la boutique, ex. "37 500 FCFA"
+  /** Fonds de commandes digitales retenues, déjà nets de commission et formatés — voir ADDITIF-argent-commandes-retenues.md */
+  unlockedFunds?: string | null
 }): string {
-  if (params.releasedCount === 0) {
+  if (params.releasedCount === 0 && !params.unlockedFunds) {
     return `TekkiShop - ${params.shopName}: boutique activee ! Tu peux desormais recevoir des commandes sans limite.`
   }
-  const plural = params.releasedCount > 1 ? 's' : ''
-  return `TekkiShop - ${params.shopName}: boutique activee ! ${params.releasedCount} commande${plural} t'attend${params.releasedCount > 1 ? 'ent' : ''}, pour un total de ${params.releasedTotal}.`
+  const parts: string[] = []
+  if (params.releasedCount > 0) {
+    const plural = params.releasedCount > 1 ? 's' : ''
+    parts.push(`${params.releasedCount} commande${plural} t'attend${params.releasedCount > 1 ? 'ent' : ''}, pour un total de ${params.releasedTotal}`)
+  }
+  if (params.unlockedFunds) {
+    parts.push(`${params.unlockedFunds} sont maintenant disponibles au retrait`)
+  }
+  return `TekkiShop - ${params.shopName}: boutique activee ! ${parts.join(', et ')}.`
 }
 
 export function buildFreeOrdersTrialExpiredMessage(params: {

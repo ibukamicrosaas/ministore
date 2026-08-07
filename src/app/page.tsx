@@ -225,7 +225,7 @@ export default async function LandingPage() {
               </div>
               <div>
                 <b>{shopsCount}+ boutiques créées</b>
-                <span>Côte d&rsquo;Ivoire, Sénégal, Bénin, Togo, Mali et Burkina Faso</span>
+                <span>Disponible dans 11 pays</span>
               </div>
             </div>
 
@@ -248,7 +248,7 @@ export default async function LandingPage() {
             <div className="objections">
               <span>{IC.check} Pas besoin de développeur</span>
               <span>{IC.check} Pas besoin d&rsquo;ordinateur</span>
-              <span>{IC.check} 30 jours gratuits</span>
+              <span>{IC.check} 3 commandes offertes</span>
             </div>
           </div>
 
@@ -602,55 +602,30 @@ export default async function LandingPage() {
               <div className="app">
                 <div className="app-bar">
                   <span className="app-back">←</span>
-                  <b>Choisir un plan</b>
-                  <span className="app-step">Activation</span>
+                  <b>Ma boutique</b>
+                  <span className="app-step">En ligne</span>
                 </div>
                 <div className="app-in">
-                  <p className="plans-intro" data-appear="200">Active ton site pour recevoir des commandes</p>
-
-                  {/* Plan Découverte */}
-                  <div className="plan-mini" data-appear="350">
-                    <div className="plan-mini-head">
-                      <span className="plan-mini-name">Découverte</span>
-                      <span className="plan-mini-price">2 900 <small>FCFA/mois</small></span>
+                  <div className="db-link" data-appear="200">
+                    <div className="db-link-head">
+                      <i>↗</i>
+                      <div><b>Lien de ton site</b><small>Partage-le à tes clients</small></div>
                     </div>
-                    <small className="plan-mini-note">Jusqu&rsquo;à 10 produits · Wave &amp; Orange Money</small>
-                    <div className="plan-mini-cta">Activer ce plan</div>
+                    <div className="db-url">https://www.tekki.shop/chez-fatou <span>↗</span></div>
+                    <div className="db-btns"><span className="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
+                    <div className="db-btns"><span>Copier le lien</span><span className="blue">Voir mon site</span></div>
                   </div>
-
-                  {/* Plan Business */}
-                  <div className="plan-mini best" data-appear="550">
-                    <div className="plan-mini-badge">1 mois offert</div>
-                    <div className="plan-mini-head">
-                      <span className="plan-mini-name">Business</span>
-                      <span className="plan-mini-price">4 900 <small>FCFA/mois</small></span>
-                    </div>
-                    <small className="plan-mini-note">Produits illimités · Confirmations WhatsApp auto</small>
-                    <div className="plan-mini-cta">Activer ce plan</div>
-                  </div>
-
-                  {/* Plan Pro */}
-                  <div className="plan-mini" data-appear="750">
-                    <div className="plan-mini-head">
-                      <span className="plan-mini-name">Pro</span>
-                      <span className="plan-mini-price">9 900 <small>FCFA/mois</small></span>
-                    </div>
-                    <small className="plan-mini-note">0% commission · Domaine personnalisé</small>
-                    <div className="plan-mini-cta">Activer ce plan</div>
-                  </div>
-
-                  <p className="plan-mini-foot" data-appear="950">Paiement par mobile money ou carte bancaire</p>
                 </div>
               </div>
             </div>
             <div>
               <div className="step-num"><i>05</i><span>Une fois, puis c&rsquo;est fait</span></div>
-              <h3>Active ta boutique et commence à vendre</h3>
-              <p>Ta boutique existe. Il ne reste qu&rsquo;à l&rsquo;activer pour que tes clients puissent y accéder et passer commande. Tu choisis ton plan, tu paies, et ta boutique est en ligne.</p>
+              <h3>Partage ton lien et commence à vendre</h3>
+              <p>Ta boutique est en ligne dès que tu publies ton premier produit. Tu partages ton lien, tes clients commandent, et tes 3 premières commandes sont offertes.</p>
               <ul className="step-pts">
-                <li>{IC.check} Choisis le plan qui te convient dès 2 900 FCFA/mois</li>
-                <li>{IC.check} Ta boutique est en ligne dès que le paiement est confirmé</li>
-                <li>{IC.check} Partage ton lien, ton QR code et commence à recevoir des commandes</li>
+                <li>{IC.check} Ta boutique est publique dès ton premier produit publié</li>
+                <li>{IC.check} Tes 3 premières commandes sont offertes, sans rien payer</li>
+                <li>{IC.check} Partage ton lien, ton QR code, et commence à recevoir des commandes</li>
               </ul>
             </div>
           </div>
@@ -987,7 +962,7 @@ export default async function LandingPage() {
               <Link href="/start" className="btn btn-light">Créer ma boutique gratuitement</Link>
               <button className="btn btn-ghost" data-open-demo>Voir une vraie boutique</button>
             </div>
-            <p className="cta-micro">Pas besoin d&rsquo;ordinateur · Tu paies seulement quand tu ouvres ta boutique</p>
+            <p className="cta-micro">Pas besoin d&rsquo;ordinateur · Tes 3 premières commandes sont offertes</p>
           </div>
         </div>
       </section>
@@ -1054,7 +1029,7 @@ export default async function LandingPage() {
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
           mainEntity: [
-            { '@type': 'Question', name: 'Les 30 jours gratuits permettent-ils de vendre ?', acceptedAnswer: { '@type': 'Answer', text: 'Pendant 30 jours, la boutique se crée et se prépare sans payer. Pour la rendre visible aux clients et encaisser, il faut choisir un plan.' } },
+            { '@type': 'Question', name: 'Faut-il choisir un plan pour pouvoir vendre ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. La boutique est en ligne et peut recevoir des commandes dès la publication du premier produit. Les 3 premières commandes sont offertes ; un plan n\'est nécessaire que pour continuer à en recevoir au-delà.' } },
             { '@type': 'Question', name: 'Faut-il un ordinateur pour utiliser TEKKIShop ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. Tout se fait depuis un téléphone, sans connaissance technique et sans développeur.' } },
             { '@type': 'Question', name: 'Combien de temps faut-il pour créer sa boutique ?', acceptedAnswer: { '@type': 'Answer', text: 'Environ 5 minutes pour ouvrir la boutique et publier les premiers produits.' } },
             { '@type': 'Question', name: 'Comment les clients paient-ils ?', acceptedAnswer: { '@type': 'Answer', text: 'Par Wave, Orange Money, MTN MoMo, Moov Money, carte bancaire ou paiement à la livraison, selon le pays.' } },

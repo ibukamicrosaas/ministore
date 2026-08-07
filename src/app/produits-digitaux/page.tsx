@@ -107,7 +107,7 @@ const PLANS = [
       'Vente de produits digitaux',
       'Commandes et livraison automatique',
       'Assistant IA (20 messages/jour)',
-      '3 % de commission sur les paiements',
+      '3 % sur les paiements en ligne, pour couvrir les frais des opérateurs',
     ],
     cta: { label: 'Commencer avec Découverte', href: '/start?plan=decouverte', primary: false },
   },
@@ -149,7 +149,7 @@ const FAQS = [
   { q: "Ai-je besoin d'un ordinateur ?", a: "Non. La création et la gestion de ta boutique sont pensées pour être réalisées depuis ton téléphone." },
   { q: 'Comment mon client reçoit-il son fichier ?', a: "Après validation de son paiement, l'accès au fichier lui est transmis automatiquement, sans intervention manuelle de ta part." },
   { q: 'Puis-je vendre des produits physiques et digitaux ?', a: "Oui. TEKKIShop te permet de réunir des produits physiques et digitaux dans le même environnement." },
-  { q: 'La boutique est-elle réellement gratuite pendant 30 jours ?', a: "Tu disposes de 30 jours pour la créer et la configurer. Pour l'activer et commencer à vendre, tu dois choisir l'un des trois plans proposés." },
+  { q: 'Faut-il choisir un plan pour pouvoir vendre ?', a: "Non. Ta boutique est en ligne et peut recevoir des commandes dès que tu publies ton premier produit. Tes 3 premières commandes sont offertes. Tu choisis un plan seulement pour continuer à en recevoir au-delà." },
   { q: 'Comment sont calculés mes gains ?', a: "Tu fixes le prix de ton produit. Tes revenus dépendent du nombre de ventes, de la commission applicable (3 % sur les paiements en ligne) et du plan d'abonnement choisi." },
 ]
 
@@ -682,22 +682,19 @@ export default async function ProduitsDigitauxPage() {
                   ),
                 },
                 {
-                  n: '3', h: 'Active ta boutique', p: 'Choisis ton abonnement lorsque tu es prêt à commencer à vendre.',
+                  n: '3', h: 'Ta boutique est déjà en ligne', p: 'Dès ton premier produit publié, tes clients peuvent la voir et commander.',
                   mini: (
                     <div className="pd-step-mini" style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                      <div style={{ background: '#fff', border: '1.5px solid #d9c8ff', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: '#0b1830' }}>Business</span>
-                          <span style={{ fontSize: 11, color: '#7c3aed', fontWeight: 750 }}>4 900 FCFA/mois</span>
-                        </div>
-                        <div style={{ fontSize: 9.5, color: '#98a2b3', marginTop: 2 }}>Produits illimités · SMS · Codes promo</div>
+                      <div style={{ background: '#fff', border: '1.5px solid #d9c8ff', borderRadius: 10, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#12b76a', flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0b1830' }}>Boutique en ligne</span>
                       </div>
-                      <div style={{ height: 28, borderRadius: 8, background: '#7c3aed', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 10, fontWeight: 800, animation: 'pd-step-pulse 2s infinite' }}>
-                        Activer ma boutique
+                      <div style={{ height: 28, borderRadius: 8, background: '#f4f0ff', border: '1.5px dashed #c6b9ff', display: 'grid', placeItems: 'center', color: '#7c3aed', fontSize: 10, fontWeight: 800 }}>
+                        3 commandes offertes
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="#12b76a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                        <span style={{ fontSize: 9.5, color: '#667085' }}>Active dans les secondes qui suivent</span>
+                        <span style={{ fontSize: 9.5, color: '#667085' }}>Aucun paiement à faire pour commencer</span>
                       </div>
                     </div>
                   ),
@@ -834,8 +831,8 @@ export default async function ProduitsDigitauxPage() {
                 <span className="pd-eyebrow-dot" style={{ background: '#7c3aed' }} />
                 Commence sans pression
               </span>
-              <h2 className="pd-h2">Crée ta boutique gratuitement. <span className="pd-accent">Active-la quand tu es prêt.</span></h2>
-              <p className="pd-lead">Tu disposes de 30 jours pour créer et configurer ta boutique. Choisis ensuite un plan pour l&apos;activer et commencer à vendre.</p>
+              <h2 className="pd-h2">Vends dès aujourd&apos;hui. <span className="pd-accent">Paie après avoir vendu.</span></h2>
+              <p className="pd-lead">Ta boutique est en ligne dès ton premier produit publié, et tes 3 premières commandes sont offertes. Tu choisis un plan seulement quand tu veux continuer à en recevoir.</p>
             </div>
             <div className="pd-pricing-grid">
               {PLANS.map(plan => (
@@ -861,7 +858,7 @@ export default async function ProduitsDigitauxPage() {
               ))}
             </div>
             <div className="pd-trial-note">
-              30 jours pour créer ta boutique. Le paiement d&apos;un plan est requis uniquement pour l&apos;activer et commencer à vendre.
+              Tes 3 premières commandes sont offertes. Le paiement d&apos;un plan n&apos;est requis que pour continuer à en recevoir au-delà.
             </div>
           </div>
         </section>
@@ -939,7 +936,7 @@ export default async function ProduitsDigitauxPage() {
                 Voir une vraie boutique
               </a>
             </div>
-            <p className="pd-cta-note">30 jours pour créer · Aucun code · Activation lorsque tu es prêt à vendre</p>
+            <p className="pd-cta-note">Aucun code · 3 premières commandes offertes · Paie seulement après avoir vendu</p>
           </div>
         </section>
 

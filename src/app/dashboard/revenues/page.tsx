@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon } from 'lucide-react'
+import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon, Lock } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { RequestPayoutButton } from './RequestPayoutButton'
 import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
@@ -57,16 +57,32 @@ export default async function RevenuesPage() {
     }))
     .filter((m): m is { label: string; key: PayoutMethodKey; number: string } => !!m.number)
 
-  // Total collecté via paiements en ligne (status completed)
+  // Total collecté via paiements en ligne (status completed). Les paiements
+  // liés à une commande encore retenue (is_held=true, released_at IS NULL)
+  // sont exclus : cet argent existe mais n'est pas disponible tant que la
+  // boutique n'est pas activée — voir ADDITIF-argent-commandes-retenues.md.
+  // Pas de colonne dédiée : le blocage se dérive de is_held/released_at,
+  // même principe que le reste du modèle free_orders.
   const { data: paymentsData } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, orders!inner(is_held, released_at)')
     .eq('shop_id', shopId)
     .eq('status', 'completed')
 
-  const totalCollected = (paymentsData ?? []).reduce((s, p) => s + p.amount, 0)
+  type PaymentWithOrder = { amount: number; orders: { is_held: boolean; released_at: string | null } | null }
+  const allPayments = (paymentsData ?? []) as unknown as PaymentWithOrder[]
+  const isBlocked = (o: PaymentWithOrder['orders']) => !!o && o.is_held === true && o.released_at === null
+
+  const totalCollected = allPayments
+    .filter(p => !isBlocked(p.orders))
+    .reduce((s, p) => s + p.amount, 0)
+  const blockedGross = allPayments
+    .filter(p => isBlocked(p.orders))
+    .reduce((s, p) => s + p.amount, 0)
+
   const commissionTotal = Math.floor(totalCollected * (TEKKISHOP_COMMISSION_RATE / 100))
   const totalNet = totalCollected - commissionTotal
+  const blockedNet = blockedGross - Math.floor(blockedGross * (TEKKISHOP_COMMISSION_RATE / 100))
 
   // Historique des reversements
   const { data: payoutsData } = await supabase
@@ -147,6 +163,22 @@ export default async function RevenuesPage() {
         )}
       </Card>
 
+      {/* Fonds bloqués — commandes digitales retenues et payées, en attendant l'activation */}
+      {blockedNet > 0 && (
+        <Card padding="lg" className="border-amber-200 bg-amber-50">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-600" />
+              <p className="text-sm font-semibold text-amber-800">Bloqué jusqu&apos;à activation</p>
+            </div>
+            <p className="text-xl font-bold text-amber-800">{formatPrice(blockedNet, shopCurrency)}</p>
+          </div>
+          <p className="mt-3 text-xs text-amber-700">
+            Ces {formatPrice(blockedNet, shopCurrency)} sont à toi. Choisis un plan pour les débloquer et les retirer.
+          </p>
+        </Card>
+      )}
+
       {/* Métriques */}
       <div className="grid grid-cols-2 gap-3">
         <Card padding="md">
@@ -183,18 +215,24 @@ export default async function RevenuesPage() {
       </div>
 
       {/* Répartition */}
-      {totalCollected > 0 && (
+      {(totalCollected > 0 || blockedGross > 0) && (
         <Card padding="md">
           <p className="text-sm font-semibold text-gray-900 mb-3">Répartition</p>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Collecté en ligne</span>
-              <span className="font-medium text-gray-900">{formatPrice(totalCollected, shopCurrency)}</span>
+              <span className="font-medium text-gray-900">{formatPrice(totalCollected + blockedGross, shopCurrency)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Commission TekkiShop ({TEKKISHOP_COMMISSION_RATE}%)</span>
-              <span className="font-medium text-red-500">− {formatPrice(commissionTotal, shopCurrency)}</span>
+              <span className="font-medium text-red-500">− {formatPrice(commissionTotal + (blockedGross - blockedNet), shopCurrency)}</span>
             </div>
+            {blockedNet > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Bloqué jusqu&apos;à activation</span>
+                <span className="font-medium text-amber-600">− {formatPrice(blockedNet, shopCurrency)}</span>
+              </div>
+            )}
             <div className="border-t border-gray-100 pt-2 flex justify-between text-sm">
               <span className="font-semibold text-gray-900">Net disponible</span>
               <span className="font-bold text-gray-900">{formatPrice(totalNet, shopCurrency)}</span>

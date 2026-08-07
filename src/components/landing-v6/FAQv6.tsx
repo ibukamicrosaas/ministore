@@ -14,7 +14,7 @@ const FAQS = [
   },
   {
     q: 'Dans quels pays TEKKIShop fonctionne ?',
-    a: 'Au Sénégal, en Côte d\'Ivoire, au Bénin, au Togo, au Mali et au Burkina Faso — avec les paiements mobiles locaux de chaque pays. TEKKIShop est aussi disponible pour les vendeurs de la diaspora en Europe et en Amérique du Nord.',
+    a: 'Dans 11 pays : Sénégal, Côte d\'Ivoire, Togo, Bénin, Burkina Faso et Mali — avec les paiements mobiles locaux de chaque pays — ainsi qu\'en France, en Belgique, au Luxembourg, en Suisse et au Canada, avec paiement par carte bancaire.',
   },
   {
     q: 'Quelle est la différence entre les 3 plans ?',
