@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Zap, CreditCard, Smartphone, Bell } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -25,172 +24,225 @@ const COUNTRIES = [
 ]
 
 const BENEFITS = [
-  { Icon: Zap, text: 'Ton site en ligne en 5 minutes' },
-  { Icon: CreditCard, text: 'Wave, Orange Money, paiement à la livraison' },
-  { Icon: Smartphone, text: 'Gère tout depuis ton téléphone' },
-  { Icon: Bell, text: 'Confirmations automatiques pour tes clients' },
+  {
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    text: 'Boutique prête en quelques minutes',
+  },
+  {
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
+    text: 'Paiement par mobile money et à la livraison',
+  },
+  {
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+    text: 'Gestion complète depuis ton téléphone',
+  },
+  {
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    text: 'Confirmations automatiques par SMS',
+  },
 ]
+
+const STAR = <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 14, height: 14, color: '#f59e0b' }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 
 export default async function LoginPage() {
   const admin = createAdminClient()
-  const { count: totalShopsCount } = await admin
-    .from('shops')
-    .select('id', { count: 'exact', head: true })
+  const { count: totalShopsCount } = await admin.from('shops').select('id', { count: 'exact', head: true })
   const shopsCount = totalShopsCount ?? 0
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}>
+    <>
+      <style>{`
+        *{box-sizing:border-box}
+        .lp{min-height:100vh;display:grid;grid-template-columns:minmax(460px,1.05fr) minmax(500px,.95fr);font-family:"Inter",ui-sans-serif,system-ui,sans-serif}
+        .lp-left{background:radial-gradient(circle at 82% 8%,rgba(24,107,255,.13) 0%,transparent 26%),linear-gradient(155deg,#071a35 0%,#0d2448 65%,#0a1e3d 100%);color:#fff;padding:40px 52px 36px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+        .lp-left::after{content:"";position:absolute;right:-150px;bottom:-180px;width:450px;height:450px;border-radius:50%;border:1px solid rgba(255,255,255,.04);box-shadow:0 0 0 60px rgba(255,255,255,.015),0 0 0 120px rgba(255,255,255,.01);pointer-events:none}
+        .lp-hero{margin:auto 0;max-width:640px;padding:46px 0 24px;position:relative;z-index:2}
+        .lp-eyebrow{display:inline-flex;align-items:center;gap:9px;color:#6fa5ff;font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:22px}
+        .lp-eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:#6fa5ff;box-shadow:0 0 0 5px rgba(111,165,255,.12);flex-shrink:0}
+        .lp-h1{font-family:var(--lv6-display,"Bricolage Grotesque","Inter",system-ui,sans-serif);font-size:clamp(40px,4.5vw,68px);line-height:1.04;letter-spacing:-.05em;margin:0 0 20px;color:#fff}
+        .lp-h1 span{color:#ffb020}
+        .lp-sub{color:#8fb0d0;font-size:16.5px;line-height:1.7;max-width:580px;margin:0}
+        .lp-benefits{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;margin-top:28px}
+        .lp-benefit{display:flex;gap:11px;align-items:flex-start;color:#b8cfe8;font-size:14px;line-height:1.45}
+        .lp-bico{width:34px;height:34px;border-radius:11px;background:rgba(24,107,255,.12);border:1px solid rgba(67,150,255,.18);display:grid;place-items:center;color:#6fa5ff;flex-shrink:0}
+        .lp-countries{margin-top:30px}
+        .lp-countries b{display:block;color:#4d6a8a;font-size:10.5px;text-transform:uppercase;letter-spacing:.11em;font-weight:600;margin-bottom:11px}
+        .lp-chips{display:flex;flex-wrap:wrap;gap:8px}
+        .lp-chip{padding:7px 12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:999px;color:#c4d4e5;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+        .lp-testi{position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.08);padding-top:22px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+        .lp-testi-ava{position:relative;width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.18)}
+        .lp-stars{display:flex;gap:2px;margin-bottom:8px}
+        .lp-right{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(circle at 85% 5%,rgba(24,107,255,.055) 0%,transparent 22%),#fff;padding:28px 38px 28px}
+        .lp-right-top{display:flex;justify-content:flex-end;margin-bottom:0}
+        .lp-form-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 0 28px}
+        .lp-wrap{width:min(100%,500px)}
+        .lp-heading{text-align:center;margin-bottom:24px}
+        .lp-mini{width:56px;height:56px;border-radius:17px;background:linear-gradient(145deg,#eaf4ff,#fff);border:1px solid #cce5f8;display:grid;place-items:center;margin:0 auto 16px;overflow:hidden}
+        .lp-h2{font-family:var(--lv6-display,"Bricolage Grotesque","Inter",system-ui,sans-serif);font-size:29px;font-weight:800;color:#0b1830;letter-spacing:-.035em;margin:0 0 8px}
+        .lp-sub2{color:#697893;font-size:14.5px;margin:0}
+        .lp-proofs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+        .lp-proof{background:#f7f9fc;border:1px solid #edf0f4;border-radius:13px;padding:11px 8px;text-align:center}
+        .lp-proof b{display:block;font-size:13.5px;color:#0b1830;font-weight:800}
+        .lp-proof span{font-size:11px;color:#98a2b3}
+        .lp-trust{display:none}
+        .lp-mobile-header{display:none}
+        .lp-terms{margin-top:18px;text-align:center;color:#9ba8bc;font-size:11.5px;line-height:1.6}
+        .lp-terms a{text-decoration:underline;color:inherit}
+        @media(max-width:1080px){
+          .lp{grid-template-columns:1fr 1fr}
+          .lp-left{padding:32px 36px}
+          .lp-benefits{grid-template-columns:1fr}
+          .lp-h1{font-size:48px}
+        }
+        @media(max-width:820px){
+          .lp{display:flex;flex-direction:column}
+          .lp-left{display:none}
+          .lp-right{padding:0;background:#fff}
+          .lp-right-top{display:none}
+          .lp-mobile-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f0f4f9;background:#fff;flex-shrink:0}
+          .lp-form-area{padding:28px 20px 32px;justify-content:flex-start}
+          .lp-proofs{grid-template-columns:1fr 1fr}
+          .lp-proof:last-child{grid-column:1/-1}
+          .lp-trust{display:block;margin-top:18px;padding:14px 16px;border-radius:14px;background:#f7fbfe;border:1px solid #e0eff8}
+        }
+        @media(max-width:430px){
+          .lp-form-area{padding:24px 16px 28px}
+          .lp-h2{font-size:25px}
+          .lp-sub2{font-size:13.5px}
+        }
+      `}</style>
 
-      {/* ── Panneau gauche (desktop uniquement) ─────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between flex-1 bg-[#0F1729] px-12 py-10 relative overflow-hidden">
-        {/* Glow effects */}
-        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-15 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #0EA5E9 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
-        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #22D3EE 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
+      <div className="lp">
 
-        {/* Logo */}
-        <div className="relative">
-          <Link href="/">
-            <Image src="/logo_white.svg" alt={APP_NAME} width={130} height={30} />
-          </Link>
-        </div>
+        {/* ── Panneau gauche ─────────────────────────────────── */}
+        <aside className="lp-left">
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <Link href="/">
+              <Image src="/logo_white.svg" alt={APP_NAME} width={140} height={42} style={{ height: 42, width: 'auto' }} />
+            </Link>
+          </div>
 
-        {/* Central content */}
-        <div className="relative max-w-sm">
-          <p className="text-sm font-bold uppercase tracking-widest text-sky-400 mb-5">
-            +{shopsCount} marchands nous font confiance
-          </p>
-          <h2
-            className="text-4xl font-black text-white leading-tight mb-7"
-            style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
-          >
-            La façon la plus simple<br />
-            de <span className="text-sky-400">vendre en ligne</span><br />
-            en Afrique de l&apos;Ouest.
-          </h2>
-
-          <ul className="space-y-4 mb-10">
-            {BENEFITS.map((b) => (
-              <li key={b.text} className="flex items-center gap-3 text-gray-300 text-base">
-                <b.Icon className="h-5 w-5 text-sky-400 shrink-0" />
-                <span>{b.text}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Pays */}
-          <div>
-            <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider font-medium">Disponible dans 10 pays</p>
-            <div className="flex flex-wrap gap-2">
-              {COUNTRIES.map((c) => (
-                <span
-                  key={c.name}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-gray-300"
-                >
-                  <span>{c.flag}</span>
-                  <span>{c.name}</span>
-                </span>
+          <div className="lp-hero">
+            <p className="lp-eyebrow">Déjà {shopsCount} marchands nous font confiance</p>
+            <h2 className="lp-h1">
+              La façon la plus simple<br />
+              de <span>vendre en ligne</span><br />
+              depuis l&apos;Afrique.
+            </h2>
+            <p className="lp-sub">
+              Crée ta boutique, ajoute tes produits, reçois tes paiements et gère tes commandes depuis ton téléphone. Sans développeur, sans complexité.
+            </p>
+            <div className="lp-benefits">
+              {BENEFITS.map((b) => (
+                <div key={b.text} className="lp-benefit">
+                  <span className="lp-bico">{b.icon}</span>
+                  <span>{b.text}</span>
+                </div>
               ))}
             </div>
+            <div className="lp-countries">
+              <b>Disponible dans 10 pays</b>
+              <div className="lp-chips">
+                {COUNTRIES.map((c) => (
+                  <span key={c.name} className="lp-chip">
+                    <span>{c.flag}</span>
+                    <span>{c.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Témoignage */}
-        <div className="relative border-t border-white/10 pt-6">
-          <div className="flex gap-1 mb-2">
-            {[...Array(5)].map((_, i) => (
-              <span key={i} className="text-amber-400 text-sm">★</span>
-            ))}
-          </div>
-          <p className="text-gray-300 text-base italic leading-relaxed mb-3">
-            &ldquo;Avant je perdais mes commandes sur WhatsApp. Maintenant tout est organisé et mes clients sont satisfaits.&rdquo;
-          </p>
-          <div className="flex items-center gap-2">
-            <div className="relative h-8 w-8 shrink-0 rounded-full overflow-hidden">
-              <Image src="/avatars/2.jpg" alt="Fatou D." fill className="object-cover" sizes="32px" />
+          <div className="lp-testi">
+            <div className="lp-testi-ava">
+              <Image src="/avatars/2.jpg" alt="Fatou D." fill className="object-cover" sizes="42px" />
             </div>
             <div>
-              <p className="text-white text-sm font-semibold">Fatou D.</p>
-              <p className="text-gray-500 text-xs">Boutique mode · Dakar, Sénégal</p>
+              <div className="lp-stars">
+                {[...Array(5)].map((_, i) => <span key={i}>{STAR}</span>)}
+              </div>
+              <p style={{ color: '#c4d4e5', fontSize: 14, fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 8px' }}>
+                « Avant, je perdais mes commandes sur WhatsApp. Maintenant, tout est organisé et mes clients sont satisfaits. »
+              </p>
+              <p style={{ color: '#fff', fontSize: 13, fontWeight: 700, margin: 0 }}>
+                Fatou D. <span style={{ color: '#4d6a8a', fontWeight: 500 }}>· Boutique mode, Dakar</span>
+              </p>
             </div>
           </div>
-        </div>
+        </aside>
+
+        {/* ── Panneau droit ──────────────────────────────────── */}
+        <main className="lp-right">
+
+          {/* Mobile header */}
+          <div className="lp-mobile-header">
+            <Link href="/">
+              <Image src="/logo.svg" alt={APP_NAME} width={130} height={42} style={{ height: 42, width: 'auto' }} />
+            </Link>
+            <Link href="/start" style={{ fontSize: 12, fontWeight: 600, color: '#176bff' }}>
+              Créer mon site →
+            </Link>
+          </div>
+
+          {/* Desktop top bar */}
+          <div className="lp-right-top">
+            <Link href="/" style={{ fontSize: 13, color: '#697893', fontWeight: 600, padding: '9px 12px', borderRadius: 10 }}>
+              ← Retour à l&apos;accueil
+            </Link>
+          </div>
+
+          {/* Zone formulaire */}
+          <div className="lp-form-area">
+            <div className="lp-wrap">
+
+              {/* Heading */}
+              <div className="lp-heading">
+                <div className="lp-mini">
+                  <Image src="/icone-tekkishop.svg" alt={APP_NAME} width={38} height={38} />
+                </div>
+                <h1 className="lp-h2">Heureux de te revoir</h1>
+                <p className="lp-sub2">Connecte-toi avec ton numéro WhatsApp et ton code PIN.</p>
+              </div>
+
+              <LoginForm />
+
+              {/* Statistiques */}
+              <div className="lp-proofs">
+                <div className="lp-proof">
+                  <b>+{shopsCount}</b>
+                  <span>boutiques créées</span>
+                </div>
+                <div className="lp-proof">
+                  <b>10 pays</b>
+                  <span>déjà disponibles</span>
+                </div>
+                <div className="lp-proof">
+                  <b>100&nbsp;% mobile</b>
+                  <span>création et gestion</span>
+                </div>
+              </div>
+
+              {/* Section confiance mobile */}
+              <div className="lp-trust">
+                <p style={{ fontWeight: 700, fontSize: 13.5, color: '#0b1830', margin: '0 0 4px' }}>
+                  Une expérience pensée pour les entrepreneurs africains
+                </p>
+                <p style={{ color: '#697893', fontSize: 12.5, margin: 0 }}>
+                  Paiements locaux, WhatsApp, gestion mobile et support humain.
+                </p>
+              </div>
+
+              <p className="lp-terms">
+                En continuant, tu acceptes nos{' '}
+                <Link href="/legal/cgu">CGU</Link>
+                {' '}et notre{' '}
+                <Link href="/legal/privacy">politique de confidentialité</Link>.
+              </p>
+            </div>
+          </div>
+        </main>
+
       </div>
-
-      {/* ── Panneau droit — Formulaire ───────────────────────────────────── */}
-      <div className="flex flex-col flex-1 lg:flex-none lg:w-[45%] bg-gray-50 lg:bg-white">
-
-        {/* Header mobile uniquement */}
-        <div className="lg:hidden flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white">
-          <Link href="/">
-            <Image src="/logo.svg" alt={APP_NAME} width={110} height={26} />
-          </Link>
-          <Link href="/onboarding" className="text-xs font-semibold text-[var(--color-primary)]">
-            Créer mon site →
-          </Link>
-        </div>
-
-        {/* Proof bar mobile */}
-        <div className="lg:hidden bg-sky-50 border-b border-sky-100 px-4 py-2.5">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="text-[10px] text-sky-700 font-medium">Disponible au</span>
-            {COUNTRIES.map(c => (
-              <span key={c.name} title={c.name} className="text-base">{c.flag}</span>
-            ))}
-            <span className="text-[10px] text-sky-600">· +{shopsCount} marchands actifs</span>
-          </div>
-        </div>
-
-        {/* Form area */}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 lg:py-16">
-          <div className="w-full max-w-sm">
-
-            {/* Logo desktop dans le form panel */}
-            <div className="hidden lg:flex flex-col items-center mb-8 text-center">
-              <Image
-                src="/icone-tekkishop.svg"
-                alt={APP_NAME}
-                width={52}
-                height={52}
-                className="rounded-2xl mb-4"
-              />
-              <h1 className="text-2xl font-bold text-gray-900">{APP_NAME}</h1>
-              <p className="mt-1 text-sm text-gray-500">Ton site marchand en quelques minutes</p>
-            </div>
-
-            {/* Titre mobile */}
-            <div className="lg:hidden mb-7 text-center">
-              <Image
-                src="/icone-tekkishop.svg"
-                alt={APP_NAME}
-                width={48}
-                height={48}
-                className="rounded-2xl mx-auto mb-3"
-              />
-              <h1 className="text-xl font-bold text-gray-900">{APP_NAME}</h1>
-              <p className="mt-1 text-sm text-gray-500">Ton site marchand en quelques minutes</p>
-            </div>
-
-            <LoginForm />
-
-            <p className="mt-5 text-center text-xs text-gray-400">
-              En te connectant, tu acceptes nos{' '}
-              <Link href="/legal/cgu" className="underline hover:text-gray-600">CGU</Link>
-              {' '}et notre{' '}
-              <Link href="/legal/privacy" className="underline hover:text-gray-600">politique de confidentialité</Link>.
-            </p>
-
-            {/* Back to home */}
-            <div className="mt-6 text-center">
-              <Link href="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                ← Retour à l&apos;accueil
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
+    </>
   )
 }

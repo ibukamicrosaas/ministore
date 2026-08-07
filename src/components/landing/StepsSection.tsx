@@ -78,13 +78,13 @@ export function StepsSection({ config: cfg = DEFAULT_CONFIG }: { config?: StepsC
                 <div className="h-px flex-1 bg-gradient-to-r from-violet-200 to-transparent hidden lg:block" />
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-3" style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}>
-                Active ta boutique
+                Ta boutique est déjà en ligne
               </h3>
               <p className="text-gray-500 leading-relaxed mb-5">
-                Active ta boutique pour que tes clients puissent voir tous tes produits et passer commande. Ils reçoivent une <strong className="text-gray-700">confirmation automatique par WhatsApp.</strong>
+                Dès ton premier produit publié, tes clients peuvent voir ta boutique et passer commande. Tes 3 premières commandes sont offertes — <strong className="text-gray-700">tu ne payes rien pour commencer.</strong>
               </p>
               <ul className="space-y-2">
-                {['Active en un clic depuis ton téléphone', 'Ton lien unique est prêt à partager', 'Les commandes arrivent directement'].map(item => (
+                {['Publiée automatiquement, sans étape supplémentaire', 'Tes 3 premières commandes sont offertes', 'Ton lien unique est prêt à partager'].map(item => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shrink-0" />
                     {item}

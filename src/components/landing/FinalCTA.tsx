@@ -31,7 +31,7 @@ export function FinalCTA({
           {subtitle}
         </p>
         <Link
-          href="/onboarding"
+          href="/start"
           className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-primary)] px-7 py-4 text-base font-bold text-white shadow-lg shadow-sky-900/30 hover:opacity-90 active:scale-95 transition-all"
         >
           {ctaLabel}

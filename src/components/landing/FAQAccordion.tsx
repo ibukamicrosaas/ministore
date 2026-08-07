@@ -22,7 +22,15 @@ const FAQS = [
   },
   {
     q: "Est-ce que c'est gratuit pour commencer ?",
-    a: "Oui, la création de ta boutique est gratuite : tu peux ajouter tes produits et voir à quoi elle ressemble sans payer. Pour l'activer et commencer à recevoir des commandes, tu choisis un plan à partir de 2 900 FCFA / mois. Tu peux arrêter à tout moment, sans engagement.",
+    a: "Oui. Ta boutique est en ligne et peut recevoir des commandes dès que tu publies ton premier produit. Tes 3 premières commandes sont offertes. Tu choisis un plan seulement pour continuer à en recevoir au-delà, à partir de 2 900 FCFA / mois, sans engagement.",
+  },
+  {
+    q: "Que se passe-t-il après mes 3 commandes offertes ?",
+    a: "Ta boutique reste visible et tes clients peuvent toujours commander, mais les nouvelles commandes t'attendent jusqu'à ce que tu choisisses un plan. Tu les retrouves toutes dès l'activation, aucune n'est perdue.",
+  },
+  {
+    q: "Et si je ne vends rien pendant mes 14 jours ?",
+    a: "Ta boutique ne disparaît pas. Ton Assistant IA t'aide à trouver tes premiers clients, et tu peux prolonger de 7 jours en partageant ton lien. Tu ne paies que le jour où tu décides de continuer.",
   },
   {
     q: "Quels sont exactement les frais ?",

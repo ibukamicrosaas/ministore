@@ -26,7 +26,7 @@ const PLANS = [
       { text: 'Assistant IA inclus (20 messages/jour) pour gérer ta boutique', included: true },
       { text: 'Livraison simplifiée : envoi et confirmation en 1 clic avec ton livreur', included: true },
       { text: 'Un tableau de bord pour suivre tes ventes', included: true },
-      { text: '3% de commission sur les paiements en ligne', included: true },
+      { text: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs', included: true },
       { text: 'Produits illimités', included: false },
       { text: 'Image de couverture boutique', included: false },
       { text: 'Domaine personnalisé (.com)', included: false },
@@ -53,7 +53,7 @@ const PLANS = [
       { text: 'Notifications WhatsApp automatiques à chaque commande', included: true },
       { text: 'Codes promo pour fidéliser tes clients', included: true },
       { text: 'Tableau de bord avancé avec rapports de ventes', included: true },
-      { text: '3% de commission sur les paiements en ligne', included: true },
+      { text: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs', included: true },
       { text: 'Image de couverture boutique', included: false },
       { text: 'Domaine personnalisé (.com)', included: false },
       { text: '0% de commission', included: false },
@@ -97,10 +97,10 @@ export function PricingSection() {
           className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-gray-900 mb-4"
           style={{ fontFamily: 'var(--font-display, Outfit, sans-serif)' }}
         >
-          Crée ta boutique gratuitement. Paie seulement quand tu es prêt à vendre.
+          Vends dès aujourd&rsquo;hui. <span className="text-[var(--color-primary)]">Paie après avoir vendu.</span>
         </h2>
         <p className="text-gray-500 text-lg max-w-md mx-auto mb-8">
-          Tu paies ton abonnement par mobile money ou carte bancaire. Tu peux arrêter quand tu veux.
+          Ta boutique est en ligne dès ton premier produit publié, et tes 3 premières commandes sont offertes. Tu choisis un plan seulement quand tu veux continuer à en recevoir.
         </p>
 
         {/* Toggle mensuel / annuel */}
@@ -207,7 +207,7 @@ export function PricingSection() {
 
               {/* CTA */}
               <Link
-                href="/onboarding"
+                href="/start"
                 className={`block w-full rounded-2xl py-3 text-center text-sm font-semibold transition-all ${plan.ctaStyle}`}
               >
                 {plan.cta}
