@@ -4,6 +4,7 @@ import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
 import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
+import * as Sentry from '@sentry/nextjs'
 
 export const runtime = 'nodejs'
 
@@ -55,13 +56,28 @@ export async function POST(req: NextRequest) {
           const orderId = meta.order_id
           if (!orderId) break
 
-          const { data: updatedOrder } = await supabase
+          // Idempotent : ne matche que si status='pending' encore. Un rejeu
+          // Stripe après succès ne retrouve plus la ligne (déjà 'confirmed'/
+          // 'completed') et ne renvoie donc pas une deuxième fois le fichier.
+          const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
             .update({ status: 'confirmed', payment_method: 'stripe_card' })
             .eq('id', orderId)
             .eq('status', 'pending')
             .select('id, shop_id, clients(first_name, whatsapp, phone), shops:shop_id(name)')
             .single()
+
+          if (updateError) {
+            // PGRST116 = aucune ligne trouvée (déjà traité ou commande
+            // introuvable) — pas une erreur, ce webhook est idempotent.
+            if (updateError.code !== 'PGRST116') {
+              console.error('[Webhook Stripe] échec confirmation commande', orderId, updateError.message)
+              Sentry.captureException(new Error('Échec confirmation commande Stripe'), {
+                extra: { orderId, dbError: updateError.message, dbCode: updateError.code },
+              })
+              return NextResponse.json({ error: 'Échec mise à jour commande' }, { status: 500 })
+            }
+          }
 
           if (updatedOrder) {
             const ord = updatedOrder as unknown as {
@@ -82,7 +98,19 @@ export async function POST(req: NextRequest) {
 
             if (digitalItems.length > 0 && ord.clients) {
               const completedAt = new Date().toISOString()
-              await (supabase as ReturnType<typeof createServiceClient>).from('orders').update({ status: 'completed', delivered_at: completedAt }).eq('id', ord.id)
+              const { error: completeError } = await (supabase as ReturnType<typeof createServiceClient>)
+                .from('orders')
+                .update({ status: 'completed', delivered_at: completedAt })
+                .eq('id', ord.id)
+
+              if (completeError) {
+                console.error('[Webhook Stripe] échec passage completed', ord.id, completeError.message)
+                Sentry.captureException(new Error('Échec passage à completed — commande digitale Stripe'), {
+                  extra: { orderId: ord.id, dbError: completeError.message },
+                })
+                return NextResponse.json({ error: 'Échec mise à jour commande' }, { status: 500 })
+              }
+
               const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
               const clientPhone = ord.clients.whatsapp ?? ord.clients.phone
 
