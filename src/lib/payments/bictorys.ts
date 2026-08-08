@@ -203,7 +203,10 @@ export async function createBictorysPayout(
   payload: BictorysPayoutPayload,
   paymentType: BictorysPayoutPaymentType,
   idempotencyKey: string,
-): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  // uncertain=true : on n'a reçu aucune réponse de Bictorys (timeout/réseau).
+  // Le virement a pu partir malgré tout — l'appelant ne doit pas le traiter
+  // comme un refus définitif.
+): Promise<{ success: boolean; transactionId?: string; error?: string; uncertain?: boolean }> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
 
@@ -230,9 +233,13 @@ export async function createBictorysPayout(
         transactionId: (json.id ?? json.transactionId) as string | undefined,
       }
     }
+    // Réponse HTTP reçue de Bictorys (même en erreur) = refus explicite,
+    // pas une incertitude sur ce qui s'est passé côté prestataire.
     return { success: false, error: `Bictorys payout ${res.status}: ${rawText}` }
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Erreur inconnue' }
+    // Aucune réponse reçue (timeout 30s ou erreur réseau) : on ne sait pas
+    // si Bictorys a traité le virement avant que la connexion ne tombe.
+    return { success: false, uncertain: true, error: err instanceof Error ? err.message : 'Erreur inconnue' }
   } finally {
     clearTimeout(timeout)
   }

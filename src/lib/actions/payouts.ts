@@ -191,6 +191,37 @@ export async function processPayout(
     return {}
   }
 
+  if (result.uncertain) {
+    // Aucune réponse HTTP reçue de Bictorys (timeout 30s ou erreur réseau) :
+    // le virement a pu partir sans qu'on le sache. On NE marque PAS 'failed'
+    // — ce statut n'est pas protégé par le garde d'idempotence ci-dessus, et
+    // le marquer autoriserait un rejeu qui pourrait envoyer une seconde fois
+    // le même argent. Le statut reste 'processing', ce qui bloque tout rejeu
+    // automatique tant qu'un humain n'a pas vérifié manuellement auprès de
+    // Bictorys.
+    console.error('[processPayout] INCERTAIN : aucune réponse de Bictorys (timeout/réseau) — statut conservé à processing', payoutId, result.error)
+    Sentry.captureException(new Error('processPayout: aucune réponse de Bictorys — statut du virement inconnu, réconciliation manuelle requise'), {
+      level: 'fatal',
+      extra: {
+        payoutId,
+        shopId,
+        shopName,
+        netAmountFcfa: netAmount,
+        bictorysIdempotencyKey: payoutId,
+        networkOrTimeoutError: result.error,
+        marcheASuivre: [
+          `1. Vérifier côté Bictorys (dashboard ou support) si un virement existe pour l'idempotency-key "${payoutId}".`,
+          `2. Si trouvé et effectué : UPDATE payouts SET status='completed', bictorys_transfer_id=<réf Bictorys>, completed_at=now() WHERE id='${payoutId}';`,
+          `3. Si absent côté Bictorys : UPDATE payouts SET status='failed', updated_at=now() WHERE id='${payoutId}'; — cela autorise un nouveau reversement pour cette boutique.`,
+          `4. Ne PAS relancer processPayout pour ce payoutId tant que 1-3 n'ont pas tranché.`,
+        ].join(' '),
+      },
+    })
+    return { error: 'Reversement en attente de vérification manuelle (aucune réponse du prestataire).' }
+  }
+
+  // À partir d'ici : réponse HTTP reçue de Bictorys, refus explicite —
+  // on sait que le virement n'a pas eu lieu, un rejeu est sûr.
   const message = result.error ?? 'Erreur Bictorys inconnue'
   console.error('[processPayout]', message)
 
@@ -200,10 +231,11 @@ export async function processPayout(
     .eq('id', payoutId)
 
   if (failError) {
-    // Aucun argent envoyé (Bictorys a échoué), mais le payout reste bloqué
-    // en 'processing' en DB : le garde-fou d'idempotence en tête de fonction
-    // le traitera comme "déjà en cours" indéfiniment, sans qu'un nouveau
-    // reversement ne puisse jamais être tenté. Nécessite une correction manuelle.
+    // Aucun argent envoyé (Bictorys a refusé explicitement), mais le payout
+    // reste bloqué en 'processing' en DB : le garde-fou d'idempotence en
+    // tête de fonction le traitera comme "déjà en cours" indéfiniment, sans
+    // qu'un nouveau reversement ne puisse jamais être tenté. Nécessite une
+    // correction manuelle.
     console.error('[processPayout] échec passage à failed', payoutId, failError.message)
     Sentry.captureException(new Error('processPayout: échec écriture failed — payout restera bloqué en processing'), {
       extra: { payoutId, shopId, bictorysError: message, dbError: failError.message },
