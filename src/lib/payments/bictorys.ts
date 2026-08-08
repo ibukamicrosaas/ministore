@@ -202,10 +202,19 @@ export async function createBictorysPayout(
   privateKey: string,  // BICTORYS_PRIVATE_KEY — la clé publique retourne 401 sur les payouts
   payload: BictorysPayoutPayload,
   paymentType: BictorysPayoutPaymentType,
+  // idempotencyKey : toute la protection contre le double virement en
+  // dépend — un rejeu (même payoutId) doit produire le même effet chez
+  // Bictorys qu'un seul appel. Ce comportement n'est PAS confirmé côté
+  // Bictorys (honoré sur les transferts sortants ? pendant combien de
+  // temps ? que renvoie l'API si la clé est réutilisée après succès ?).
+  // Tant que ce n'est pas vérifié auprès de Bictorys, les statuts
+  // 'processing'/'uncertain' ci-dessous sont la seule protection réelle.
   idempotencyKey: string,
-  // uncertain=true : on n'a reçu aucune réponse de Bictorys (timeout/réseau).
-  // Le virement a pu partir malgré tout — l'appelant ne doit pas le traiter
-  // comme un refus définitif.
+  // uncertain=true : on n'a reçu aucune réponse exploitable de Bictorys —
+  // timeout/erreur réseau (aucune réponse) ou réponse HTTP illisible
+  // (page WAF/proxy, pas du JSON de l'application Bictorys). Dans les deux
+  // cas, le virement a pu partir malgré tout — l'appelant ne doit pas le
+  // traiter comme un refus définitif.
 ): Promise<{ success: boolean; transactionId?: string; error?: string; uncertain?: boolean }> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
@@ -225,7 +234,8 @@ export async function createBictorysPayout(
 
     const rawText = await res.text()
     let json: Record<string, unknown> = {}
-    try { json = JSON.parse(rawText) as Record<string, unknown> } catch { /* HTML WAF response */ }
+    let parsedJson = false
+    try { json = JSON.parse(rawText) as Record<string, unknown>; parsedJson = true } catch { /* HTML WAF response */ }
 
     if (res.ok || res.status === 201) {
       return {
@@ -233,8 +243,17 @@ export async function createBictorysPayout(
         transactionId: (json.id ?? json.transactionId) as string | undefined,
       }
     }
-    // Réponse HTTP reçue de Bictorys (même en erreur) = refus explicite,
-    // pas une incertitude sur ce qui s'est passé côté prestataire.
+
+    if (!parsedJson) {
+      // Réponse HTTP reçue, mais pas du JSON exploitable — probablement une
+      // page WAF/proxy plutôt qu'une réponse de l'application Bictorys. On
+      // ne sait pas si la demande a été vue par Bictorys, donc pas si le
+      // virement a pu partir : à traiter comme incertain, pas comme un refus.
+      return { success: false, uncertain: true, error: `Bictorys payout ${res.status}: réponse illisible — ${rawText.slice(0, 200)}` }
+    }
+
+    // Réponse JSON reçue de l'application Bictorys (même en erreur) = refus
+    // explicite, pas une incertitude sur ce qui s'est passé côté prestataire.
     return { success: false, error: `Bictorys payout ${res.status}: ${rawText}` }
   } catch (err) {
     // Aucune réponse reçue (timeout 30s ou erreur réseau) : on ne sait pas
