@@ -56,8 +56,20 @@ export async function POST(req: NextRequest) {
           // traitement qu'un paiement Bictorys — status='active', libère les
           // commandes retenues. setShopStatus no-op silencieusement pour une
           // boutique trial_model='legacy'.
+          //
+          // Idempotent en cas de rejeu : activate_free_orders_shop ne libère
+          // que les commandes avec released_at IS NULL (donc 0 la 2e fois),
+          // et l'UPDATE shops status='active' est un no-op sur une valeur
+          // déjà identique. Fail loud ici est donc sûr — un rejeu Stripe ne
+          // peut pas relâcher deux fois les commandes ni double-facturer.
           const activation = await setShopStatus(shopId, 'active')
-          if (activation.error) console.error('[Webhook Stripe] setShopStatus', activation.error)
+          if (activation.error) {
+            console.error('[Webhook Stripe] setShopStatus', shopId, activation.error)
+            Sentry.captureException(new Error('Échec activation boutique free_orders (Stripe)'), {
+              extra: { shopId, error: activation.error },
+            })
+            return NextResponse.json({ error: 'Échec activation boutique' }, { status: 500 })
+          }
         }
 
         if (meta.type === 'order_payment') {
@@ -153,11 +165,22 @@ export async function POST(req: NextRequest) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
 
         if (customerId) {
-          const { data: shop } = await supabase
+          const { data: shop, error: shopLookupError } = await supabase
             .from('shops')
             .select('id, trial_model')
             .eq('stripe_customer_id', customerId)
             .single()
+
+          if (shopLookupError) {
+            // Ne pas laisser tomber silencieusement dans la branche 'legacy'
+            // ci-dessous : une boutique free_orders introuvable ici recevrait
+            // un is_active=false direct au lieu du statut 'expired' attendu.
+            console.error('[Webhook Stripe] lecture boutique introuvable', customerId, shopLookupError.message)
+            Sentry.captureException(new Error('customer.subscription.deleted : boutique introuvable pour ce customerId'), {
+              extra: { customerId, dbError: shopLookupError.message },
+            })
+            return NextResponse.json({ error: 'Boutique introuvable' }, { status: 500 })
+          }
 
           if (shop?.trial_model === 'free_orders') {
             // Résiliation (§12 de la spec) : 'expired', pas is_active=false direct —
@@ -165,8 +188,17 @@ export async function POST(req: NextRequest) {
             // celles déjà libérées le restent. plan repassé à 'decouverte' quand
             // même : ce n'est plus un plan payant actif.
             await supabase.from('shops').update({ plan: 'decouverte', stripe_subscription_id: null }).eq('id', shop.id)
+            // Idempotent : simple UPDATE status='expired', pas d'effet de bord
+            // multi-table (contrairement à la transition 'active') — un rejeu
+            // Stripe ne peut rien casser ici.
             const result = await setShopStatus(shop.id, 'expired')
-            if (result.error) console.error('[Webhook Stripe] setShopStatus', result.error)
+            if (result.error) {
+              console.error('[Webhook Stripe] setShopStatus', shop.id, result.error)
+              Sentry.captureException(new Error('Échec expiration boutique free_orders (Stripe)'), {
+                extra: { shopId: shop.id, error: result.error },
+              })
+              return NextResponse.json({ error: 'Échec mise à jour boutique' }, { status: 500 })
+            }
           } else {
             await supabase
               .from('shops')
@@ -187,19 +219,36 @@ export async function POST(req: NextRequest) {
         const isActive   = sub.status === 'active' || sub.status === 'trialing'
 
         if (customerId) {
-          const { data: shop } = await supabase
+          const { data: shop, error: shopLookupError } = await supabase
             .from('shops')
             .select('id, trial_model')
             .eq('stripe_customer_id', customerId)
             .single()
+
+          if (shopLookupError) {
+            console.error('[Webhook Stripe] lecture boutique introuvable', customerId, shopLookupError.message)
+            Sentry.captureException(new Error('customer.subscription.updated : boutique introuvable pour ce customerId'), {
+              extra: { customerId, dbError: shopLookupError.message },
+            })
+            return NextResponse.json({ error: 'Boutique introuvable' }, { status: 500 })
+          }
 
           if (shop?.trial_model === 'free_orders') {
             // Même logique que la résiliation : jamais is_active=false direct pour
             // ce modèle. isActive=false ici (impayé/en pause) → 'expired', jamais
             // un hard-hide — voir migration 078, is_active=false est réservé à un
             // masquage volontaire (admin), pas à un aléa de paiement Stripe.
+            // Idempotent dans les deux sens : voir le commentaire sur
+            // checkout.session.completed pour 'active', et sur
+            // customer.subscription.deleted pour 'expired'.
             const result = await setShopStatus(shop.id, isActive ? 'active' : 'expired')
-            if (result.error) console.error('[Webhook Stripe] setShopStatus', result.error)
+            if (result.error) {
+              console.error('[Webhook Stripe] setShopStatus', shop.id, result.error)
+              Sentry.captureException(new Error('Échec mise à jour statut boutique free_orders (Stripe)'), {
+                extra: { shopId: shop.id, targetStatus: isActive ? 'active' : 'expired', error: result.error },
+              })
+              return NextResponse.json({ error: 'Échec mise à jour boutique' }, { status: 500 })
+            }
           } else {
             await supabase
               .from('shops')
