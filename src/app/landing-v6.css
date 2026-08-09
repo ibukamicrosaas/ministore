@@ -317,10 +317,15 @@
 .lv6 .float b { font-size: 12.5px; display: block; line-height: 1.25 }
 .lv6 .float small { font-size: 11px; color: var(--muted) }
 .lv6 .float i { width: 29px; height: 29px; border-radius: 9px; display: grid; place-items: center; font-size: 13px; flex: none; color: #fff }
-.lv6 .float-1 { top: 4%; left: -15% }
+.lv6 .float-1 { top: 4%; left: -15%; animation: floaty 3.4s ease-in-out infinite }
 .lv6 .float-1 i { background: var(--green) }
-.lv6 .float-2 { bottom: 9%; right: -15% }
+.lv6 .float-2 { bottom: 9%; right: -15%; animation: floaty 3.8s ease-in-out infinite; animation-delay: -1.6s }
 .lv6 .float-2 i { background: var(--blue) }
+
+@keyframes floaty { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .float-1, .lv6 .float-2 { animation: none }
+}
 
 /* ──────── Bandeau paiements ──────── */
 .lv6 .strip        { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; padding: 28px 0 }

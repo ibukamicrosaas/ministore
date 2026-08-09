@@ -224,8 +224,8 @@ export default async function LandingPage() {
                 <Image src="/avatars/5.jpg" alt="" width={36} height={36} className="avatar" />
               </div>
               <div>
-                <b>{shopsCount}+ boutiques créées</b>
-                <span>Disponible dans 11 pays</span>
+                <b>+{shopsCount} boutiques créées</b>
+                <span>par des marchands dans 11 pays</span>
               </div>
             </div>
 
@@ -234,7 +234,7 @@ export default async function LandingPage() {
             </h1>
 
             <p className="lead">
-              Ajoute tes produits, partage ton lien, et c&rsquo;est tout. Tes clients commandent seuls, paient par mobile money, et tu retires ton argent directement sur ton mobile money.
+              Ajoute tes produits, partage ton lien, et c&rsquo;est tout. Tes clients commandent seuls, paient par mobile money ou à la livraison, et tu retires ton argent directement sur ton mobile money ou compte bancaire.
             </p>
 
             <div className="hero-ctas">
@@ -432,9 +432,9 @@ export default async function LandingPage() {
                   <div className="prog"><i data-prog="20:400,40:2900" /></div>
                   <div className="qtitle">Comment s&rsquo;appelle ton business ?</div>
                   <div className="qsub">C&rsquo;est le nom que tes clients verront. Tu pourras le changer plus tard.</div>
-                  <div className="qinput"><span data-type="Chez Fatou" data-delay="900" data-caret="1" /></div>
-                  <div className="qchips"><span>Chez Fatou</span><span>Adja Cosmétiques</span><span>Dakar Sneakers</span></div>
-                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/chez-fatou</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
+                  <div className="qinput"><span data-type="Hala Store" data-delay="900" data-caret="1" /></div>
+                  <div className="qchips"><span>Hala Store</span><span>Adja Cosmétiques</span><span>Dakar Sneakers</span></div>
+                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/hala-store</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
                   <div className="qbtn" data-ready="2600">Continuer</div>
                 </div>
               </div>
@@ -703,7 +703,7 @@ export default async function LandingPage() {
             <ul className="checks">
               <li>
                 {IC.checkCircle}
-                <div><b>Un seul lien pour toute ta boutique</b><p>Fini les 10 photos et les prix envoyés un par un dans la discussion WhatsApp ou en DM.</p></div>
+                <div><b>Un seul lien pour toute ta boutique</b><p>Fini les 10 photos et les prix envoyés un par un dans la discussion WhatsApp ou en DM Instagram/TikTok.</p></div>
               </li>
               <li>
                 {IC.checkCircle}
@@ -714,7 +714,7 @@ export default async function LandingPage() {
                 <div><b>Tes boutons Appeler et WhatsApp restent là</b><p>Ceux qui préfèrent te parler avant d&rsquo;acheter peuvent toujours le faire en un clic.</p></div>
               </li>
             </ul>
-            <button className="btn btn-secondary" data-open-demo>Voir une vraie boutique</button>
+            <a className="btn btn-secondary" href="https://viensonsconnait.com" target="_blank" rel="noopener noreferrer">Voir une vraie boutique</a>
           </div>
         </div>
       </section>
@@ -795,14 +795,14 @@ export default async function LandingPage() {
                       <div className="db-hello">Bonsoir, Viens on s&rsquo;connaît</div>
                       <div className="db-sales">
                         <div className="db-sales-head">Ventes &mdash; Auj. · 1 vente <i>↗</i></div>
-                        <div className="db-amount">14 000 <small>F</small></div>
+                        <div className="db-amount">154 000 <small>F</small></div>
                         <div className="db-chips">
                           <span className="on">Auj.</span><span>Hier</span><span>Semaine</span><span>Mois</span><span>Trimestre</span>
                         </div>
                       </div>
                       <div className="db-two">
                         <div className="db-mini"><small>Produits</small><b>7</b><span>actifs</span><i>{IC.box}</i></div>
-                        <div className="db-mini"><small>En attente</small><b>0</b><span>commandes</span><i>{IC.shoppingCart}</i></div>
+                        <div className="db-mini"><small>En attente</small><b>3</b><span>commandes</span><i>{IC.shoppingCart}</i></div>
                       </div>
                       <div className="db-link">
                         <div className="db-link-head">
@@ -960,9 +960,9 @@ export default async function LandingPage() {
             <p>Crée ta boutique, ajoute tes produits, partage ton lien, et commence à vendre sans prise de tête.</p>
             <div className="cta-actions">
               <Link href="/start" className="btn btn-light">Créer ma boutique gratuitement</Link>
-              <button className="btn btn-ghost" data-open-demo>Voir une vraie boutique</button>
+              <a className="btn btn-ghost" href="https://viensonsconnait.com" target="_blank" rel="noopener noreferrer">Voir une vraie boutique</a>
             </div>
-            <p className="cta-micro">Pas besoin d&rsquo;ordinateur · Tes 3 premières commandes sont offertes</p>
+            <p className="cta-micro">Lance-toi aujourd&rsquo;hui · Tes 3 premières commandes sont offertes</p>
           </div>
         </div>
       </section>
