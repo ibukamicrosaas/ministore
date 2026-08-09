@@ -3,13 +3,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { PinInput } from '@/components/ui/PinInput'
-import { signIn, signUp } from '@/lib/actions/auth'
+import { signIn } from '@/lib/actions/auth'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { TRIAL_DAYS } from '@/constants'
 import { ChevronDown } from 'lucide-react'
-
-type Mode = 'signin' | 'signup'
 
 const COUNTRIES = [
   // Afrique
@@ -28,7 +26,6 @@ const COUNTRIES = [
 ]
 
 export function LoginForm() {
-  const [mode, setMode] = useState<Mode>('signin')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pin, setPin] = useState('')
@@ -50,12 +47,6 @@ export function LoginForm() {
     return () => document.removeEventListener('pointerdown', handleClickOutside)
   }, [])
 
-  const switchMode = (next: Mode) => {
-    setMode(next)
-    setPin('')
-    setError(null)
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
@@ -71,8 +62,7 @@ export function LoginForm() {
     formData.set('pin', pin)
 
     try {
-      const action = mode === 'signin' ? signIn : signUp
-      const result = await action(formData)
+      const result = await signIn(formData)
       if (result?.error) {
         setError(result.error)
       }
@@ -85,31 +75,18 @@ export function LoginForm() {
 
   return (
     <Card>
-      {/* Onglets */}
+      {/* Onglets — la création de compte passe exclusivement par /start */}
       <div className="mb-6">
         <div className="flex rounded-lg border border-gray-200 p-1">
-          <button
-            type="button"
-            onClick={() => switchMode('signin')}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
-              mode === 'signin'
-                ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
+          <div className="flex-1 rounded-md py-2 text-sm font-medium text-center bg-[var(--color-primary)] text-white shadow-sm">
             Connexion
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('signup')}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
-              mode === 'signup'
-                ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+          </div>
+          <Link
+            href="/start"
+            className="flex-1 rounded-md py-2 text-sm font-medium text-center text-gray-600 hover:text-gray-900 transition-all"
           >
             Créer un compte
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -174,20 +151,13 @@ export function LoginForm() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium text-gray-700">
-              {mode === 'signup' ? 'Choisis ton code PIN (6 chiffres)' : 'Code PIN'}
+              Code PIN
             </label>
-            {mode === 'signin' && (
-              <Link href="/login/reset-pin" className="text-xs text-[var(--color-primary)] hover:underline">
-                PIN oublié ?
-              </Link>
-            )}
+            <Link href="/login/reset-pin" className="text-xs text-[var(--color-primary)] hover:underline">
+              PIN oublié ?
+            </Link>
           </div>
           <PinInput name="pin" length={6} onChange={setPin} />
-          {mode === 'signup' && (
-            <p className="mt-2 text-center text-xs text-gray-400">
-              Retiens bien ce code — il te servira à chaque connexion
-            </p>
-          )}
         </div>
 
         {error && (
@@ -201,19 +171,9 @@ export function LoginForm() {
           disabled={loading || pin.length < 6}
           className="w-full rounded-xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50 active:opacity-80"
         >
-          {loading
-            ? 'Chargement...'
-            : mode === 'signin'
-            ? 'Se connecter'
-            : 'Créer mon compte'}
+          {loading ? 'Chargement...' : 'Se connecter'}
         </button>
       </form>
-
-      {mode === 'signup' && (
-        <p className="mt-4 text-center text-xs text-gray-500">
-          Wave, Orange Money, MTN, Moov · Aucune carte bancaire requise
-        </p>
-      )}
     </Card>
   )
 }
