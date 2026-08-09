@@ -4,7 +4,14 @@ import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export const revalidate = 3600
+// Rendu dynamique (pas de revalidate) : la page d'accueil (src/app/page.tsx)
+// affiche le même compteur de boutiques et se recalcule à chaque requête —
+// elle utilise createServerClient() (cookies), qui force ce comportement
+// automatiquement. Cette page n'utilise que le client service-role, sans API
+// dynamique, donc sans ce flag elle serait figée au build (aucune
+// revalidation), pas juste mise en cache 1h : les deux chiffres divergeraient
+// encore plus, pas moins.
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: `Connexion — ${APP_NAME}`,
