@@ -3,7 +3,7 @@
 @theme {
   --font-family-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-family-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #0EA5E9;
+  --color-primary: #0252EA;
   --color-primary-50: #f0f9ff;
   --color-primary-100: #e0f2fe;
   --color-primary-200: #bae6fd;
@@ -17,7 +17,7 @@
 }
 
 :root {
-  --color-primary: #0EA5E9;
+  --color-primary: #0252EA;
   --font-sans: 'DM Sans', sans-serif;
   --font-display: 'Outfit', sans-serif;
 }

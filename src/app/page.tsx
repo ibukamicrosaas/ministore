@@ -432,9 +432,9 @@ export default async function LandingPage() {
                   <div className="prog"><i data-prog="20:400,40:2900" /></div>
                   <div className="qtitle">Comment s&rsquo;appelle ton business ?</div>
                   <div className="qsub">C&rsquo;est le nom que tes clients verront. Tu pourras le changer plus tard.</div>
-                  <div className="qinput"><span data-type="Hala Store" data-delay="900" data-caret="1" /></div>
-                  <div className="qchips"><span>Hala Store</span><span>Adja Cosmétiques</span><span>Dakar Sneakers</span></div>
-                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/hala-store</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
+                  <div className="qinput"><span data-type="Nala Store" data-delay="900" data-caret="1" /></div>
+                  <div className="qchips"><span>Nala Store</span><span>Maison Kora</span><span>Elite Sneakers</span></div>
+                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/nala-store</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
                   <div className="qbtn" data-ready="2600">Continuer</div>
                 </div>
               </div>
@@ -943,7 +943,7 @@ export default async function LandingPage() {
           <div className="reveal">
             <span className="label">Conçu à partir du terrain</span>
             <h2>Fait par des gens qui ont vendu en ligne ici, avant toi.</h2>
-            <p className="quote">« Vendre en ligne depuis l&rsquo;Afrique ne devrait pas demander un ordinateur, un développeur ou des connaissances techniques. »</p>
+            <p className="quote">« Vendre en ligne depuis l&rsquo;Afrique ne devrait pas nécessiter un ordinateur, un développeur ou des connaissances techniques poussées. »</p>
             <p className="lead">TEKKIShop est né de plusieurs années passées à vendre en ligne et à accompagner des marques africaines. Notre travail, c&rsquo;est de faire disparaître la partie technique pour que tu t&rsquo;occupes de tes produits, de tes clients et de ton argent.</p>
           </div>
         </div>
@@ -1000,7 +1000,6 @@ export default async function LandingPage() {
               <Link href="/aide">Centre d&rsquo;aide</Link>
               <a href="https://www.tiktok.com/@tekkishop" target="_blank" rel="noopener noreferrer">Nos tutoriels vidéo</a>
               <a href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}>Support WhatsApp</a>
-              <Link href="/contact">Nous contacter</Link>
             </div>
             <div className="foot-col">
               <h4>Légal</h4>
