@@ -51,3 +51,6 @@ ministore/
 
 # Documentation et specs (usage local uniquement)
 *.md
+!AI_RULES.md
+!REPRISE.md
+!SPEC-refonte-tunnel-commande.md
