@@ -1,6 +1,6 @@
 # Reprise — TEKKIShop
 
-> Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Fichier local uniquement (`*.md` est gitignore intentionnellement — voir `AI_RULES.md`), référencé depuis `AI_RULES.md` §0.1.
+> Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
 > Dernière mise à jour : 2026-08-10.
 
@@ -15,6 +15,7 @@
 **Git :**
 - Branche `hotfix/lockdown-activate-free-orders-shop` : `088` + `089` + `scripts/check-function-privileges.sql`, poussée sur origin.
 - **PR #4 ouverte, non fusionnée** : https://github.com/ibukamicrosaas/ministore/pull/4 — base `main`, autonome (pas de bundle avec la refonte boutique). Fusion prévue par l'utilisateur lui-même après relecture, pas automatique.
+- **Politique `.gitignore` sur les `.md` inversée sur `main`, en deux commits** : les `.md` sont désormais suivis par défaut (l'ancien blanket `*.md` faisait disparaître chaque nouvelle spec sans qu'on le remarque — trois fichiers sauvés de justesse le 9-10 août). Suivis en conséquence : `AI_RULES.md`, `REPRISE.md`, `SPEC-refonte-tunnel-commande.md`, `SPEC-v2-refonte-boutiques-publiques.md`, `NOTE-cadrage-refonte-boutiques.md`, `BRIEF-REFONTE-LANDING-TEKKISHOP.md`, `ADDITIF-argent-commandes-retenues.md` (récupéré depuis `~/Downloads`, cité par son nom dans `route.ts`), `SPEC-3-commandes-offertes.md`, `NOTE_MASQUAGE_COMMANDES.md`, `NOTE_DUPLICATION_PAYOUT_BICTORYS.md`, `NOTE_ERREURS_SUPABASE_NON_VERIFIEES.md`, `ARCHITECTURE.md`, `PRD.md`, `SECURITY.md`, `SCALING.md`, `bictorys-api-integration.md`, `lafricamobile-integration.md`, `DIGITAL_PRODUCTS_SPEC.md`, `chatbot-tekkishop.md`, `README.md`, plus les maquettes `tekkishop-boutique-accueil.html`, `tekkishop-boutique-produit.html`, `tekkishop-landing-v6.html`. Historique clos déplacé (suivi quand même — un document clos garde sa valeur) dans `docs/archive/` : `BACKLOG.md`, `NEXT_STEPS.md`, `ONBOARDING_SPEC.md`, `PRODUCT.md`, `TECH.md`, `analyse-landing.md`, `VENTE_LISTING.md`, `MIGRATION_REPAIR_PLAN.md`. Non tranchés, laissés visibles mais non suivis : `AGENTS.md`, `CLAUDE.md` (non mentionnés, pas décidés seul), `IMPROVEMENTS.md` (voir §8).
 - `refonte-start` : plafond committé réel = `085` (vérifié par diff, pas supposé). `086_product_variants.sql`/`087_shops_verification.sql` (migrations du Lot 1) existent en fichiers mais ne sont pas commitées.
 - **Tout le Lot 1 (redesign boutique) est non commité sur `refonte-start`, mêlé aux modifications de CGU/politique de confidentialité de l'utilisateur dans le même arbre de travail.** Fichiers Lot 1 : les deux migrations ci-dessus, `src/lib/plan-features.ts`, `src/lib/actions/product-limit.ts` (nouveaux), `SettingsForm.tsx`, `ReviewForm.tsx`, `[shop-slug]/layout.tsx` (pose de `--brand`, retrait de la surcharge `--color-primary` — vérifié : plus aucune référence à `--color-primary` dans `[shop-slug]/`, le renommage est cohérent de bout en bout dans cet arbre), `[shop-slug]/produit/[id]/page.tsx`, `[shop-slug]/commande/[token]/page.tsx`, `import-csv/route.ts`, `onboarding.ts`, `products.ts`. CGU/privacy : `src/app/legal/cgu/page.tsx`, `src/app/legal/privacy/page.tsx` — jamais à modifier par un agent, seulement à afficher pour relecture.
 - Une requête de préservation des badges "Pro" mentionnée en session, décrite mais pas encore écrite en fichier de migration ni appliquée — à retrouver et formaliser avant application.
@@ -150,3 +151,13 @@ Budget visé au §10.1 de `AI_RULES.md` : **2,5 s**. Les deux boutiques sont don
 `Other` et `Script` sont quasi identiques à l'octet près entre les deux boutiques, dont les catalogues diffèrent : c'est une **charge fixe**, pas du contenu marchand — cohérent avec le favicon comme cause principale.
 
 **Ces chiffres seront caducs dès que le sous-lot 2a touchera `ProductGrid.tsx`** (partagé par l'accueil et la fiche produit). Nouvelle mesure de référence à prendre juste après le correctif favicon (§4, point 2) — c'est celle-là, pas celle-ci, qui fera foi pour le §10.1.
+
+---
+
+## 8. Hygiène documentaire — points ouverts, non traités
+
+**Règles critiques dupliquées.** `AI_RULES.md` reproduit intégralement le contenu de `NOTE_MASQUAGE_COMMANDES.md` (§4) et de `NOTE_ERREURS_SUPABASE_NON_VERIFIEES.md` (§3, "Vérification des erreurs"), au lieu d'y renvoyer. Deux copies d'une même règle divergent tôt ou tard. À trancher : une source unique (probablement les `NOTE_*.md`, plus détaillées, avec le contexte et l'exemple) et un renvoi depuis `AI_RULES.md`, pas l'inverse — mais c'est une décision à prendre, pas à exécuter seul.
+
+**`IMPROVEMENTS.md` chevauche `REPRISE.md`.** Statuts ✅🔄⬜🚫 sur bugs/UX/fonctionnalités, plus ancien format, fonction proche de ce que `REPRISE.md` fait maintenant plus précisément (avec dates, fichiers, lignes). À fusionner — probablement absorber ce qui est encore pertinent dans `REPRISE.md` et retirer `IMPROVEMENTS.md`, mais non vérifié ligne à ligne, donc non tranché ici. Fichier laissé non suivi en attendant (voir §1).
+
+**`README.md` reste le boilerplate `create-next-app`** — aucune information sur TEKKIShop, aucune instruction spécifique au projet. Suivi tel quel (§1) pour qu'il ne redisparaisse pas, mais son contenu est à réécrire entièrement : ce que fait le projet, comment le lancer avec les variables d'environnement réelles (voir `AI_RULES.md` §10), où trouver `AI_RULES.md`/`REPRISE.md`.
