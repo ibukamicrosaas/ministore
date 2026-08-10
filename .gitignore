@@ -49,8 +49,7 @@ next-env.d.ts
 # Dossiers de specs hors projet
 ministore/
 
-# Documentation et specs (usage local uniquement)
-*.md
-!AI_RULES.md
-!REPRISE.md
-!SPEC-refonte-tunnel-commande.md
+# Documentation et specs — suivies par défaut depuis le 2026-08-10.
+# Règle inversée : *.md ignoré par défaut faisait disparaître chaque
+# nouvelle spec du dépôt sans le vouloir. Aucune exclusion aujourd'hui —
+# en ajouter une seulement pour une raison précise, jamais par défaut.

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ABI&amp;CO — Boutique TEKKIShop (mockup accueil)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TEKKIShop — Template boutique
+   Tokens
+   ============================================================ */
+:root{
+  --brand:#0FB4C6;                 /* couleur du marchand (white-label) */
+  --ink:#101820;
+  --ink2:#5A6873;
+  --ink3:#8A959E;
+  --line:#E4E8EC;
+  --surface:#F5F7F9;
+  --paper:#FFFFFF;
+  --ok:#0E7C55;
+  --ok-bg:#E8F5EF;
+  --warn:#9A6410;
+  --warn-bg:#FBF1DF;
+  --r-lg:18px;
+  --r-md:12px;
+  --r-sm:9px;
+  --shadow:0 1px 2px rgba(16,24,32,.05), 0 8px 24px -18px rgba(16,24,32,.35);
+  --wrap:1180px;
+  --font-display:"Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --font-body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:var(--surface);
+  -webkit-font-smoothing:antialiased;
+  font-size:15px;
+  line-height:1.45;
+}
+img{max-width:100%;display:block}
+button,input,select{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 16px}
+@media(min-width:900px){ .wrap{padding:0 28px} }
+
+/* ---------- primitives ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:46px;padding:0 18px;border-radius:var(--r-md);
+  font-weight:600;font-size:15px;border:1px solid transparent;
+  cursor:pointer;background:none;transition:.16s ease;white-space:nowrap;
+}
+.btn--brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn--brand:hover{filter:brightness(.94)}
+.btn--outline{border-color:var(--line);background:var(--paper);color:var(--ink)}
+.btn--outline:hover{border-color:var(--ink3)}
+.btn--sm{height:38px;padding:0 14px;font-size:14px;border-radius:var(--r-sm)}
+.btn--block{width:100%}
+
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  height:30px;padding:0 11px;border-radius:999px;
+  font-size:12.5px;font-weight:600;letter-spacing:.005em;
+  background:var(--surface);color:var(--ink2);border:1px solid var(--line);
+}
+.chip--ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.chip--warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chip--brand{background:color-mix(in srgb,var(--brand) 12%,#fff);color:color-mix(in srgb,var(--brand) 75%,#000);border-color:transparent}
+
+.eyebrow{
+  font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink3);
+}
+.price{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.01em}
+
+/* ============================================================
+   1. Barre haute — identité marchand toujours présente
+   ============================================================ */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.topbar__in{display:flex;align-items:center;gap:12px;height:58px}
+.brandmark{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{
+  width:34px;height:34px;border-radius:50%;flex:none;
+  background:color-mix(in srgb,var(--brand) 18%,#fff);
+  border:1px solid color-mix(in srgb,var(--brand) 35%,#fff);
+  display:grid;place-items:center;font-family:var(--font-display);
+  font-weight:700;font-size:12px;color:color-mix(in srgb,var(--brand) 80%,#000);
+  overflow:hidden;
+}
+.avatar--lg{width:64px;height:64px;font-size:19px}
+.brandmark__name{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.verified{width:15px;height:15px;flex:none}
+.topbar__spacer{flex:1}
+.topbar__actions{display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:40px;height:40px;border-radius:var(--r-sm);border:1px solid var(--line);
+  background:var(--paper);display:grid;place-items:center;cursor:pointer;
+}
+.icon-btn:hover{border-color:var(--ink3)}
+.hide-sm{display:none}
+@media(min-width:760px){ .hide-sm{display:inline-flex} .only-sm{display:none!important} }
+
+/* ============================================================
+   2. Bandeau + carte d'identité du marchand
+   ============================================================ */
+.cover{
+  height:104px;background:
+    radial-gradient(120% 160% at 20% 0%, color-mix(in srgb,var(--brand) 24%,#fff) 0%, transparent 60%),
+    linear-gradient(105deg, color-mix(in srgb,var(--brand) 14%,#fff), var(--surface) 70%);
+  position:relative;overflow:hidden;border-bottom:1px solid var(--line);
+}
+.cover__row{
+  position:absolute;inset:auto 0 -18px 0;display:flex;gap:14px;justify-content:center;
+  opacity:.85;
+}
+.cover__row svg{width:82px;height:82px;flex:none}
+@media(min-width:760px){ .cover{height:168px} .cover__row svg{width:120px;height:120px} }
+
+.ident{margin-top:-30px;position:relative;z-index:2}
+.ident__card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:16px;box-shadow:var(--shadow);
+}
+.ident__top{display:flex;gap:13px;align-items:flex-start}
+.ident__name{
+  font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.02em;
+  margin:0;display:flex;align-items:center;gap:7px;line-height:1.15;
+}
+.ident__meta{color:var(--ink2);font-size:14px;margin:3px 0 0}
+.ident__bio{color:var(--ink2);font-size:14.5px;margin:11px 0 0;max-width:62ch}
+.ident__actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.social{
+  width:40px;height:40px;border-radius:var(--r-sm);border:1px solid var(--line);
+  background:var(--paper);display:grid;place-items:center;color:var(--ink2);
+}
+.social:hover{color:var(--ink);border-color:var(--ink3)}
+.ident__socials{display:flex;gap:8px;margin-left:auto}
+@media(max-width:759px){ .ident__socials{margin-left:0;margin-top:14px} }
+@media(min-width:760px){
+  .ident__card{padding:22px 24px;display:flex;gap:24px;align-items:flex-start}
+  .ident__grow{flex:1;min-width:0}
+  .ident__actions{margin-top:16px}
+  .ident__name{font-size:30px}
+}
+
+/* ============================================================
+   3. Bande de faits — les réponses aux questions du DM
+   ============================================================ */
+.facts{margin-top:14px}
+.facts__in{
+  display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.facts__in::-webkit-scrollbar{display:none}
+.fact{
+  flex:1 0 auto;min-width:190px;max-width:340px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:12px 14px;display:flex;gap:11px;align-items:flex-start;
+}
+.fact svg{flex:none;margin-top:1px;color:var(--brand)}
+.fact b{display:block;font-size:14px;font-weight:600;letter-spacing:-.005em}
+.fact span{display:block;font-size:13px;color:var(--ink2);margin-top:1px}
+@media(min-width:760px){ .facts__in{display:grid;grid-template-columns:repeat(3,1fr)} .fact{max-width:none} }
+
+/* ============================================================
+   4. Navigation catalogue
+   ============================================================ */
+.browse{margin-top:26px}
+.browse__head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.browse__title{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:-.015em;margin:0}
+.browse__count{font-size:13.5px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.search{
+  display:flex;align-items:center;gap:9px;height:46px;padding:0 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);
+}
+.search input{border:0;outline:0;background:none;flex:1;font-size:15px;min-width:0}
+.search input::placeholder{color:var(--ink3)}
+.filters{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filter{
+  flex:none;height:38px;padding:0 15px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--paper);color:var(--ink2);
+  font-size:14px;font-weight:500;transition:.15s;
+}
+.filter:hover{border-color:var(--ink3);color:var(--ink)}
+.filter[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+
+/* ============================================================
+   5. Grille produits
+   ============================================================ */
+.grid{
+  margin-top:16px;display:grid;gap:12px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+@media(min-width:640px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px} }
+@media(min-width:1000px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+.card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);
+  overflow:hidden;display:flex;flex-direction:column;transition:.18s ease;
+}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.card__media{
+  position:relative;aspect-ratio:1/1;background:var(--surface);
+  display:grid;place-items:center;border-bottom:1px solid var(--line);
+}
+.card__media svg{width:74%;height:74%}
+.card__flag{
+  position:absolute;top:9px;left:9px;height:25px;padding:0 9px;border-radius:999px;
+  display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;
+  background:rgba(16,24,32,.82);color:#fff;backdrop-filter:blur(4px);
+}
+.card__body{padding:12px 12px 13px;display:flex;flex-direction:column;flex:1;gap:2px}
+.card__name{
+  font-size:14.5px;font-weight:600;letter-spacing:-.005em;line-height:1.3;margin:0;
+  /* jamais tronqué sur une seule ligne : 2 lignes autorisées */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.card__price{font-size:17px;margin-top:6px}
+.card__meta{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+.swatches{display:flex;align-items:center;gap:5px;margin-top:9px}
+.sw{width:15px;height:15px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.swatches em{font-style:normal;font-size:12.5px;color:var(--ink2);margin-left:2px}
+.card__cta{margin-top:12px}
+@media(max-width:459px){
+  .card__body{padding:10px 10px 11px}
+  .card__name{font-size:13.5px}
+  .card__price{font-size:15.5px}
+}
+
+/* section catalogue par famille */
+.familygroup + .familygroup{margin-top:30px}
+.familygroup__head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+
+/* ============================================================
+   6. Bas de page
+   ============================================================ */
+.trust{
+  margin-top:34px;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:18px;
+}
+.trust h3{font-family:var(--font-display);font-size:17px;margin:0 0 4px;letter-spacing:-.015em}
+.trust p{margin:0;color:var(--ink2);font-size:14.5px;max-width:60ch}
+.trust__actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.foot{padding:26px 0 110px;text-align:center;color:var(--ink3);font-size:13px}
+.foot a{color:var(--ink2);font-weight:600}
+@media(min-width:760px){ .foot{padding-bottom:40px} }
+
+/* ============================================================
+   7. Barre d'action mobile — la conversation reste possible
+   ============================================================ */
+.mobilebar{
+  position:fixed;left:0;right:0;bottom:0;z-index:45;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:9px 14px calc(9px + env(safe-area-inset-bottom));
+  display:flex;gap:9px;
+}
+.mobilebar .btn{flex:1}
+.mobilebar .btn--outline{flex:0 0 46px;padding:0}
+@media(min-width:760px){ .mobilebar{display:none} }
+
+/* ============================================================
+   Mode "boutique peu remplie" — tout le conditionnel disparaît
+   ============================================================ */
+.is-lean [data-opt]{display:none!important}
+
+/* ============================================================
+   Panneau de démo (hors design)
+   ============================================================ */
+.demo{position:fixed;right:14px;bottom:78px;z-index:60;font-family:var(--font-body)}
+@media(min-width:760px){ .demo{bottom:16px} }
+.demo__toggle{
+  width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;
+  background:#101820;color:#fff;display:grid;place-items:center;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.6);
+}
+.demo__panel{
+  position:absolute;right:0;bottom:54px;width:236px;background:#101820;color:#fff;
+  border-radius:14px;padding:14px;display:none;box-shadow:0 20px 50px -20px rgba(0,0,0,.7);
+}
+.demo.is-open .demo__panel{display:block}
+.demo__panel h4{margin:0 0 3px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#8A959E;font-weight:600}
+.demo__panel p{margin:0 0 12px;font-size:12px;color:#A9B4BD;line-height:1.4}
+.demo__row{display:flex;gap:7px;margin-bottom:13px}
+.demo__sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.demo__sw[aria-pressed="true"]{border-color:#fff}
+.demo__switch{
+  width:100%;height:36px;border-radius:9px;border:1px solid #2A343D;background:#18222B;
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+}
+.demo__link{display:block;margin-top:9px;font-size:13px;color:var(--brand);font-weight:600;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- ==================== SVG réutilisables ==================== -->
+<svg style="display:none">
+  <symbol id="bag" viewBox="0 0 200 200">
+    <path d="M56 92 C44 40 156 40 144 92" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+    <path d="M42 96 h116 v18 a58 58 0 0 1 -116 0 z" fill="currentColor"/>
+    <path d="M42 96 v-4 a58 46 0 0 1 116 0 v4 z" fill="currentColor" opacity=".82"/>
+    <rect x="90" y="106" width="20" height="11" rx="5" fill="#C9A227"/>
+  </symbol>
+  <symbol id="check" viewBox="0 0 20 20"><path d="M10 1.7a8.3 8.3 0 1 0 0 16.6 8.3 8.3 0 0 0 0-16.6Zm4.1 6.4-4.9 4.9a1 1 0 0 1-1.4 0L5.9 10.9a1 1 0 1 1 1.4-1.4l1.2 1.2 4.2-4.2a1 1 0 0 1 1.4 1.4Z" fill="#1D9BF0"/></symbol>
+</svg>
+
+<div class="shop" id="shop">
+
+  <!-- ======= 1. Barre haute ======= -->
+  <header class="topbar">
+    <div class="wrap topbar__in">
+      <a href="#" class="brandmark">
+        <span class="avatar">A&amp;C</span>
+        <span class="brandmark__name">ABI&amp;CO</span>
+        <svg class="verified"><use href="#check"/></svg>
+      </a>
+      <span class="topbar__spacer"></span>
+      <div class="topbar__actions">
+        <button class="icon-btn" aria-label="Rechercher un produit">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        </button>
+        <a href="#" class="btn btn--outline btn--sm hide-sm">Appeler</a>
+        <a href="#" class="btn btn--brand btn--sm hide-sm">Écrire à ABI&amp;CO</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======= 2. Bandeau + identité ======= -->
+  <div class="cover" aria-hidden="true">
+    <div class="cover__row">
+      <svg style="color:#E8497B"><use href="#bag"/></svg>
+      <svg style="color:#D62839"><use href="#bag"/></svg>
+      <svg style="color:#1B1D21"><use href="#bag"/></svg>
+      <svg style="color:#A9C9E8"><use href="#bag"/></svg>
+      <svg style="color:#6B2436"><use href="#bag"/></svg>
+      <svg style="color:#8B5A33"><use href="#bag"/></svg>
+      <svg style="color:#2F8C93"><use href="#bag"/></svg>
+    </div>
+  </div>
+
+  <section class="ident">
+    <div class="wrap">
+      <div class="ident__card">
+        <div class="ident__grow">
+          <div class="ident__top">
+            <span class="avatar avatar--lg">A&amp;C</span>
+            <div style="min-width:0">
+              <h1 class="ident__name">ABI&amp;CO <svg class="verified" style="width:19px;height:19px"><use href="#check"/></svg></h1>
+              <p class="ident__meta">Maroquinerie · Abidjan · Répond en général sous 1 h</p>
+            </div>
+          </div>
+          <p class="ident__bio">Sacs à main et accessoires de mode de qualité supérieure. Commande directement sur la boutique, ou écris-nous si tu préfères en parler avant.</p>
+          <div class="ident__actions">
+            <a href="#" class="btn btn--brand btn--sm">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Écrire
+            </a>
+            <a href="#" class="btn btn--outline btn--sm">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+              Appeler
+            </a>
+          </div>
+        </div>
+        <div class="ident__socials" data-opt>
+          <a href="#" class="social" aria-label="Instagram"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg></a>
+          <a href="#" class="social" aria-label="TikTok"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M16.3 2h-2.9v13.1a2.6 2.6 0 1 1-2-2.5V9.6a5.6 5.6 0 1 0 5 5.6V9a7.2 7.2 0 0 0 4 1.2V7.3a4.4 4.4 0 0 1-4.1-4.4V2Z"/></svg></a>
+          <a href="#" class="social" aria-label="Facebook"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.3-1.5 1.6-1.5h1.6V3.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.2H7.5V13h2.7v8z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= 3. Faits : les réponses aux questions posées en DM ======= -->
+  <section class="facts">
+    <div class="wrap">
+      <div class="facts__in">
+        <div class="fact" data-opt>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+          <div><b>Livraison à Abidjan</b><span>Tarif calculé selon ta zone, affiché avant de payer</span></div>
+        </div>
+        <div class="fact">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/></svg>
+          <div><b>Wave, Orange, MTN, Moov ou cash</b><span>Tu paies en ligne ou à la livraison</span></div>
+        </div>
+        <div class="fact" data-opt>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/></svg>
+          <div><b>Échange sous 7 jours</b><span>Produit non utilisé, emballage conservé</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= 4 & 5. Catalogue ======= -->
+  <section class="browse">
+    <div class="wrap">
+      <div class="browse__head">
+        <h2 class="browse__title">Le catalogue</h2>
+        <span class="browse__count" id="count">6 produits · 21 variantes</span>
+      </div>
+
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        <input type="search" placeholder="Chercher un sac, une couleur…" aria-label="Chercher dans la boutique">
+      </div>
+
+      <div class="filters" role="group" aria-label="Filtrer le catalogue">
+        <button class="filter" aria-pressed="true" data-f="all">Tout</button>
+        <button class="filter" data-f="dispo">Disponible tout de suite</button>
+        <button class="filter" data-f="sac" data-opt>Sacs</button>
+        <button class="filter" data-f="petit" data-opt>Petite maroquinerie</button>
+        <button class="filter" data-f="offrir" data-opt>Moins de 10 000 F</button>
+      </div>
+
+      <div class="grid" id="grid">
+
+        <!-- Produit à variantes : UNE fiche, 9 couleurs -->
+        <article class="card" data-tags="dispo sac">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#D62839">
+            <span class="card__flag" data-opt>Le plus commandé</span>
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name"><a href="tekkishop-boutique-produit.html">Bandoulière Versse</a></h3>
+            <div class="card__price price">15 000&#8239;FCFA</div>
+            <div class="card__meta"><span class="chip chip--ok">En stock</span></div>
+            <div class="swatches" data-opt>
+              <span class="sw" style="background:#D62839"></span>
+              <span class="sw" style="background:#E8497B"></span>
+              <span class="sw" style="background:#1B1D21"></span>
+              <span class="sw" style="background:#A9C9E8"></span>
+              <span class="sw" style="background:#6B2436"></span>
+              <em>+4 couleurs</em>
+            </div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+        <article class="card" data-tags="dispo sac">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#8B5A33">
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name">Versse format moyen</h3>
+            <div class="card__price price">22 000&#8239;FCFA</div>
+            <div class="card__meta"><span class="chip chip--ok">En stock</span></div>
+            <div class="swatches" data-opt>
+              <span class="sw" style="background:#8B5A33"></span>
+              <span class="sw" style="background:#1B1D21"></span>
+              <span class="sw" style="background:#C9B49A"></span>
+              <em>+1 couleur</em>
+            </div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+        <article class="card" data-tags="sac">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#2F8C93">
+            <span class="card__flag" data-opt>Dernières pièces</span>
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name">Cabas Bagco 40 cm</h3>
+            <div class="card__price price">28 000&#8239;FCFA</div>
+            <div class="card__meta"><span class="chip chip--warn">Plus que 3</span></div>
+            <div class="swatches" data-opt>
+              <span class="sw" style="background:#2F8C93"></span>
+              <span class="sw" style="background:#1B1D21"></span>
+              <em>+1 couleur</em>
+            </div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+        <article class="card" data-tags="dispo petit offrir">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#B08CC7">
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name">Pochette Versse</h3>
+            <div class="card__price price">9 500&#8239;FCFA</div>
+            <div class="card__meta"><span class="chip chip--ok">En stock</span></div>
+            <div class="swatches" data-opt>
+              <span class="sw" style="background:#B08CC7"></span>
+              <span class="sw" style="background:#1B1D21"></span>
+            </div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+        <!-- Produit "pauvre" : aucune donnée optionnelle. La carte tient quand même. -->
+        <article class="card" data-tags="petit offrir">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#3E4C59">
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name">Porte-cartes cuir</h3>
+            <div class="card__price price">6 000&#8239;FCFA</div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+        <article class="card" data-tags="dispo petit offrir">
+          <a href="tekkishop-boutique-produit.html" class="card__media" style="color:#C9A227">
+            <svg><use href="#bag"/></svg>
+          </a>
+          <div class="card__body">
+            <h3 class="card__name">Ceinture Bagco</h3>
+            <div class="card__price price">8 000&#8239;FCFA</div>
+            <div class="card__meta"><span class="chip chip--ok">En stock</span></div>
+            <a href="tekkishop-boutique-produit.html" class="btn btn--brand btn--sm btn--block card__cta">Commander</a>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- ======= 6. Réassurance de fin ======= -->
+      <div class="trust">
+        <h3>Une question avant de commander ?</h3>
+        <p>Écris à ABI&amp;CO sur WhatsApp — la boutique répond en général sous 1 h. Tu peux aussi commander directement : tu confirmeras la livraison et le paiement à l'étape suivante.</p>
+        <div class="trust__actions">
+          <a href="#" class="btn btn--outline btn--sm">Écrire sur WhatsApp</a>
+          <a href="#" class="btn btn--outline btn--sm">Voir les zones de livraison</a>
+        </div>
+      </div>
+
+      <p class="foot">Boutique propulsée par <a href="https://tekki.shop">TEKKIShop</a></p>
+    </div>
+  </section>
+
+  <!-- ======= 7. Barre mobile ======= -->
+  <div class="mobilebar">
+    <a href="#grid" class="btn btn--brand">Voir le catalogue</a>
+    <a href="#" class="btn btn--outline" aria-label="Écrire à la boutique">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== Panneau de démo (hors design) ==================== -->
+<div class="demo" id="demo">
+  <div class="demo__panel">
+    <h4>Couleur du marchand</h4>
+    <p>Le template s'adapte à la marque de la boutique.</p>
+    <div class="demo__row">
+      <button class="demo__sw" style="background:#0FB4C6" aria-pressed="true" data-c="#0FB4C6"></button>
+      <button class="demo__sw" style="background:#D6336C" data-c="#D6336C"></button>
+      <button class="demo__sw" style="background:#E8590C" data-c="#E8590C"></button>
+      <button class="demo__sw" style="background:#1E7A46" data-c="#1E7A46"></button>
+      <button class="demo__sw" style="background:#3B4CC0" data-c="#3B4CC0"></button>
+    </div>
+    <h4>Remplissage</h4>
+    <p>Vérifie que la page tient quand le marchand n'a rien renseigné.</p>
+    <button class="demo__switch" id="lean">Passer en boutique minimale</button>
+    <a class="demo__link" href="tekkishop-boutique-produit.html">Voir la page produit →</a>
+  </div>
+  <button class="demo__toggle" aria-label="Options de démonstration">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H2a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1.1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H8a1.6 1.6 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V8a1.6 1.6 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>
+  </button>
+</div>
+
+<script>
+/* démo : couleur marchand */
+document.querySelectorAll('.demo__sw').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.demo__sw').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    document.documentElement.style.setProperty('--brand', b.dataset.c);
+  });
+});
+/* démo : boutique minimale */
+const lean=document.getElementById('lean');
+lean.addEventListener('click',()=>{
+  const on=document.getElementById('shop').classList.toggle('is-lean');
+  lean.textContent = on ? 'Revenir à la boutique complète' : 'Passer en boutique minimale';
+  document.getElementById('count').textContent = on ? '6 produits' : '6 produits · 21 variantes';
+});
+document.querySelector('.demo__toggle').addEventListener('click',()=>document.getElementById('demo').classList.toggle('is-open'));
+
+/* filtres */
+document.querySelectorAll('.filter').forEach(f=>{
+  f.addEventListener('click',()=>{
+    document.querySelectorAll('.filter').forEach(x=>x.setAttribute('aria-pressed','false'));
+    f.setAttribute('aria-pressed','true');
+    const t=f.dataset.f;
+    let n=0;
+    document.querySelectorAll('#grid .card').forEach(c=>{
+      const ok = t==='all' || (c.dataset.tags||'').includes(t);
+      c.style.display = ok ? '' : 'none';
+      if(ok) n++;
+    });
+    document.getElementById('count').textContent = n + (n>1?' produits':' produit');
+  });
+});
+</script>
+</body>
+</html>

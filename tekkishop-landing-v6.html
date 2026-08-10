@@ -1,0 +1,1777 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TEKKIShop — Crée ta boutique en ligne en 5 minutes, depuis ton téléphone</title>
+<meta name="description" content="Mets tes produits en ligne, partage ton lien sur WhatsApp et reçois ton argent par Wave, Orange Money ou à la livraison. 1 468 boutiques déjà créées. Sans ordinateur, sans développeur." />
+<meta name="theme-color" content="#071a35" />
+<link rel="canonical" href="https://tekki.shop/" />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="TEKKIShop" />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:url" content="https://tekki.shop/" />
+<meta property="og:title" content="Crée ta boutique en ligne en 5 minutes, depuis ton téléphone" />
+<meta property="og:description" content="1 468 boutiques déjà créées. Partage ton lien, reçois ton argent par Wave ou Orange Money. Sans ordinateur." />
+<meta property="og:image" content="https://tekki.shop/og-cover.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="TEKKIShop — Ta boutique en ligne en 5 minutes" />
+<meta name="twitter:description" content="Partage ton lien, reçois ton argent par mobile money. 1 468 boutiques déjà créées." />
+<meta name="twitter:image" content="https://tekki.shop/og-cover.jpg" />
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23176bff'/%3E%3Cpath d='M20 26h24v20a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V26Z' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Cpath d='M26 26v-4a6 6 0 0 1 12 0v4' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+
+<style>
+:root{
+  --ink:#0b1830;
+  --ink-2:#26385a;
+  --muted:#697893;
+  --blue:#176bff;
+  --blue-2:#0d54d8;
+  --blue-3:#eaf2ff;
+  --sky:#f5f9ff;
+  --green:#12b981;
+  --green-2:#e6fbf2;
+  --amber:#ffb020;
+  --red-2:#fff1f2;
+  --border:#dfe7f3;
+  --navy:#071a35;
+  --navy-2:#0d2448;
+  --white:#fff;
+
+  --shadow-sm:0 8px 28px rgba(9,40,92,.08);
+  --shadow-md:0 24px 70px rgba(9,40,92,.13);
+  --shadow-lg:0 40px 100px rgba(8,26,57,.22);
+  --radius:20px;
+  --radius-lg:30px;
+  --max:1180px;
+
+  --display:"Bricolage Grotesque","Inter",system-ui,sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);background:#fff;font-family:var(--body);line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input,select{font:inherit}
+a{color:inherit;text-decoration:none}
+img,svg{display:block;max-width:100%}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:6px}
+
+.container{width:min(var(--max),calc(100% - 40px));margin-inline:auto}
+.section{padding:100px 0;position:relative}
+.center{text-align:center}
+.section-head{max-width:820px;margin:0 auto 52px}
+.section-head.center .lead{max-width:700px;margin-inline:auto}
+
+h1,h2,h3,h4,p{margin-top:0}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.035em}
+h1{font-size:clamp(38px,5.4vw,70px);line-height:1.04;margin-bottom:20px;font-weight:800}
+h2{font-size:clamp(30px,3.9vw,52px);line-height:1.08;margin-bottom:18px;font-weight:800}
+h3{font-size:20px;line-height:1.28;margin-bottom:8px;font-weight:700;letter-spacing:-.02em}
+.lead{font-size:clamp(16.5px,1.6vw,20px);line-height:1.6;color:var(--ink-2)}
+.muted{color:var(--muted)}
+/* Mise en valeur : encre + bande de surlignage sous la ligne de base.
+   Remplace l'ancien degrade bleu-violet, trop repandu. */
+.grad{color:var(--blue-2);
+  background-image:linear-gradient(to top,rgba(23,107,255,.15) 0 .30em,transparent 0);
+  background-repeat:no-repeat;padding:0 .04em;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone}
+.timeline-sec .grad,.cta-card .grad{color:#9dc0ff;background-image:linear-gradient(to top,rgba(157,192,255,.2) 0 .30em,transparent 0)}
+
+/* Libellés de section : filet + capitales monospace, à la place des anciennes pilules */
+.label{display:flex;align-items:center;gap:11px;font-family:var(--mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.15em;color:var(--blue-2);font-weight:600;margin-bottom:16px}
+.label:before{content:"";width:26px;height:2px;background:var(--blue);border-radius:2px;flex:none}
+.center .label{justify-content:center}
+.label--dark{color:#8fb4ff}
+.label--dark:before{background:var(--amber)}
+
+.btn{border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:54px;padding:0 24px;border-radius:14px;font-weight:700;font-size:15.5px;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;text-align:center}
+.btn-primary{color:#fff;background:linear-gradient(135deg,#1870ff,#0b57dd);box-shadow:0 14px 34px rgba(23,107,255,.28)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(23,107,255,.36)}
+.btn-secondary{color:var(--ink);background:#fff;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.btn-secondary:hover{transform:translateY(-2px);border-color:#adc5eb}
+.btn-light{background:#fff;color:var(--navy);box-shadow:0 14px 36px rgba(0,0,0,.18)}
+.btn-ghost{color:#fff;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06)}
+.btn-ghost:hover{background:rgba(255,255,255,.12)}
+.btn-full{width:100%}
+.btn svg{width:18px;height:18px;flex:none}
+
+/* ---------- Navigation ---------- */
+.nav-wrap{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(223,231,243,.8)}
+.nav{height:70px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:19.5px;font-weight:800;letter-spacing:-.04em}
+.brand-mark{width:33px;height:33px;border-radius:10px;background:linear-gradient(145deg,#2b81ff,#0c54d4);position:relative;box-shadow:0 8px 18px rgba(23,107,255,.3);flex:none}
+.brand-mark:before{content:"";position:absolute;left:8px;top:9px;width:17px;height:13px;border:2.3px solid #fff;border-top:0;border-radius:3px 3px 6px 6px}
+.brand-mark:after{content:"";position:absolute;left:11.5px;top:5px;width:10px;height:8px;border:2.3px solid #fff;border-bottom:0;border-radius:9px 9px 0 0}
+.brand span{color:var(--blue)}
+.nav-links{display:flex;align-items:center;gap:26px;font-size:14.5px;font-weight:600;color:#3a4963}
+.nav-links a:hover{color:var(--blue)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.nav-login{font-size:14.5px;font-weight:600;color:#34435e;padding:12px 8px}
+.nav-actions .btn{min-height:44px;padding:0 17px;font-size:14.5px}
+.menu-toggle{display:none;width:46px;height:46px;border:1px solid var(--border);background:#fff;border-radius:12px;font-size:19px;cursor:pointer}
+.mobile-menu{display:none;border-top:1px solid var(--border);background:#fff;padding:10px 0 22px}
+.mobile-menu.open{display:block}
+.mobile-menu a{display:block;padding:15px 0;font-weight:600;font-size:16px;border-bottom:1px solid #f0f4fa}
+.mobile-menu .btn{margin-top:18px}
+
+/* ---------- Hero ---------- */
+.hero{padding:64px 0 66px;overflow:hidden;position:relative;
+  background:
+    radial-gradient(circle at 80% 14%,rgba(23,107,255,.13),transparent 30%),
+    radial-gradient(circle at 12% 24%,rgba(23,107,255,.1),transparent 28%),
+    linear-gradient(180deg,#fbfdff,#f4f9ff)}
+.hero:before{content:"";position:absolute;inset:0;opacity:.32;pointer-events:none;
+  background-image:linear-gradient(rgba(24,80,160,.075) 1px,transparent 1px),linear-gradient(90deg,rgba(24,80,160,.075) 1px,transparent 1px);
+  background-size:38px 38px;
+  -webkit-mask-image:linear-gradient(to bottom,#000,transparent 92%);
+  mask-image:linear-gradient(to bottom,#000,transparent 92%)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center;position:relative;z-index:2}
+.hero-copy{max-width:660px}
+.hero-copy .lead{max-width:610px;margin-bottom:26px}
+
+/* Preuve sociale placée en tête, à la place de l'ancienne pilule */
+.social-proof{display:flex;align-items:center;gap:13px;margin-bottom:24px;flex-wrap:wrap}
+.avatars{display:flex;flex:none}
+.avatar{width:36px;height:36px;border-radius:50%;margin-left:-11px;border:3px solid #f8fbff;display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;box-shadow:0 6px 14px rgba(16,46,97,.14)}
+.avatar:first-child{margin-left:0}
+.avatar:nth-child(1){background:linear-gradient(145deg,#ff955b,#e4572e)}
+.avatar:nth-child(2){background:linear-gradient(145deg,#6e78ff,#4039c9)}
+.avatar:nth-child(3){background:linear-gradient(145deg,#23c78c,#078959)}
+.avatar:nth-child(4){background:linear-gradient(145deg,#ffca57,#de8c00)}
+.avatar:nth-child(5){background:linear-gradient(145deg,#4fb0ff,#1160c4)}
+.social-proof b{font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+.social-proof span{display:block;font-size:13.5px;color:var(--muted);line-height:1.35}
+.stars{color:var(--amber);letter-spacing:1px}
+
+.hero-ctas{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.objections{display:flex;flex-wrap:wrap;gap:9px 18px;font-size:13.5px;font-weight:600;color:#5c6b85}
+.objections span{display:inline-flex;align-items:center;gap:7px}
+.objections svg{width:16px;height:16px;color:var(--green);flex:none}
+
+/* ---------- Téléphone + vitrine réelle ---------- */
+.hero-stage{position:relative;display:grid;place-items:center;min-height:580px}
+.phone{width:312px;border-radius:42px;background:linear-gradient(160deg,#101f3b,#050f22);padding:10px;box-shadow:var(--shadow-lg);position:relative;z-index:2}
+.phone-screen{border-radius:34px;background:#fff;overflow:hidden;height:604px;position:relative}
+.phone-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:92px;height:21px;background:#050f22;border-radius:0 0 14px 14px;z-index:5}
+
+/* Boutique — reproduit la mise en page réelle de tekki.shop/<boutique> */
+.st-cover{height:132px;position:relative;overflow:hidden;
+  background:linear-gradient(105deg,#ffd6e0 0%,#ffe3ea 40%,#dceaff 78%,#cfeef2 100%)}
+.st-cover-txt{position:absolute;left:14px;top:44px;right:44%;font-family:var(--display);font-size:12.5px;line-height:1.2;font-weight:700;color:#12213f;letter-spacing:-.02em}
+.st-cover-logo{position:absolute;left:14px;top:16px;font-family:var(--display);font-size:9px;font-weight:700;color:#e05a7a}
+.st-boxes{position:absolute;right:6px;bottom:6px;width:132px;height:106px}
+.st-boxes i{position:absolute;border-radius:4px;box-shadow:0 6px 14px rgba(60,20,50,.18)}
+.st-boxes i:nth-child(1){width:38px;height:44px;background:linear-gradient(150deg,#f0434f,#c31f2c);left:2px;bottom:6px;transform:rotate(-4deg)}
+.st-boxes i:nth-child(2){width:40px;height:46px;background:linear-gradient(150deg,#2a3f8f,#16255e);left:36px;bottom:32px;transform:rotate(3deg)}
+.st-boxes i:nth-child(3){width:36px;height:42px;background:linear-gradient(150deg,#6f4bc4,#4a2e91);left:44px;bottom:2px}
+.st-boxes i:nth-child(4){width:34px;height:40px;background:linear-gradient(150deg,#8ee0e2,#4fbcc4);right:2px;bottom:24px;transform:rotate(-3deg)}
+.st-boxes i:nth-child(5){width:30px;height:34px;background:linear-gradient(150deg,#f4ecd2,#ddd0a6);right:22px;bottom:0}
+.st-share{position:absolute;right:10px;top:10px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.75);display:grid;place-items:center;font-size:10px;color:#43526f}
+.st-ava{width:56px;height:56px;border-radius:50%;background:linear-gradient(150deg,#132a55,#071a35);border:3px solid #fff;margin:-28px 0 0 14px;position:relative;z-index:3;display:grid;place-items:center;color:#ff8fa8;font-family:var(--display);font-size:9px;font-weight:700;text-align:center;line-height:1.05}
+.st-body{padding:10px 14px 16px}
+.st-name{display:flex;align-items:center;gap:5px;font-family:var(--display);font-size:17px;font-weight:800;letter-spacing:-.035em}
+.st-check{width:15px;height:15px;border-radius:50%;background:var(--blue);display:grid;place-items:center;flex:none}
+.st-check svg{width:9px;height:9px;color:#fff}
+.st-cat{font-size:11.5px;color:var(--muted);margin:2px 0 5px}
+.st-desc{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin:0 0 9px}
+.st-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.st-pill{font-size:10px;font-weight:600;color:var(--blue-2);background:var(--blue-3);border-radius:7px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px}
+.st-social{display:flex;gap:5px;margin-bottom:9px}
+.st-social span{flex:1;text-align:center;font-size:9.5px;font-weight:700;padding:6px 0;border-radius:8px}
+.st-ig{color:#e1306c;border:1px solid #f4c9d8}
+.st-tt{color:#fff;background:#111}
+.st-fb{color:#1877f2;background:#eaf2ff}
+.st-order{width:100%;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:11px 0;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.st-sec{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.st-favs{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.st-fav{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:#fff}
+.st-fav i{display:block;height:62px}
+.st-fav div{padding:6px 8px 8px}
+.st-fav b{display:block;font-size:10px;line-height:1.2}
+.st-fav span{font-size:10.5px;font-weight:700;color:var(--navy);font-family:var(--mono)}
+.st-fav:nth-child(1) i{background:linear-gradient(150deg,#ffd9e2,#ffb3c6)}
+.st-fav:nth-child(2) i{background:linear-gradient(150deg,#f3d9a8,#d9a35c)}
+
+.float{position:absolute;background:#fff;border-radius:15px;padding:11px 13px;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:10px;z-index:4;border:1px solid rgba(223,231,243,.9)}
+.float b{font-size:12.5px;display:block;line-height:1.25}
+.float small{font-size:11px;color:var(--muted)}
+.float i{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:none;color:#fff}
+.float-1{top:4%;left:-15%}
+.float-1 i{background:var(--green)}
+.float-2{bottom:9%;right:-15%}
+.float-2 i{background:var(--blue)}
+
+/* ---------- Bandeau paiements ---------- */
+.strip{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff;padding:28px 0}
+.strip-label{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);text-align:center;margin-bottom:16px}
+.pay-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:9px 11px}
+.pay{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid var(--border);border-radius:12px;font-weight:600;font-size:13.5px;color:#34435e;background:#fff;white-space:nowrap}
+.pay i{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* ---------- Avant / Après ---------- */
+.problem-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:50px;align-items:start}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.cmp{border-radius:var(--radius);padding:24px 22px;border:1px solid}
+.cmp-bad{background:var(--red-2);border-color:#ffd6d9}
+.cmp-good{background:var(--green-2);border-color:#c4f0dd}
+.cmp-tag{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:9px;display:block}
+.cmp-bad .cmp-tag{color:#c8404a}
+.cmp-good .cmp-tag{color:#0a875c}
+.cmp h3{font-size:17.5px;margin-bottom:13px}
+.cmp ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.cmp li{display:flex;gap:9px;font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.cmp li b{flex:none;width:15px;font-weight:700}
+.cmp-bad li b{color:#e0616a}
+.cmp-good li b{color:var(--green)}
+.callout{margin-top:24px;padding:18px 20px;border-left:3px solid var(--blue);background:var(--sky);border-radius:0 14px 14px 0;font-size:15.5px;color:var(--ink-2)}
+
+/* ---------- Étapes : blocs alternés avec écran réel ---------- */
+.step-row{display:grid;grid-template-columns:1.02fr .98fr;gap:56px;align-items:center;margin-bottom:74px}
+.step-row:last-child{margin-bottom:0}
+.step-row.flip .step-media{order:2}
+.step-num{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.step-num i{width:42px;height:42px;border-radius:13px;background:var(--ink);color:#fff;display:grid;place-items:center;
+  font-family:var(--mono);font-size:14px;font-weight:600;font-style:normal;flex:none}
+.step-num span{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted)}
+.step-row h3{font-family:var(--display);font-size:clamp(23px,2.5vw,30px);font-weight:800;letter-spacing:-.035em;margin-bottom:12px}
+.step-row>div>p{font-size:16.5px;color:var(--ink-2);margin:0 0 18px;line-height:1.6}
+.step-pts{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.step-pts li{display:flex;gap:10px;font-size:14.5px;color:var(--muted)}
+.step-pts svg{width:17px;height:17px;color:var(--green);flex:none;margin-top:3px}
+
+/* --- Ecrans d'onboarding reels (/start et creation de compte) --- */
+.app-logo{font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:-.04em;color:var(--ink)}
+.app-logo span{color:#4a86f7}
+.prog{height:5px;background:#e6eaf0;border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,#63a0ff,#2f6fe0);transition:width .85s cubic-bezier(.2,.8,.3,1)}
+.qtitle{font-family:var(--display);font-size:17px;font-weight:800;letter-spacing:-.035em;line-height:1.15;margin-top:15px}
+.qsub{font-size:10.5px;color:#8b98ad;margin:4px 0 12px;line-height:1.45}
+.qinput{border:1.6px solid #4a86f7;border-radius:12px;padding:12px 10px;text-align:center;
+  font-size:14px;font-weight:700;background:#fff;min-height:44px;color:#1d2b45}
+.qchips{display:flex;gap:6px;margin:9px 0 11px;flex-wrap:wrap}
+.qchips span{font-size:9.5px;color:#7d8aa1;border:1px solid #e2e8f1;border-radius:999px;padding:5px 10px;background:#fff}
+.tip{background:#eefaf1;border:1px solid #cdedd8;border-radius:11px;padding:10px 12px;font-size:10px;color:#2f5340;line-height:1.55}
+.tip b{color:#1d3d2b}
+.qbtn{background:#4a86f7;color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;font-size:12.5px;margin-top:12px;
+  transition:transform .3s cubic-bezier(.2,.8,.3,1),box-shadow .3s ease}
+.qbtn.green{background:#4caf72}
+.qbtn.ready{animation:btnpop .65s cubic-bezier(.2,.8,.3,1);box-shadow:0 8px 20px rgba(74,134,247,.3)}
+.qbtn.green.ready{box-shadow:0 8px 20px rgba(76,175,114,.32)}
+.pinlab{font-size:10px;color:#8b98ad;display:block;margin:2px 0 8px}
+.pin{display:flex;gap:6px;justify-content:center}
+.pin i{width:34px;height:42px;border:1.6px solid #dde5ef;border-radius:10px;background:#f7f9fc;
+  display:grid;place-items:center;transition:border-color .25s ease,background .25s ease}
+.pin i:after{content:"";width:6px;height:6px;border-radius:50%;background:#2c3a54;opacity:0;transform:scale(.4);
+  transition:opacity .2s ease,transform .25s cubic-bezier(.2,.8,.3,1)}
+.pin i.filled{background:#fff}
+.pin i.filled:after{opacity:1;transform:none}
+.pin i.active{border-color:#4a86f7;background:#fff}
+.trust{display:flex;flex-wrap:wrap;gap:5px 12px;justify-content:center;font-size:9.5px;color:#3f8f5f;font-weight:600;margin-top:11px}
+
+/* --- Animations des ecrans d'etapes --- */
+[data-appear]{opacity:0;transform:translateY(9px) scale(.965);
+  transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.3,1)}
+[data-appear].in{opacity:1;transform:none}
+.fld b,.fld b[data-type]{min-height:1.3em;display:block}
+.fld{transition:border-color .25s ease,box-shadow .25s ease}
+.fld.focus{border-color:#2f9fe3;box-shadow:0 0 0 3px rgba(47,159,227,.14)}
+[data-type]:after{content:"";display:inline-block;width:1.5px;height:.95em;background:#2f9fe3;
+  margin-left:2px;vertical-align:-1px;opacity:0}
+.fld.focus [data-type]:after,.typing:after{opacity:1;animation:caret .9s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.app-btn{transition:transform .3s cubic-bezier(.2,.8,.3,1),box-shadow .3s ease}
+.app-btn.ready{animation:btnpop .65s cubic-bezier(.2,.8,.3,1);box-shadow:0 8px 20px rgba(47,159,227,.32)}
+@keyframes btnpop{0%{transform:scale(1)}45%{transform:scale(1.035)}100%{transform:scale(1)}}
+.swatches i{transition:box-shadow .3s ease,transform .3s ease}
+.swatches i.on{transform:scale(1.12)}
+.saved{display:flex;align-items:center;gap:6px;justify-content:center;margin-top:10px;
+  font-size:10.5px;font-weight:700;color:#0a875c}
+.chan span{transition:border-color .3s ease,color .3s ease}
+.db-btns span[data-swap]{transition:color .3s ease,border-color .3s ease}
+.db-btns span.copied{color:#0a875c;border-color:#bfe8cf}
+
+/* Écran d'application reproduit */
+.app{background:#f4f7fa;border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-md);overflow:hidden}
+.app-bar{background:#fff;border-bottom:1px solid #eaeef5;padding:11px 15px;display:flex;align-items:center;gap:9px}
+.app-bar b{font-size:12.5px}
+.app-bar .app-back{color:#8b98ad;font-size:13px}
+.app-bar .app-step{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:#8b98ad;letter-spacing:.08em}
+.app-in{padding:16px}
+.fld{background:#fff;border:1px solid #dde5ef;border-radius:11px;padding:9px 12px;margin-bottom:9px}
+.fld small{display:block;font-size:9.5px;color:#8b98ad;margin-bottom:2px}
+.fld b{font-size:12.5px;font-weight:600;color:#2c3a54}
+.fld.ph b{color:#b3bdcd;font-weight:500}
+.fld-row{display:flex;gap:9px}
+.fld-row .fld{flex:1;margin-bottom:9px}
+.app-btn{background:#2f9fe3;color:#fff;border-radius:11px;padding:11px;text-align:center;font-size:12.5px;font-weight:700;margin-top:4px}
+.app-hint{font-size:10px;color:#8b98ad;text-align:center;margin-top:9px}
+.upload{background:#fff;border:1.5px dashed #bcd4ea;border-radius:12px;height:96px;display:grid;place-items:center;margin-bottom:10px;color:#7ba7d0;font-size:11px;text-align:center;line-height:1.5}
+.thumbs{display:flex;gap:7px;margin-bottom:10px}
+.thumbs i{flex:1;height:46px;border-radius:9px}
+.thumbs i:nth-child(1){background:linear-gradient(150deg,#ffd9e2,#f4a8bd)}
+.thumbs i:nth-child(2){background:linear-gradient(150deg,#e6d6ff,#b79bf0)}
+.thumbs i:nth-child(3){background:linear-gradient(150deg,#d9f5ee,#a8e0d0)}
+.thumbs i:nth-child(4){background:#fff;border:1.5px dashed #cfdcea}
+.brandbox{background:#fff;border:1px solid #dde5ef;border-radius:12px;padding:12px;margin-bottom:10px}
+.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.brand-row .bl{width:40px;height:40px;border-radius:50%;background:linear-gradient(150deg,#132a55,#071a35);flex:none}
+.brand-row b{font-size:12.5px;display:block}
+.brand-row small{font-size:10px;color:#8b98ad}
+.swatches{display:flex;gap:7px;align-items:center}
+.swatches i{width:24px;height:24px;border-radius:8px}
+.swatches i.on{box-shadow:0 0 0 2px #fff,0 0 0 4px #2f9fe3}
+.coverprev{height:60px;border-radius:10px;background:linear-gradient(105deg,#ffd6e0,#ffe3ea 42%,#dceaff 78%,#cfeef2);position:relative}
+.coverprev span{position:absolute;left:10px;bottom:8px;font-family:var(--display);font-size:10px;font-weight:700;color:#12213f}
+.sharebox{background:#f0f8fe;border:1px solid #cfe6f8;border-radius:13px;padding:12px;margin-bottom:10px}
+.qr{width:74px;height:74px;border-radius:10px;background:#fff;border:1px solid #dbe6f0;margin:0 auto 9px;
+  background-image:
+    linear-gradient(90deg,#0b1830 25%,transparent 25%,transparent 50%,#0b1830 50%,#0b1830 62%,transparent 62%),
+    linear-gradient(#0b1830 22%,transparent 22%,transparent 44%,#0b1830 44%,#0b1830 58%,transparent 58%);
+  background-size:14px 14px;background-position:center;background-repeat:repeat;
+  box-shadow:inset 0 0 0 8px #fff}
+.chan{display:flex;gap:7px;margin-top:10px}
+.chan span{flex:1;text-align:center;font-size:9.5px;font-weight:700;padding:8px 4px;border-radius:9px;background:#fff;border:1px solid #dde5ef;color:#41506b}
+
+/* ---------- Sections en deux colonnes : visuel a gauche, texte a droite ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.split-media{display:flex;justify-content:center}
+
+/* ---------- Vitrine mobile (95 % du trafic reel) ---------- */
+.stbar{display:flex;align-items:center;gap:7px;padding:26px 13px 10px;border-bottom:1px solid #eef2f8;background:#fff;position:relative;z-index:4}
+.stbar .bl{width:24px;height:24px;border-radius:50%;background:linear-gradient(150deg,#132a55,#071a35);flex:none}
+.stbar b{font-size:12px;letter-spacing:-.02em}
+.stbar .st-check{width:13px;height:13px}
+.stbar .cmd{margin-left:auto;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700;padding:6px 11px;border-radius:8px}
+.msearch{border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:10.5px;color:#9aa7bd;margin-bottom:9px}
+.mchips{display:flex;gap:5px;margin-bottom:2px}
+.mchips span{font-size:9.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:#f1f5fb;color:#59688a}
+.mchips span.on{background:var(--navy);color:#fff}
+.mrow{display:flex;gap:9px;border:1px solid var(--border);border-radius:12px;padding:9px;margin-bottom:8px;background:#fff}
+.mrow>i{width:52px;height:52px;border-radius:9px;flex:none}
+.mrow b{font-size:11px;display:block;line-height:1.2}
+.mrow p{margin:2px 0 4px;font-size:9px;color:var(--muted);line-height:1.35}
+.mrow .pr{font-size:11px;font-weight:700;color:var(--navy);font-family:var(--mono)}
+.mrow .stk{display:block;font-size:8.5px;color:#d98724;margin-top:2px}
+.mvoir{margin-left:auto;align-self:center;background:var(--navy);color:#fff;font-size:9px;font-weight:700;padding:6px 10px;border-radius:7px;flex:none}
+.mfoot{text-align:center;font-size:9px;color:var(--muted);padding:11px 0 0;border-top:1px solid #eef2f8;margin-top:10px}
+.mfoot b{color:var(--blue-2)}
+
+.checks{list-style:none;margin:24px 0 26px;padding:0;display:grid;gap:17px}
+.checks li{display:flex;gap:13px}
+.checks svg{width:22px;height:22px;color:var(--green);flex:none;margin-top:2px}
+.checks b{display:block;font-size:16px;margin-bottom:3px}
+.checks p{margin:0;font-size:14.5px;color:var(--muted)}
+
+/* ---------- Timeline 24h/24 (signature) ---------- */
+.timeline-sec{background:
+  radial-gradient(circle at 85% 8%,rgba(255,176,32,.14),transparent 34%),
+  radial-gradient(circle at 8% 82%,rgba(23,107,255,.2),transparent 38%),
+  linear-gradient(170deg,var(--navy),#040d1e);
+  color:#fff;padding:100px 0;overflow:hidden}
+.timeline-sec h2{color:#fff}
+.timeline-sec .lead{color:#9fb3d4}
+.tl-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:54px;align-items:start}
+.tl{position:relative}
+.tl:before{content:"";position:absolute;left:68px;top:14px;bottom:14px;width:2px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.22) 18%,rgba(255,176,32,.5) 62%,rgba(255,255,255,.05))}
+.tl-row{display:grid;grid-template-columns:60px 1fr;gap:26px;padding:14px 0;align-items:start}
+.tl-time{font-family:var(--mono);font-size:13px;font-weight:600;color:#7f9bc9;text-align:right;padding-top:2px}
+.tl-body{position:relative;padding-left:22px}
+.tl-body:before{content:"";position:absolute;left:-8px;top:8px;width:11px;height:11px;border-radius:50%;background:var(--navy);border:2.5px solid #3f6cb5;z-index:2}
+.tl-body b{display:block;font-size:16.5px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px;font-family:var(--display)}
+.tl-body p{margin:0;font-size:14.5px;color:#93a9cc;line-height:1.5}
+.tl-row.night .tl-time{color:var(--amber)}
+.tl-row.night .tl-body:before{background:var(--amber);border-color:rgba(255,176,32,.35);box-shadow:0 0 0 6px rgba(255,176,32,.14)}
+.tl-row.night .tl-body b{color:var(--amber)}
+.tl-badge{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(255,176,32,.35);background:rgba(255,176,32,.09);padding:5px 10px;border-radius:999px}
+.tl-aside{position:sticky;top:96px}
+.tl-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);border-radius:var(--radius);padding:26px 24px}
+.tl-stat{font-family:var(--display);font-size:52px;font-weight:800;letter-spacing:-.05em;line-height:1;background:linear-gradient(120deg,#fff,#9dc0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tl-card p{color:#9fb3d4;font-size:14.5px;margin:10px 0 0}
+.tl-card hr{border:0;border-top:1px solid rgba(255,255,255,.1);margin:20px 0}
+.tl-mini{display:flex;align-items:center;gap:11px;font-size:14px;color:#cbd9ef;padding:7px 0}
+.tl-mini i{width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:12px;flex:none}
+
+/* ---------- Espace vendeur (reproduit l'application réelle) ---------- */
+.db-wrap{position:relative;display:grid;place-items:center;padding:16px 0}
+.db-wrap:before{content:"";position:absolute;width:78%;height:74%;border-radius:44%;
+  background:radial-gradient(circle,rgba(47,159,227,.2),transparent 70%);filter:blur(24px)}
+.db-screen{background:#f4f7fa;height:100%;position:relative;display:flex;flex-direction:column}
+.db-top{display:flex;align-items:center;gap:12px;padding:26px 14px 10px;background:#fff;border-bottom:1px solid #eaeef5;flex:none}
+.db-top .db-burger{font-size:15px;color:#3c4a63}
+.db-top .db-icons{margin-left:auto;display:flex;gap:13px;align-items:center;font-size:13px;color:#5b6b86}
+.db-top .db-bell{color:#ffa41b;position:relative}
+.db-dot{position:absolute;top:-2px;right:-3px;width:6px;height:6px;border-radius:50%;background:#2f9fe3;border:1.5px solid #fff}
+.db-body{padding:12px 13px 60px;overflow:hidden;flex:1}
+.db-date{font-size:10.5px;color:#8b98ad}
+.db-hello{font-family:var(--display);font-size:16px;font-weight:800;letter-spacing:-.035em;margin:1px 0 11px;line-height:1.15}
+.db-sales{background:linear-gradient(140deg,#37a6e8,#1f8fdc);border-radius:15px;padding:13px 14px;color:#fff;margin-bottom:10px}
+.db-sales-head{display:flex;align-items:center;gap:8px;font-size:10px;opacity:.95}
+.db-sales-head i{margin-left:auto;width:26px;height:26px;border-radius:9px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:12px;font-style:normal}
+.db-amount{font-family:var(--display);font-size:29px;font-weight:800;letter-spacing:-.045em;line-height:1.05;margin:5px 0 9px}
+.db-amount small{font-size:14px;font-weight:600;opacity:.85}
+.db-chips{display:flex;gap:5px;overflow:hidden}
+.db-chips span{font-size:9px;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.22);white-space:nowrap}
+.db-chips span.on{background:#fff;color:#1f8fdc}
+.db-two{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.db-mini{background:#fff;border:1px solid #eaeef5;border-radius:13px;padding:10px 11px;position:relative}
+.db-mini small{font-size:10px;color:#6f7d94;display:block}
+.db-mini b{font-family:var(--display);font-size:22px;font-weight:800;letter-spacing:-.04em;display:block;line-height:1.1}
+.db-mini span{font-size:9.5px;color:#98a4b8}
+.db-mini i{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:7px;background:#f2f5f9;display:grid;place-items:center;font-size:10px;font-style:normal}
+.db-link{background:#f0f8fe;border:1px solid #cfe6f8;border-radius:14px;padding:11px;margin-bottom:12px}
+.db-link-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.db-link-head i{width:24px;height:24px;border-radius:8px;background:#2f9fe3;color:#fff;display:grid;place-items:center;font-size:11px;font-style:normal;flex:none}
+.db-link-head b{font-size:11.5px;display:block;line-height:1.2}
+.db-link-head small{font-size:9px;color:#7c8ba1}
+.db-url{background:#fff;border:1px solid #dbe6f0;border-radius:8px;padding:6px 9px;font-family:var(--mono);font-size:8.5px;color:#41506b;margin-bottom:6px;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap}
+.db-url span{margin-left:auto;color:#8b98ad}
+.db-btns{display:flex;gap:5px;margin-bottom:5px}
+.db-btns span{flex:1;text-align:center;font-size:9px;font-weight:700;padding:7px 4px;border-radius:8px;border:1px solid #dbe6f0;background:#fff;color:#41506b;white-space:nowrap}
+.db-btns span.wa{color:#1eab55;border-color:#bfe8cf;flex:2.1}
+.db-btns span.blue{background:#2f9fe3;border-color:#2f9fe3;color:#fff;flex:1.5}
+.db-oh{display:flex;align-items:center;justify-content:space-between;margin:12px 0 7px}
+.db-oh b{font-size:12px}
+.db-oh span{font-size:9.5px;color:#2f9fe3;font-weight:600}
+.db-orders{background:#fff;border:1px solid #eaeef5;border-radius:13px;overflow:hidden}
+.db-order{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-bottom:1px solid #f1f4f9}
+.db-order:last-child{border-bottom:0}
+.db-order>i{width:6px;height:6px;border-radius:50%;background:#4a7dfb;margin-top:5px;flex:none}
+.db-order b{font-size:10.5px;display:block;line-height:1.25}
+.db-order b em{font-style:normal;font-family:var(--mono);font-size:8px;color:#a3aec0;font-weight:500}
+.db-order p{margin:1px 0 0;font-size:9px;color:#8b98ad}
+.db-order-right{margin-left:auto;text-align:right;flex:none}
+.db-order-right strong{display:block;font-size:11px;font-family:var(--display);font-weight:800;letter-spacing:-.02em}
+.db-badge{display:inline-block;margin-top:3px;font-size:8px;font-weight:700;color:#3f6fe0;background:#e8f0ff;border-radius:5px;padding:2px 6px}
+.db-nav{position:absolute;left:0;right:0;bottom:0;height:52px;background:#fff;border-top:1px solid #eaeef5;
+  display:flex;align-items:center;justify-content:space-around;padding:0 6px;font-size:7.5px;color:#8b98ad;font-weight:600}
+.db-nav div{display:grid;justify-items:center;gap:3px}
+.db-nav div i{font-size:12px;font-style:normal}
+.db-nav div.on{color:#2f9fe3}
+.db-ia{width:38px;height:38px;border-radius:50%;background:#2f9fe3;color:#fff;display:grid;place-items:center;
+  font-size:15px;margin-top:-18px;box-shadow:0 8px 18px rgba(47,159,227,.4)}
+.feat-list{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:26px}
+.feat{border:1px solid var(--border);border-radius:16px;padding:18px;background:#fff}
+.feat b{display:block;font-size:15px;margin-bottom:5px}
+.feat p{margin:0;font-size:13.5px;color:var(--muted)}
+.feat-n{font-family:var(--mono);font-size:11px;color:var(--blue);font-weight:600;display:block;margin-bottom:7px}
+
+/* ---------- Cartes ---------- */
+.cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:26px 24px;box-shadow:var(--shadow-sm);transition:transform .25s ease,box-shadow .25s ease}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+.card-ico{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:19px;margin-bottom:15px;background:var(--blue-3)}
+.card p{margin:0;font-size:14.5px;color:var(--muted)}
+
+/* ---------- Témoignages ---------- */
+.testi-sec{background:var(--sky)}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.testi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px 22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+.testi .stars{margin-bottom:11px;font-size:13px}
+.testi p{font-size:15px;color:var(--ink-2);line-height:1.55;margin:0 0 18px;flex:1}
+.testi-who{display:flex;align-items:center;gap:11px;padding-top:15px;border-top:1px solid #eef2f8}
+.testi-who i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12.5px;flex:none}
+.testi-who b{display:block;font-size:14px}
+.testi-who small{color:var(--muted);font-size:12.5px}
+.merchants{margin-top:36px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 30px}
+.merchants span{font-family:var(--display);font-weight:700;font-size:16px;color:#41527a;opacity:.75}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:38px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:30px 24px;box-shadow:var(--shadow-sm)}
+.stat{text-align:center}
+.stat b{display:block;font-family:var(--display);font-size:clamp(28px,3.3vw,40px);font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--blue-2)}
+.stat small{display:block;margin-top:7px;font-size:13.5px;color:var(--muted)}
+
+/* ---------- Tarifs ---------- */
+.toggle{display:inline-flex;align-items:center;gap:5px;background:#eef3fb;border:1px solid var(--border);border-radius:999px;padding:5px;margin-bottom:10px}
+.toggle button{border:0;background:transparent;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;color:#5c6b85;cursor:pointer;transition:.2s;min-height:44px}
+.toggle button.on{background:#fff;color:var(--ink);box-shadow:0 4px 12px rgba(12,40,90,.1)}
+.save-pill{font-family:var(--mono);font-size:11px;font-weight:600;color:#0a875c;background:var(--green-2);border:1px solid #c4f0dd;padding:4px 9px;border-radius:999px;margin-left:5px;white-space:nowrap}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;margin-top:34px}
+.plan{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:30px 26px;box-shadow:var(--shadow-sm);position:relative}
+.plan.best{border:2px solid var(--blue);box-shadow:0 30px 76px rgba(23,107,255,.2)}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--amber);color:#3d2600;font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;padding:6px 13px;border-radius:999px;white-space:nowrap}
+.plan-name{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--blue-2);font-weight:600}
+.plan-desc{font-size:14px;color:var(--muted);margin:9px 0 18px}
+.price{display:flex;align-items:baseline;gap:6px;font-family:var(--display);font-weight:800;letter-spacing:-.04em}
+.price em{font-size:clamp(32px,3.5vw,42px);font-style:normal;line-height:1}
+.price span{font-size:14px;font-weight:600;color:var(--muted);font-family:var(--body);letter-spacing:0}
+.price-note{font-size:12.5px;color:var(--muted);margin:7px 0 20px}
+.plan ul{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:10px}
+.plan li{display:flex;gap:10px;font-size:14.5px;color:var(--ink-2);line-height:1.4}
+.plan li svg{width:17px;height:17px;color:var(--green);flex:none;margin-top:3px}
+.plan li.head{font-weight:700;color:var(--ink);font-size:14px}
+.compare-wrap{margin-top:30px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;overflow:hidden}
+.compare-wrap summary{cursor:pointer;padding:19px 22px;font-weight:700;font-size:15.5px;display:flex;align-items:center;justify-content:space-between;gap:14px;list-style:none}
+.compare-wrap summary::-webkit-details-marker{display:none}
+.compare-wrap summary:after{content:"+";font-family:var(--mono);font-size:20px;color:var(--blue)}
+.compare-wrap[open] summary:after{content:"–"}
+.table-scroll{overflow-x:auto;border-top:1px solid var(--border);-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:580px}
+th,td{padding:13px 18px;text-align:left;font-size:14px;border-bottom:1px solid #eef2f8}
+thead th{background:#f7faff;font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+tbody th{font-weight:600;color:var(--ink-2)}
+td{text-align:center;color:var(--ink-2)}
+td.yes{color:var(--green);font-weight:700}
+td.no{color:#c4cede}
+
+/* ---------- Fondateur ---------- */
+.founder{display:grid;grid-template-columns:.8fr 1.2fr;gap:50px;align-items:center}
+.founder-card{background:linear-gradient(165deg,var(--navy),#0d2448);border-radius:var(--radius-lg);padding:34px;color:#fff;box-shadow:var(--shadow-lg);text-align:center}
+.founder-ava{width:100px;height:100px;border-radius:50%;margin:0 auto 16px;background:linear-gradient(145deg,#2b81ff,#0c54d4);display:grid;place-items:center;font-family:var(--display);font-size:30px;font-weight:800;border:4px solid rgba(255,255,255,.12)}
+.founder-card b{display:block;font-size:17px}
+.founder-card small{color:#9fb3d4;font-size:13px}
+.quote{font-family:var(--display);font-size:clamp(18px,2vw,24px);line-height:1.42;font-weight:500;color:var(--ink);border-left:3px solid var(--blue);padding-left:20px;margin:0 0 20px;letter-spacing:-.02em}
+
+/* ---------- FAQ ---------- */
+.faq-grid{display:grid;grid-template-columns:.78fr 1.22fr;gap:50px;align-items:start}
+.faq-side{position:sticky;top:96px}
+.faq-list{display:grid;gap:10px}
+.faq-item{border:1px solid var(--border);border-radius:15px;background:#fff;overflow:hidden}
+.faq-item.open{border-color:#b9d0ff;box-shadow:var(--shadow-sm)}
+.faq-q{width:100%;text-align:left;background:none;border:0;padding:17px 20px;font-size:15.5px;font-weight:600;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;line-height:1.4;min-height:56px}
+.faq-q i{font-family:var(--mono);font-size:19px;color:var(--blue);font-style:normal;flex:none;transition:transform .25s ease}
+.faq-item.open .faq-q i{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.faq-item.open .faq-a{max-height:400px}
+.faq-a p{margin:0;padding:0 20px 19px;font-size:14.5px;color:var(--muted);line-height:1.6}
+
+/* ---------- CTA final ---------- */
+.cta-sec{padding:86px 0}
+.cta-card{background:
+  radial-gradient(circle at 12% 15%,rgba(23,107,255,.35),transparent 45%),
+  radial-gradient(circle at 88% 85%,rgba(18,120,210,.3),transparent 45%),
+  linear-gradient(150deg,var(--navy),#061529);
+  border-radius:var(--radius-lg);padding:62px 40px;text-align:center;color:#fff;box-shadow:var(--shadow-lg)}
+.cta-card h2{color:#fff;max-width:740px;margin-inline:auto}
+.cta-card p{color:#a5bade;max-width:600px;margin:0 auto 28px;font-size:17px}
+.cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.cta-micro{font-size:13px;color:#89a0c6}
+
+/* ---------- Pied de page ---------- */
+footer{background:var(--navy);color:#fff;padding:60px 0 26px}
+.foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:38px}
+.foot-brand p{color:#8fa6c9;font-size:14px;margin:15px 0 0;max-width:290px}
+.foot-tt{display:inline-flex;align-items:center;gap:9px;margin-top:16px;padding:10px 15px;border:1px solid rgba(255,255,255,.16);
+  border-radius:11px;font-size:13.5px;font-weight:600;color:#cbd9ef;transition:.22s}
+.foot-tt:hover{background:rgba(255,255,255,.07);color:#fff}
+.foot-tt svg{width:17px;height:17px}
+.foot-col h4{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:#7f96ba;margin:0 0 14px;font-weight:600}
+.foot-col a{display:block;padding:7px 0;color:#cbd9ef;font-size:14.5px}
+.foot-col a:hover{color:#fff}
+.foot-bottom{margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:#7f96ba;font-size:13px}
+
+/* ---------- Barre d'action mobile ---------- */
+.mobile-bar{position:fixed;left:0;right:0;bottom:0;z-index:80;display:none;gap:9px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-top:1px solid var(--border);
+  transform:translateY(120%);transition:transform .3s ease}
+.mobile-bar.show{transform:none}
+.mobile-bar .btn{flex:1;min-height:52px;font-size:15px}
+.wa-btn{width:52px;height:52px;border-radius:14px;background:#25d366;display:grid;place-items:center;color:#fff;flex:none}
+.wa-btn svg{width:26px;height:26px}
+.whatsapp{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 14px 34px rgba(37,211,102,.4);z-index:70;color:#fff}
+.whatsapp svg{width:28px;height:28px}
+
+/* ---------- Modale ---------- */
+.modal{position:fixed;inset:0;background:rgba(6,17,36,.72);display:none;place-items:center;padding:16px;z-index:100;backdrop-filter:blur(5px)}
+.modal.open{display:grid}
+.modal-card{background:#fff;border-radius:20px;width:min(960px,100%);max-height:88vh;overflow:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-close{width:40px;height:40px;border-radius:11px;border:1px solid var(--border);background:#fff;font-size:19px;cursor:pointer;line-height:1}
+.modal-body{padding:20px}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ================= RESPONSIVE — priorité mobile ================= */
+@media (max-width:1060px){
+  .hero-grid,.problem-grid,.split,.tl-grid,.founder,.faq-grid{grid-template-columns:1fr;gap:42px}
+  .step-row{grid-template-columns:1fr;gap:30px;margin-bottom:56px}
+  .step-row.flip .step-media{order:0}
+  .plans{grid-template-columns:1fr;max-width:520px;margin-inline:auto}
+  .tl-aside,.faq-side{position:static}
+  .nav-links,.nav-actions .nav-login{display:none}
+  .menu-toggle{display:block}
+  .hero-stage{min-height:auto;margin-top:6px}
+}
+@media (max-width:900px){
+  .cards-3,.testi-grid{grid-template-columns:1fr 1fr}
+  .stats-bar{grid-template-columns:1fr 1fr;gap:26px}
+}
+@media (max-width:760px){
+  .section{padding:64px 0}
+  .timeline-sec{padding:64px 0}
+  .cta-sec{padding:60px 0}
+  .section-head{margin-bottom:36px}
+  h1{font-size:clamp(32px,8.5vw,44px);line-height:1.08}
+  h2{font-size:clamp(26px,6.6vw,36px)}
+  .lead{font-size:16.5px}
+  .compare,.cards-3,.feat-list{grid-template-columns:1fr}
+  .step-row{grid-template-columns:1fr;gap:26px;margin-bottom:52px}
+  .step-row.flip .step-media{order:0}
+  .step-row h3{font-size:23px}
+  .step-row>div>p{font-size:16px}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:28px}
+  .float{display:none}
+  .cta-card{padding:40px 20px;border-radius:24px}
+  .tl:before{left:48px}
+  .tl-row{grid-template-columns:42px 1fr;gap:14px;padding:12px 0}
+  .tl-time{font-size:12px}
+  .tl-body{padding-left:20px}
+  .tl-body b{font-size:15.5px}
+  .hero{padding:36px 0 48px}
+  .hero-ctas{margin-bottom:16px}
+  .hero-ctas .btn,.cta-actions .btn,.faq-side .btn{width:100%}
+  .objections{gap:8px 16px;font-size:13px}
+  .whatsapp{display:none}
+  .mobile-bar{display:flex}
+  body{padding-bottom:0}
+  .modal-body{padding:14px}
+  .plan{padding:26px 20px}
+  .callout{margin-top:20px;padding:16px 18px;font-size:15px}
+
+  /* Témoignages en carrousel horizontal : plus court à parcourir au pouce */
+  .testi-grid{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:4px 20px 14px;margin-inline:-20px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .testi-grid::-webkit-scrollbar{display:none}
+  .testi{flex:0 0 82%;scroll-snap-align:center}
+  .swipe-hint{display:block}
+  .merchants{gap:10px 20px;margin-top:26px}
+  .merchants span{font-size:14px}
+}
+@media (max-width:520px){
+  .container{width:calc(100% - 32px)}
+  .phone{width:100%;max-width:300px}
+  .stats-bar{grid-template-columns:1fr 1fr;padding:24px 16px;gap:22px}
+  .stat b{font-size:30px}
+  .foot-grid{grid-template-columns:1fr}
+  .toggle{width:100%;justify-content:center}
+  .toggle button{flex:1;padding:11px 8px;font-size:13.5px}
+  .save-pill{font-size:10px;padding:3px 7px}
+  .pay{font-size:12.5px;padding:8px 12px}
+  .cmp{padding:20px 18px}
+  .faq-q{font-size:15px;padding:16px 16px}
+  .faq-a p{padding:0 16px 17px}
+}
+@media (max-width:370px){
+  h1{font-size:29px}
+  .social-proof b{font-size:17px}
+  .st-favs{grid-template-columns:1fr}
+  .phone{max-width:270px}
+}
+.swipe-hint{display:none;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .mobile-bar{transition:none}
+  *,*:before,*:after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body id="top">
+
+<!-- ============ NAVIGATION ============ -->
+<div class="nav-wrap">
+  <div class="container nav">
+    <a href="#top" class="brand" aria-label="Accueil TEKKIShop"><i class="brand-mark"></i> TEKKI<span>Shop</span></a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#probleme">Pourquoi TEKKIShop</a>
+      <a href="#etapes">Comment ça marche</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="/connexion" class="nav-login">Se connecter</a>
+      <a href="/inscription" class="btn btn-primary">Créer ma boutique</a>
+      <button class="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobileMenu">☰</button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="container">
+      <a href="#probleme">Pourquoi TEKKIShop</a>
+      <a href="#etapes">Comment ça marche</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#faq">FAQ</a>
+      <a href="/connexion">Se connecter</a>
+      <a href="/inscription" class="btn btn-primary btn-full">Créer ma boutique</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+
+      <!-- Preuve sociale en ouverture, à la place du libellé générique -->
+      <div class="social-proof">
+        <div class="avatars" aria-hidden="true">
+          <i class="avatar">AS</i><i class="avatar">KM</i><i class="avatar">AD</i><i class="avatar">FN</i><i class="avatar">IT</i>
+        </div>
+        <div>
+          <b>1 468 boutiques déjà créées</b>
+          <span>Sénégal, Côte d'Ivoire, Mali, Bénin, Togo, Burkina Faso</span>
+        </div>
+      </div>
+
+      <h1>Crée ta boutique en ligne <span class="grad">en 5 minutes</span>, depuis ton téléphone.</h1>
+      <p class="lead">Mets tes produits en ligne, partage ton lien sur WhatsApp, et reçois ton argent par Wave, Orange Money ou à la livraison. Tout se fait depuis ton téléphone.</p>
+
+      <div class="hero-ctas">
+        <a href="/inscription" class="btn btn-primary">
+          Créer ma boutique gratuitement
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <button class="btn btn-secondary" data-open-demo>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none"/></svg>
+          Voir une vraie boutique
+        </button>
+      </div>
+
+      <div class="objections">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Pas besoin d'ordinateur</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Pas besoin de développeur</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Pas besoin de carte bancaire</span>
+      </div>
+    </div>
+
+    <!-- Aperçu fidèle d'une boutique TEKKIShop sur mobile -->
+    <div class="hero-stage reveal">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="st-cover">
+            <div class="st-cover-logo">♡ Viens on s'connaît</div>
+            <div class="st-cover-txt">Des jeux de cartes pour tisser des liens plus forts avec vos proches.</div>
+            <div class="st-boxes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="st-share">↗</div>
+          </div>
+          <div class="st-ava">Viens on<br>s'connaît</div>
+          <div class="st-body">
+            <div class="st-name">Viens on s'connaît
+              <span class="st-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            </div>
+            <div class="st-cat">Jeux de société</div>
+            <p class="st-desc">Les jeux de cartes qui vous rapprochent de vos proches | Couples – Amis – Famille</p>
+            <div class="st-pills">
+              <span class="st-pill">✓ +8000 jeux vendus</span>
+              <span class="st-pill">✓ Livraison gratuite à Dakar</span>
+            </div>
+            <div class="st-social">
+              <span class="st-ig">Instagram</span>
+              <span class="st-tt">TikTok</span>
+              <span class="st-fb">Facebook</span>
+            </div>
+            <button class="st-order" type="button" tabindex="-1">🛍 Commander</button>
+            <div class="st-sec">★ Coups de cœur</div>
+            <div class="st-favs">
+              <div class="st-fav"><i></i><div><b>Pour Les Amoureux</b><span>14 000 FCFA</span></div></div>
+              <div class="st-fav"><i></i><div><b>Et pourtant, on s'aimait</b><span>4 500 FCFA</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="float float-1"><i>✓</i><div><b>Paiement reçu</b><small>14 000 FCFA · Wave</small></div></div>
+      <div class="float float-2"><i>↗</i><div><b>Nouvelle commande</b><small>2 produits · Dakar</small></div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PAIEMENTS ============ -->
+<section class="strip">
+  <div class="container">
+    <p class="strip-label">Tes clients paient comme ils ont l'habitude de payer</p>
+    <div class="pay-row">
+      <span class="pay"><i style="background:#1dc4f2"></i> Wave</span>
+      <span class="pay"><i style="background:#ff7900"></i> Orange Money / MaxIt</span>
+      <span class="pay"><i style="background:#ffcc00"></i> MTN MoMo</span>
+      <span class="pay"><i style="background:#00a4e4"></i> Moov Money</span>
+      <span class="pay"><i style="background:#12b981"></i> À la livraison</span>
+      <span class="pay"><i style="background:#1a1f71"></i> Carte bancaire</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LE PROBLÈME ============ -->
+<section class="section" id="probleme">
+  <div class="container problem-grid">
+    <div class="reveal">
+      <span class="label">Le vrai problème</span>
+      <h2>WhatsApp t'aide à commencer. Mais il t'oblige à <span class="grad">tout faire toi-même.</span></h2>
+      <p class="lead">Renvoyer les mêmes photos, répéter les prix, vérifier ce qu'il te reste, noter l'adresse, confirmer que le client a bien payé, appeler le livreur. Chaque vente te coûte une demi-heure de messages.</p>
+      <div class="callout"><strong>Avec TEKKIShop, ton client voit tout, choisit et paie tout seul. Toi, tu prépares la commande.</strong></div>
+    </div>
+    <div class="compare reveal">
+      <div class="cmp cmp-bad">
+        <span class="cmp-tag">Aujourd'hui, sans TEKKIShop</span>
+        <h3>Ta journée dépend de tes messages</h3>
+        <ul>
+          <li><b>✕</b> Tes photos et tes prix sont éparpillés dans les statuts et les discussions.</li>
+          <li><b>✕</b> Tu répètes la même chose à chaque client.</li>
+          <li><b>✕</b> Une commande se perd vite entre deux conversations.</li>
+          <li><b>✕</b> Tu vérifies chaque paiement toi-même.</li>
+          <li><b>✕</b> Si tu n'es pas en ligne, la vente n'avance pas.</li>
+        </ul>
+      </div>
+      <div class="cmp cmp-good">
+        <span class="cmp-tag">Demain, avec TEKKIShop</span>
+        <h3>Ta boutique fait le premier travail</h3>
+        <ul>
+          <li><b>✓</b> Tous tes produits sont dans un seul lien.</li>
+          <li><b>✓</b> Le client voit le prix, la description et ce qu'il reste en stock.</li>
+          <li><b>✓</b> Les commandes arrivent au même endroit, bien rangées.</li>
+          <li><b>✓</b> Le paiement mobile money se fait au moment de commander.</li>
+          <li><b>✓</b> Tu gères tout depuis ton téléphone, quand tu veux.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LES 5 ÉTAPES (parcours réel) ============ -->
+<section class="section" id="etapes" style="background:var(--sky)">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="label">Aussi simple que ça</span>
+      <h2>Ta boutique est prête en <span class="grad">5 étapes.</span></h2>
+      <p class="lead">Pas besoin d'ordinateur, ni de développeur. Tu gères tout.</p>
+    </div>
+
+    <!-- Étape 1 : /start -->
+    <div class="step-row reveal">
+      <div class="step-media">
+        <div class="app">
+          <div class="app-bar"><span class="app-logo">TEKKI<span>Shop</span></span><span class="app-step">Étape 1/5</span></div>
+          <div class="app-in">
+            <div class="prog"><i data-prog="20:400,40:2900"></i></div>
+            <div class="qtitle">Comment s'appelle ton business ?</div>
+            <div class="qsub">C'est le nom que tes clients verront. Tu pourras le changer plus tard.</div>
+            <div class="qinput"><span data-type="Chez Fatou" data-delay="900" data-caret="1"></span></div>
+            <div class="qchips"><span>Chez Fatou</span><span>Adja Cosmétiques</span><span>Dakar Sneakers</span></div>
+            <div class="tip" data-appear="1900">L'URL de ta boutique sera : <b>tekki.shop/chez-fatou</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
+            <div class="qbtn" data-ready="2600">Continuer</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step-num"><i>01</i><span>60 secondes chrono</span></div>
+        <h3>Réponds à 5 questions</h3>
+        <p>Pas de blabla, pas de formulaire compliqué. Tu réponds, et ta boutique se construit pendant ce temps.</p>
+        <ul class="step-pts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Le nom de ton business, et ton adresse tekki.shop/tonnom est réservée</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Ce que tu vends, où tu vends déjà, dans quel pays tu es</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Aucune inscription demandée à ce stade : tu regardes d'abord</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Étape 2 : compte -->
+    <div class="step-row reveal flip">
+      <div class="step-media">
+        <div class="app">
+          <div class="app-bar"><span class="app-logo">TEKKI<span>Shop</span></span><span class="app-step">Ton compte</span></div>
+          <div class="app-in">
+            <div class="prog"><i data-prog="100:400"></i></div>
+            <div class="qtitle">Crée ton compte</div>
+            <div class="qsub">Pour retrouver ta boutique depuis n'importe quel téléphone.</div>
+            <div class="fld" style="margin-bottom:11px"><small>Ton numéro WhatsApp</small><b data-type="+221 77 123 46 78" data-delay="800"></b></div>
+            <span class="pinlab">Choisis un code PIN à 6 chiffres</span>
+            <div class="pin" data-pin="6" data-delay="1900"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="trust" data-appear="3450"><span>✓ Création gratuite</span><span>✓ Aucun engagement</span></div>
+            <div class="qbtn green" data-ready="3700">Ouvrir ma boutique 🎉</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step-num"><i>02</i><span>Environ 30 secondes</span></div>
+        <h3>Crée ton compte</h3>
+        <p>Ton numéro WhatsApp et un code PIN à 6 chiffres. Pas de mot de passe à retenir, pas d'e-mail à confirmer.</p>
+        <ul class="step-pts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Ton numéro te sert d'identifiant, comme sur ton mobile money</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Un code PIN à 6 chiffres, rien d'autre à mémoriser</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Ta boutique existe déjà : le compte sert juste à y accéder</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Étape 3 : produits -->
+    <div class="step-row reveal">
+      <div class="step-media">
+        <div class="app">
+          <div class="app-bar"><span class="app-back">&larr;</span><b>Nouveau produit</b><span class="app-step">Brouillon</span></div>
+          <div class="app-in">
+            <div class="upload">&#128247;<br />Ajouter des photos</div>
+            <div class="thumbs">
+              <i data-appear="250"></i><i data-appear="420"></i><i data-appear="590"></i><i data-appear="760"></i>
+            </div>
+            <div class="fld"><small>Nom du produit</small><b data-type="Pour Les Amoureux" data-delay="1000"></b></div>
+            <div class="fld-row">
+              <div class="fld"><small>Prix</small><b data-count="14000" data-suffix=" FCFA" data-delay="1750">0 FCFA</b></div>
+              <div class="fld"><small>Stock</small><b data-count="12" data-delay="2050">0</b></div>
+            </div>
+            <div class="app-btn" data-ready="2650">Publier le produit</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step-num"><i>03</i><span>Environ 1 minute par produit</span></div>
+        <h3>Ajoute tes produits</h3>
+        <p>Une photo, un prix, une description. Exactement comme quand tu publies un statut, sauf que là, ça se vend tout seul.</p>
+        <ul class="step-pts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Prends la photo directement avec ton téléphone</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Indique ton stock : tes clients voient ce qu'il reste</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Produits à livrer ou fichiers à télécharger, au choix</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Étape 4 : personnalisation -->
+    <div class="step-row reveal flip">
+      <div class="step-media">
+        <div class="app">
+          <div class="app-bar"><span class="app-back">&larr;</span><b>Apparence de ma boutique</b><span class="app-step">Aperçu</span></div>
+          <div class="app-in">
+            <div class="brandbox">
+              <div class="brand-row">
+                <span class="bl" data-appear="250"></span>
+                <div><b>Chez Fatou</b><small>Logo de la boutique</small></div>
+              </div>
+              <div class="coverprev" data-appear="650"><span>Photo de couverture</span></div>
+            </div>
+            <div class="brandbox" style="margin-bottom:0">
+              <b style="font-size:11.5px;display:block;margin-bottom:9px">Couleur principale</b>
+              <div class="swatches" data-swatch="3:1100,2:1450,0:1800">
+                <i style="background:#132a55"></i>
+                <i style="background:#e4572e"></i>
+                <i style="background:#12b981"></i>
+                <i style="background:#1f6fd0"></i>
+                <i style="background:#ffb020"></i>
+                <i style="background:#f0575f"></i>
+              </div>
+              <div class="saved" data-appear="2250">&#10003; Enregistré</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step-num"><i>04</i><span>Environ 2 minutes</span></div>
+        <h3>Personnalise ta boutique</h3>
+        <p>Ton logo, ta photo de couverture, tes couleurs, tes zones de livraison. Ta boutique ressemble à ta marque, pas à un modèle.</p>
+        <ul class="step-pts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Logo, couverture et couleurs en quelques clics</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Tes boutons Appeler, Écrire, Instagram et TikTok</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Tes zones et tes frais de livraison</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Étape 5 : activation et partage -->
+    <div class="step-row reveal">
+      <div class="step-media">
+        <div class="app">
+          <div class="app-bar"><b>Lien de ton site</b><span class="app-step">Partage</span></div>
+          <div class="app-in">
+            <div class="sharebox">
+              <div class="qr" aria-hidden="true" data-appear="300"></div>
+              <div class="db-url" style="margin-bottom:7px"><span data-type="https://www.tekki.shop/chezfatou" data-delay="750" data-caret="1"></span><span>&#8599;</span></div>
+              <div class="db-btns" style="margin-bottom:5px"><span class="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
+              <div class="db-btns" style="margin-bottom:0"><span data-swap="&#10003; Lien copié" data-delay="2300">Copier le lien</span><span class="blue">Voir mon site</span></div>
+            </div>
+            <div class="chan">
+              <span data-appear="2600">WhatsApp</span><span data-appear="2730">Instagram</span><span data-appear="2860">TikTok</span><span data-appear="2990">Facebook</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="step-num"><i>05</i><span>Une fois, puis c'est fait</span></div>
+        <h3>Active ta boutique et partage ton lien</h3>
+        <p>Un bouton pour l'envoyer sur WhatsApp, un QR code à imprimer sur tes emballages, une carte à publier en story.</p>
+        <ul class="step-pts">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Un seul lien pour toute ta boutique</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> QR code prêt à imprimer pour ta boutique physique ou ton stand</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Les commandes et l'argent arrivent, même quand tu dors</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LA VITRINE VUE PAR TES CLIENTS ============ -->
+<section class="section">
+  <div class="container split">
+    <div class="split-media reveal">
+      <div class="db-wrap">
+        <div class="phone" style="position:relative;z-index:2">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="stbar">
+              <i class="bl"></i><b>Viens on s'connaît</b><span class="st-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="cmd">🛍 Commander</span>
+            </div>
+            <div class="st-body" style="padding-top:12px">
+              <div class="msearch">🔍 Rechercher un produit…</div>
+              <div class="mchips"><span class="on">Tout</span><span>Jeux de cartes</span><span>Ebook</span></div>
+              <div class="st-sec">🏷 Jeux de cartes</div>
+              <div class="mrow">
+                <i style="background:linear-gradient(150deg,#e6d6ff,#b79bf0)"></i>
+                <div><b>Pour Les Amis</b><p>Le jeu qui crée les souvenirs dont vous parlerez dans 20 ans.</p><span class="pr">14 000 FCFA</span><span class="stk">Plus que 1 dispo</span></div>
+                <span class="mvoir">Voir →</span>
+              </div>
+              <div class="mrow">
+                <i style="background:linear-gradient(150deg,#d9f5ee,#a8e0d0)"></i>
+                <div><b>Pour Les Collègues</b><p>Le jeu qui apporte de l'amour au travail.</p><span class="pr">14 000 FCFA</span><span class="stk">Plus que 1 dispo</span></div>
+                <span class="mvoir">Voir →</span>
+              </div>
+              <div class="mrow">
+                <i style="background:linear-gradient(150deg,#ffd9e2,#f4a8bd)"></i>
+                <div><b>Pour Les Amoureux</b><p>Le jeu qui donne la voix à votre amour.</p><span class="pr">14 000 FCFA</span><span class="stk">Plus que 1 dispo</span></div>
+                <span class="mvoir">Voir →</span>
+              </div>
+              <div class="mfoot">Toi aussi, ouvre ta boutique en 5 min avec <b>TEKKIShop →</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <span class="label">Une vraie boutique</span>
+      <h2>Une boutique qui inspire confiance. <span class="grad">Sans rien faire de technique.</span></h2>
+      <p class="lead">Ton client ouvre ton lien, voit tous tes produits avec les prix, choisit, remplit son adresse et paie. Il n'a pas besoin de t'écrire pour acheter.</p>
+      <ul class="checks">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+          <div><b>Un seul lien pour toute ta boutique</b><p>Fini les dix photos et les dix prix envoyés un par un dans la discussion.</p></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+          <div><b>Du produit au paiement, sans sortir de la page</b><p>Ton client choisit, commande et paie par Wave ou Orange Money au même endroit.</p></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.6 2.6L16 9.7"/></svg>
+          <div><b>Tes boutons Appeler et WhatsApp restent là</b><p>Ceux qui préfèrent te parler avant d'acheter peuvent toujours le faire en un clic.</p></div>
+        </li>
+      </ul>
+      <button class="btn btn-secondary" data-open-demo>Voir une vraie boutique</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SIGNATURE : LA TIMELINE 24h/24 ============ -->
+<section class="timeline-sec">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="label label--dark">Pendant que tu vis ta vie</span>
+      <h2>Ta boutique travaille pour toi, <span style="color:var(--amber)">24h/24.</span></h2>
+      <p class="lead">Une journée réelle d'un vendeur TEKKIShop. Regarde bien l'heure de la vente la plus intéressante.</p>
+    </div>
+    <div class="tl-grid">
+      <div class="tl reveal">
+        <div class="tl-row">
+          <div class="tl-time">07:12</div>
+          <div class="tl-body"><b>Tu mets ton lien dans ton statut</b><p>Une seule adresse à partager, au lieu de dix photos envoyées une par une.</p></div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-time">09:40</div>
+          <div class="tl-body"><b>Première commande, déjà payée</b><p>Le client a choisi, commandé et payé par Wave. Tu n'as répondu à aucun message.</p></div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-time">12:05</div>
+          <div class="tl-body"><b>Tu es au marché, ta boutique répond</b><p>Le prix, les couleurs, ce qu'il reste en stock, les frais de livraison : tout est déjà écrit.</p></div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-time">16:30</div>
+          <div class="tl-body"><b>Tu prépares toutes tes livraisons d'un coup</b><p>Les commandes du jour sont dans un seul écran, avec les noms et les adresses.</p></div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-time">21:18</div>
+          <div class="tl-body"><b>Le livreur a fini sa tournée</b><p>Tu passes les commandes en « livrée ». Le client reçoit sa confirmation.</p></div>
+        </div>
+        <div class="tl-row night">
+          <div class="tl-time">02:47</div>
+          <div class="tl-body">
+            <b>Tu dors. Une cliente commande depuis Abidjan.</b>
+            <p>Elle regarde ton catalogue, paie par Orange Money et reçoit son reçu. Tu découvriras la commande au réveil.</p>
+            <span class="tl-badge">Ça, tu ne peux pas le faire toi-même</span>
+          </div>
+        </div>
+        <div class="tl-row">
+          <div class="tl-time">08:00</div>
+          <div class="tl-body"><b>Tu retires ton argent</b><p>Ton argent arrive sur ton mobile money. Rien à réclamer, rien à attendre.</p></div>
+        </div>
+      </div>
+      <aside class="tl-aside reveal">
+        <div class="tl-card">
+          <div class="tl-stat">1 sur 3</div>
+          <p>des commandes arrive en dehors de tes heures de travail. Sans boutique en ligne, ce sont des ventes que tu ne verras jamais.</p>
+          <hr />
+          <div class="tl-mini"><i>🌙</i> Ta boutique reste ouverte la nuit</div>
+          <div class="tl-mini"><i>🌍</i> Et pour la diaspora, dans d'autres fuseaux</div>
+          <div class="tl-mini"><i>⚡</i> Le paiement se fait sans toi</div>
+          <div class="tl-mini"><i>📥</i> La commande t'attend au réveil</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ESPACE VENDEUR ============ -->
+<section class="section">
+  <div class="container split">
+    <div class="split-media reveal">
+      <div class="db-wrap">
+        <div class="phone" style="position:relative;z-index:2">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="db-screen">
+              <div class="db-top">
+                <span class="db-burger">&#9776;</span>
+                <div class="db-icons">
+                  <span style="position:relative">&#8681;<i class="db-dot"></i></span>
+                  <span class="db-bell">&#128276;</span>
+                  <span>&#128065;</span>
+                </div>
+              </div>
+              <div class="db-body">
+                <div class="db-date">Lundi 3 Août</div>
+                <div class="db-hello">Bonsoir, Viens on s'connaît</div>
+
+                <div class="db-sales">
+                  <div class="db-sales-head">Ventes &mdash; Auj. &middot; 1 vente <i>&#8599;</i></div>
+                  <div class="db-amount">14 000 <small>F</small></div>
+                  <div class="db-chips"><span class="on">Auj.</span><span>Hier</span><span>Semaine</span><span>Mois</span><span>Trimestre</span></div>
+                </div>
+
+                <div class="db-two">
+                  <div class="db-mini"><small>Produits</small><b>7</b><span>actifs</span><i>&#128230;</i></div>
+                  <div class="db-mini"><small>En attente</small><b>0</b><span>commandes</span><i>&#128717;</i></div>
+                </div>
+
+                <div class="db-link">
+                  <div class="db-link-head">
+                    <i>&#8599;</i>
+                    <div><b>Lien de ton site</b><small>Partage ce lien à tes clients</small></div>
+                  </div>
+                  <div class="db-url">https://www.tekki.shop/viensonsconnait <span>&#8599;</span></div>
+                  <div class="db-btns"><span class="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
+                  <div class="db-btns"><span>Copier le lien</span><span class="blue">Voir mon site</span></div>
+                </div>
+
+                <div class="db-oh"><b>Commandes en cours</b><span>Voir toutes &rarr;</span></div>
+                <div class="db-orders">
+                  <div class="db-order">
+                    <i></i>
+                    <div><b>Ndeye Marie Diaw <em>#B1DF87</em></b><p>Pour les Mariés</p></div>
+                    <div class="db-order-right"><strong>14 000 F</strong><span class="db-badge">Confirmée</span></div>
+                  </div>
+                  <div class="db-order">
+                    <i></i>
+                    <div><b>Moïse Junior <em>#0B8132</em></b><p>Et Pourtant, on s'aimait</p></div>
+                    <div class="db-order-right"><strong>225 F</strong><span class="db-badge">Confirmée</span></div>
+                  </div>
+                  <div class="db-order">
+                    <i></i>
+                    <div><b>Penda Barhama <em>#ABFBAC</em></b><p>Et Pourtant, on s'aimait</p></div>
+                    <div class="db-order-right"><strong>4 500 F</strong><span class="db-badge">Confirmée</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="db-nav">
+                <div class="on"><i>&#9634;</i>Accueil</div>
+                <div><i>&#128717;</i>Commandes</div>
+                <div class="db-ia">&#10024;</div>
+                <div><i>&#128230;</i>Produits</div>
+                <div><i>&#9881;</i>Paramètres</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="label">Ton activité dans ta poche</span>
+      <h2>La même boutique, vue de ton côté.</h2>
+      <p class="lead">Tes ventes du jour, tes commandes, tes produits, tes clients, tes revenus, tes codes promo, ton suivi livreur : tout tient dans un écran, sur le même téléphone que tu as déjà dans la main.</p>
+      <div class="feat-list">
+        <div class="feat"><span class="feat-n">01</span><b>Tes ventes du jour</b><p>Aujourd'hui, hier, la semaine, le mois. Tu sais toujours où tu en es.</p></div>
+        <div class="feat"><span class="feat-n">02</span><b>Tes commandes en cours</b><p>Qui a commandé, quel produit, combien, et si c'est confirmé.</p></div>
+        <div class="feat"><span class="feat-n">03</span><b>Ton lien, prêt à partager</b><p>Un bouton pour l'envoyer sur WhatsApp, un QR code à imprimer, une carte à publier.</p></div>
+        <div class="feat"><span class="feat-n">04</span><b>Ton Assistant IA</b><p>Il t'explique ce que tu ne comprends pas, te guide pas à pas et te conseille pour vendre plus.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CE QUE TU PEUX VENDRE ============ -->
+<section class="section" style="background:var(--sky)">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="label">Une boutique pour ton commerce</span>
+      <h2>Vends ce que tu sais créer, fabriquer ou revendre.</h2>
+      <p class="lead">Que tu vendes des objets à livrer ou des fichiers à télécharger, ça marche pareil.</p>
+    </div>
+    <div class="cards-3 reveal">
+      <article class="card">
+        <div class="card-ico" style="background:#ffeee3">🛍️</div>
+        <h3>Produits à livrer</h3>
+        <p>Mode, beauté, alimentation, décoration, accessoires, artisanat, électronique.</p>
+      </article>
+      <article class="card">
+        <div class="card-ico" style="background:#e9ecff">📱</div>
+        <h3>Produits à télécharger</h3>
+        <p>Ebooks, guides, formations, modèles. Le client les reçoit juste après avoir payé.</p>
+      </article>
+      <article class="card">
+        <div class="card-ico" style="background:#e3f9ee">🏪</div>
+        <h3>Boutiques et commerces</h3>
+        <p>Mets ton catalogue en ligne et transforme tes abonnés en vrais clients.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TÉMOIGNAGES ============ -->
+<!-- ⚠️ Remplacer par les vrais témoignages du site actuel (noms, photos, notes) -->
+<section class="section testi-sec">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="label">Ils l'ont fait avant toi</span>
+      <h2>Vendre en ligne n'a jamais été <span class="grad">aussi simple.</span></h2>
+      <p class="lead">Des vendeurs qui ont arrêté de gérer leurs commandes dans une discussion WhatsApp.</p>
+    </div>
+    <div class="testi-grid reveal">
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>J'ai créé ma boutique un dimanche soir. Le lundi matin, j'avais déjà deux ventes payées sans avoir répondu à un seul message.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#ff955b,#e4572e)">AS</i><div><b>Aminata S.</b><small>Mode féminine · Dakar</small></div></div>
+      </article>
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>Avant, je passais mes soirées à renvoyer les mêmes photos et les mêmes prix. Maintenant j'envoie un lien et je m'occupe de mes livraisons.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#6e78ff,#4039c9)">FK</i><div><b>Fatou K.</b><small>Cosmétiques naturels · Abidjan</small></div></div>
+      </article>
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>Je vends des formations. Orange Money marche directement et mes clients téléchargent tout de suite. C'est ça qui manquait ici.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#23c78c,#078959)">MN</i><div><b>Marie N.</b><small>Formations en ligne · Cotonou</small></div></div>
+      </article>
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>Ce qui m'a convaincue, c'est que tout se fait au téléphone. Je n'ai pas d'ordinateur et je n'en ai jamais eu besoin.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#ffca57,#de8c00)">RD</i><div><b>Rokhaya D.</b><small>Artisanat · Thiès</small></div></div>
+      </article>
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>Mes commandes ne se perdent plus. Je vois qui a payé, qui attend, ce qu'il me reste. Avant je notais tout dans un cahier.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#4fb0ff,#1160c4)">IT</i><div><b>Ibrahim T.</b><small>Électronique · Ouagadougou</small></div></div>
+      </article>
+      <article class="testi">
+        <div class="stars">★★★★★</div>
+        <p>Mes clientes en France commandent maintenant elles aussi. Une boutique, un lien, et je vends des deux côtés.</p>
+        <div class="testi-who"><i style="background:linear-gradient(145deg,#4fc3d9,#1a7f96)">KM</i><div><b>Khadija M.</b><small>Épicerie fine · Bamako</small></div></div>
+      </article>
+    </div>
+    <p class="swipe-hint">← Fais glisser pour lire la suite →</p>
+
+    <div class="merchants reveal">
+      <span>Viens on s'connaît</span>
+      <span>Ino.B.Tik</span>
+      <span>GlobalMarket</span>
+      <span>ARBACO</span>
+      <span>OliveEternel</span>
+      <span>digitalglobalshop</span>
+    </div>
+
+    <div class="stats-bar reveal">
+      <div class="stat"><b>1 468</b><small>boutiques créées</small></div>
+      <div class="stat"><b>6</b><small>pays d'Afrique</small></div>
+      <div class="stat"><b>5</b><small>pays d'Occident</small></div>
+      <div class="stat"><b>4,7<span style="font-size:.5em">/5</span></b><small>note des vendeurs</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TARIFS ============ -->
+<section class="section" id="tarifs">
+  <div class="container">
+    <div class="section-head center reveal">
+      <span class="label">Des prix accessibles</span>
+      <h2>Crée gratuitement. <span class="grad">Paie seulement pour vendre.</span></h2>
+      <p class="lead">Tu as 30 jours pour créer et préparer ta boutique sans rien payer. Tu choisis un plan seulement quand tu veux l'ouvrir à tes clients.</p>
+    </div>
+
+    <div class="center reveal">
+      <div class="toggle" role="group" aria-label="Choix de la période de facturation">
+        <button class="on" data-period="month" aria-pressed="true">Mensuel</button>
+        <button data-period="year" aria-pressed="false">Annuel <span class="save-pill">−20%</span></button>
+      </div>
+    </div>
+
+    <div class="plans reveal">
+      <article class="plan">
+        <div class="plan-name">Essentiel</div>
+        <p class="plan-desc">Pour lancer ta première boutique et commencer simplement.</p>
+        <div class="price"><em data-month="2 900" data-year="2 320">2 900</em><span>FCFA / mois</span></div>
+        <p class="price-note" data-note-month="Payé chaque mois. Tu peux arrêter quand tu veux." data-note-year="Soit 27 840 FCFA payés une fois dans l'année.">Payé chaque mois. Tu peux arrêter quand tu veux.</p>
+        <ul>
+          <li class="head">L'essentiel pour vendre</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Boutique faite pour le téléphone</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Tes produits et tes commandes</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Mobile money de ton pays</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Aide par WhatsApp</li>
+        </ul>
+        <a href="/inscription?plan=essentiel" class="btn btn-secondary btn-full">Choisir Essentiel</a>
+      </article>
+
+      <article class="plan best">
+        <div class="plan-badge">Le plus choisi</div>
+        <div class="plan-name">Business</div>
+        <p class="plan-desc">Pour les vendeurs actifs qui veulent structurer leur activité.</p>
+        <div class="price"><em data-month="4 900" data-year="3 920">4 900</em><span>FCFA / mois</span></div>
+        <p class="price-note" data-note-month="Payé chaque mois. Tu peux arrêter quand tu veux." data-note-year="Soit 47 040 FCFA payés une fois dans l'année.">Payé chaque mois. Tu peux arrêter quand tu veux.</p>
+        <ul>
+          <li class="head">Tout ce qu'il faut pour vendre chaque jour</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Beaucoup plus de produits</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Paiement par carte bancaire</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Ton propre nom de boutique (domaine)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Codes promo et réductions</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Aide prioritaire</li>
+        </ul>
+        <a href="/inscription?plan=business" class="btn btn-primary btn-full">Choisir Business</a>
+      </article>
+
+      <article class="plan">
+        <div class="plan-name">Pro</div>
+        <p class="plan-desc">Pour les marques qui veulent aller plus loin.</p>
+        <div class="price"><em data-month="9 900" data-year="7 920">9 900</em><span>FCFA / mois</span></div>
+        <p class="price-note" data-note-month="Payé chaque mois. Tu peux arrêter quand tu veux." data-note-year="Soit 95 040 FCFA payés une fois dans l'année.">Payé chaque mois. Tu peux arrêter quand tu veux.</p>
+        <ul>
+          <li class="head">Pour les boutiques qui grandissent</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Produits sans limite</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Jusqu'à 10 personnes dans ton équipe</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Boutique personnalisée à ta marque</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Un accompagnement dédié</li>
+        </ul>
+        <a href="/inscription?plan=pro" class="btn btn-secondary btn-full">Choisir Pro</a>
+      </article>
+    </div>
+
+    <details class="compare-wrap reveal">
+      <summary>Voir ce que contient chaque plan en détail</summary>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Ce que tu peux faire</th><th style="text-align:center">Essentiel</th><th style="text-align:center">Business</th><th style="text-align:center">Pro</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Nombre de produits</th><td>50</td><td>500</td><td>Sans limite</td></tr>
+            <tr><th scope="row">Nombre de commandes</th><td>Sans limite</td><td>Sans limite</td><td>Sans limite</td></tr>
+            <tr><th scope="row">Wave, Orange Money, MTN, Moov</th><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Paiement à la livraison</th><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Carte bancaire</th><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Produits à télécharger</th><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Ton propre nom de domaine</th><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Codes promo</th><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Chiffres de tes ventes</th><td>Simples</td><td>Détaillés</td><td>Détaillés</td></tr>
+            <tr><th scope="row">Personnes dans ton équipe</th><td>1</td><td>3</td><td>10</td></tr>
+            <tr><th scope="row">Aide</th><td>Standard</td><td>Prioritaire</td><td>Dédiée</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ FONDATEUR ============ -->
+<section class="section" style="background:var(--sky)">
+  <div class="container founder">
+    <div class="founder-card reveal">
+      <div class="founder-ava">IN</div>
+      <b>Ibuka Ndjoli</b>
+      <small>Fondateur de TEKKIShop &amp; entrepreneur e-commerce</small>
+    </div>
+    <div class="reveal">
+      <span class="label">Conçu à partir du terrain</span>
+      <h2>Fait par des gens qui ont vendu en ligne ici, avant toi.</h2>
+      <p class="quote">« Vendre en ligne depuis l'Afrique ne devrait pas demander un ordinateur, un développeur ou des connaissances techniques. »</p>
+      <p class="lead">TEKKIShop est né de plusieurs années passées à vendre en ligne et à accompagner des marques africaines. Notre travail, c'est de faire disparaître la partie technique pour que tu t'occupes de tes produits, de tes clients et de ton chiffre.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section" id="faq">
+  <div class="container faq-grid">
+    <div class="faq-side reveal">
+      <span class="label">Questions fréquentes</span>
+      <h2>On répond à tout.</h2>
+      <p class="lead">Tu peux créer ta boutique maintenant et la préparer à ton rythme.</p>
+      <a href="/inscription" class="btn btn-primary" style="margin-top:10px">Créer ma boutique</a>
+    </div>
+    <div class="faq-list reveal">
+      <article class="faq-item open"><button class="faq-q" aria-expanded="true">Les 30 jours gratuits me permettent-ils de vendre ?<i>+</i></button><div class="faq-a"><p>Pendant 30 jours, tu crées ta boutique et tu la prépares sans payer. Pour qu'elle soit visible par tes clients et que tu puisses encaisser, tu choisis un plan.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Je dois créer un compte avant de voir à quoi ça ressemble ?<i>+</i></button><div class="faq-a"><p>Non. Tu réponds d'abord à 5 questions et ta boutique se construit sous tes yeux. Tu ne crées ton compte qu'ensuite, avec ton numéro WhatsApp et un code PIN, pour pouvoir y revenir depuis n'importe quel téléphone.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Je n'ai ni ordinateur ni développeur. C'est possible quand même ?<i>+</i></button><div class="faq-a"><p>Oui. Tout se fait depuis ton téléphone, exactement comme quand tu publies une photo sur WhatsApp ou Instagram. Tu n'as besoin ni d'ordinateur, ni de développeur, ni d'agence : tu crées ta boutique toi-même, et un Assistant IA t'explique et te guide si tu bloques.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Combien de temps ça prend vraiment de créer ma boutique ?<i>+</i></button><div class="faq-a"><p>Tu réponds d'abord à 5 questions, ça prend environ 60 secondes et ta boutique se construit pendant ce temps. Tu crées ensuite ton compte avec ton numéro et un code PIN, puis tu ajoutes tes produits. En 5 minutes, ta boutique est en ligne.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Comment mes clients paient ?<i>+</i></button><div class="faq-a"><p>Par Wave, Orange Money, MTN MoMo, Moov Money, carte bancaire, ou en payant à la livraison. Les moyens proposés dépendent de ton pays.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Quand est-ce que je reçois mon argent ?<i>+</i></button><div class="faq-a"><p>L'argent encaissé est reversé sur ton compte mobile money ou bancaire. Tu vois chaque paiement dans ton espace vendeur.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Est-ce que je peux vendre des ebooks ou des formations ?<i>+</i></button><div class="faq-a"><p>Oui. Le client télécharge son fichier tout de suite après avoir payé. Tu n'as rien à envoyer toi-même.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Dans quels pays TEKKIShop fonctionne ?<i>+</i></button><div class="faq-a"><p>Au Sénégal, en Côte d'Ivoire, au Bénin, au Togo, au Mali et au Burkina Faso, ainsi que dans 5 pays d'Occident pour les vendeurs de la diaspora.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Est-ce que je peux vendre à des clients à l'étranger ?<i>+</i></button><div class="faq-a"><p>Oui. Ta boutique s'ouvre depuis n'importe quel pays. Les moyens de paiement s'adaptent au pays du client quand c'est possible.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Comment je partage ma boutique ?<i>+</i></button><div class="faq-a"><p>Chaque boutique a son propre lien, du type tekki.shop/tanomdeboutique. Tu le mets dans ton statut WhatsApp, ta bio Instagram ou TikTok, ou tu l'envoies directement.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Est-ce que je peux garder mon numéro WhatsApp sur la boutique ?<i>+</i></button><div class="faq-a"><p>Oui. Les boutons « Appeler » et « Écrire » restent affichés. Les clients qui préfèrent te parler avant d'acheter peuvent toujours le faire.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Et la livraison, comment ça se passe ?<i>+</i></button><div class="faq-a"><p>Tu choisis tes zones et tes frais de livraison. Chaque commande arrive avec le nom, le numéro et l'adresse du client, prêts à donner à ton livreur.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Que se passe-t-il si un client annule ou ne paie pas ?<i>+</i></button><div class="faq-a"><p>La commande reste en attente dans ton espace. Tu peux la relancer, la modifier ou l'annuler, et ton stock se remet à jour tout seul.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Est-ce que je peux changer de plan plus tard ?<i>+</i></button><div class="faq-a"><p>Oui, quand tu veux. Le changement est immédiat et la différence est ajustée sur ta prochaine facture.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Y a-t-il un engagement ou des frais cachés ?<i>+</i></button><div class="faq-a"><p>Aucun engagement. Tu paies au mois ou à l'année et tu arrêtes quand tu veux. Le prix affiché est le prix payé.</p></div></article>
+      <article class="faq-item"><button class="faq-q" aria-expanded="false">Si j'arrête de payer, je perds mes produits ?<i>+</i></button><div class="faq-a"><p>Non. Ta boutique n'est plus visible par les clients, mais tes produits, tes commandes et tes données sont conservés. Tout revient dès que tu réactives.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="cta-sec">
+  <div class="container">
+    <div class="cta-card reveal">
+      <h2>Ton téléphone peut devenir ta boutique. Aujourd'hui.</h2>
+      <p>Crée ta boutique, mets tes produits, partage ton lien. Tu as 30 jours pour tout préparer gratuitement.</p>
+      <div class="cta-actions">
+        <a href="/inscription" class="btn btn-light">Créer ma boutique gratuitement</a>
+        <button class="btn btn-ghost" data-open-demo>Voir une vraie boutique</button>
+      </div>
+      <p class="cta-micro">Aucune connaissance technique · Tu paies seulement quand tu ouvres ta boutique</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PIED DE PAGE ============ -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="#top" class="brand" style="color:#fff"><i class="brand-mark"></i> TEKKI<span style="color:#6fa5ff">Shop</span></a>
+        <p>La manière simple de créer une boutique en ligne, encaisser par mobile money et gérer ses ventes depuis son téléphone.</p>
+        <a class="foot-tt" href="https://www.tiktok.com/@tekkishop">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 1 1 .77-5.06V9.66a5.67 5.67 0 0 0-.77-.05A5.69 5.69 0 1 0 15.54 15.3V8.9a7.35 7.35 0 0 0 4.3 1.38V7.19a4.29 4.29 0 0 1-3.24-1.37Z"/></svg>
+          Suis-nous sur TikTok
+        </a>
+      </div>
+      <div class="foot-col">
+        <h4>Produit</h4>
+        <a href="#probleme">Pourquoi TEKKIShop</a>
+        <a href="#etapes">Comment ça marche</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="foot-col">
+        <h4>Apprendre &amp; être aidé</h4>
+        <a href="https://www.tiktok.com/@tekkishop">Nos vidéos TikTok</a>
+        <a href="https://wa.me/000000000">Support WhatsApp</a>
+        <a href="/contact">Nous contacter</a>
+      </div>
+      <div class="foot-col">
+        <h4>Légal</h4>
+        <a href="/cgu">Conditions d'utilisation</a>
+        <a href="/confidentialite">Confidentialité</a>
+        <a href="/mentions-legales">Mentions légales</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 TEKKIShop. Tous droits réservés.</span>
+      <span>Une solution de Dukka, pensée pour l'e-commerce en Afrique.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Bouton WhatsApp (bureau) -->
+<a class="whatsapp" href="https://wa.me/000000000" aria-label="Contacter TEKKIShop sur WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm5.8 14.15c-.24.68-1.4 1.3-1.94 1.34-.5.04-.98.22-3.3-.69-2.77-1.09-4.53-3.92-4.67-4.1-.13-.18-1.11-1.48-1.11-2.82 0-1.34.7-2 .95-2.27.25-.27.54-.34.72-.34l.52.01c.17 0 .39-.06.61.47.24.55.8 1.9.87 2.04.07.14.12.3.02.48-.1.18-.15.29-.29.45-.14.16-.3.35-.43.47-.14.14-.29.29-.13.57.17.27.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.61-.07.17-.2.7-.82.89-1.1.18-.27.37-.23.61-.14.25.09 1.58.75 1.85.88.27.14.45.2.52.32.07.11.07.66-.17 1.34Z"/></svg>
+</a>
+
+<!-- Barre d'action fixe sur mobile -->
+<div class="mobile-bar" id="mobileBar">
+  <a href="/inscription" class="btn btn-primary">Créer ma boutique gratuitement</a>
+  <a class="wa-btn" href="https://wa.me/000000000" aria-label="Nous écrire sur WhatsApp">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm5.8 14.15c-.24.68-1.4 1.3-1.94 1.34-.5.04-.98.22-3.3-.69-2.77-1.09-4.53-3.92-4.67-4.1-.13-.18-1.11-1.48-1.11-2.82 0-1.34.7-2 .95-2.27.25-.27.54-.34.72-.34l.52.01c.17 0 .39-.06.61.47.24.55.8 1.9.87 2.04.07.14.12.3.02.48-.1.18-.15.29-.29.45-.14.16-.3.35-.43.47-.14.14-.29.29-.13.57.17.27.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.61-.07.17-.2.7-.82.89-1.1.18-.27.37-.23.61-.14.25.09 1.58.75 1.85.88.27.14.45.2.52.32.07.11.07.66-.17 1.34Z"/></svg>
+  </a>
+</div>
+
+<!-- ============ MODALE : VRAIE BOUTIQUE ============ -->
+<div class="modal" id="demoModal" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <b id="demoTitle">Une vraie boutique TEKKIShop</b>
+      <button class="modal-close" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;place-items:center;padding:6px 0">
+<div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="st-cover">
+            <div class="st-cover-logo">♡ Viens on s'connaît</div>
+            <div class="st-cover-txt">Des jeux de cartes pour tisser des liens plus forts avec vos proches.</div>
+            <div class="st-boxes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="st-share">↗</div>
+          </div>
+          <div class="st-ava">Viens on<br>s'connaît</div>
+          <div class="st-body">
+            <div class="st-name">Viens on s'connaît
+              <span class="st-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            </div>
+            <div class="st-cat">Jeux de société</div>
+            <p class="st-desc">Les jeux de cartes qui vous rapprochent de vos proches | Couples – Amis – Famille</p>
+            <div class="st-pills">
+              <span class="st-pill">✓ +8000 jeux vendus</span>
+              <span class="st-pill">✓ Livraison gratuite à Dakar</span>
+            </div>
+            <div class="st-social">
+              <span class="st-ig">Instagram</span>
+              <span class="st-tt">TikTok</span>
+              <span class="st-fb">Facebook</span>
+            </div>
+            <button class="st-order" type="button" tabindex="-1">🛍 Commander</button>
+            <div class="st-sec">★ Coups de cœur</div>
+            <div class="st-favs">
+              <div class="st-fav"><i></i><div><b>Pour Les Amoureux</b><span>14 000 FCFA</span></div></div>
+              <div class="st-fav"><i></i><div><b>Et pourtant, on s'aimait</b><span>4 500 FCFA</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+            </div>
+      <p style="margin:16px auto 0;font-size:14px;color:var(--muted);text-align:center;max-width:420px">Boutique réelle créée avec TEKKIShop — <a href="https://tekki.shop/viensonsconnait" style="color:var(--blue-2);font-weight:600">tekki.shop/viensonsconnait</a></p>
+    </div>
+  </div>
+</div>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Les 30 jours gratuits permettent-ils de vendre ?","acceptedAnswer":{"@type":"Answer","text":"Pendant 30 jours, la boutique se crée et se prépare sans payer. Pour la rendre visible aux clients et encaisser, il faut choisir un plan."}},
+{"@type":"Question","name":"Faut-il un ordinateur pour utiliser TEKKIShop ?","acceptedAnswer":{"@type":"Answer","text":"Non. Tout se fait depuis un téléphone, sans connaissance technique et sans développeur."}},
+{"@type":"Question","name":"Combien de temps faut-il pour créer sa boutique ?","acceptedAnswer":{"@type":"Answer","text":"Environ 5 minutes pour ouvrir la boutique et publier les premiers produits."}},
+{"@type":"Question","name":"Comment les clients paient-ils ?","acceptedAnswer":{"@type":"Answer","text":"Par Wave, Orange Money, MTN MoMo, Moov Money, carte bancaire ou paiement à la livraison, selon le pays."}},
+{"@type":"Question","name":"Dans quels pays TEKKIShop fonctionne-t-il ?","acceptedAnswer":{"@type":"Answer","text":"Sénégal, Côte d'Ivoire, Bénin, Togo, Mali et Burkina Faso, ainsi que 5 pays d'Occident."}},
+{"@type":"Question","name":"Peut-on vendre des ebooks ou des formations ?","acceptedAnswer":{"@type":"Answer","text":"Oui. Le client télécharge son fichier immédiatement après le paiement."}}
+]}
+</script>
+
+<script>
+  /* Animations d'apparition */
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('visible'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: .1 });
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  }
+
+
+  /* --- Moteur d'animation des ecrans d'etapes --- */
+  function playScreen(root){
+    root.querySelectorAll('[data-appear]').forEach(function(el){
+      setTimeout(function(){ el.classList.add('in'); }, +el.dataset.appear || 0);
+    });
+
+    root.querySelectorAll('[data-type]').forEach(function(el){
+      var full = el.dataset.type, delay = +el.dataset.delay || 0;
+      var fld = el.closest('.fld');
+      setTimeout(function(){
+        if (fld) fld.classList.add('focus'); else el.classList.add('typing');
+        var i = 0;
+        var t = setInterval(function(){
+          el.textContent = full.slice(0, ++i);
+          if (i >= full.length){
+            clearInterval(t);
+            setTimeout(function(){
+              if (fld) fld.classList.remove('focus');
+              el.classList.remove('typing');
+            }, 300);
+          }
+        }, 32);
+      }, delay);
+    });
+
+    root.querySelectorAll('[data-count]').forEach(function(el){
+      var target = +el.dataset.count, delay = +el.dataset.delay || 0, suf = el.dataset.suffix || '';
+      setTimeout(function(){
+        var dur = 950, t0 = performance.now();
+        (function frame(now){
+          var k = Math.min(1, (now - t0) / dur);
+          var v = Math.round(target * (1 - Math.pow(1 - k, 3)));
+          el.textContent = v.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ') + suf;
+          if (k < 1) requestAnimationFrame(frame);
+        })(performance.now());
+      }, delay);
+    });
+
+    root.querySelectorAll('[data-swap]').forEach(function(el){
+      var txt = el.dataset.swap, delay = +el.dataset.delay || 0;
+      setTimeout(function(){ el.innerHTML = txt; el.classList.add('copied'); }, delay);
+    });
+
+    root.querySelectorAll('[data-swatch]').forEach(function(box){
+      var items = box.querySelectorAll('i');
+      box.dataset.swatch.split(',').forEach(function(pair){
+        var bits = pair.split(':'), idx = +bits[0], at = +bits[1];
+        setTimeout(function(){
+          items.forEach(function(i){ i.classList.remove('on'); });
+          if (items[idx]) items[idx].classList.add('on');
+        }, at);
+      });
+    });
+
+    root.querySelectorAll('[data-prog]').forEach(function(el){
+      el.dataset.prog.split(',').forEach(function(pair){
+        var bits = pair.split(':');
+        setTimeout(function(){ el.style.width = bits[0] + '%'; }, +bits[1] || 0);
+      });
+    });
+
+    root.querySelectorAll('[data-pin]').forEach(function(box){
+      var cells = box.querySelectorAll('i'), start = +box.dataset.delay || 0;
+      cells.forEach(function(cell, k){
+        setTimeout(function(){
+          cells.forEach(function(c){ c.classList.remove('active'); });
+          cell.classList.add('filled');
+          if (cells[k + 1]) cells[k + 1].classList.add('active');
+        }, start + k * 230);
+      });
+    });
+
+    root.querySelectorAll('[data-ready]').forEach(function(el){
+      setTimeout(function(){ el.classList.add('ready'); }, +el.dataset.ready || 0);
+    });
+  }
+
+  function finalState(root){
+    root.querySelectorAll('[data-appear]').forEach(function(el){ el.classList.add('in'); });
+    root.querySelectorAll('[data-type]').forEach(function(el){ el.textContent = el.dataset.type; });
+    root.querySelectorAll('[data-count]').forEach(function(el){
+      el.textContent = (+el.dataset.count).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ') + (el.dataset.suffix || '');
+    });
+    root.querySelectorAll('[data-swap]').forEach(function(el){ el.innerHTML = el.dataset.swap; el.classList.add('copied'); });
+    root.querySelectorAll('[data-prog]').forEach(function(el){
+      el.style.width = el.dataset.prog.split(',').pop().split(':')[0] + '%';
+    });
+    root.querySelectorAll('[data-pin] i').forEach(function(c){ c.classList.add('filled'); });
+    root.querySelectorAll('[data-swatch]').forEach(function(box){
+      var last = box.dataset.swatch.split(',').pop().split(':')[0];
+      var items = box.querySelectorAll('i');
+      if (items[+last]) items[+last].classList.add('on');
+    });
+  }
+
+  var screens = document.querySelectorAll('.step-media .app');
+  if (reduce) {
+    screens.forEach(finalState);
+  } else {
+    var so = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){ playScreen(e.target); so.unobserve(e.target); }
+      });
+    }, { threshold: .35 });
+    screens.forEach(function(el){ so.observe(el); });
+  }
+
+  /* Menu mobile */
+  var toggle = document.querySelector('.menu-toggle');
+  var mobileMenu = document.getElementById('mobileMenu');
+  toggle.addEventListener('click', function(){
+    var open = mobileMenu.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? '\u2715' : '\u2630';
+  });
+  mobileMenu.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      mobileMenu.classList.remove('open');
+      toggle.setAttribute('aria-expanded','false');
+      toggle.textContent = '\u2630';
+    });
+  });
+
+  /* Barre d'action mobile : apparait apres le hero, disparait sur le CTA final */
+  var bar = document.getElementById('mobileBar');
+  var hero = document.querySelector('.hero');
+  var ctaSec = document.querySelector('.cta-sec');
+  function updateBar(){
+    if (window.innerWidth > 760) { bar.classList.remove('show'); return; }
+    var passedHero = window.scrollY > hero.offsetHeight * 0.85;
+    var ctaTop = ctaSec.getBoundingClientRect().top;
+    var atCta = ctaTop < window.innerHeight * 0.9;
+    bar.classList.toggle('show', passedHero && !atCta);
+  }
+  window.addEventListener('scroll', updateBar, { passive: true });
+  window.addEventListener('resize', updateBar);
+  updateBar();
+
+  /* Bascule mensuel / annuel */
+  document.querySelectorAll('.toggle button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var period = btn.dataset.period;
+      document.querySelectorAll('.toggle button').forEach(function(b){
+        var on = b === btn;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+      document.querySelectorAll('.price em').forEach(function(el){ el.textContent = el.dataset[period]; });
+      document.querySelectorAll('.price-note').forEach(function(el){
+        el.textContent = period === 'year' ? el.dataset.noteYear : el.dataset.noteMonth;
+      });
+    });
+  });
+
+  /* FAQ */
+  document.querySelectorAll('.faq-q').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var item = btn.closest('.faq-item');
+      var open = item.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+
+  /* Modale */
+  var modal = document.getElementById('demoModal');
+  var closeBtn = modal.querySelector('.modal-close');
+  var lastFocused = null;
+  function openModal(){
+    lastFocused = document.activeElement;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+    if (lastFocused) lastFocused.focus();
+  }
+  document.querySelectorAll('[data-open-demo]').forEach(function(b){ b.addEventListener('click', openModal); });
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if (!modal.classList.contains('open')) return;
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (e.key === 'Tab') {
+      var f = modal.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+</script>
+</body>
+</html>
