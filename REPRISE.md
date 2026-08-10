@@ -90,7 +90,7 @@ Les deux somment `order_items.line_total` au lieu d'imputer la remise par ligne.
 5. **Lots 2 à 5** du redesign boutique (Lot 3 inclut le découpage de `updateBusinessDesign`, trop large aujourd'hui, et le calcul de `response_time_minutes`).
 6. **Page Tarifs** — différée, pas encore ouverte. À l'ouverture, séparer explicitement ce qui peut partir immédiatement (corrections de texte, ce qui est déjà tranché — voir §5) de ce qui dépend de la matrice `plan-features.ts` définitive (celle-ci reflète encore une version antérieure, voir §5) : ne pas mélanger les deux dans un même chantier.
 7. **Gating des codes promo** (Business/Pro uniquement, codes Découverte existants continuent de fonctionner) — **non chiffré, à instrumenter** : il manque le nombre de boutiques Découverte ayant des codes actifs. Ne pas confondre avec le chiffre du §7 (9 boutiques Découverte à 11-17 produits) : celui-là concerne la limite de produits du plan, pas les codes promo — deux mesures distinctes.
-8. **Gating des SMS par plan** — **non chiffré, à instrumenter** : volume mensuel de SMS par plan, coût correspondant, part des commandes payées à la livraison, taux de remplissage du champ e-mail.
+8. **Gating des SMS par plan** — conception décidée, chiffres manquants. Décidé : notifications par e-mail via Resend sur les trois plans, SMS automatiques en plus pour Business et Pro uniquement. Aucun palier ne perd d'information. Trois pistes de réduction à arbitrer une fois les chiffres connus : réserver le SMS à l'acheteur et non au marchand, qui dispose déjà du tableau de bord et de l'e-mail ; ne déclencher que sur les statuts qui comptent ; plafonner mensuellement par plan. Ajouter un compteur de SMS par boutique et par mois. Non chiffré : volume mensuel par plan, coût correspondant à 15 FCFA l'unité, part des commandes payées à la livraison, taux de remplissage du champ e-mail du tunnel.
 
 ---
 
@@ -103,6 +103,12 @@ Conséquences déjà actées :
 - **Liens sociaux** : ouverts aux trois plans, même raison.
 - **Image de couverture** : descendue en disponibilité — accessible dès le plan Business, plus réservée à Pro.
 - **Typographie boutiques publiques et landing** : Bricolage Grotesque + Inter (documentée dans `AI_RULES.md` §1). Les maquettes utilisent Instrument Sans dans les fichiers de design, mais c'est Inter qui fait foi en production.
+
+**Coups de cœur** : déjà universels dans le code, sans aucune condition de plan (`ProductGrid.tsx`, seul `is_featured` compte). La page Tarifs les annonce à tort comme un avantage Pro — c'est la page qui est fausse, pas le code. Aucune fermeture : ce serait retirer une fonctionnalité en usage.
+
+**Corrections décidées de la page Tarifs**, à porter dans `PricingSection.tsx` et le tableau dépliant, les deux devant dire la même chose : la ligne « 0 % de commission » de la carte Pro devient un encaissement sur son propre compte Bictorys, présenté comme une option qu'ouvre le plan Pro, jamais comme une réduction automatique — sans clés propres, un Pro paie 3 % comme les autres, ce qui couvre 1,5 % Bictorys plus 1 à 1,5 % d'opérateur au retrait. Les Coups de cœur sortent de la carte Pro. L'image de couverture entre dans la carte Business et sort de sa liste barrée. La liste barrée de Découverte se complète des notifications SMS, des codes promo et du tableau de bord avancé — elle ne montrait jusqu'ici que ce que Pro ajoute, jamais ce que Business débloque. Le badge de vérification n'apparaît nulle part sur cette page et ne doit pas y être ajouté : il devient éligible sur les trois plans, sur dossier.
+
+Les 3 boutiques Pro sans clé Bictorys propre (§7) sont un choix assumé de leur part : elles préfèrent payer 3 % plutôt que d'intégrer un agrégateur. Ce n'est pas un défaut à corriger.
 
 **`src/lib/plan-features.ts` (Lot 1, non commité) implémente une version antérieure de cette matrice** — `coverImage` et `richDescription` y sont encore réservés à `pro` uniquement, alors que la décision ci-dessus les ouvre plus largement. **À revoir explicitement quand la page Tarifs sera ouverte** (§4, point 6) — ne pas corriger isolément avant.
 
@@ -130,7 +136,7 @@ Mesurés le 2026-08-09/10, cette session, sauf mention contraire :
 - **Reversements (`payouts`)** : les **15 lignes historiques** en base sont **toutes à 3 %** de commission — aucune n'a jamais été enregistrée à 0 %. Confirme que l'unification du calcul de commission (§4) ne corrige pas une perte déjà survenue, seulement un risque futur.
 - **Boutiques Découverte proches ou au-delà de la limite de produits** : **9 boutiques**, entre **11 et 17 produits** chacune — pertinent pour l'application du plafond de 10 produits (`plan-features.ts`), sans lien avec les codes promo (voir §4, point 7, la distinction a été corrigée après une confusion des deux chiffres).
 - **Boutiques Pro** : **3 boutiques** sans clé Bictorys propre (`bictorys_secret_key IS NULL`) — pertinent pour la règle de commission du §4.
-- **Audit sécurité** : **zéro preuve d'exploitation** trouvée sur les deux angles vérifiés cette session (angles non retranscrits précisément ici, faute de note exacte au moment d'écrire ce document).
+- **Audit sécurité** : zéro preuve d'exploitation sur les deux angles vérifiés. Angle 1 — boutiques `trial_model='free_orders'` actives (`status='active'` ou `is_active=true`) sans événement `shop_events.event_name='plan_activated'` correspondant : 0 résultat. Angle 2 — commandes avec `released_at` renseigné sans paiement `completed` associé : 0 résultat.
 - **Décomposition des commandes (§3)** : 514 commandes au total, 14 à écart de remise non nul, 54 325 FCFA concernés, invariant vérifié sans exception.
 
 **Mesures de référence LCP/poids, 9 août 2026, avant toute modification de rendu :**
