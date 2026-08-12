@@ -83,14 +83,17 @@ export const metadata: Metadata = {
     title: APP_NAME,
   },
   icons: {
-    icon:  '/favicon.png',
-    apple: '/favicon.png',
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon-180x180.png',
   },
   robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0EA5E9',
+  themeColor: '#0252EA',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
