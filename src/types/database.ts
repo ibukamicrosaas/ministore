@@ -454,6 +454,11 @@ export type Database = {
           is_held: boolean
           held_notified_at: string | null
           released_at: string | null
+          promo_id: string | null
+          promo_code: string | null
+          promo_discount_pct: number | null
+          discount_amount: number
+          deposit_percentage: number | null
           created_at: string
           updated_at: string
         }
@@ -483,6 +488,11 @@ export type Database = {
           is_held?: boolean
           held_notified_at?: string | null
           released_at?: string | null
+          promo_id?: string | null
+          promo_code?: string | null
+          promo_discount_pct?: number | null
+          discount_amount?: number
+          deposit_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -512,6 +522,11 @@ export type Database = {
           is_held?: boolean
           held_notified_at?: string | null
           released_at?: string | null
+          promo_id?: string | null
+          promo_code?: string | null
+          promo_discount_pct?: number | null
+          discount_amount?: number
+          deposit_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -526,6 +541,7 @@ export type Database = {
           variant_label: string | null
           unit_price: number
           quantity: number
+          quantity_discount_pct: number | null
           line_total: number
           created_at: string
         }
@@ -537,6 +553,7 @@ export type Database = {
           variant_label?: string | null
           unit_price: number
           quantity?: number
+          quantity_discount_pct?: number | null
           line_total: number
           created_at?: string
         }
@@ -548,6 +565,7 @@ export type Database = {
           variant_label?: string | null
           unit_price?: number
           quantity?: number
+          quantity_discount_pct?: number | null
           line_total?: number
           created_at?: string
         }

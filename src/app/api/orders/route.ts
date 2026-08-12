@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
   const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
 
   // Stock check + calcul des prix serveur
-  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number; customization_note: string | null }
+  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number; customization_note: string | null; quantity_discount_pct: number | null }
   const serverItems: ServerItem[] = []
 
   for (const it of items) {
@@ -170,14 +170,18 @@ export async function POST(req: NextRequest) {
       }
     }
     // Remise par quantité — calculée serveur depuis les règles en DB
+    let quantityDiscountPct: number | null = null
     if (Array.isArray(p.quantity_discounts) && p.quantity_discounts.length > 0) {
       const applicable = p.quantity_discounts
         .filter((d: { min_qty: number; discount_pct: number }) => it.quantity >= d.min_qty)
         .sort((a: { min_qty: number }, b: { min_qty: number }) => b.min_qty - a.min_qty)
       const discountPct = applicable[0]?.discount_pct ?? 0
-      if (discountPct > 0) unit_price = Math.floor(unit_price * (100 - discountPct) / 100)
+      if (discountPct > 0) {
+        unit_price = Math.floor(unit_price * (100 - discountPct) / 100)
+        quantityDiscountPct = discountPct
+      }
     }
-    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null })
+    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null, quantity_discount_pct: quantityDiscountPct })
   }
 
   // On ne prend l'argent du client que si on peut le livrer sans le marchand
@@ -234,16 +238,19 @@ export async function POST(req: NextRequest) {
 
   // Réserver le code promo de façon atomique : UPDATE conditionnel en une seule instruction SQL.
   // Élimine la race condition du pattern SELECT-then-UPDATE.
-  let promoId:     string | null = null
-  let discountPct: number        = 0
+  let promoId:       string | null = null
+  let discountPct:   number        = 0
+  let appliedPromoCode: string | null = null
   if (promo_code) {
+    const trimmedCode = promo_code.trim()
     const { data: promoRows } = await (supabase.rpc as unknown as
       (fn: string, args: Record<string, unknown>) => Promise<{ data: { promo_id: string; discount_pct: number }[] | null }>
-    )('reserve_promo_code', { p_code: promo_code.trim(), p_shop_id: shopId })
+    )('reserve_promo_code', { p_code: trimmedCode, p_shop_id: shopId })
 
     if (promoRows && promoRows.length > 0) {
-      promoId     = promoRows[0].promo_id
-      discountPct = promoRows[0].discount_pct
+      promoId          = promoRows[0].promo_id
+      discountPct      = promoRows[0].discount_pct
+      appliedPromoCode = trimmedCode.toUpperCase()
     }
   }
 
@@ -264,6 +271,22 @@ export async function POST(req: NextRequest) {
     deposit_amount = discountPct > 0 ? Math.floor(rawDeposit * (100 - discountPct) / 100) : rawDeposit
   } else if (payment_type === 'online_full') {
     deposit_amount = total_price
+  }
+
+  // Taux d'acompte effectif à persister — seulement si tous les articles du
+  // panier partagent le même taux. Le taux est par produit avec repli
+  // boutique (ligne ci-dessus) : sur un panier mixte, aucune valeur unique
+  // ne le représente honnêtement. Point non tranché, cf. SPEC-refonte-
+  // tunnel-commande.md §15.1 (migration de paymentType vers un acompte
+  // explicite) — NULL plutôt qu'une valeur inventée en attendant.
+  let deposit_percentage: number | null = null
+  if (payment_type === 'online_deposit') {
+    const pcts = serverItems.map(it => {
+      const p = productMap.get(it.product_id)
+      return p?.deposit_percentage ?? shop.deposit_percentage ?? 0
+    })
+    const uniform = pcts.every(pct => pct === pcts[0])
+    deposit_percentage = uniform ? pcts[0] : null
   }
 
   // ── Phase 1 : Réservation atomique du stock AVANT création de la commande ─
@@ -360,6 +383,11 @@ export async function POST(req: NextRequest) {
       deposit_paid:       false,
       total_price,
       notes:              notes ?? null,
+      promo_id:           promoId,
+      promo_code:         appliedPromoCode,
+      promo_discount_pct: promoId ? discountPct : null,
+      discount_amount:    discountAmount,
+      deposit_percentage,
     })
     .select('id, client_token, is_held')
     .single()
@@ -450,6 +478,7 @@ export async function POST(req: NextRequest) {
       quantity:           it.quantity,
       line_total:         it.unit_price * it.quantity,
       customization_note: it.customization_note,
+      quantity_discount_pct: it.quantity_discount_pct,
     }))
   )
 
