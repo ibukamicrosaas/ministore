@@ -1,0 +1,325 @@
+# Reprise — TEKKIShop
+
+> Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
+>
+> Dernière mise à jour : 2026-08-12.
+
+---
+
+## 0. Périmètre de la livraison 1 — figé le 2026-08-12
+
+**Rien de nouveau n'y entre.** Elle ne contient que ce qui existe déjà et n'a jamais été vu en production, plus un correctif de performance :
+
+1. Fusion de la PR #4 (`088`/`089`) dans `main`.
+2. Relecture et commit du Lot 1 sur `refonte-start` (l'utilisateur regroupe), avec remise en place de `086`/`087` depuis `supabase/migrations-pending/` au moment du commit.
+3. Commit des fichiers orphelins du chantier des montants : `090`, `091`, `scripts/check-order-totals-invariant.sql`, `scripts/check-stock-not-orphaned.sql`.
+4. Correctif favicon, avec nouvelle mesure LCP immédiatement après (§4 point 2 ci-dessous) — c'est cette nouvelle mesure qui fait foi, pas celle de production actuelle.
+5. Fusion de `main` dans `refonte-start`, puis de `refonte-start` dans `dev`.
+6. Recette manuelle sur la préversion (par l'utilisateur).
+7. `dev` vers `main` après validation.
+
+**Explicitement hors périmètre, aucun de ces sujets ne doit s'ouvrir avant cette mise en production** — tous réels, tous tracés dans ce document : la refonte du tunnel de commande (livraison 2, voir §4 point 0), la mesure segmentée par motif de sortie d'essai, `BF`/`BK`, le `FCFA` en dur dans le tunnel, les pays au-delà des six couverts, Stripe Connect jamais validé en conditions réelles, l'unification du calcul de commission, la garde sur `resend-digital`, l'idempotence du webhook Bictorys, la restitution du stock à l'expiration/l'annulation.
+
+**Contexte qui a motivé ce figement** : inventaire du 2026-08-12 sur `refonte-start` (landing v6, `/start` v4, modèle à 3 commandes, redesign boutique) — l'essentiel de ce qui semblait rester à construire existe déjà en code, sur une branche jamais mise en production. 1 541 boutiques existantes n'ont jamais vu ce travail.
+
+---
+
+## 1. État technique
+
+**Appliqué en base (Supabase, projet lié), vérifié :**
+- `088_lockdown_activate_free_orders_shop.sql` — verrouille `activate_free_orders_shop` (`EXECUTE` retiré à `anon`/`authenticated`, restauré à `service_role` seul).
+- `089_lockdown_remaining_functions.sql` — verrouille les 17 fonctions restantes du schéma `public` (hors `088` et hors les 3 `get_my_*` intouchées).
+
+**Git :**
+- Branche `hotfix/lockdown-activate-free-orders-shop` : `088` + `089` + `scripts/check-function-privileges.sql`, poussée sur origin.
+- **PR #4 ouverte, non fusionnée** : https://github.com/ibukamicrosaas/ministore/pull/4 — base `main`, autonome (pas de bundle avec la refonte boutique). Fusion prévue par l'utilisateur lui-même après relecture, pas automatique.
+- **Politique `.gitignore` sur les `.md` inversée sur `main`, en deux commits** : les `.md` sont désormais suivis par défaut (l'ancien blanket `*.md` faisait disparaître chaque nouvelle spec sans qu'on le remarque — trois fichiers sauvés de justesse le 9-10 août). Suivis en conséquence : `AI_RULES.md`, `REPRISE.md`, `SPEC-refonte-tunnel-commande.md`, `SPEC-v2-refonte-boutiques-publiques.md`, `NOTE-cadrage-refonte-boutiques.md`, `BRIEF-REFONTE-LANDING-TEKKISHOP.md`, `ADDITIF-argent-commandes-retenues.md` (récupéré depuis `~/Downloads`, cité par son nom dans `route.ts`), `SPEC-3-commandes-offertes.md`, `NOTE_MASQUAGE_COMMANDES.md`, `NOTE_DUPLICATION_PAYOUT_BICTORYS.md`, `NOTE_ERREURS_SUPABASE_NON_VERIFIEES.md`, `ARCHITECTURE.md`, `PRD.md`, `SECURITY.md`, `SCALING.md`, `bictorys-api-integration.md`, `lafricamobile-integration.md`, `DIGITAL_PRODUCTS_SPEC.md`, `chatbot-tekkishop.md`, `README.md`, plus les maquettes `tekkishop-boutique-accueil.html`, `tekkishop-boutique-produit.html`, `tekkishop-landing-v6.html`. Historique clos déplacé (suivi quand même — un document clos garde sa valeur) dans `docs/archive/` : `BACKLOG.md`, `NEXT_STEPS.md`, `ONBOARDING_SPEC.md`, `PRODUCT.md`, `TECH.md`, `analyse-landing.md`, `VENTE_LISTING.md`, `MIGRATION_REPAIR_PLAN.md`. Non tranchés, laissés visibles mais non suivis : `AGENTS.md`, `CLAUDE.md` (non mentionnés, pas décidés seul), `IMPROVEMENTS.md` (voir §8).
+- `refonte-start` : plafond committé réel = `085` (vérifié par diff, pas supposé). `086_product_variants.sql`/`087_shops_verification.sql` (migrations du Lot 1) existent en fichiers mais ne sont pas commitées.
+- **Tout le Lot 1 (redesign boutique) est non commité sur `refonte-start`, mêlé aux modifications de CGU/politique de confidentialité de l'utilisateur dans le même arbre de travail.** Fichiers Lot 1 : les deux migrations ci-dessus, `src/lib/plan-features.ts`, `src/lib/actions/product-limit.ts` (nouveaux), `SettingsForm.tsx`, `ReviewForm.tsx`, `[shop-slug]/layout.tsx` (pose de `--brand`, retrait de la surcharge `--color-primary` — vérifié : plus aucune référence à `--color-primary` dans `[shop-slug]/`, le renommage est cohérent de bout en bout dans cet arbre), `[shop-slug]/produit/[id]/page.tsx`, `[shop-slug]/commande/[token]/page.tsx`, `import-csv/route.ts`, `onboarding.ts`, `products.ts`. CGU/privacy : `src/app/legal/cgu/page.tsx`, `src/app/legal/privacy/page.tsx` — jamais à modifier par un agent, seulement à afficher pour relecture.
+
+**Ce « Lot 1 » et le « Lot 1 — Fondations » de `SPEC-v2-refonte-boutiques-publiques.md` §14 sont le même chantier, décrit deux fois sous deux angles** : ici par ses fichiers modifiés, dans la spec par sa fonction (table `product_variants`, matrice de plan réelle, `--brand` unifié, colonnes de vérification). Les deux se recoupent effectivement : migrations `086`/`087`, `--brand` posé dans `[shop-slug]/layout.tsx`, `plan-features.ts` créé. Noté ici pour ne pas rouvrir la question à chaque session.
+
+**Désynchronisme découvert le 2026-08-11 entre l'historique de migration distant et le contenu réel de la base — ne pas relancer `supabase db push --include-all` avant réparation.** `npx supabase migration list --linked` montre les migrations `062` à `083` (22 fichiers, y compris `071` et `081`) présentes localement mais **absentes de l'historique distant**, alors que `033`-`061` et `084`-`085` sont présentes des deux côtés. Une tentative de `db push --include-all` a échoué sur `062` (`CREATE POLICY` déjà existante, SQLSTATE 42710) après une série de `already exists, skipping` — preuve que le contenu de `062` est déjà appliqué en base, seul le suivi ne le sait pas. **Vérifié objet par objet le 2026-08-11, sans Docker, via `supabase db query --linked` (accès direct, en lecture, à `information_schema`/`pg_catalog`)** : les 39 objets structurels attendus des 22 migrations (tables, colonnes, index, policies, triggers, fonctions, contraintes) sont **tous présents**, y compris les versions finales des objets réécrits plusieurs fois dans la séquence (`activate_free_orders_shop` retourne bien 3 colonnes comme `083`, pas 2 comme `074`/`077` ; `handle_free_order_quota` contient bien le garde `is_active=true` de `078` ; `shops_public_read` correspond exactement à la définition de `078`, pas à celle de `069` ; `orders_status_check` autorise bien `'completed'` comme posé par `082` ; `payouts_payout_method_check` inclut bien `mobicash`/`maxit` comme posé par `064`). Le commentaire de `081` et l'effet de données de `071` sont également conformes. **Un seul policy sur `country_manager_payouts`** (pas de doublon) — confirme que la tentative de push échouée n'a rien laissé à moitié appliqué. **Réparé le 2026-08-11** : `supabase migration repair --status applied 062...083 --linked`, exécuté après la vérification objet par objet ci-dessus. `supabase migration list --linked` confirme `001` à `085` alignés Local=Remote de bout en bout.
+
+**`088`/`089` réparées le 2026-08-12, même méthode.** Ces deux fichiers n'existent que sur la branche `hotfix/lockdown-activate-free-orders-shop` (jamais sur `main` ni `refonte-start`) — appliquées en base directement lors de la session précédente, jamais enregistrées dans l'historique. Vérifié indépendamment avant réparation (pas fait confiance à la note « Appliqué en base, vérifié » de ce même document) : les 18 fonctions ciblées testées une à une avec `has_function_privilege` — `anon`/`authenticated` bloquées sur les 18 sans exception (la propriété de sécurité tient). `service_role` exécute 7 fonctions sans `GRANT` explicite dans `089` — expliqué au §2 (`pg_default_acl`, bénin). **Obstacle technique rencontré et sa solution, à réutiliser si le cas se reproduit** : `supabase migration repair` exige que le fichier de migration existe localement (glob), même si l'opération elle-même ne touche que la table de suivi. Contourné en matérialisant temporairement `088_*.sql`/`089_*.sql` depuis `hotfix/…` via `git show hotfix/...:chemin > fichier` (jamais `git checkout`, jamais `git add` — fichiers non trackés, working tree de `refonte-start` non touché autrement), réparation lancée, fichiers supprimés immédiatement après. `git status` vérifié propre avant et après.
+
+`supabase migration list --linked` confirme désormais `001` à `085` (Local=Remote) et `088`/`089` (Remote seul, normal — pas de fichier local sur cette branche). Restent en écart, attendus : `086`/`087` (Lot 1 non commité), `090`/`091` (écrites, en attente d'application — voir ci-dessous).
+- Requête de préservation des badges "Pro" : **écrite, pas seulement décrite** — commentée dans `supabase/migrations/087_shops_verification.sql:25-26` (`UPDATE shops SET verification_status = 'verified', verified_at = NULL WHERE plan = 'pro'`). Ni décommentée ni appliquée. Correspond à SPEC-v2 §8 ("Point commercial, pas technique").
+
+**Ordre de réconciliation avec `main` — à respecter strictement, ne pas inverser :**
+1. Relecture du diff du Lot 1 par l'utilisateur (en cours).
+2. Commit du Lot 1 sur `refonte-start` (l'utilisateur indique lesquels regrouper — ne pas décider seul). **Prérequis explicite ajouté le 2026-08-12 : avant ce commit, remettre `086_product_variants.sql` et `087_shops_verification.sql` de `supabase/migrations-pending/` vers `supabase/migrations/`.** C'est à ce moment précis que le risque d'oubli se referme — voir note ci-dessous.
+3. Seulement ensuite : fusionner `main` (qui contiendra `088`+`089` une fois la PR #4 fusionnée) dans `refonte-start`.
+
+Ne jamais fusionner `main` dans `refonte-start` tant que l'arbre de travail contient encore le Lot 1 et les modifications CGU non commitées — fusionner dans un arbre sale mélangerait ce que la session a explicitement pris soin de séparer.
+
+**`086`/`087` déplacés vers `supabase/migrations-pending/` le 2026-08-12 — provisoire, pas une solution.** Tant qu'ils restaient dans `supabase/migrations/` sans être prêts, aucun `db push` n'était sûr sur cette branche (règle écrite dans `AI_RULES.md`, section « Application des migrations »). Le déplacement ferme ce risque immédiatement, mais **la vraie sortie est le commit du Lot 1 (étape 2 ci-dessus)** : une fois commités, ces fichiers ne partent en production que le jour de la fusion de `refonte-start`, et redeviennent visibles pour l'outillage au moment normal. Le déplacement est un pansement en attendant la relecture, à annuler — remettre les fichiers dans `supabase/migrations/` — au moment du commit du Lot 1, pas avant, pas oublié après.
+
+---
+
+## 2. La découverte plateforme
+
+**`ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` ne protège pas les fonctions futures sur cette base Supabase.** Un mécanisme de plateforme — invisible dans `pg_proc`, `pg_event_trigger` et `pg_default_acl` — ajoute `EXECUTE` à `PUBLIC` de façon inconditionnelle à la création d'une fonction dans `public`, quel que soit l'état des privilèges par défaut.
+
+**Méthode d'élimination** (voir commentaire complet dans `supabase/migrations/089_lockdown_remaining_functions.sql`, au-dessus de la clause `ALTER DEFAULT PRIVILEGES`) :
+1. `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated` appliqué et vérifié par `SELECT` direct sur `pg_default_acl` — la ligne ne contenait effectivement plus `PUBLIC`/`anon`/`authenticated`.
+2. Une fonction créée juste après, dans la même transaction, obtenait quand même `EXECUTE` pour `PUBLIC` (`proacl` le montrait explicitement).
+3. Les 7 event triggers de la base lus un par un pour écarter cette piste : `rls_auto_enable` ne cible que les `CREATE TABLE` ; `grant_pg_cron_access`, `grant_pg_net_access`, `grant_pg_graphql_access` ne se déclenchent que sur `CREATE EXTENSION` ; `pgrst_ddl_watch` se contente d'un `NOTIFY`. Aucun n'accorde `EXECUTE` sur une fonction.
+4. Conclusion : le mécanisme responsable n'est identifiable par aucune requête SQL disponible — probablement un hook de plateforme (type `supautils`), hors de portée de ce dépôt.
+
+**Décision prise en conséquence :** pas d'event trigger maison pour contourner ce mécanisme — tant qu'il reste une boîte noire, un trigger pourrait s'exécuter avant une éventuelle réinjection et donner un faux sentiment de protection sans le signaler. La protection fiable est le `REVOKE` explicite posé dans la même migration que chaque `CREATE FUNCTION` (règle dans `AI_RULES.md` §3), avec `scripts/check-function-privileges.sql` comme filet rejouable à la demande — il détecte l'anomalie quelle qu'en soit la cause, sans dépendre de comprendre le mécanisme.
+
+**Reste à faire, hors ingénierie** : demander au support Supabase quel composant ajoute `EXECUTE` à `PUBLIC` sur les fonctions de `public`, et s'il est désactivable.
+
+**Pendant bénin de cette injection, trouvé le 2026-08-12 en vérifiant indépendamment 088/089** : `pg_default_acl` contient une ligne `role=postgres, schema=public, objtype='f' (function)` dont l'ACL inclut `service_role` — un privilège par défaut préexistant qui accorde automatiquement `EXECUTE` à `service_role` sur toute nouvelle fonction créée par `postgres` dans `public`, indépendamment de tout `GRANT` explicite écrit dans une migration. Constaté sur 7 fonctions de `089` (`cleanup_old_login_attempts`, `cleanup_pin_resets`, `increment_promo_used_count`, `handle_new_user`, `update_updated_at`, `rls_auto_enable`, `handle_free_order_quota`) : la migration ne leur écrit aucun `GRANT` explicite, `service_role` peut pourtant toutes les exécuter — pas une anomalie, cette ligne de `pg_default_acl` l'explique entièrement. Sans risque : `service_role` est déjà la clé de confiance maximale du projet, jamais exposée côté client. À la différence de l'injection `PUBLIC` ci-dessus, celle-ci est visible et expliquée dans `pg_default_acl` — pas une boîte noire.
+
+---
+
+## 3. L'enquête de ce soir — décomposition des montants de commande
+
+Déclenchée par un constat d'affichage sur une commande de test (§7) : le récapitulatif de suivi de commande n'affiche ni sous-total ni remise, seulement le total. Investigation menée jusqu'à la portée réelle du problème avant d'écrire une migration.
+
+**Constat central : la décomposition d'une commande n'est pas persistée, seul le total final l'est.**
+- `order_items.line_total` intègre déjà la remise sur quantité (le prix unitaire est réduit avant insertion) — pas de perte là.
+- `orders.delivery_price` est persisté correctement.
+- La remise promo, elle, est calculée en mémoire dans `src/app/api/orders/route.ts` puis jetée : ni le code promo, ni son pourcentage, ni le montant de remise ne sont écrits sur `orders` ou `order_items`.
+- Le taux d'acompte (`deposit_percentage`) subit le même sort : seul le montant final (`orders.deposit_amount`) est conservé, jamais le taux qui l'a produit.
+- `reserve_promo_code`/`release_promo_code` (`supabase/migrations/045_security_promo_atomic.sql`) ne touchent que `promo_codes.used_count` — aucun lien order↔code n'existe nulle part, même indirectement.
+
+**Deux agrégats de chiffre d'affaires par produit surestiment le CA sur les commandes remisées** (le CA global, lui, est fiable partout — vérifié poste par poste) :
+- `src/app/dashboard/rapports/page.tsx:156-165` (« Top produits du mois »)
+- `src/lib/ai/tools.ts:223-236` (`get_products`, assistant IA marchand)
+
+Les deux somment `order_items.line_total` au lieu d'imputer la remise par ligne. **Le schéma validé ci-dessous ne corrige pas ces deux endroits** — la remise est stockée au niveau de la commande, pas répartie par ligne. Point ouvert, non tranché, à trancher en tout début de prochaine session :
+- soit répartir la remise au prorata sur les lignes à la création de la commande (colonne supplémentaire sur `order_items`, arrondi à gérer pour que la somme des parts retombe sur le total) ;
+- soit renommer honnêtement l'indicateur en chiffre d'affaires brut par produit dans les deux endroits, et l'assumer comme tel.
+
+**Ampleur mesurée, base de production, 514 commandes au total :**
+- Invariant vérifié : `somme(order_items.line_total) + orders.delivery_price − orders.total_price` — **14 commandes** à écart non nul, **aucune** à écart négatif ou inexpliqué (l'invariant tient à 100 %, aucune composante inconnue).
+- Montant total concerné : **54 325 FCFA**, réparti sur des commandes du 22 juin au 9 août 2026 (dont les deux commandes de test de ce soir).
+- **Écart non résolu, à signaler tel quel** : `promo_codes.used_count` ne totalise que **7** sur l'ensemble des codes (4 codes à usage non nul), contre 14 commandes montrant une remise effective. Cause non vérifiable depuis cet environnement (lignes `promo_codes` potentiellement supprimées/recréées — motif plausible vu la répétition de paniers identiques dans les 14, mais c'est une inférence, pas une preuve). **Le nombre qui fait foi pour l'ampleur historique est 14 (invariant), pas 7 (`used_count`).**
+
+**Schéma validé, à écrire dans une migration au tout début de la prochaine session :**
+- `orders.promo_code text NULL`, `orders.promo_discount_pct integer NULL`, `orders.discount_amount integer NOT NULL DEFAULT 0`, `orders.deposit_percentage integer NULL`.
+- `order_items.quantity_discount_pct integer NULL`.
+- `line_total` et `unit_price` ne changent pas de sens — du code les lit déjà, ne pas y toucher.
+- Backfill historique : `discount_amount` est dérivable pour les 514 commandes existantes (via l'invariant ci-dessus) — seul champ rétro-rempli. `promo_code`, `promo_discount_pct`, `deposit_percentage`, `quantity_discount_pct` restent `NULL` pour tout ce qui précède la migration : définitivement perdus, jamais devinés.
+- Affichage : une ligne « Réduction » apparaît dès que `discount_amount > 0` (donc aussi pour les 14 commandes historiques, avec le bon montant) ; jamais de code/pourcentage affiché si `promo_code IS NULL`. Jamais de « 0 % » ou « aucun code » là où la donnée est simplement absente.
+- Vérification auto-portante : pas de `CHECK` (Postgres interdit les sous-requêtes inter-tables dedans), pas de trigger vivant sur le chemin de paiement — un script rejouable `scripts/check-order-totals-invariant.sql`, même principe que `scripts/check-function-privileges.sql` pour `089`.
+
+**Séquencement validé** : migration séparée, **avant** le sous-lot 2a (voir §4) — les deux touchent `order_items`, mais pas les mêmes colonnes ; celle-ci d'abord évite que 2a doive fusionner son diff avec un calcul de totaux encore en mouvement.
+
+---
+
+## 4. Travaux dus, dans cet ordre
+
+0. **Refonte du tunnel de commande — confirmée comme livraison 2, priorité immédiatement après la livraison 1, avant tout autre point ouvert de cette liste.** Décidé le 2026-08-12 : c'est elle qui porte le taux d'aboutissement des paiements en ligne actuellement mesuré à 12 % (voir l'enquête « Paiements en ligne jamais aboutis », §6). Ne la fait pas attendre derrière les autres sujets hors périmètre de la livraison 1 — elle n'est elle-même pas dans ce périmètre (rien de la refonte tunnel n'entre en livraison 1), mais elle passe devant `BF`/`BK`, la commission, `resend-digital`, l'idempotence webhook et la restitution de stock dès que la livraison 1 est en production. Spec : `SPEC-refonte-tunnel-commande.md`, 4 lots A-D, aucun commencé.
+1. **Migration de la décomposition des montants** (§3 ci-dessus) — schéma validé, prête à écrire.
+2. **Favicon** — meilleur rapport effort/gain du reste : `https://www.tekki.shop/favicon.png` pèse à lui seul 834,4 Kio, servi sur les 1 493 boutiques, sans toucher une ligne de rendu (voir §7 pour les chiffres). Jeu 16/32/180/192px, cible < 20 Kio, source `public/favicon.png` (269 Kio, 500×500, modifié localement jamais poussé) ; corriger le `theme_color` obsolète de `manifest.json` ; vérifier si `/icons/[size]/route.tsx` est référencé avant d'en décider le sort. **Nouvelle mesure de référence LCP/poids immédiatement après** — c'est elle qui fera foi pour le §10.1 de `AI_RULES.md`, pas les chiffres actuels de §7.
+3. **Unification du calcul de commission — sens corrigé le 2026-08-10 par l'utilisateur, à ne pas réinverser.** **Le taux plat de 3 % est correct et voulu, il ne dépend jamais du plan.** Le circuit (§6) : l'argent transite par le compte Bictorys de la plateforme, qui paie 1,5 % à Bictorys sur l'encaissement et 1 à 1,5 % à l'opérateur au retrait — le 3 % couvre ces frais réels et est dû sur tout retrait qui passe par la plateforme, quel que soit le plan. Le 0 % n'est pas un avantage accordé par plan : c'est ce qui se produit mécaniquement quand une boutique a configuré ses propres clés Bictorys (`shops.bictorys_secret_key IS NOT NULL`) — ses clients la paient en direct, l'argent ne transite jamais par la plateforme, donc aucun retrait n'est jamais demandé via ce circuit. **La condition doit donc porter sur `shops.bictorys_secret_key`, jamais sur `shops.plan`** — même si en pratique une boutique à clés propres ne passe jamais par ce chemin aujourd'hui, la règle doit rester vraie si le flux change. `COMMISSION_RATES` (plan-aware) est donc l'anomalie à supprimer, pas le taux plat.
+   **9 endroits calculent ce taux, aucun ne partage de code.** Classés selon la règle corrigée :
+
+   | # | Fichier:ligne | Comportement actuel | Conforme à la règle ? |
+   |---|---|---|---|
+   | 1 | `src/lib/actions/payouts.ts:21-25,94` (`COMMISSION_RATES`) | 0 % si `plan==='pro'` | **Non — priorité, c'est lui qui calcule le montant réellement transféré côté cron/admin** |
+   | 2 | `src/lib/ai/tools.ts:4,310` | ternaire dupliqué, 0 % si `plan==='pro'` | **Non — priorité absolue : c'est ce que l'assistant IA affirme au marchand.** Aujourd'hui il annonce 0 % à un Pro qui paiera 3 % — une affirmation fausse faite à un client, pas juste un calcul interne |
+   | 3 | `src/app/api/payouts/request/route.ts:83-84` | flat 3 %, aucune branche | Oui dans son résultat actuel (aucune boutique à clés propres ne passe par cette route) — à migrer vers la fonction partagée pour rester vrai si le flux change |
+   | 4 | `src/app/dashboard/revenues/page.tsx:83-85,212,227-228` | flat 3 % | Oui, idem — à migrer |
+   | 5 | `src/app/dashboard/orders/page.tsx:110` | flat 3 % | Oui, idem — à migrer |
+   | 6 | `src/app/dashboard/orders/[id]/page.tsx:144` | flat 3 % | Oui, idem — à migrer |
+   | 7 | `src/lib/billing/shop-status.ts:53` | flat 3 % | Oui, idem — à migrer |
+   | 8 | `src/app/admin/finances/page.tsx:147-153` | constante locale redéclarée `=3` | Oui, idem — à migrer, agrège tous plans confondus donc pas de risque de branche fausse |
+   | 9 | `src/app/api/admin/payouts/manual/route.ts:52,55` | constante locale redéclarée `=3`, masque l'import | Oui, idem — à migrer |
+
+   Correctif à concevoir : une seule fonction partagée, taux à 0 % uniquement si `shops.bictorys_secret_key IS NOT NULL`, jamais dérivé de `plan`. `COMMISSION_RATES` disparaît. Traiter #1 et #2 en premier (seuls calculs faux aujourd'hui) ; #2 avant #1 puisque c'est une affirmation directe à un marchand, pas un calcul interne.
+4. **Sous-lot 2a** — bascule des variantes vers la table relationnelle : lecture/écriture schéma→table, `POST /api/orders`, nouvelles RPC `decrement_variant_stock_v2`/`increment_variant_stock_v2`. Plan avant code, comme d'habitude. **`REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated` explicite dans la même migration qui crée ces deux RPC** — règle `AI_RULES.md` §3, issue de la découverte du §2 ci-dessus.
+5. **Lots 2 à 5** du redesign boutique (Lot 3 inclut le découpage de `updateBusinessDesign`, trop large aujourd'hui, et le calcul de `response_time_minutes`).
+6. **Page Tarifs** — différée, pas encore ouverte. À l'ouverture, séparer explicitement ce qui peut partir immédiatement (corrections de texte, ce qui est déjà tranché — voir §5) de ce qui dépend de la matrice `plan-features.ts` définitive (celle-ci reflète encore une version antérieure, voir §5) : ne pas mélanger les deux dans un même chantier.
+7. **Gating des codes promo** (Business/Pro uniquement, codes Découverte existants continuent de fonctionner) — **non chiffré, à instrumenter** : il manque le nombre de boutiques Découverte ayant des codes actifs. Ne pas confondre avec le chiffre du §7 (9 boutiques Découverte à 11-17 produits) : celui-là concerne la limite de produits du plan, pas les codes promo — deux mesures distinctes.
+8. **Gating des SMS par plan** — conception décidée, chiffres manquants. Décidé : notifications par e-mail via Resend sur les trois plans, SMS automatiques en plus pour Business et Pro uniquement. Aucun palier ne perd d'information. Trois pistes de réduction à arbitrer une fois les chiffres connus : réserver le SMS à l'acheteur et non au marchand, qui dispose déjà du tableau de bord et de l'e-mail ; ne déclencher que sur les statuts qui comptent ; plafonner mensuellement par plan. Ajouter un compteur de SMS par boutique et par mois. Non chiffré : volume mensuel par plan, coût correspondant à 15 FCFA l'unité, part des commandes payées à la livraison, taux de remplissage du champ e-mail du tunnel.
+
+---
+
+## 5. Décisions produit arrêtées
+
+**Règle qui gouverne la matrice des trois plans (Découverte, Business, Pro) :** rien de ce que voit l'acheteur ne dépend du plan du marchand ; seuls la capacité (nombre de produits, limites), l'outillage (fonctionnalités de gestion) et l'appropriation de la marque (personnalisation) en dépendent. Cette règle tranche les cas ambigus futurs.
+
+Conséquences déjà actées :
+- **Images de description** : ouvertes aux trois plans (ce que voit l'acheteur).
+- **Liens sociaux** : ouverts aux trois plans, même raison.
+- **Image de couverture** : descendue en disponibilité — accessible dès le plan Business, plus réservée à Pro.
+- **Typographie boutiques publiques et landing** : Bricolage Grotesque + Inter (documentée dans `AI_RULES.md` §1). Les maquettes utilisent Instrument Sans dans les fichiers de design, mais c'est Inter qui fait foi en production.
+
+**Coups de cœur** : déjà universels dans le code, sans aucune condition de plan (`ProductGrid.tsx`, seul `is_featured` compte). La page Tarifs les annonce à tort comme un avantage Pro — c'est la page qui est fausse, pas le code. Aucune fermeture : ce serait retirer une fonctionnalité en usage.
+
+**Corrections décidées de la page Tarifs**, à porter dans `PricingSection.tsx` et le tableau dépliant, les deux devant dire la même chose : la ligne « 0 % de commission » de la carte Pro devient un encaissement sur son propre compte Bictorys, présenté comme une option qu'ouvre le plan Pro, jamais comme une réduction automatique — sans clés propres, un Pro paie 3 % comme les autres, ce qui couvre 1,5 % Bictorys plus 1 à 1,5 % d'opérateur au retrait. Les Coups de cœur sortent de la carte Pro. L'image de couverture entre dans la carte Business et sort de sa liste barrée. La liste barrée de Découverte se complète des notifications SMS, des codes promo et du tableau de bord avancé — elle ne montrait jusqu'ici que ce que Pro ajoute, jamais ce que Business débloque. Le badge de vérification n'apparaît nulle part sur cette page et ne doit pas y être ajouté : il devient éligible sur les trois plans, sur dossier.
+
+Les 3 boutiques Pro sans clé Bictorys propre (§7) sont un choix assumé de leur part : elles préfèrent payer 3 % plutôt que d'intégrer un agrégateur. Ce n'est pas un défaut à corriger.
+
+**`src/lib/plan-features.ts` (Lot 1, non commité) implémente une version antérieure de cette matrice** — `coverImage` et `richDescription` y sont encore réservés à `pro` uniquement, alors que la décision ci-dessus les ouvre plus largement. **À revoir explicitement quand la page Tarifs sera ouverte** (§4, point 6) — ne pas corriger isolément avant.
+
+**§6.4 (revue de la refonte boutique) — clos.** Un bug suspecté (montant incohérent entre deux captures d'écran) s'est révélé être un artefact du test lui-même : un article retiré du panier entre les deux captures, pas une régression de code. Seul point conservé : une vérification de cohérence des montants à titre de garde-fou.
+
+---
+
+## 6. Points ouverts du tunnel de commande
+
+Spec complète : `SPEC-refonte-tunnel-commande.md` (racine du dépôt). Maquette de référence : `tekkishop-commande-v2.html` (racine du dépôt). **Lecture requise en complément, avant tout travail touchant aux commandes retenues ou aux produits digitaux** : `SPEC-3-commandes-offertes.md` (modèle d'essai à 3 commandes, déjà implémenté) et son additif `ADDITIF-argent-commandes-retenues.md` (ce qu'il advient de l'argent d'une commande retenue — le principe qui gouverne directement le point 3 ci-dessous : « on ne prend l'argent du client que si on peut le livrer sans le marchand »).
+
+Les trois points du §15 de `SPEC-refonte-tunnel-commande.md`, à remonter par écrit avant le lot correspondant, sans trancher seul :
+
+1. La migration de `paymentType` vers un acompte explicite, et son comportement sur un panier à plusieurs articles dont certains seulement portent un acompte (§7 de la spec).
+2. Le traitement de `delivery_type` pour les commandes entièrement digitales, avec le coût des deux options (§8 de la spec).
+3. **Vérifié le 2026-08-10.** Ce qui autorise l'accès au fichier téléchargeable : `src/app/api/download/[token]/route.ts:15-31` ne vérifie ni `orders.status` ni un paiement encaissé — uniquement l'existence d'un `download_tokens` valide, non expiré, sous son quota. `orders` **n'a pas de colonne `payment_status`** (vérifié par lecture de toutes les colonnes de la table). Les seuls créateurs de token sont `src/app/api/webhooks/bictorys/route.ts:509-520` et `src/app/api/webhooks/stripe/route.ts:137-144` (paiement en ligne confirmé par webhook) et `src/app/api/dashboard/orders/[id]/resend-digital/route.ts:72-82` (action manuelle du marchand connecté, **sans aucune vérification de paiement** — seulement `isOrderBlocked`, ligne 48-50). `src/app/api/orders/route.ts` (création de commande) ne crée jamais de token. Conséquence : le flux automatique ne fuite rien à un client (pas de token sans webhook de paiement confirmé), mais **`resend-digital` fait confiance au marchand sans aucune preuve d'encaissement dans le système** — rien n'empêche techniquement un marchand de se déclencher lui-même le lien sans avoir été payé.
+   **Commandes `on_site` portant un produit digital, en base de production, requête directe sur l'API REST Supabase** : **1 commande** — `8c485241-8c93-44c5-a24e-d238f5b7ea08`, boutique « K.B.Y multi services » (`k-b-y-multi-services`, plan Découverte, `trial_model='legacy'`), créée le 2026-07-19, `total_price=2000`, **statut `cancelled`**. Sur cette commande, **5 `download_tokens` ont été générés via `resend-digital`** entre 15:08 et 16:41 le même jour — un token a été téléchargé 5/5 fois, un autre 1/5 — donc **le fichier a bien été distribué, 6 téléchargements au total, sur une commande jamais payée en ligne et ensuite annulée**. Ce n'est pas un scénario théorique : il s'est produit au moins une fois. Reste à déterminer avec l'utilisateur si c'est un test du marchand sur son propre produit ou un cas réel à traiter.
+
+**Contexte de `resend-digital`, apporté par l'utilisateur le 2026-08-10** : ce bouton a été ajouté en réponse à un incident réel — un acheteur avait payé son ebook et n'avait jamais reçu son lien. C'est un dépannage, pas une fonctionnalité de distribution ; il ne doit pas disparaître avant que la cause de cet incident soit comprise.
+
+**Portée réelle du webhook silencieux, creusée le 2026-08-10 — plus large que le seul cas digital, correction d'une conclusion trop hâtive écrite plus tôt dans la même session.**
+
+Mécanisme exact : `src/app/api/webhooks/bictorys/route.ts`. L'ordre réel des opérations est : idempotence (253-273) → paiement échoué (275-284) → validation du montant (286-305) → **`payments` marqué `completed` (307-350, inconditionnel dès que le paiement est reconnu valide)** → confirmation de la commande, gardée par `.eq('status','pending')` (353-369) → `if (!orderData) { console.log(...); return NextResponse.json({ok:true}) }` (371-373), **sans `Sentry`, sans alerte, HTTP 200 donc pas de rejeu côté Bictorys** (le fichier n'importe `Sentry` nulle part — contrairement à `webhooks/stripe/route.ts`, qui vérifie et logue chaque écriture). Ce même early-return court-circuite tout ce qui suit : confirmation WhatsApp et e-mail au client, alerte WhatsApp au marchand, passage à `'completed'`, création des `download_tokens`.
+**Point clé** : la table `payments` est écrite *avant* ce garde, donc une commande dans cet état a normalement quand même une ligne `payments`. **Vérifié sur `79e7f687` : ce n'est pas le cas — aucune ligne `payments` n'existe pour cette commande.** La cause n'est donc probablement pas la course `.eq('status','pending')` décrite ci-dessus (qui laisserait une trace dans `payments`), mais un échec plus en amont et tout aussi silencieux : le webhook n'a peut-être jamais atteint le serveur, ou la validation de montant (ligne 297-304, `console.error` seul, pas de Sentry) l'a rejeté. **Correction explicite : l'affirmation précédente selon laquelle cette course était « la cause identifiée » de l'incident `79e7f687` n'est pas prouvée par la donnée — retirée.** La vulnérabilité structurelle (early-return silencieux, aucun Sentry, HTTP 200) reste réelle et vérifiée dans le code, seule son application à ce cas précis n'est pas démontrée.
+
+**Décompte en base, élargi à tous les types de produits (pas seulement digital)** : sur 239 commandes en ligne (`payment_type IN (online_full,online_deposit)`), 55 ont dépassé `'pending'`. Parmi elles, **6 n'ont strictement aucune ligne `payments`** — la commande a progressé comme si elle était payée, sans aucune trace de paiement dans le système :
+| Commande | Statut | Montant | Produit | Boutique | Créée |
+|---|---|---|---|---|---|
+| `bf8c898e…` | ready | 17 000 | physique | `861b30d0…` | 2026-07-23 17:39 |
+| `57a6df3d…` | ready | 17 000 | physique | `861b30d0…` | 2026-07-23 17:37 |
+| `9b806229…` | ready | 10 000 | physique | `da407507…` | 2026-06-26 |
+| `98598e9e…` | delivered | 14 000 | physique | `12d6a93e…` (Viens on s'connaît) | 2026-06-23 |
+| `f28e2535…` | delivered | 12 600 | physique | `2ba2570e…` | 2026-07-17 |
+| `79e7f687…` | delivered | 4 500 | digital (ebook) | `12d6a93e…` (Viens on s'connaît) | 2026-06-25 |
+
+**75 100 FCFA au total, 5 commandes physiques sur 6.** **Trois des six écartées par l'utilisateur le 2026-08-11, identifiées par le nom du client, pas par une supposition sur les montants : `98598e9e…` et `79e7f687…` (client « Yatma Ndiaye », +221781362728) sont l'identité de test de l'utilisateur — ce sont ses propres commandes, ce qui explique aussi que l'incident d'origine soit tombé sur l'une d'elles. `9b806229…` (client « dfvd dvdsv », +2250101010102) est une saisie clavier, pas un client réel.** **Les 3 cas réels — clos le 2026-08-11, réconciliés par l'utilisateur directement chez Bictorys.** `bf8c898e…` et `57a6df3d…` (Social technologie, 17 000 chacune) et `f28e2535…` (Themaïs Africa, 12 600) : **aucun paiement n'a abouti côté agrégateur** pour ces tentatives — figurent en « échoué » ou « en attente » chez Bictorys, jamais en réussi. L'absence de ligne `payments` est donc exacte, pas un webhook manqué : rien n'a jamais été encaissé, donc rien à enregistrer. **Sur les 6 commandes sans trace de paiement identifiées initialement : 3 étaient des commandes de test, 3 étaient des tentatives de paiement réellement échouées. Aucune perte, aucun marchand à créditer, aucune anomalie du système de webhook impliquée dans ces 6 cas précis.** L'hypothèse de deux clients distincts sur un produit qui avait de la traction ce jour-là (plutôt qu'une seule tentative retentée) est la bonne.
+
+**Ce que ça déplace : la vraie question n'est pas le webhook silencieux, c'est le volume de paiements en ligne qui échouent ou sont abandonnés avant d'aboutir — voir « Paiements en ligne jamais aboutis » ci-dessous, ouverte le 2026-08-11.**
+
+---
+
+### Paiements en ligne jamais aboutis — ouvert le 2026-08-11
+
+Précision de l'utilisateur : ces échecs viennent surtout d'un solde mobile money insuffisant ou d'un mauvais choix de méthode — l'acheteur arrive jusqu'au paiement, constate le problème, abandonne. Ce sont des ventes perdues au dernier mètre sur des acheteurs déjà décidés, pas des pannes techniques. Personne n'en est informé aujourd'hui : ni le marchand, ni l'acheteur, ni la plateforme.
+
+**1. Trace laissée par une tentative échouée/abandonnée** : oui, une ligne `payments` existe dès l'initiation — `src/app/api/payments/bictorys/create/route.ts:120-129` insère `status:'pending'` **avant** la redirection vers Bictorys, dès que `createBictorysCharge` retourne une URL de paiement. Si le webhook renvoie ensuite un échec, `bictorys/route.ts:275-284` la fait passer à `status:'failed'`. **Mais un abandon pur (le client ferme l'onglet sans jamais échouer/réussir explicitement chez Bictorys) peut ne déclencher aucun webhook du tout** — la ligne reste alors `'pending'` indéfiniment, indistincte d'un paiement en cours. Si l'insert lui-même échoue (ligne 130-133), c'est avalé en `console.error` seul, « on ne bloque pas le paiement » — aucune remontée Sentry sur ce chemin.
+
+**2. Ce que reçoit le webhook sur échec, et ce qu'il en fait** : `src/app/api/webhooks/bictorys/route.ts:277-284`. `payload.status` différent de `succeed`/`succeeded`/`authorized` → si une ligne `payments` existe déjà (`existingByCharge` ou `existingByOrder`), elle passe à `status:'failed'` ; sinon rien. `console.log` seul, retour `{ok:true}`. **Aucune notification au client, au marchand, ni à la plateforme sur ce chemin.**
+
+**3. Combien de commandes en ligne ne sont jamais abouties, par mois et boutique, depuis le lancement** — mesuré le 2026-08-11, `payment_type IN (online_full,online_deposit)` et (`status='pending'` OU `cancellation_reason='expired'`) :
+
+| Mois | Commandes | Montant (FCFA) |
+|---|---|---|
+| 2026-05 | 10 | 1 211 250 |
+| 2026-06 | 75 | 1 647 145 |
+| 2026-07 | 63 | 789 050 |
+| 2026-08 (partiel) | 13 | 168 150 |
+| **Total** | **161** | **3 815 595** |
+
+**34 boutiques distinctes concernées.** Ce total **inclut la boutique de test de l'utilisateur** (« Viens on s'connaît », `12d6a93e…` : 13 commandes, 149 400 FCFA) — à retirer pour une mesure « marchands réels » (161→148 commandes, ≈3 666 195 FCFA). Boutiques les plus touchées en montant : Supreme Business (3 commandes, 1 770 000 — un seul montant énorme, à vérifier isolément avant de le traiter comme représentatif), Le Bazar d'Ibuka (8, 439 000), Auto école khadija (3, 225 000), DermaSecret (10, 168 000).
+**Mesure basse, pas un total** : identique à la réserve du §6 ci-dessus — un paiement dont le webhook n'atteint jamais le serveur ne laisse pas plus de trace ici. Inclut aussi les commandes réellement encore en cours au moment de la mesure (moins de 24h), pas seulement des échecs consommés.
+
+**Le dénominateur, mesuré le 2026-08-11 : sur les 239 commandes en ligne au total (population identique à hier, confirmée stable), seulement 37 ont un paiement `payments.status='completed'` enregistré — 15,5 %.** Le résiduel exact recoupe le tableau ci-dessus (161 = pending + expired) plus 41 commandes supplémentaires jamais réconciliées proprement : 22 annulées pour une autre raison, et **19 qui ont quand même avancé (`confirmed` → `delivered`) sans paiement tracé, 554 800 FCFA** — vraisemblablement payées (un marchand ne livre pas gratuitement), en cours de recoupement par l'utilisateur avec ses relevés Bictorys, comme pour les 6 initiales. **Tant que ce recoupement n'est pas revenu, le taux d'aboutissement s'exprime en fourchette : entre 15,5 % (aucune des 19 n'a été payée) et 23,4 % (les 19 l'ont toutes été) — jamais comme une valeur unique.** Hors boutique de test : 210 commandes réelles, 12,4 % à 23,3 % selon le même recoupement.
+Détail des 19, transmis à l'utilisateur en conversation le 2026-08-11 pour réconciliation — inclut 2 commandes Social technologie supplémentaires (`c2dbae68…`, `ab12962a…`) non signalées lors du premier passage sur cette boutique, à vérifier avec les deux déjà closes.
+
+Répartition par méthode de paiement : **non disponible plus finement que Bictorys/Stripe.** `orders.payment_method` est `NULL` sur les 239 commandes en ligne sans exception (le webhook Bictorys ne le renseigne jamais). Seul `payments.payment_method` distingue quelque chose : 37/37 paiements complétés sont `bictorys`, 0 `stripe_card` — aucune granularité Wave/Orange Money/Moov nulle part dans le schéma.
+
+**Supreme Business vérifié, pas une saisie aberrante** : 4 commandes en ligne (une de plus que le premier passage, celle-ci avec paiement complété — 350 000 FCFA non comptés dans le tableau ci-dessus). Produits : MacBook Pro 2020 à 350 000 FCFA, iPhone 17 Pro 128 Go à 710 000 FCFA — prix réels et plausibles au Sénégal pour ces produits, boutique d'électronique haut de gamme où un échec de paiement en ligne coûte particulièrement cher.
+
+**4. Devenir d'une commande abandonnée** — `supabase/migrations/059_order_expiry_24h.sql` : `expire_pending_orders()`, cron quotidien `0 9 * * *` (`src/app/api/cron/expire-pending/route.ts`) → `status='cancelled'`, `cancellation_reason='expired'` si `status='pending'`, `deposit_paid=false`, `payment_type` en ligne, `created_at` de plus de 24h. Délai réel entre 24h et ~48h selon l'heure de création, le cron ne passant qu'une fois par jour.
+**Stock : jamais restitué.** `expire_pending_orders()` ne touche que `orders` — aucun appel à `increment_product_stock`/`increment_variant_stock`. Ces RPC n'existent que dans `rollbackStock()` (`src/app/api/orders/route.ts:276-294`), déclenchée uniquement en cas d'échec **dans la même requête** de création de commande (une décrémentation ultérieure qui échoue), jamais à l'expiration différée.
+**Conséquence concrète, vérifiée, pas seulement théorique** : toute commande en ligne abandonnée immobilise son stock et, si un code promo était appliqué, son usage, pendant 24 à 48h puis définitivement au-delà.
+
+**Chiffré le 2026-08-11 — c'est le point qui coûte le plus cher, à la minute où il est mesuré.** Sur les 180 commandes en ligne définitivement mortes (157 expirées + 23 annulées manuellement — `cancelOrder`, `src/lib/actions/orders.ts:132-142`, ne restitue pas non plus le stock ni le code promo, exactement comme le cron), 198 lignes d'articles, **72 produits/variantes distincts, 218 unités de stock immobilisées.** 36 sont à stock illimité (non affectées), 32 vérifiables en stock limité, 2 produits depuis supprimés (non vérifiables).
+**Deux produits actifs de vrais marchands sont actuellement affichés en rupture (stock 0) à cause de ce seul mécanisme** : « Formule Standard » (Auto école khadija, 3 unités immobilisées) et « MacBook Pro 2020 » (Supreme Business, 2 unités). Trois autres produits dans le même cas : trois sur la boutique de test, un chez ABI&CO mais désactivé (`is_active=false`, sans impact commercial actuel).
+**Vérifié avant toute action** : sur ces 180 commandes, 98 lignes `payments` existent — 1 `completed` (la commande test annulée après paiement, voir point ouvert ci-dessous), 28 `failed`, **69 encore `pending`**. Une ligne `payments` restée `pending` sur une commande déjà `cancelled` ne peut plus faire progresser la commande elle-même (`status='cancelled'` est terminal dans `STATUS_TRANSITIONS`, `src/lib/actions/orders.ts:29-37` — aucune transition sortante), donc libérer le stock ne crée pas de risque de survente par ce chemin, même si un webhook tardif venait un jour compléter un de ces paiements en attente. Le seul cas déjà observé où un paiement a fini par aboutir sur une commande annulée (`6d10e926…`) l'a fait sans jamais faire bouger le statut de la commande — cohérent avec cette lecture.
+**Migration `091_release_orphaned_stock_reservations.sql` écrite, non appliquée, corrigée le 2026-08-11 après trois observations de l'utilisateur** : seuil figé à l'instant exact de la mesure (`2026-08-11T11:43:14.600036+00`, pas une date postérieure) plutôt qu'au 12 comme la première version l'écrivait par erreur ; **1 commande exclue** car un paiement `completed` existe (`6d10e926…`, boutique de test, 14 000 FCFA — son stock a été consommé légitimement) ; preuve écrite que `rollbackStock()` ne peut structurellement pas avoir produit une des 180 commandes (la Phase 1 de `src/app/api/orders/route.ts` retourne 409 avant l'`.insert()` sur `orders` — les deux chemins sont mutuellement exclusifs par construction, pas par exclusion ajoutée) ; le fichier capture et rapporte maintenant un delta réel de `stock_count` nommé par produit, pas seulement un nombre de lignes traitées. **Ordre obligatoire inscrit dans le fichier** : `091` doit s'appliquer avant tout correctif de la cause sur `expire_pending_orders()`/`cancelOrder()`, sous peine de double crédit sur les commandes charnière.
+**Trou variantes chiffré séparément** (le script de contrôle ne couvre que le stock simple) : 10 variantes distinctes, 3 boutiques, 14 unités immobilisées sur la même population — vérifié qu'aucune de ces 10 n'est aujourd'hui à un stock affiché ≤ 0, le trou est réel mais ne bloque aucune vente à ce jour.
+`orders.promo_id UUID REFERENCES promo_codes(id)` ajouté au schéma de `090` (non encore appliquée) pour que la correction de cause puisse un jour appeler `release_promo_code` — un code texte ne désigne pas une ligne stable (codes supprimés/recréés, hypothèse déjà avancée pour l'écart `used_count`).
+**Appliquées le 2026-08-12, dans l'ordre, via le chemin hors séquence de `AI_RULES.md` (`db query -f` puis `migration repair`, jamais l'un sans l'autre).**
+- **`090`** : 5 colonnes ajoutées sur `orders` (`promo_id`, `promo_code`, `promo_discount_pct`, `discount_amount`, `deposit_percentage`), 1 sur `order_items` (`quantity_discount_pct`). Backfill : **14 commandes** — identique au chiffre du 2026-08-09, confirmé par comptage direct (`discount_amount > 0`) plutôt que par le `RAISE NOTICE` du fichier, **illisible depuis cet outil** (le mode de connexion de `supabase db query` ne restitue pas les messages `NOTICE`, seulement les lignes de résultat — découvert en testant, à garder en tête pour toute migration future qui compte dessus pour son rapport). Invariant vérifié sur la totalité de `orders` après coup : 0 écart.
+- **`091`, élargie** : exécutée une seule fois (vérifié avant via `schema_migrations` qu'elle ne l'avait pas déjà été). Avant/après capturés par des requêtes séparées (même raison : `NOTICE` invisible). **51 produits à stock simple concernés, 51 avec un delta réel**, dont nommément : `MacBook Pro 2020 : 0 -> 2`, `Formule Standard : 0 -> 3`, `Pour Les Amoureux : 0 -> 4`, `Pour Les Familles : 0 -> 3`, `Pour les Couples : 0 -> 2`, `Pour Les Amis : 0 -> 1`, `PORTE-MONNAIE MIXTE DARK : 0 -> 3`, `PORTE-MONNAIE MIXTE MARRON : 0 -> 2`. Les deux produits de marchands réels signalés bloqués (Auto école khadija, Supreme Business) confirmés débloqués.
+- **Contrôle après coup** : `check-order-totals-invariant.sql` et `check-stock-not-orphaned.sql` exécutés, aucune erreur — **revérifié indépendamment des scripts eux-mêmes** par deux requêtes directes (0 commande à invariant cassé, 0 produit encore faussement en rupture).
+- **Enregistrement confirmé** : `supabase migration list --linked` montre `090` et `091` alignées Local=Remote, pas seulement exécutées.
+- **Reste ouvert** : le trou variantes (10 variantes/3 boutiques/14 unités sur la population en ligne, non re-mesuré sur la population élargie) n'est pas couvert par `check-stock-not-orphaned.sql` — inchangé depuis le chiffrage du 2026-08-11.
+
+**Contrainte d'ordre de la 091 levée le 2026-08-12 : elle est appliquée.** Le correctif de cause sur `expire_pending_orders()` et `cancelOrder()` (§4 point 4, restitution du stock et libération du code promo à l'expiration/l'annulation, jamais construite jusqu'ici) **peut désormais partir sans risque de double crédit** — la population qu'il traiterait à l'avenir (commandes qui passeront `cancelled` après le seuil figé de `091`, `2026-08-11T11:43:14.600036+00`) ne recoupe plus rien de ce que `091` a déjà traité. Pas de prérequis à attendre sur ce point.
+
+**Code promo : jamais libéré**, même mécanisme — `release_promo_code` n'est appelé que dans ce même `rollbackStock()`, jamais par le cron d'expiration. **Recoupement avec l'écart déjà noté au §3 (`used_count`=7 vs 14 commandes à remise réelle)** : une partie de cet écart est peut-être structurelle plutôt qu'une donnée perdue — un code réservé sur une commande qui expire reste compté « utilisé » sans jamais avoir servi. Hypothèse à vérifier, pas confirmée. **Vérifié le 2026-08-11 : aucun code promo d'un marchand réel n'est aujourd'hui bloqué par son plafond.** 4 codes ont un `used_count > 0`, dont 2 au plafond exact (`SOSO80` 2/2, `SORAYA95` 2/2) — les deux appartiennent à la boutique de test. `GLOW26` (Glow Eternel, marchand réel) est à 1/50. **Aucun lien order↔code promo stocké nulle part** (confirmé) : impossible de dire combien des usages comptés correspondent précisément à des commandes mortes, seulement de constater qu'aucun plafond réel n'est actuellement franchi.
+
+**Point ouvert, non investigué, à ne pas traiter maintenant (2026-08-12) : que devient l'argent quand un marchand annule une commande déjà payée ?** Découvert via `6d10e926…` (boutique de test, paiement `completed` 14 000 FCFA, annulée par le marchand sans raison enregistrée) — la question vaut pour toutes les boutiques, pas seulement ce cas. Reste-t-il crédité au solde reversable du marchand ? Existe-t-il un chemin de remboursement vers l'acheteur, ou aucun ? Non vérifié.
+
+**5. Chemin de reprise de paiement existant** : oui, déjà en place. `/{slug}/commander/pay?order_id=...&token=...` (`src/app/[shop-slug]/commander/pay/page.tsx`) prend la commande par identifiant + jeton et affiche à nouveau le sélecteur de méthode de paiement — c'est déjà la page vers laquelle pointe le lien « Réessayer le paiement » affiché après une annulation immédiate (ligne 36-40). **Le mécanisme existe, rien ne le renvoie après coup** : aucun rappel (WhatsApp, e-mail) ne redirige vers ce lien pour une commande abandonnée plus tôt que ça — c'est l'écart entre « le chemin existe » et « l'acheteur y est ramené ».
+
+**Trois pistes de l'utilisateur, à garder en tête sans rien construire** : rendre l'échec visible au marchand avec le numéro du client, pour relance WhatsApp ; envoyer à l'acheteur un rappel avec le lien de reprise déjà existant ci-dessus ; revoir l'écran de choix de méthode, une partie des échecs venant d'un choix fait sans information suffisante.
+
+**Asymétrie `payments`/Stripe — résolue le 2026-08-10, ce n'est pas un défaut.** `src/lib/payments/stripe.ts:181` : `payment_intent_data: { transfer_data: { destination: payload.merchantAccountId } }` — paiement carte en Stripe Connect à destination directe. L'argent va **directement sur le compte Stripe du marchand**, ne transite jamais par la plateforme : structurellement équivalent au cas `bictorys_secret_key` (§4 point 3) — rien à reverser, donc l'absence de ligne `payments` est cohérente, pas une fuite. **Vérifié en base : 0 boutique avec `stripe_connect_enabled=true`, 0 commande `payment_method='stripe_card'`** — ce chemin n'a jamais servi en production, l'asymétrie est aujourd'hui sans effet réel. **Point à garder en évidence, décision commerciale à prendre par l'utilisateur avant d'activer ce chemin, pas après (2026-08-11)** : `payment_intent_data` ne porte pas d'`application_fee_amount` — le jour où `stripe_connect_enabled` s'active pour une boutique, la plateforme ne prélève rien sur ses paiements par carte. Ce n'est pas un bug, c'est le pendant Europe/Canada de la règle de commission du §4 point 3 (3 % par défaut sur tout ce qui transite par la plateforme, 0 % uniquement quand l'argent ne transite jamais par elle) — sauf qu'ici, contrairement à `bictorys_secret_key`, rien n'implémente encore la perception d'un taux avant que le chemin ne soit ouvert à un marchand. À trancher avant la première activation, pas en la découvrant après coup. La page « Revenus » (`revenues/page.tsx:66-70`) est calculée exclusivement sur `payments` — cohérent avec ce qui précède, mais un marchand utilisant Stripe Connect ne verrait aucune de ces ventes sur cette page ; à documenter côté produit plutôt que corriger, le jour où ce chemin s'active.
+
+**Ce qui a permis à ces commandes d'avancer sans paiement tracé** : `advanceOrderStatus` (`src/lib/actions/orders.ts:39-76`), l'action marchand de progression de statut, **ne vérifie aucun paiement** — seulement `isOrderBlocked`. Le bouton correspondant n'est masqué côté UI que si `isDigitalOrder` (`src/app/dashboard/orders/[id]/page.tsx:122-130`), calculé en **live** depuis `products.product_type` *actuel*, pas depuis un instantané pris à la commande — un produit retypé après coup rend ce garde-fou rétroactivement inopérant pour les commandes passées.
+
+**Décision de l'utilisateur sur `advanceOrderStatus`, 2026-08-10 : ne pas bloquer la transition** — un marchand payé par un autre canal doit pouvoir faire avancer sa commande. **Ce qui manque n'est pas le garde-fou, c'est la trace.** Design décidé, non construit : la transition d'une commande à paiement en ligne sans paiement enregistré doit demander une **confirmation explicite** au marchand (texte expliquant ce qui manque), et laisser une **trace horodatée de qui l'a confirmée**. Sans quoi le cas K.B.Y. et l'incident d'origine restent indistinguables après coup.
+
+**Points ouverts, non construits maintenant :**
+- Remplacer le garde `.eq('status','pending')` par une confirmation idempotente sur l'identifiant de commande (pas sur son statut courant), pour que `advanceOrderStatus` ne puisse plus faire manquer la fenêtre de confirmation webhook.
+- Sur tout échec inattendu de ce chemin, remonter à Sentry et renvoyer autre chose qu'un `200`, pour que Bictorys rejoue au lieu de considérer le webhook traité.
+- `advanceOrderStatus` : confirmation explicite + trace horodatée décrites ci-dessus, à construire.
+- `isDigitalOrder` doit se calculer depuis un instantané pris à la commande, pas depuis `product_type` en direct — même logique que `variant_name` figé à la commande (SPEC-v2 §3).
+- Garde `resend-digital` : fermer le contournement (cas K.B.Y.) sans recours self-service pour un incident identique — acceptable, à condition qu'un chemin support existe : une action admin tracée, avec l'identité de qui la déclenche et pourquoi. L'asymétrie Stripe étant résolue (ci-dessus), le signal `payments.status='completed'` redevient utilisable tel quel pour Bictorys ; pour Stripe, la question ne se pose pas aujourd'hui (0 commande) mais devra être reposée si ce chemin s'active.
+
+Prérequis explicite pour le Lot D de la spec (reprise du relevé complet sur confirmation/suivi/e-mail) : la migration de décomposition du §3 doit être appliquée avant — sans elle, ce lot n'a rien à afficher.
+
+**Circuit de l'argent, définitif — répond à la « question bloquante » de `ADDITIF-argent-commandes-retenues.md`, confirmé par l'utilisateur le 2026-08-10, ne plus reposer la question.** L'acheteur paie via une méthode Bictorys ; l'argent arrive sur **le compte Bictorys de TEKKIShop** (Cas A de l'additif — TEKKIShop contrôle les règlements) ; le marchand voit la somme collectée sur sa page « Revenus », déduction faite de la commission ; depuis cette page il demande un retrait, ce qui appelle l'API Payout de Bictorys et verse la somme sur le numéro mobile money renseigné dans ses paramètres. **Seules les boutiques ayant configuré leurs propres clés Bictorys encaissent en direct et ne passent jamais par ce circuit.** Conséquence directe : le chemin A de l'additif s'applique intégralement (blocage réel des fonds possible sur une boutique `expired`), le chemin B ne s'applique pas.
+
+---
+
+## 7. Chiffres mesurés, avec leur date
+
+Mesurés le 2026-08-09/10, cette session, sauf mention contraire :
+
+- **Favicon en production** : `https://www.tekki.shop/favicon.png` pèse **834,4 Kio** (853 708 octets), confirmé par inspection réseau Lighthouse — pas le fichier local `public/favicon.png` (269 Kio), pas encore déployé.
+- **Reversements (`payouts`)** : les **15 lignes historiques** en base sont **toutes à 3 %** de commission, **y compris les 3 lignes appartenant à des boutiques `plan='pro'`** (690, 540, 1 883 FCFA). **C'est le comportement correct** (voir §4 point 3, sens corrigé le 2026-08-10) : ces 3 boutiques Pro n'ont pas configuré leurs propres clés Bictorys (§7 ci-dessous, « 3 boutiques Pro sans clé propre »), donc leurs paiements transitent par la plateforme et doivent 3 % comme n'importe quelle autre boutique — **aucune perte, aucun remboursement à faire**. (Une correction précédente de cette phrase, écrite plus tôt dans la même session, affirmait l'inverse — c'était une erreur, corrigée ici avant qu'elle ne s'installe.)
+- **Boutiques Découverte proches ou au-delà de la limite de produits** : **9 boutiques**, entre **11 et 17 produits** chacune — pertinent pour l'application du plafond de 10 produits (`plan-features.ts`), sans lien avec les codes promo (voir §4, point 7, la distinction a été corrigée après une confusion des deux chiffres).
+- **Boutiques Pro** : **3 boutiques** sans clé Bictorys propre (`bictorys_secret_key IS NULL`) — pertinent pour la règle de commission du §4.
+- **Audit sécurité** : zéro preuve d'exploitation sur les deux angles vérifiés. Angle 1 — boutiques `trial_model='free_orders'` actives (`status='active'` ou `is_active=true`) sans événement `shop_events.event_name='plan_activated'` correspondant : 0 résultat. Angle 2 — commandes avec `released_at` renseigné sans paiement `completed` associé : 0 résultat.
+- **Décomposition des commandes (§3)** : 514 commandes au total, 14 à écart de remise non nul, 54 325 FCFA concernés, invariant vérifié sans exception.
+
+**Mesures de référence LCP/poids, 9 août 2026, avant toute modification de rendu :**
+
+| | ABI&CO | Glow Eternel |
+|---|---|---|
+| LCP | 10,6 s | 9,1 s |
+| Poids total | 1 620 Kio | 1 615 Kio |
+| Other | 840,6 Kio | 844,2 Kio |
+| Script | 307,6 Kio | 307,6 Kio |
+| Image | 315,7 Kio | 302,7 Kio |
+| Font | 117,4 Kio | 117,6 Kio |
+
+Budget visé au §10.1 de `AI_RULES.md` : **2,5 s**. Les deux boutiques sont donc à environ **quatre fois le budget**.
+
+**Cause principale identifiée** : le favicon (834,4 Kio, voir ci-dessus), servi sur chaque page indépendamment de la boutique. Le fichier réellement servi correspond à `public/old-favicon.png` (853 708 octets sur disque) ; `public/favicon.png` (269 Kio) existe localement mais n'est pas déployé.
+
+`Other` et `Script` sont quasi identiques à l'octet près entre les deux boutiques, dont les catalogues diffèrent : c'est une **charge fixe**, pas du contenu marchand — cohérent avec le favicon comme cause principale.
+
+**Ces chiffres seront caducs dès que le sous-lot 2a touchera `ProductGrid.tsx`** (partagé par l'accueil et la fiche produit). Nouvelle mesure de référence à prendre juste après le correctif favicon (§4, point 2) — c'est celle-là, pas celle-ci, qui fera foi pour le §10.1.
+
+---
+
+## 8. Hygiène documentaire — points ouverts, non traités
+
+**Règles critiques dupliquées.** `AI_RULES.md` reproduit intégralement le contenu de `NOTE_MASQUAGE_COMMANDES.md` (§4) et de `NOTE_ERREURS_SUPABASE_NON_VERIFIEES.md` (§3, "Vérification des erreurs"), au lieu d'y renvoyer. Deux copies d'une même règle divergent tôt ou tard. À trancher : une source unique (probablement les `NOTE_*.md`, plus détaillées, avec le contexte et l'exemple) et un renvoi depuis `AI_RULES.md`, pas l'inverse — mais c'est une décision à prendre, pas à exécuter seul.
+
+**`IMPROVEMENTS.md` chevauche `REPRISE.md`.** Statuts ✅🔄⬜🚫 sur bugs/UX/fonctionnalités, plus ancien format, fonction proche de ce que `REPRISE.md` fait maintenant plus précisément (avec dates, fichiers, lignes). À fusionner — probablement absorber ce qui est encore pertinent dans `REPRISE.md` et retirer `IMPROVEMENTS.md`, mais non vérifié ligne à ligne, donc non tranché ici. Fichier laissé non suivi en attendant (voir §1).
+
+**`README.md` reste le boilerplate `create-next-app`** — aucune information sur TEKKIShop, aucune instruction spécifique au projet. Suivi tel quel (§1) pour qu'il ne redisparaisse pas, mais son contenu est à réécrire entièrement : ce que fait le projet, comment le lancer avec les variables d'environnement réelles (voir `AI_RULES.md` §10), où trouver `AI_RULES.md`/`REPRISE.md`.
+
+---
+
+## 9. Couverture pays — ouvert le 2026-08-12, hors périmètre de la livraison 1
+
+Trois listes de pays coexistent, non alignées : liste officielle `/start` (6 Afrique + 5 Europe/Canada), liste historique `/onboarding`/Réglages (17, dont CM/GN/CD/GA/MG/MA en plus), détection automatique par ville (12). Détail complet et chiffres par pays dans l'échange du 2026-08-12 — non reproduit ici en entier, à redemander si besoin plutôt que résumé une deuxième fois.
+
+**`BF`/`BK` — même pays, deux codes, à unifier après la livraison 1, pas avant.** Le Burkina Faso existe sous deux codes distincts dans `shops.country` (`BF`, code ISO, utilisé par le nouveau `/start` ; `BK`, code Bictorys, hérité de l'ancien flux) — documenté dans le code lui-même (`src/lib/utils/country-groups.ts:11-20`) et confirmé en base : **49 boutiques en `BF`, 76 en `BK`, soit 125 au total.** Conséquence directe : le Burkina Faso est en réalité le **troisième marché** de la plateforme (125), pas le Bénin (124) comme le laisserait croire un comptage naïf sur `BF` seul ou sur `BK` seul. **Tout chiffre par pays produit avant cette unification (y compris ceux déjà donnés dans cette session) est à relire à la lumière de ce split.**
+
+**Les huit marchands hors couverture (5 `CM`, 2 `CD`, 1 `MA`) — reformulation du problème, apportée par l'utilisateur le 2026-08-12, à ne pas investiguer maintenant.** Ce ne sont pas des marchands bloqués par le tunnel d'achat de leurs clients : ils se sont inscrits avec un indicatif téléphonique sénégalais ou ivoirien puis ont changé le pays dans leurs réglages ensuite. Ils n'ont jamais eu besoin du paiement en ligne côté acheteur — vitrine + paiement à la livraison, usage très répandu dans leur marché. **Ce qui les bloque réellement : ils ne peuvent pas payer leur propre abonnement à TEKKIShop**, faute de devise et de moyen de paiement supportés pour leur pays. Bictorys ne couvre pas encore ces pays, et l'intégration d'un second agrégateur est un chantier long depuis le Sénégal. **Question ouverte qui en découle, non investiguée** : peut-on encaisser un abonnement dans ces pays par un autre moyen que Bictorys (carte bancaire via Stripe, par exemple, déjà en place pour l'Europe/Canada) ?
+
+**Europe/Canada** : codé (Stripe Connect, devise EUR/CAD) mais jamais exercé en conditions réelles — **0 des 8 boutiques EU/CA (7 FR + 1 draft) n'a `stripe_connect_enabled = true`**. BE/LU/CH/CA n'ont aucune boutique à ce jour.
+
+**Résidus `FCFA` en dur dans le tunnel** : `src/app/[shop-slug]/commander/checkout/BictorysCheckout.tsx:139` (utilisé) et `OrangeMoneyCheckout.tsx:152` (mort, importé nulle part — à confirmer avant suppression, ne pas nettoyer en marge d'une autre tâche).
