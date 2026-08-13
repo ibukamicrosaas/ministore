@@ -42,7 +42,6 @@ const PLANS = [
       { label: 'Paiement mobile money et à la livraison' },
       { label: 'Assistant IA (50 messages/jour)' },
       { label: 'Envoi et confirmation de livraison en 1 clic' },
-      { label: 'Notifications SMS automatiques' },
       { label: 'Codes promo pour fidéliser tes clients' },
       { label: 'Tableau de bord avancé avec rapports de ventes' },
       { label: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs' },
@@ -171,7 +170,6 @@ export function PricingV6() {
                 <tr><th scope="row">Paiement mobile money</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Paiement à la livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Envoi et confirmation livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
-                <tr><th scope="row">Notifications SMS auto</th><td className="no">—</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Codes promo</th><td className="no">—</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Image de couverture boutique</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Domaine personnalisé (.com)</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
