@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bandoulière Versse — ABI&amp;CO (mockup produit)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#0FB4C6;
+  --ink:#101820; --ink2:#5A6873; --ink3:#8A959E;
+  --line:#E4E8EC; --surface:#F5F7F9; --paper:#FFFFFF;
+  --ok:#0E7C55; --ok-bg:#E8F5EF; --warn:#9A6410; --warn-bg:#FBF1DF;
+  --r-lg:18px; --r-md:12px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(16,24,32,.05), 0 8px 24px -18px rgba(16,24,32,.35);
+  --wrap:1180px;
+  --font-display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  --font-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+button,input{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 16px}
+@media(min-width:900px){ .wrap{padding:0 28px} }
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;
+  border-radius:var(--r-md);font-weight:600;font-size:15px;border:1px solid transparent;cursor:pointer;background:none;transition:.16s;white-space:nowrap}
+.btn--brand{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn--brand:hover{filter:brightness(.94)}
+.btn--outline{border-color:var(--line);background:var(--paper)}
+.btn--outline:hover{border-color:var(--ink3)}
+.btn--sm{height:38px;padding:0 14px;font-size:14px;border-radius:var(--r-sm)}
+.btn--block{width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;
+  font-size:12.5px;font-weight:600;background:var(--surface);color:var(--ink2);border:1px solid var(--line)}
+.chip--ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.chip--warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.price{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.015em}
+.avatar{width:32px;height:32px;border-radius:50%;flex:none;background:color-mix(in srgb,var(--brand) 18%,#fff);
+  border:1px solid color-mix(in srgb,var(--brand) 35%,#fff);display:grid;place-items:center;
+  font-family:var(--font-display);font-weight:700;font-size:11px;color:color-mix(in srgb,var(--brand) 80%,#000)}
+.verified{width:15px;height:15px;flex:none}
+
+/* ---------- barre haute ---------- */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar__in{display:flex;align-items:center;gap:10px;height:58px}
+.back{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14.5px;color:var(--ink2)}
+.back:hover{color:var(--ink)}
+.crumb{color:var(--ink3);font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.topbar__spacer{flex:1}
+.hide-sm{display:none}
+@media(min-width:760px){ .hide-sm{display:inline-flex} }
+
+/* ---------- disposition ---------- */
+.product{padding:16px 0 0}
+.product__in{display:grid;gap:20px}
+@media(min-width:900px){
+  .product{padding:26px 0 0}
+  .product__in{grid-template-columns:minmax(0,1.05fr) minmax(400px,.95fr);gap:38px;align-items:start}
+  .gallery{position:sticky;top:80px}
+}
+
+/* ---------- galerie ---------- */
+.gallery__main{
+  position:relative;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);
+  aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden;
+}
+.gallery__main svg{width:72%;height:72%;transition:color .25s ease}
+.gallery__flag{position:absolute;top:12px;left:12px;height:27px;padding:0 11px;border-radius:999px;
+  display:inline-flex;align-items:center;font-size:12px;font-weight:600;background:rgba(16,24,32,.82);color:#fff}
+.gallery__thumbs{display:flex;gap:9px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.gallery__thumbs::-webkit-scrollbar{display:none}
+.thumb{flex:none;width:66px;height:66px;border-radius:var(--r-sm);border:1px solid var(--line);
+  background:var(--paper);display:grid;place-items:center;cursor:pointer;padding:0}
+.thumb svg{width:70%;height:70%}
+.thumb[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+@media(max-width:899px){
+  .gallery__main{border-radius:0;border-left:0;border-right:0;margin:0 -16px;width:calc(100% + 32px);aspect-ratio:4/3.4}
+  .gallery__thumbs{padding-bottom:2px}
+}
+
+/* ---------- colonne achat ---------- */
+.seller{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink2);margin-bottom:12px}
+.seller b{color:var(--ink);font-weight:600}
+.title{font-family:var(--font-display);font-size:26px;font-weight:700;letter-spacing:-.025em;margin:0;line-height:1.15}
+@media(min-width:900px){ .title{font-size:33px} }
+.pricerow{display:flex;align-items:baseline;gap:10px;margin-top:8px;flex-wrap:wrap}
+.pricerow .price{font-size:29px}
+.pricerow small{color:var(--ink3);font-size:13.5px}
+.tagrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+
+/* bloc "tout ce qu'il faut savoir" */
+.know{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.know__head{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--ink3)}
+.know__item{display:flex;gap:12px;padding:13px 16px;align-items:flex-start}
+.know__item + .know__item{border-top:1px solid var(--line)}
+.know__item svg{flex:none;margin-top:2px;color:var(--brand)}
+.know__item b{display:block;font-size:14.5px;font-weight:600}
+.know__item span{display:block;font-size:13.5px;color:var(--ink2);margin-top:1px}
+
+/* variantes */
+.variants{margin-top:20px}
+.variants__head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.variants__label{font-size:14.5px}
+.variants__label b{font-weight:600}
+.variants__count{font-size:13px;color:var(--ink3)}
+.variants__row{display:flex;gap:9px;flex-wrap:wrap}
+.variant{width:52px;height:52px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--paper);
+  display:grid;place-items:center;cursor:pointer;padding:0;position:relative;transition:.15s}
+.variant svg{width:78%;height:78%}
+.variant:hover{border-color:var(--ink3)}
+.variant[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.variant[data-stock="0"]{opacity:.42}
+.variant[data-stock="0"]::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(to top left,transparent calc(50% - 1px),var(--ink3) 50%,transparent calc(50% + 1px))}
+
+/* quantité + achat */
+.buy{margin-top:20px;display:flex;gap:10px;align-items:center}
+.qty{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--r-md);background:var(--paper);height:48px}
+.qty button{width:42px;height:100%;border:0;background:none;cursor:pointer;color:var(--ink2);font-size:19px}
+.qty button:hover{color:var(--ink)}
+.qty span{width:34px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.buy .btn--brand{flex:1}
+.ask{margin-top:9px}
+.reassure{margin-top:10px;font-size:13.5px;color:var(--ink3);text-align:center}
+
+.paylogos{display:flex;align-items:center;gap:9px;margin-top:16px;flex-wrap:wrap;
+  padding-top:16px;border-top:1px solid var(--line)}
+.paylogos span{font-size:13.5px;color:var(--ink2)}
+.pay{height:26px;padding:0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--line);
+  display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;color:var(--ink2)}
+
+/* description */
+.about{margin-top:22px}
+.about h2{font-family:var(--font-display);font-size:18px;letter-spacing:-.015em;margin:0 0 8px}
+.about p{margin:0;color:var(--ink2);font-size:14.8px;max-width:58ch}
+.specs{display:grid;grid-template-columns:1fr;gap:7px;margin-top:14px}
+@media(min-width:560px){ .specs{grid-template-columns:1fr 1fr} }
+.spec{display:flex;gap:9px;align-items:center;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:10px 12px;font-size:14px}
+.spec svg{flex:none;color:var(--ok)}
+
+/* suite de boutique */
+.more{margin-top:44px;padding-bottom:120px}
+@media(min-width:760px){ .more{padding-bottom:56px} }
+.more__head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.more__head h2{font-family:var(--font-display);font-size:19px;letter-spacing:-.015em;margin:0}
+.more__head a{margin-left:auto;font-size:14px;font-weight:600;color:var(--brand)}
+.mgrid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:640px){ .mgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px} }
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;transition:.18s}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.card__media{aspect-ratio:1/1;background:var(--surface);display:grid;place-items:center;border-bottom:1px solid var(--line)}
+.card__media svg{width:74%;height:74%}
+.card__body{padding:11px 12px 13px}
+.card__name{font-size:14.5px;font-weight:600;margin:0;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card__price{font-size:16px;margin-top:5px}
+
+/* bandeau marchand de fin */
+.sellerbar{margin-top:28px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.sellerbar__txt{flex:1;min-width:200px}
+.sellerbar h3{font-family:var(--font-display);font-size:16.5px;margin:0 0 2px;letter-spacing:-.01em}
+.sellerbar p{margin:0;font-size:14px;color:var(--ink2)}
+
+/* barre mobile d'achat */
+.buybar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.95);
+  backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  padding:9px 14px calc(9px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
+.buybar__price{line-height:1.15}
+.buybar__price .price{font-size:18px;display:block}
+.buybar__price small{font-size:11.5px;color:var(--ok);font-weight:600}
+.buybar .btn--brand{flex:1;height:46px}
+.buybar .btn--outline{flex:0 0 46px;height:46px;padding:0}
+@media(min-width:900px){ .buybar{display:none} }
+
+.is-lean [data-opt]{display:none!important}
+
+/* panneau démo */
+.demo{position:fixed;right:14px;bottom:82px;z-index:60}
+@media(min-width:900px){ .demo{bottom:16px} }
+.demo__toggle{width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;background:#101820;color:#fff;
+  display:grid;place-items:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
+.demo__panel{position:absolute;right:0;bottom:54px;width:236px;background:#101820;color:#fff;border-radius:14px;
+  padding:14px;display:none;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)}
+.demo.is-open .demo__panel{display:block}
+.demo__panel h4{margin:0 0 3px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#8A959E;font-weight:600}
+.demo__panel p{margin:0 0 12px;font-size:12px;color:#A9B4BD;line-height:1.4}
+.demo__row{display:flex;gap:7px;margin-bottom:13px}
+.demo__sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.demo__sw[aria-pressed="true"]{border-color:#fff}
+.demo__switch{width:100%;height:36px;border-radius:9px;border:1px solid #2A343D;background:#18222B;color:#fff;
+  font-size:13px;font-weight:600;cursor:pointer}
+.demo__link{display:block;margin-top:9px;font-size:13px;color:var(--brand);font-weight:600;text-align:center}
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="bag" viewBox="0 0 200 200">
+    <path d="M56 92 C44 40 156 40 144 92" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+    <path d="M42 96 h116 v18 a58 58 0 0 1 -116 0 z" fill="currentColor"/>
+    <path d="M42 96 v-4 a58 46 0 0 1 116 0 v4 z" fill="currentColor" opacity=".82"/>
+    <rect x="90" y="106" width="20" height="11" rx="5" fill="#C9A227"/>
+  </symbol>
+  <symbol id="check" viewBox="0 0 20 20"><path d="M10 1.7a8.3 8.3 0 1 0 0 16.6 8.3 8.3 0 0 0 0-16.6Zm4.1 6.4-4.9 4.9a1 1 0 0 1-1.4 0L5.9 10.9a1 1 0 1 1 1.4-1.4l1.2 1.2 4.2-4.2a1 1 0 0 1 1.4 1.4Z" fill="#1D9BF0"/></symbol>
+  <symbol id="tick" viewBox="0 0 20 20"><path d="m4 10.6 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div id="shop">
+
+  <header class="topbar">
+    <div class="wrap topbar__in">
+      <a href="tekkishop-boutique-accueil.html" class="back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5 8 12l7 7"/></svg>
+        <span class="hide-sm">ABI&amp;CO</span>
+      </a>
+      <span class="crumb hide-sm">/ Bandoulière Versse</span>
+      <span class="topbar__spacer"></span>
+      <a href="#" class="btn btn--outline btn--sm hide-sm">Écrire à ABI&amp;CO</a>
+    </div>
+  </header>
+
+  <main class="product">
+    <div class="wrap product__in">
+
+      <!-- ======= Galerie ======= -->
+      <div class="gallery">
+        <div class="gallery__main">
+          <span class="gallery__flag" data-opt>Le plus commandé</span>
+          <svg id="hero" style="color:#D62839"><use href="#bag"/></svg>
+        </div>
+        <div class="gallery__thumbs">
+          <button class="thumb" aria-pressed="true" aria-label="Vue de face"><svg style="color:#D62839"><use href="#bag"/></svg></button>
+          <button class="thumb" aria-label="Vue de dos"><svg style="color:#C22334"><use href="#bag"/></svg></button>
+          <button class="thumb" aria-label="Intérieur"><svg style="color:#E5606D"><use href="#bag"/></svg></button>
+          <button class="thumb" aria-label="Porté"><svg style="color:#A81B2B"><use href="#bag"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ======= Colonne achat ======= -->
+      <div class="buycol">
+        <a href="tekkishop-boutique-accueil.html" class="seller">
+          <span class="avatar">A&amp;C</span>
+          Vendu par <b>ABI&amp;CO</b>
+          <svg class="verified"><use href="#check"/></svg>
+        </a>
+
+        <h1 class="title">Bandoulière Versse</h1>
+
+        <div class="pricerow">
+          <span class="price" id="price">15 000&#8239;FCFA</span>
+          <small data-opt>Livraison à partir de 1 000&#8239;FCFA à Abidjan</small>
+        </div>
+
+        <div class="tagrow">
+          <span class="chip chip--ok" id="stock">En stock</span>
+          <span class="chip" data-opt>Prix fixe</span>
+          <span class="chip" data-opt>Livrée sous 24 h à Abidjan</span>
+        </div>
+
+        <!-- Variantes : le cœur du sujet -->
+        <div class="variants" data-opt>
+          <div class="variants__head">
+            <span class="variants__label">Couleur : <b id="colorname">Rouge</b></span>
+            <span class="variants__count">9 couleurs</span>
+          </div>
+          <div class="variants__row" id="variants">
+            <button class="variant" aria-pressed="true" data-name="Rouge" data-c="#D62839"><svg style="color:#D62839"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Rose" data-c="#E8497B"><svg style="color:#E8497B"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Noir" data-c="#1B1D21"><svg style="color:#1B1D21"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Bleu ciel" data-c="#A9C9E8"><svg style="color:#A9C9E8"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Bordeaux" data-c="#6B2436"><svg style="color:#6B2436"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Marron" data-c="#8B5A33"><svg style="color:#8B5A33"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Turquoise" data-c="#2F8C93"><svg style="color:#2F8C93"><use href="#bag"/></svg></button>
+            <button class="variant" data-name="Violet" data-c="#B08CC7"><svg style="color:#B08CC7"><use href="#bag"/></svg></button>
+            <button class="variant" data-stock="0" data-name="Beige" data-c="#C9B49A"><svg style="color:#C9B49A"><use href="#bag"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Achat -->
+        <div class="buy">
+          <div class="qty">
+            <button aria-label="Retirer un article" id="minus">−</button>
+            <span id="q">1</span>
+            <button aria-label="Ajouter un article" id="plus">+</button>
+          </div>
+          <button class="btn btn--brand">Commander ce produit</button>
+        </div>
+        <button class="btn btn--outline btn--block ask">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Poser une question sur ce produit
+        </button>
+        <p class="reassure">Tu choisis la livraison et le paiement à l'étape suivante.</p>
+
+        <div class="paylogos">
+          <span>Paiement :</span>
+          <span class="pay">Wave</span><span class="pay">Orange Money</span><span class="pay">MTN</span><span class="pay">Moov</span><span class="pay">À la livraison</span>
+        </div>
+
+        <!-- Ce qu'on demande en DM, répondu ici -->
+        <div class="know">
+          <div class="know__head">Avant de commander</div>
+          <div class="know__item" data-opt>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            <div><b>Livraison selon ta zone</b><span>Cocody 1 000 F · Yopougon 1 500 F · Bingerville 2 000 F. Le tarif exact s'affiche pendant la commande.</span></div>
+          </div>
+          <div class="know__item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/></svg>
+            <div><b>Mobile Money ou paiement à la livraison</b><span>Tu n'as pas besoin de payer avant de recevoir.</span></div>
+          </div>
+          <div class="know__item" data-opt>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/></svg>
+            <div><b>Échange sous 7 jours</b><span>Produit non utilisé, emballage conservé.</span></div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <section class="about">
+          <h2>Le produit</h2>
+          <p>Une bandoulière compacte, facile à porter et assez spacieuse pour l'essentiel : téléphone, portefeuille, clés. Le fermoir doré relève une tenue simple.</p>
+          <div class="specs" data-opt>
+            <span class="spec"><svg width="17" height="17"><use href="#tick"/></svg> 21 × 16 × 8 cm</span>
+            <span class="spec"><svg width="17" height="17"><use href="#tick"/></svg> Bandoulière réglable</span>
+            <span class="spec"><svg width="17" height="17"><use href="#tick"/></svg> Deux compartiments</span>
+            <span class="spec"><svg width="17" height="17"><use href="#tick"/></svg> Fermoir sécurisé</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ======= Suite de la boutique ======= -->
+    <div class="wrap more">
+      <div class="more__head">
+        <h2>Aussi dans cette boutique</h2>
+        <a href="tekkishop-boutique-accueil.html">Tout voir →</a>
+      </div>
+      <div class="mgrid">
+        <a class="card" href="#">
+          <div class="card__media" style="color:#8B5A33"><svg><use href="#bag"/></svg></div>
+          <div class="card__body"><h3 class="card__name">Versse format moyen</h3><div class="card__price price">22 000&#8239;FCFA</div></div>
+        </a>
+        <a class="card" href="#">
+          <div class="card__media" style="color:#2F8C93"><svg><use href="#bag"/></svg></div>
+          <div class="card__body"><h3 class="card__name">Cabas Bagco 40 cm</h3><div class="card__price price">28 000&#8239;FCFA</div></div>
+        </a>
+        <a class="card" href="#">
+          <div class="card__media" style="color:#B08CC7"><svg><use href="#bag"/></svg></div>
+          <div class="card__body"><h3 class="card__name">Pochette Versse</h3><div class="card__price price">9 500&#8239;FCFA</div></div>
+        </a>
+        <a class="card" href="#">
+          <div class="card__media" style="color:#C9A227"><svg><use href="#bag"/></svg></div>
+          <div class="card__body"><h3 class="card__name">Ceinture Bagco</h3><div class="card__price price">8 000&#8239;FCFA</div></div>
+        </a>
+      </div>
+
+      <div class="sellerbar">
+        <span class="avatar" style="width:44px;height:44px;font-size:14px">A&amp;C</span>
+        <div class="sellerbar__txt">
+          <h3>ABI&amp;CO</h3>
+          <p>Maroquinerie · Abidjan · Répond en général sous 1 h</p>
+        </div>
+        <a href="#" class="btn btn--outline btn--sm">Écrire</a>
+        <a href="tekkishop-boutique-accueil.html" class="btn btn--outline btn--sm">Voir la boutique</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======= Barre d'achat mobile ======= -->
+  <div class="buybar">
+    <div class="buybar__price">
+      <span class="price" id="barprice">15 000&#8239;FCFA</span>
+      <small id="barstock">En stock</small>
+    </div>
+    <button class="btn btn--brand">Commander</button>
+    <button class="btn btn--outline" aria-label="Poser une question">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="demo" id="demo">
+  <div class="demo__panel">
+    <h4>Couleur du marchand</h4>
+    <p>Le template s'adapte à la marque de la boutique.</p>
+    <div class="demo__row">
+      <button class="demo__sw" style="background:#0FB4C6" aria-pressed="true" data-c="#0FB4C6"></button>
+      <button class="demo__sw" style="background:#D6336C" data-c="#D6336C"></button>
+      <button class="demo__sw" style="background:#E8590C" data-c="#E8590C"></button>
+      <button class="demo__sw" style="background:#1E7A46" data-c="#1E7A46"></button>
+      <button class="demo__sw" style="background:#3B4CC0" data-c="#3B4CC0"></button>
+    </div>
+    <h4>Remplissage</h4>
+    <p>Produit sans variantes, sans specs, sans zones de livraison.</p>
+    <button class="demo__switch" id="lean">Passer en fiche minimale</button>
+    <a class="demo__link" href="tekkishop-boutique-accueil.html">Voir la page d'accueil →</a>
+  </div>
+  <button class="demo__toggle" aria-label="Options de démonstration">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H2a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1.1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H8a1.6 1.6 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V8a1.6 1.6 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>
+  </button>
+</div>
+
+<script>
+const hero=document.getElementById('hero');
+const colorname=document.getElementById('colorname');
+const stock=document.getElementById('stock');
+const barstock=document.getElementById('barstock');
+
+/* variantes */
+document.querySelectorAll('#variants .variant').forEach(v=>{
+  v.addEventListener('click',()=>{
+    document.querySelectorAll('#variants .variant').forEach(x=>x.setAttribute('aria-pressed','false'));
+    v.setAttribute('aria-pressed','true');
+    hero.style.color=v.dataset.c;
+    colorname.textContent=v.dataset.name;
+    document.querySelectorAll('.gallery__thumbs .thumb svg').forEach((s,i)=>{
+      s.style.color=v.dataset.c; s.style.opacity = 1 - i*0.12;
+    });
+    const out = v.dataset.stock==='0';
+    stock.textContent = out ? 'Bientôt de retour' : 'En stock';
+    stock.className = 'chip ' + (out ? 'chip--warn' : 'chip--ok');
+    barstock.textContent = out ? 'Bientôt de retour' : 'En stock';
+    barstock.style.color = out ? 'var(--warn)' : 'var(--ok)';
+  });
+});
+
+/* miniatures */
+document.querySelectorAll('.gallery__thumbs .thumb').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.gallery__thumbs .thumb').forEach(x=>x.setAttribute('aria-pressed','false'));
+    t.setAttribute('aria-pressed','true');
+  });
+});
+
+/* quantité */
+let q=1;
+const qEl=document.getElementById('q'), price=document.getElementById('price'), barprice=document.getElementById('barprice');
+const unit=15000;
+const fmt=n=>n.toLocaleString('fr-FR').replace(/\u202F|\s/g,'\u202F')+'\u202FFCFA';
+function render(){ qEl.textContent=q; price.textContent=fmt(unit*q); barprice.textContent=fmt(unit*q); }
+document.getElementById('plus').addEventListener('click',()=>{q=Math.min(q+1,20);render()});
+document.getElementById('minus').addEventListener('click',()=>{q=Math.max(q-1,1);render()});
+
+/* démo */
+document.querySelectorAll('.demo__sw').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.demo__sw').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    document.documentElement.style.setProperty('--brand', b.dataset.c);
+  });
+});
+const lean=document.getElementById('lean');
+lean.addEventListener('click',()=>{
+  const on=document.getElementById('shop').classList.toggle('is-lean');
+  lean.textContent = on ? 'Revenir à la fiche complète' : 'Passer en fiche minimale';
+});
+document.querySelector('.demo__toggle').addEventListener('click',()=>document.getElementById('demo').classList.toggle('is-open'));
+</script>
+</body>
+</html>
