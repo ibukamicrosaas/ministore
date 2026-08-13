@@ -1,5 +1,6 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { formatPrice, type ShopCurrency } from '@/lib/utils/country-groups'
@@ -37,7 +38,25 @@ export async function setShopStatus(
   if (!shop) return { error: 'Boutique introuvable.' }
 
   // legacy : status reste inerte pour ces boutiques, comportement 100% inchangé.
-  if (shop.trial_model !== 'free_orders') return {}
+  if (shop.trial_model !== 'free_orders') {
+    // Garde-fou : une boutique basculée vers legacy (REPRISE.md §17) sans avoir
+    // d'abord libéré ses commandes retenues les abandonne pour toujours — ce
+    // chemin n'a jamais eu de mécanisme pour les retrouver. Ne répare rien,
+    // rend le cas visible si la procédure n'a pas été suivie.
+    const { count: stillHeldCount } = await admin
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shopId)
+      .eq('is_held', true)
+      .is('released_at', null)
+    if ((stillHeldCount ?? 0) > 0) {
+      Sentry.captureException(
+        new Error('setShopStatus: boutique non-free_orders avec des commandes encore retenues'),
+        { extra: { shopId, trialModel: shop.trial_model, heldCount: stillHeldCount } },
+      )
+    }
+    return {}
+  }
 
   if (status === 'active') {
     const { data, error } = await admin.rpc('activate_free_orders_shop', { p_shop_id: shopId })

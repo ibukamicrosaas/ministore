@@ -40,6 +40,12 @@
 - Landing, `/start` (2 segments, 1 pays couvert + 1 non couvert), premier produit publié, 3 commandes offertes + alerte 2ᵉ + fermeture 3ᵉ, commande retenue (coordonnées masquées), fin d'essai Cas A et Cas B, activation, commande avec code promo + remise quantité, `/onboarding` encore fonctionnel, plafond produits Découverte.
 - **Ajouté le 2026-08-12** : reprise de paiement — passer une commande en ligne, abandonner au moment de payer, revenir sur `/commander/pay?order_id=…&token=…`, vérifier qu'on peut encore payer. C'est le chemin qui porte le taux d'aboutissement de 12 % mesuré le 2026-08-11 — état à connaître avant la livraison 2 (refonte tunnel).
 - **Ajouté le 2026-08-12** : boutique avec paiement en ligne coupé ou paiement à la livraison coupé — le tunnel doit rester cohérent (une seule méthode restante affichée comme une phrase, pas un choix à un seul bouton — §7 de `SPEC-refonte-tunnel-commande.md`, déjà la règle cible, à vérifier sur le comportement actuel avant refonte).
+- **Ajouté le 2026-08-13, suite au correctif `54aacf9` (MAX_HELD_ORDERS 3→1, comptage aligné, contact WhatsApp)** :
+  - Boutique `free_orders` `expired`, une commande physique retenue : le bouton de commande doit être fermé dès cette première commande (seuil à 1, plus à la troisième).
+  - Même boutique, mais avec uniquement des commandes retenues **digitales** (aucune physique) : le bouton doit rester **actif**, quel que soit leur nombre — c'est l'invariant vérifié sur scénarios construits en session, jamais sur une commande réelle faute de donnée en base ; premier vrai test possible seulement une fois une boutique `free_orders` réelle en production.
+  - Écran de succès d'une commande retenue : bouton WhatsApp visible et préempli (référence + montant, sans promesse ni relance) quand `phone_whatsapp` est renseigné ; absent proprement (pas de bloc vide) sinon ; le bouton générique « Contacter la boutique » plus bas ne doit pas apparaître en double pour ce cas.
+  - Ne pas interpréter l'absence de SMS pendant la recette comme une régression : le canal Lafricamobile est confirmé non délivré (§15/§16), ticket ouvert côté fournisseur, indépendant de ce qui part en production aujourd'hui.
+  - Vérifier que `PricingV6` (déployée avec cette livraison) n'affiche plus « Notifications SMS automatiques » nulle part (retiré dans `c5d37f5`).
 
 ---
 
@@ -685,3 +691,35 @@ Mesuré sur les **20 commandes de produits numériques payées depuis le 23 juin
 | Livraison numérique | — | À écrire — déjà chiffré en §15 point 3, priorité Livraison 2 |
 
 **Coût comparé — ordre de grandeur, pas une facture.** SMS Lafricamobile à 15 FCFA le message, 26,5 % de délivrabilité mesurée par le fournisseur lui-même → **57 FCFA par message réellement reçu** (calcul de l'utilisateur, confirmé : 15 / 0,265 ≈ 56,6). Resend : offre gratuite jusqu'à 3 000 e-mails/mois, palier payant ensuite de l'ordre de 20 USD pour 50 000 e-mails/mois (à confirmer sur leur page tarifs actuelle — **non vérifié depuis ce dépôt, connaissance générale seulement, pas une donnée mesurée comme le reste de cette note**) — soit, si ce palier s'applique, de l'ordre de 0,20 à 0,25 FCFA par e-mail envoyé, **sans même tenir compte d'un taux de délivrabilité** (Resend ne publie pas de taux comparable à celui de Lafricamobile dans les sources consultées ici). Écart brut, avant toute vérification tarifaire : plusieurs centaines de fois moins cher par message envoyé, et probablement du même ordre par message reçu si la délivrabilité e-mail via un expéditeur authentifié (SPF/DKIM, déjà en place vu que Resend est en production) reste proche de 100 % — ce dernier point n'est pas mesuré ici non plus, à vérifier avant de fonder une décision dessus.
+
+---
+
+## 17. Retour arrière `free_orders` → `legacy` — mode d'emploi, pas une note — 2026-08-13
+
+**Ce que ce n'est pas : un interrupteur universel.** `UPDATE shops SET trial_model = 'legacy'` coupe correctement toute la logique conditionnelle (`isTrial`, `VisitBeacon`, écrans de fin d'essai, quota à la commande) — mais **abandonne les commandes déjà retenues**. `setShopStatus` (`lib/billing/shop-status.ts:40`), seul point qui sait les libérer, retourne immédiatement dès que `trial_model !== 'free_orders'`. Une commande retenue au moment de la bascule reste `is_held=true` pour toujours, même après paiement — `legacy` n'a jamais eu ce concept, aucun code ne va la rechercher.
+
+**Conséquence directe : sûr avant la première commande retenue, dangereux après.** Vérifier systématiquement avant toute bascule, jamais l'inverse.
+
+**Procédure, dans cet ordre, jamais l'étape 3 seule :**
+
+```sql
+-- 1. Y a-t-il des commandes retenues ? Si oui, LIBÉRER D'ABORD.
+SELECT o.id, o.shop_id FROM orders o
+JOIN shops s ON s.id = o.shop_id
+WHERE o.is_held = true AND o.released_at IS NULL
+  AND s.trial_model = 'free_orders';
+
+-- 2. Libérer avant bascule
+UPDATE orders SET is_held = false, released_at = now()
+WHERE is_held = true AND released_at IS NULL
+  AND shop_id IN (SELECT id FROM shops WHERE trial_model = 'free_orders');
+
+-- 3. Alors seulement
+UPDATE shops SET trial_model = 'legacy' WHERE trial_model = 'free_orders';
+```
+
+**Ce que l'étape 2 ne fait PAS** : elle ne débloque aucun fonds ni ne notifie personne — elle lève seulement le masquage (`is_held`/`released_at`), pour que la commande redevienne une commande normale, visible, dans une boutique qui va devenir `legacy`. Si la commande portait un paiement en ligne retenu (produit digital notamment, voir `ADDITIF-argent-commandes-retenues.md`), vérifier séparément que les fonds correspondants sont traités correctement pour ce cas précis avant de considérer la bascule terminée — non couvert par cette procédure, à traiter boutique par boutique si le cas se présente.
+
+**Portée** : la requête `SELECT` de l'étape 1 cible spécifiquement les boutiques qu'on s'apprête à basculer (via la jointure sur `trial_model = 'free_orders'`) — à restreindre par `shop_id` si la bascule ne concerne qu'une boutique précise, jamais lancer l'étape 2 sur toutes les boutiques `free_orders` si l'intention est d'en revenir une seule.
+
+**Garde-fou ajouté dans le code** (`lib/billing/shop-status.ts`) : si `setShopStatus` est appelé sur une boutique `trial_model !== 'free_orders'` qui a encore des commandes retenues, l'anomalie est remontée dans Sentry au lieu de disparaître dans un retour silencieux — ne répare rien, rend le cas visible s'il se produit malgré la procédure.
