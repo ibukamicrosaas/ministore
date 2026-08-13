@@ -178,6 +178,8 @@ Les deux somment `order_items.line_total` au lieu d'imputer la remise par ligne.
 10. **`webhooks/stripe/route.ts` n'envoie pas d'e-mail de confirmation de commande, contrairement à `webhooks/bictorys/route.ts`** — **à corriger avant l'ouverture Europe/Canada, décidé le 2026-08-13** (§16 point identifié, pas encore chiffré séparément). Les clients payant par carte (Stripe, majoritairement EU/CA) n'ont aujourd'hui aucune confirmation e-mail automatique, contrairement aux paiements Bictorys.
 11. **E-mail de livraison numérique, en plus du SMS (jamais à la place)** — **Livraison 2, en tête du groupe SMS/notifications, chiffré au §15 point 3.** Corrige directement les 4 échecs sur 20 mesurés (§14 point 2) : gabarit à écrire (clone de `sendOrderConfirmationEmail`), deux points d'appel à modifier (`webhooks/bictorys/route.ts:531`, `webhooks/stripe/route.ts:154`), condition sur `client_email` non vide. Couverture mesurée 60 % chez les acheteurs de produits numériques (§15 point 3), largement au-dessus du plafond général de 7,6 %/19,3 %.
 12. **Compteur de visites (`shop_visits`/`VisitBeacon`) ouvert à toutes les boutiques, pas seulement `trial_model='free_orders'`** — **Livraison 2, juste après le point 11 ci-dessus, décidé le 2026-08-13.** Envisagé pour la livraison 1, écarté : faire basculer 1 543 boutiques sur un endpoint qui n'a jamais servi qu'une fois (§11/§16) ajouterait un volume inconnu au pire moment, le jour même de la mise en production. Le déploiement de la livraison 1 donnera les premières boutiques `free_orders` réelles — observer leur comportement sur ce point avant de l'ouvrir à toutes, pas l'inverse.
+13. **Dette technique — historique de migrations pas dans l'ordre chronologique d'application, constaté le 2026-08-13.** `086`/`087` ont été appliqués et enregistrés (`migration repair`) *après* que `088`/`089`/`090`/`091` l'étaient déjà — l'ordre numérique des fichiers ne correspond plus à l'ordre réel d'application dans `supabase_migrations.schema_migrations`. Rien de cassé aujourd'hui (vérifié : les 6 objets de `086`/`087` existent, l'historique est complet 001-091). **Mais tout futur `supabase db push --linked` retombera sur le refus déjà rencontré** (« Found local migration files to be inserted before the last migration on remote database », réclame `--include-all` — interdit par AI_RULES.md §3). Une session future qui ne lit pas ce point redécouvrira le problème de zéro. Pas d'action requise tant qu'aucune nouvelle migration n'a besoin d'être poussée par le chemin normal ; le jour où c'est le cas, repartir directement sur le chemin hors séquence (`db query -f` + `migration repair`), pas sur `db push`.
+14. **`NOTE_MASQUAGE_COMMANDES.md`, à faire dès que ce fichier arrive sur `refonte-start`** (il existe sur `main` depuis `7a162af`, absent d'ici avant la fusion `main → refonte-start`) — ajouter un renvoi vers l'en-tête de `src/lib/orders/redact.ts` pour la dérogation `admin/payments/page.tsx` (documentée le 2026-08-13, commit `52a5b69`), pas dupliquer le texte à deux endroits.
 
 ---
 
@@ -723,3 +725,69 @@ UPDATE shops SET trial_model = 'legacy' WHERE trial_model = 'free_orders';
 **Portée** : la requête `SELECT` de l'étape 1 cible spécifiquement les boutiques qu'on s'apprête à basculer (via la jointure sur `trial_model = 'free_orders'`) — à restreindre par `shop_id` si la bascule ne concerne qu'une boutique précise, jamais lancer l'étape 2 sur toutes les boutiques `free_orders` si l'intention est d'en revenir une seule.
 
 **Garde-fou ajouté dans le code** (`lib/billing/shop-status.ts`) : si `setShopStatus` est appelé sur une boutique `trial_model !== 'free_orders'` qui a encore des commandes retenues, l'anomalie est remontée dans Sentry au lieu de disparaître dans un retour silencieux — ne répare rien, rend le cas visible s'il se produit malgré la procédure.
+
+---
+
+## 18. Séquence de fusion complète — préparée, non exécutée — 2026-08-13
+
+Quatre étapes, dans cet ordre, conformes au §0. Chacune vérifiée par une simulation en lecture seule (`git merge-tree`, ne modifie rien) avant d'être écrite ici — pas devinée.
+
+**État constaté avant de commencer** (`git fetch`, puis comparaison des trois branches) :
+- `main` : 9 commits que `refonte-start` n'a pas (dont tout le travail migrations `066`-`091`, PR #4, etc.).
+- `refonte-start` : 29 commits que `dev` n'a pas.
+- `dev` : **aucun commit que `refonte-start` n'a pas** — son unique commit propre (`3fdad82`, 31 juillet, "retrait des revenus abonnements") est exactement le point d'où `refonte-start` est parti. `dev` n'a donc rien d'unique à préserver ; il est simplement resté immobile pendant que `refonte-start` avançait. C'est pour ça qu'il est encore à la migration `065` — il n'a jamais reçu les commits qui apportaient `066` à `091`, pas parce qu'il les a explicitement évités.
+
+### Étape 1 — `main` → `refonte-start`
+
+```
+git checkout refonte-start
+git pull origin refonte-start
+git merge origin/main
+```
+
+**Conflits attendus, vérifiés par simulation (`git merge-tree --write-tree --messages origin/refonte-start origin/main`) — exactement deux, rien d'autre** : `AI_RULES.md` et `REPRISE.md`, tous les deux en `add/add` (les deux branches ont "ajouté" ces fichiers indépendamment, sans ancêtre commun, depuis qu'ils étaient gitignorés). **Aucun conflit sur `supabase/migrations/` ni sur aucun fichier de code** — vérifié par la même simulation, pas supposé.
+
+**Résolution des deux conflits — vérifiée sûre, pas juste préférée** : `main` n'a pas touché `AI_RULES.md` depuis `5adff5d` (10 août) ni `REPRISE.md` depuis `23528ab` (10 août) — les deux datent d'avant le début de cette session. `refonte-start` contient 583 insertions cumulées sur ces deux fichiers depuis, 12 suppressions seulement (des états mis à jour, pas du contenu perdu). La version de `refonte-start` est un sur-ensemble strict — garder la sienne entièrement est sûr :
+```
+git checkout --ours AI_RULES.md REPRISE.md
+git add AI_RULES.md REPRISE.md
+git commit
+```
+
+**Vérifier avant de continuer** : `npm run build` passe ; `git status` propre ; `grep -rn "<<<<<<<" .` ne trouve rien (sécurité en plus de la simulation, au cas où l'état réel aurait divergé de la simulation entre-temps).
+
+**Point de non-retour de cette étape : le `git push`.** Avant le push, tout est local — `git merge --abort` pendant le conflit, ou `git reset --hard origin/refonte-start` après un commit non poussé, annulent proprement. Après `git push origin refonte-start`, la branche partagée bouge et Vercel redéploie la préversion associée — pas la production, encore réversible, mais plus un simple `reset` local.
+
+### Étape 2 — `refonte-start` → `dev`
+
+```
+git checkout dev
+git pull origin dev
+git merge origin/refonte-start
+```
+
+**Résultat attendu : fast-forward propre, aucun conflit.** `dev` n'ayant aucun commit unique (voir plus haut), et `refonte-start` contenant déjà tout ce que `dev` a une fois l'étape 1 poussée, ce merge avance simplement le pointeur de `dev` — pas de commit de fusion à créer, pas de résolution. **Si git ne propose pas un fast-forward à ce moment (message autre que « Fast-forward »), c'est le signal qu'un commit a été fait directement sur `dev` entre la vérification ci-dessus et l'exécution — s'arrêter et vérifier avant de continuer, ne pas forcer.**
+
+**Vérifier avant de continuer** : `npm run build` passe sur `dev` ; la préversion Vercel de `dev` se redéploie sans erreur.
+
+**Point de non-retour : le `git push origin dev`.** Mêmes conséquences que l'étape 1 — préversion, pas production.
+
+### Étape 3 — Recette manuelle
+
+Sur la préversion de `dev`, la liste complète du §0 (captures de référence en main avant de commencer — c'est la condition posée pour lancer l'étape 1 elle-même, pas seulement celle-ci) plus les ajouts du 2026-08-13 sur les commandes retenues. **Aucune commande git — étape humaine.** Si un point échoue : correctif sur `refonte-start`, refaire l'étape 1 et 2 pour ce correctif précis, recommencer la recette sur ce point. Ne jamais corriger directement sur `dev`.
+
+**Point de non-retour : aucun — c'est la vérification elle-même. Tant qu'elle n'est pas déclarée complète, l'étape 4 n'a pas lieu.**
+
+### Étape 4 — `dev` → `main`
+
+```
+git checkout main
+git pull origin main
+git merge origin/dev
+```
+
+**Avant d'exécuter, revérifier — ne pas se fier à l'état constaté aujourd'hui** : `git log origin/main` peut avoir bougé entre maintenant et le jour de cette étape (un hotfix direct sur `main`, par exemple). Refaire `git fetch` et si besoin une nouvelle simulation `git merge-tree` juste avant, pas supposer que la simulation de ce soir est encore valable.
+
+**Résultat attendu si rien n'a bougé sur `main` entre-temps : fast-forward propre**, `main` ayant déjà reçu tout son contenu propre via le commit de fusion de l'étape 1 (`main` devient un ancêtre de `dev` à ce stade). Si `main` a reçu un commit direct depuis, un vrai merge (pas fast-forward) sera nécessaire — revérifier les conflits avant de continuer.
+
+**Point de non-retour réel de toute la séquence : le `git push origin main`.** C'est le seul des quatre qui déclenche un déploiement de production — les 1 543 boutiques existantes, `tekki.shop`, tout ce qui est en ligne aujourd'hui. Après ce push, un retour arrière demande un nouveau déploiement (revert commit ou redéploiement de la révision précédente depuis Vercel), pas un simple `reset` local — coûteux en attention même si techniquement rapide. Les trois étapes précédentes ne touchent que des préversions ; celle-ci seule est la bascule réelle.
