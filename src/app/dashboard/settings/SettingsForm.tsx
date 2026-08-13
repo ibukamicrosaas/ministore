@@ -10,6 +10,7 @@ import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Shop, DeliveryZone } from '@/types'
 import { APP_URL } from '@/constants'
 import { PinInput } from '@/components/ui/PinInput'
+import { canUseCustomDomain, canHideTekkishopFooter } from '@/lib/plan-features'
 
 interface Props {
   shop: Shop
@@ -96,6 +97,13 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
 
   // Plan Pro
   const isPro                                   = shop.plan === 'pro'
+  // Domaine personnalisé + mention TekkiShop masquée : routés par
+  // lib/plan-features.ts plutôt que la vérification de plan brute ci-dessus.
+  // isPro reste utilisé pour Stripe Connect (choix de clés API, pas un
+  // drapeau de fonctionnalité boutique) et la section Design Avancé
+  // (bandeau, catégorie, horaires, badges — fusion prévue au lot 3 de la
+  // refonte boutiques, pas touchée ici).
+  const canCustomizeDomainOrFooter              = canUseCustomDomain(shop.plan) || canHideTekkishopFooter(shop.plan)
   const [hideBranding, setHideBranding]         = useState(shop.hide_branding ?? false)
   const [savingBranding, setSavingBranding]     = useState(false)
   const [customDomain, setCustomDomain]         = useState(shop.custom_domain ?? '')
@@ -1434,8 +1442,8 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       </button>
     </div>
 
-    {/* ── Sections Plan Pro ──────────────────────────────────────────────── */}
-    {isPro ? (
+    {/* ── Domaine personnalisé + mention TekkiShop ────────────────────────── */}
+    {canCustomizeDomainOrFooter ? (
       <>
         {/* Domaine personnalisé */}
         <div className="mt-5 rounded-xl border border-purple-100 bg-purple-50 p-4 space-y-3">

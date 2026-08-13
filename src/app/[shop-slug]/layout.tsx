@@ -113,7 +113,7 @@ export default async function ShopLayout({
   return (
     <div
       className="min-h-screen bg-white"
-      style={{ '--color-primary': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
+      style={{ '--brand': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
     >
       {shop.meta_pixel_id && <MetaPixelProvider pixelId={shop.meta_pixel_id} />}
       {children}

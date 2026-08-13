@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { assertProductLimit } from '@/lib/actions/product-limit'
 
 const MAX_ROWS    = 200
 const MAX_NAME    = 200
@@ -123,6 +124,14 @@ export async function POST(req: NextRequest) {
 
   if (errors.length > 0 && toInsert.length === 0) {
     return NextResponse.json({ error: 'Aucun produit valide trouvé.', details: errors }, { status: 400 })
+  }
+
+  // Vérifie la limite du plan sur le lot entier avant d'insérer quoi que ce
+  // soit — pas ligne par ligne, un import ne doit pas s'arrêter à moitié.
+  const activeCountInBatch = toInsert.filter(p => (p as { is_active: boolean }).is_active).length
+  const limitCheck = await assertProductLimit(profile.shop_id, activeCountInBatch)
+  if (limitCheck.error) {
+    return NextResponse.json({ error: limitCheck.error }, { status: 400 })
   }
 
   const { error: insertError } = await admin

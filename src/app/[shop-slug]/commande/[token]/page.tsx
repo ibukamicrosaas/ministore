@@ -218,18 +218,18 @@ export default async function OrderTrackingPage({ params }: Props) {
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
                           active
-                            ? 'border-[var(--color-primary)] bg-white shadow-md shadow-[color:var(--color-primary)]/20'
+                            ? 'border-[var(--brand)] bg-white shadow-md shadow-[color:var(--brand)]/20'
                             : done
-                            ? 'border-transparent bg-[var(--color-primary)]'
+                            ? 'border-transparent bg-[var(--brand)]'
                             : 'border-gray-200 bg-white'
                         }`}
-                        style={{ '--color-primary': color } as React.CSSProperties}
+                        style={{ '--brand': color } as React.CSSProperties}
                       >
                         {done ? (
                           <CheckCircle2 className="h-5 w-5 text-white" />
                         ) : (
                           <Icon
-                            className={`h-4 w-4 ${active ? 'text-[var(--color-primary)]' : 'text-gray-300'}`}
+                            className={`h-4 w-4 ${active ? 'text-[var(--brand)]' : 'text-gray-300'}`}
                             style={{ color: active ? color : undefined }}
                           />
                         )}

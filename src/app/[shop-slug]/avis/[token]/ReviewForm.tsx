@@ -109,8 +109,8 @@ export function ReviewForm({ items, orderToken, color }: Props) {
             placeholder="Ton avis en quelques mots... (optionnel)"
             rows={2}
             maxLength={500}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm resize-none outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-            style={{ '--color-primary': color } as React.CSSProperties}
+            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm resize-none outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+            style={{ '--brand': color } as React.CSSProperties}
           />
         </div>
       ))}

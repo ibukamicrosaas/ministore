@@ -9,8 +9,11 @@ import { encryptApiKey } from '@/lib/crypto/encrypt'
 import { detectCountryFromPhone } from '@/lib/payments/bictorys'
 import { getCountryFromCityOrPhone } from '@/lib/locations/city-to-country'
 import type { UpdateShopInput } from '@/types'
+import { canHideTekkishopFooter, canUseCustomDomain, minimumPlanLabel } from '@/lib/plan-features'
 
-async function getProShopId(): Promise<{ shopId: string } | { error: string }> {
+async function getPlanGatedShopId(
+  check: (plan: string | null | undefined) => boolean,
+): Promise<{ shopId: string } | { error: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié.' }
@@ -22,7 +25,7 @@ async function getProShopId(): Promise<{ shopId: string } | { error: string }> {
   const admin = createAdminClient()
   const { data: shop } = await admin
     .from('shops').select('plan').eq('id', profile.shop_id).single()
-  if (shop?.plan !== 'pro') return { error: 'Cette fonctionnalité est réservée au plan Pro.' }
+  if (!check(shop?.plan)) return { error: `Cette fonctionnalité est réservée au plan ${minimumPlanLabel(check)}.` }
 
   return { shopId: profile.shop_id }
 }
@@ -30,7 +33,7 @@ async function getProShopId(): Promise<{ shopId: string } | { error: string }> {
 export async function updateHideBranding(
   hide: boolean,
 ): Promise<{ error?: string }> {
-  const result = await getProShopId()
+  const result = await getPlanGatedShopId(canHideTekkishopFooter)
   if ('error' in result) return { error: result.error }
 
   const admin = createAdminClient()
@@ -51,7 +54,7 @@ export async function updateHideBranding(
 export async function updateCustomDomain(
   domain: string | null,
 ): Promise<{ error?: string }> {
-  const result = await getProShopId()
+  const result = await getPlanGatedShopId(canUseCustomDomain)
   if ('error' in result) return { error: result.error }
 
   // Valider le format du domaine

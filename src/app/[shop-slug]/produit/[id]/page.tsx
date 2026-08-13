@@ -17,6 +17,7 @@ import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
 import { PAYMENT_METHODS_BY_COUNTRY } from '@/lib/payments/payment-methods'
 import type { BictorysCountry } from '@/lib/payments/payment-methods'
+import { hasRichDescription } from '@/lib/plan-features'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -475,7 +476,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {product.description && (
           <div className="mt-5 pt-5 border-t border-gray-100">
-            {shop.plan === 'pro'
+            {hasRichDescription(shop.plan)
               ? renderProDescription(product.description)
               : <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{product.description}</p>
             }

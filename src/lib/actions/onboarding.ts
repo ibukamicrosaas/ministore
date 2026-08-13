@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { TRIAL_DAYS } from '@/constants'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
 import { getCurrencyForCountry } from '@/lib/utils/country-groups'
+import { assertProductLimit } from '@/lib/actions/product-limit'
 
 async function getOwnerContext() {
   const supabase = await createServerClient()
@@ -197,6 +198,9 @@ export async function saveOnboardingProduct(input: {
 
   if (!input.name.trim()) return { error: 'Le nom du produit est obligatoire.' }
   if (input.price < 0) return { error: 'Le prix doit être positif.' }
+
+  const limitCheck = await assertProductLimit(shopId, 1)
+  if (limitCheck.error) return { error: limitCheck.error }
 
   // Quand une photo est fournie, on la place dans photos[] ET photo_url
   // (le dashboard lit photos[], le mini-site lit les deux)

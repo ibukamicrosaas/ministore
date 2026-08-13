@@ -7,6 +7,7 @@ import type { CreateProductInput, UpdateProductInput, ProductPhoto } from '@/typ
 import { slugify } from '@/lib/utils/slugify'
 import { sendSMS, buildStockBackMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
+import { assertProductLimit } from '@/lib/actions/product-limit'
 
 async function generateUniqueSlug(
   supabase: Awaited<ReturnType<typeof createServerClient>>,
@@ -59,6 +60,9 @@ export async function createProduct(input: CreateProductInput) {
 
   if (!input.name?.trim()) return { error: 'Le nom est obligatoire.' }
   if (input.price < 0) return { error: 'Le prix doit être positif.' }
+
+  const limitCheck = await assertProductLimit(shopId, 1)
+  if (limitCheck.error) return { error: limitCheck.error }
 
   const { data: maxOrder } = await supabase
     .from('products')
@@ -193,7 +197,13 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.deposit_percentage !== undefined) updates.deposit_percentage = input.deposit_percentage
   if (input.variants !== undefined)           updates.variants           = input.variants?.length ? input.variants : null
   if (input.stock_count !== undefined)        updates.stock_count        = input.stock_count
-  if (input.is_active !== undefined)          updates.is_active          = input.is_active
+  if (input.is_active !== undefined) {
+    if (input.is_active) {
+      const limitCheck = await assertProductLimit(shopId, 1)
+      if (limitCheck.error) return { error: limitCheck.error }
+    }
+    updates.is_active = input.is_active
+  }
   if (input.is_featured !== undefined)             updates.is_featured             = input.is_featured
   if (input.customization_enabled !== undefined)   updates.customization_enabled   = input.customization_enabled
   if (input.customization_label !== undefined)     updates.customization_label     = input.customization_label?.trim() || null
@@ -272,6 +282,13 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
 export async function toggleProductActive(id: string, isActive: boolean) {
   const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
+
+  // La réactivation compte comme une nouvelle activation contre la limite —
+  // la désactivation, elle, n'a jamais besoin d'être vérifiée.
+  if (isActive) {
+    const limitCheck = await assertProductLimit(shopId, 1)
+    if (limitCheck.error) return { error: limitCheck.error }
+  }
 
   const { error } = await supabase
     .from('products')
