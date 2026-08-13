@@ -20,7 +20,14 @@ export const FREE_ORDERS               = 3
 export const FREE_ORDERS_TRIAL_DAYS    = 14
 export const TRIAL_EXTENSION_DAYS      = 7
 export const HELD_ORDER_NOTICE_HOURS   = 48
-export const MAX_HELD_ORDERS           = 3
+// Passé de 3 à 1 le 2026-08-13 : le rappel client à 48h (notify-held-orders)
+// dépend du même canal SMS que le reste de la plateforme, confirmé non
+// délivré (REPRISE.md §15/§16) — sans ce message, la fermeture du bouton est
+// la seule protection contre une file de clients jamais recontactés.
+// Ne compte que les commandes retenues avec au moins un produit physique
+// (getHeldPhysicalOrderCount, src/lib/orders/held-orders.ts) — une commande
+// digitale retenue est livrée normalement, elle ne laisse personne attendre.
+export const MAX_HELD_ORDERS           = 1
 
 // Plans
 export const TRIAL_DAYS            = 30

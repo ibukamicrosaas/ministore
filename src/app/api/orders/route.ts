@@ -13,6 +13,7 @@ import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifi
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL, MAX_HELD_ORDERS } from '@/constants'
 import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
+import { getHeldPhysicalOrderCount } from '@/lib/orders/held-orders'
 
 interface OrderItemInput {
   product_id: string
@@ -209,17 +210,7 @@ export async function POST(req: NextRequest) {
   // la boutique, ni être bloquée par une fermeture due à des commandes
   // physiques en attente.
   if (shop.status === 'expired' && hasPhysicalItem) {
-    const { data: heldOrders } = await supabase
-      .from('orders')
-      .select('id, order_items(products(product_type))')
-      .eq('shop_id', shopId)
-      .eq('is_held', true)
-      .is('released_at', null)
-
-    type HeldOrderRow = { id: string; order_items: { products: { product_type: string | null } | null }[] }
-    const heldPhysicalCount = ((heldOrders ?? []) as unknown as HeldOrderRow[])
-      .filter(o => o.order_items.some(oi => oi.products?.product_type !== 'digital'))
-      .length
+    const heldPhysicalCount = await getHeldPhysicalOrderCount(supabase, shopId)
 
     if (heldPhysicalCount >= MAX_HELD_ORDERS) {
       return NextResponse.json({ error: 'Cette boutique ne prend pas de commandes en ce moment.' }, { status: 403 })

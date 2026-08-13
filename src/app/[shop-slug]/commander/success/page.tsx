@@ -117,6 +117,17 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}`
     : null
 
+  // Commande retenue : c'est le seul message qui atteint vraiment le client
+  // (affiché à l'écran, ne dépend d'aucun envoi) — le rappel automatique à
+  // 48h passe par le même canal SMS confirmé non délivré (REPRISE.md
+  // §15/§16). Message préempli avec référence + montant, jamais de mention
+  // du statut d'abonnement/essai du marchand (§13 de la spec).
+  const orderRef      = order.id.slice(0, 8).toUpperCase()
+  const heldWaMessage = `Bonjour, je viens de passer la commande #${orderRef} (${formatPrice(order.total_price, currency)}) sur votre boutique.`
+  const heldWaLink    = shop?.phone_whatsapp
+    ? `https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(heldWaMessage)}`
+    : null
+
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-12 text-center">
       <PixelPurchase
@@ -158,6 +169,20 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           : order.payment_type === 'on_delivery'
           ? 'Vous payerez à la livraison. La boutique a été notifiée.'
           : 'Vous payerez en boutique. La boutique a été notifiée.'}
+        {order.is_held && heldWaLink && (
+          <>
+            {' '}Tu peux aussi le joindre directement :{' '}
+            <a
+              href={heldWaLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+              style={{ color }}
+            >
+              WhatsApp
+            </a>
+          </>
+        )}
       </p>
       <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 mb-6">
         <span className="text-xs text-gray-500">Référence</span>
@@ -296,7 +321,8 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           {isDigitalOrder ? 'Accéder à mon téléchargement' : 'Suivre ma commande'}
         </Link>
 
-        {waShopLink && (
+        {/* Commande retenue : le bouton WhatsApp préempli est déjà affiché plus haut, pas de doublon ici */}
+        {!order.is_held && waShopLink && (
           <a
             href={waShopLink}
             target="_blank"

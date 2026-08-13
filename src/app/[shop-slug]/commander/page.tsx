@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { OrderForm } from './OrderForm'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
+import { getHeldPhysicalOrderCount } from '@/lib/orders/held-orders'
 import { MAX_HELD_ORDERS } from '@/constants'
 import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone, QuantityDiscount } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -42,13 +43,8 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     .single()
   if (statusData?.status === 'expired') {
     const admin = createAdminClient()
-    const { count: heldCount } = await admin
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('shop_id', shopData.id)
-      .eq('is_held', true)
-      .is('released_at', null)
-    if ((heldCount ?? 0) >= MAX_HELD_ORDERS) acceptingOrders = false
+    const heldPhysicalCount = await getHeldPhysicalOrderCount(admin, shopData.id)
+    if (heldPhysicalCount >= MAX_HELD_ORDERS) acceptingOrders = false
   }
 
   // accept_cash_on_delivery may not exist yet in older DB instances — default true if missing
