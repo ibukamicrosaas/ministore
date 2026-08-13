@@ -794,6 +794,8 @@ git merge origin/dev
 
 **Étape 1 exécutée le 2026-08-13, poussée** (`eaea8a2`). Simulée avec `git merge-tree` avant exécution : exactement 2 conflits (`AI_RULES.md`, `REPRISE.md`, add/add), 0 sur le code ou les migrations — confirmé à l'exécution. Résolution `--ours` sur les deux fichiers, vérifiée par `git diff origin/main -- AI_RULES.md REPRISE.md` : 0 ligne perdue sur `AI_RULES.md`, et sur `REPRISE.md` les seules lignes disparues sont soit l'horodatage, soit des versions antérieures déjà remplacées par une version plus complète côté `refonte-start` — pas de perte de fait. `npm run build` propre avant et après. Apporté par `main` au passage : PR #4 (`088`/`089`), les `.md` précédemment gitignorés (`NOTE_MASQUAGE_COMMANDES.md` compris — renvoi ajouté vers `redact.ts` dans `0aa4c51`), `scripts/check-function-privileges.sql`, les maquettes HTML.
 
+**Étape 2 exécutée le 2026-08-13, poussée** (`3fdad82..b8cde8d`). Fast-forward exact, sans conflit ni commit de fusion, comme prévu — `dev` n'avait aucun commit propre à préserver. `npm run build` propre après. `dev` et `refonte-start` pointent désormais sur le même commit (`b8cde8d`). **Prochaine étape : étape 3, recette manuelle sur la préversion `dev`** — voir §19 pour les deux points vérifiés avant de la lancer (base de données partagée, test des comportements dépendant d'un cron).
+
 ---
 
 ## 19. Recette sur préversion — base partagée et crons non enregistrés — 2026-08-13
