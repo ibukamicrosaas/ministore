@@ -24,6 +24,15 @@
  * légitime comme garde d'action (bloquer un changement de statut) quand
  * aucune donnée client n'est affichée. Mais pour tout affichage, le seul
  * appel à faire est `loadOrderForMerchant`.
+ *
+ * Dérogation documentée : `src/app/admin/payments/page.tsx` lit les
+ * coordonnées client d'une commande retenue sans passer par ce module.
+ * Volontaire — la règle de masquage protège le modèle économique (empêcher
+ * un marchand de contourner l'activation en exploitant des coordonnées
+ * qu'il n'a pas payé pour voir), pas les données en général. L'équipe
+ * TEKKIShop a besoin de voir ces informations pour traiter un incident.
+ * Ne pas étendre cette dérogation à un nouveau point de lecture sans la
+ * même justification explicite.
  */
 
 export const REDACTED_LABEL = 'Masqué jusqu\'à l\'activation'
