@@ -83,3 +83,12 @@ inclure dans un message.
 - `lib/actions/orders.ts` — `advanceOrderStatus`, `cancelOrder` (refusent
   si retenue)
 - `api/delivery/confirm/route.ts` (refuse si retenue)
+
+## Dérogation documentée
+
+`src/app/admin/payments/page.tsx` lit les coordonnées client d'une commande
+retenue sans passer par ce module — voir la justification complète dans
+l'en-tête de `src/lib/orders/redact.ts` (pas dupliquée ici). Résumé : la
+règle protège le modèle économique (empêcher un marchand de contourner
+l'activation), pas les données en général ; l'équipe TEKKIShop a besoin d'y
+voir clair pour traiter un incident.
