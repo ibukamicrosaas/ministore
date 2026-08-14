@@ -347,6 +347,16 @@ export async function updateShop(data: UpdateShopInput) {
     if (key in raw) payload[key] = raw[key]
   }
 
+  // Empêche d'atteindre l'état "aucun mode de paiement actif" — sans garde,
+  // le tunnel de commande bascule silencieusement sur le paiement en ligne
+  // quel que soit le choix du marchand (bug corrigé dans OrderForm.tsx /
+  // api/orders/route.ts). Les deux champs sont toujours soumis ensemble par
+  // SettingsForm.tsx, jamais l'un sans l'autre — pas besoin de recharger
+  // l'état actuel en base pour ce contrôle.
+  if (payload.accept_online_payment === false && payload.accept_cash_on_delivery === false) {
+    return { error: 'Tu dois garder au moins un mode de paiement actif.' }
+  }
+
   // Chiffrer les clés Bictorys avant de les écrire en DB
   if (typeof payload.bictorys_secret_key === 'string' && payload.bictorys_secret_key) {
     payload.bictorys_secret_key = encryptApiKey(payload.bictorys_secret_key)

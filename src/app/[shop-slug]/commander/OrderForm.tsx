@@ -350,7 +350,9 @@ export function OrderForm({
   const [notes, setNotes] = useState('')
   // Premier article en mode "carte confirmée" si arrivé depuis une page produit
   const [firstItemLocked, setFirstItemLocked] = useState(!!preselectedProductId)
-  // Si le cash à la livraison est désactivé, forcer le paiement en ligne
+  // Si le cash à la livraison est désactivé, forcer le paiement en ligne.
+  // Si les deux sont désactivés, cette valeur ne sera jamais soumise —
+  // hasAnyPaymentMethod (plus bas) bloque la confirmation avant ce cas-là.
   const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>(
     acceptCashOnDelivery ? 'on_delivery' : 'online'
   )
@@ -462,6 +464,12 @@ export function OrderForm({
   void subtotal
   const deposit = paymentType === 'online' ? computeDeposit() : 0
   const hasDeposit = deposit > 0 && deposit < total
+  // Troisième état du choix de paiement marchand : ni en ligne ni à la livraison
+  // n'est actif (un digital n'a de toute façon jamais la livraison comme option).
+  // paymentType par défaut reste 'online' dans ce cas (ligne ~355) mais ça n'a
+  // plus d'importance : hasAnyPaymentMethod bloque la confirmation avant que
+  // cette valeur ne serve à quoi que ce soit.
+  const hasAnyPaymentMethod = isDigital ? acceptOnlinePayment : (acceptOnlinePayment || acceptCashOnDelivery)
 
   const fullPhone = `${phoneDial}${phoneNum}`
   const fullWhatsapp = sameWa ? fullPhone : `${waDial}${waNum}`
@@ -1135,6 +1143,11 @@ export function OrderForm({
         {/* 3 — Paiement */}
         <section>
           <SectionLabel n={3} label="Mode de paiement" primaryColor={primaryColor} />
+          {!hasAnyPaymentMethod ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+              Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
+            </div>
+          ) : (
           <div className="space-y-2">
             {acceptOnlinePayment && (
               <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
@@ -1169,6 +1182,7 @@ export function OrderForm({
               </label>
             )}
           </div>
+          )}
         </section>
         </>}
       </div>
@@ -1214,6 +1228,10 @@ export function OrderForm({
         {!acceptingOrders ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
             Cette boutique ne prend pas de commandes en ce moment.
+          </div>
+        ) : !hasAnyPaymentMethod ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+            Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
           </div>
         ) : step < 3 && !isDigital ? (
           <button

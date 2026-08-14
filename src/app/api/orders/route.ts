@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status, accept_online_payment, accept_cash_on_delivery')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
@@ -197,6 +197,23 @@ export async function POST(req: NextRequest) {
   const isOnlinePaymentRequested = payment_type === 'online_full' || payment_type === 'online_deposit'
   if (shop.status === 'expired' && hasPhysicalItem && isOnlinePaymentRequested) {
     payment_type = delivery_type === 'home_delivery' ? 'on_delivery' : 'on_site'
+  }
+
+  // Le marchand a-t-il réellement configuré le mode de paiement retenu ? Ne
+  // jamais faire confiance à payment_type envoyé par le client seul —
+  // OrderForm.tsx bloque déjà ce cas côté UI (hasAnyPaymentMethod), mais un
+  // appel direct à cette route le contournerait. Vérifié sur payment_type
+  // après le reroute expired ci-dessus, pour valider le mode réellement
+  // retenu, pas seulement celui demandé au départ. Un panier 100% digital ne
+  // peut être payé qu'en ligne (pas de livraison à laquelle rattacher un
+  // paiement à la réception).
+  const allDigital = !hasPhysicalItem
+  const finalIsOnline = payment_type === 'online_full' || payment_type === 'online_deposit'
+  const paymentMethodAvailable = (finalIsOnline || allDigital)
+    ? shop.accept_online_payment
+    : shop.accept_cash_on_delivery
+  if (!paymentMethodAvailable) {
+    return NextResponse.json({ error: 'Ce mode de paiement n\'est pas disponible pour cette boutique en ce moment.' }, { status: 400 })
   }
 
   // Filet de sécurité serveur : le bouton de commande est déjà masqué côté UI

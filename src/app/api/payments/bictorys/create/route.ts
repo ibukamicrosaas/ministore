@@ -53,12 +53,22 @@ export async function POST(req: NextRequest) {
   // Utiliser la clé Bictorys propre de la boutique (plan Pro) si disponible
   const { data: shopData } = await supabase
     .from('shops')
-    .select('plan, bictorys_secret_key, country')
+    .select('plan, bictorys_secret_key, country, accept_online_payment')
     .eq('id', order.shop_id)
     .single()
 
   if (!shopData?.country) {
     return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
+  }
+
+  // Dernier point de vérification avant de créer une charge réelle — ne fait
+  // confiance ni au client, ni à payment_type déjà enregistré sur la
+  // commande (qui peut être erroné si ce point a été atteint avant le
+  // correctif de OrderForm.tsx / api/orders/route.ts, ou par un appel direct
+  // à cette route). Si le marchand a désactivé le paiement en ligne, aucune
+  // charge ne doit jamais être créée, quoi que dise le reste de la chaîne.
+  if (!shopData.accept_online_payment) {
+    return NextResponse.json({ error: 'Le paiement en ligne n\'est pas disponible pour cette boutique.' }, { status: 400 })
   }
 
   const rawShopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
