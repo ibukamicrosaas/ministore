@@ -12,13 +12,13 @@ export function buildAiTools(shopId: string) {
   return {
     get_shop_info: tool({
       description:
-        "Récupère les informations générales de la boutique : nom, plan, pays, statut d'activation, URL du site, moyens de paiement configurés, logo uploadé.",
+        "Récupère les informations générales de la boutique : nom, plan, pays, modèle d'essai, statut, URL du site, moyens de paiement configurés, logo uploadé.",
       inputSchema: zodSchema(z.object({})),
       execute: async () => {
         const { data: shop, error } = await admin
           .from('shops')
           .select(
-            'name, plan, country, is_active, slug, logo_url, payout_wave_number, payout_om_number, accept_online_payment, accept_cash_on_delivery, created_at'
+            'name, plan, country, is_active, slug, logo_url, payout_wave_number, payout_om_number, accept_online_payment, accept_cash_on_delivery, created_at, trial_model, status, free_orders_used, free_orders_quota'
           )
           .eq('id', shopId)
           .single()
@@ -30,6 +30,13 @@ export function buildAiTools(shopId: string) {
           plan: shop.plan,
           country: shop.country,
           is_active: shop.is_active,
+          // trial_model='free_orders' : boutique publique dès le premier
+          // produit, sans paiement — status fait foi, pas is_active/plan.
+          // trial_model='legacy' : modèle historique, is_active/plan font foi.
+          trial_model: shop.trial_model,
+          status: shop.status,
+          free_orders_used: shop.trial_model === 'free_orders' ? shop.free_orders_used : null,
+          free_orders_quota: shop.trial_model === 'free_orders' ? shop.free_orders_quota : null,
           site_url: `${APP_URL}/${shop.slug}`,
           has_logo: shop.logo_url != null,
           wave_configured: shop.payout_wave_number != null,
@@ -43,13 +50,13 @@ export function buildAiTools(shopId: string) {
 
     get_setup_checklist: tool({
       description:
-        "Vérifie l'état de configuration de la boutique : quelles étapes sont complètes et lesquelles manquent pour activer le site.",
+        "Vérifie l'état de configuration de la boutique : quelles étapes sont complètes et lesquelles manquent pour la mettre en ligne (le sens exact de « manquant » dépend du modèle d'essai, voir trial_model dans le résultat).",
       inputSchema: zodSchema(z.object({})),
       execute: async () => {
         const [shopResult, productsResult] = await Promise.all([
           admin
             .from('shops')
-            .select('logo_url, is_active, payout_wave_number, payout_om_number, custom_domain')
+            .select('logo_url, is_active, payout_wave_number, payout_om_number, custom_domain, trial_model, status')
             .eq('id', shopId)
             .single(),
           admin
@@ -62,23 +69,36 @@ export function buildAiTools(shopId: string) {
         if (!shopResult.data) throw new Error('Boutique introuvable')
 
         const shop = shopResult.data
+        const isFreeOrders = shop.trial_model === 'free_orders'
         const has_logo = shop.logo_url != null
         const has_products = (productsResult.count ?? 0) > 0
         const product_count = productsResult.count ?? 0
         const wave_configured = shop.payout_wave_number != null
         const om_configured = shop.payout_om_number != null
         const has_payment_method = wave_configured || om_configured
-        const site_active = shop.is_active
         const domain_configured = shop.custom_domain != null
+        // legacy : is_active fait foi. free_orders : is_active reste true dès
+        // que status quitte 'draft' (shop-status.ts) — status='draft' est le
+        // seul signal réel de "pas encore en ligne" pour ce modèle.
+        const site_active = isFreeOrders ? shop.status !== 'draft' : shop.is_active
 
         const missing_steps: string[] = []
         if (!has_logo) missing_steps.push('Uploader un logo (Paramètres → Apparence)')
-        if (!has_products) missing_steps.push('Ajouter au moins un produit actif (Produits → Ajouter)')
+        if (isFreeOrders && !site_active) {
+          // Ajouter un produit depuis le tableau de bord classique ne publie
+          // pas cette boutique aujourd'hui — seul le dernier écran de /start
+          // le fait (activateTrialShop). Point ouvert, voir REPRISE.md.
+          missing_steps.push(
+            'Terminer le parcours de création (/start) pour publier le premier produit et mettre la boutique en ligne'
+          )
+        } else if (!has_products) {
+          missing_steps.push('Ajouter au moins un produit actif (Produits → Ajouter)')
+        }
         if (!has_payment_method)
           missing_steps.push(
             'Configurer un moyen de paiement Wave ou Orange Money (Paramètres → Paiements)'
           )
-        if (!site_active && missing_steps.length === 0)
+        if (!isFreeOrders && !site_active && missing_steps.length === 0)
           missing_steps.push('Activer le site depuis le tableau de bord principal')
 
         return {
@@ -89,6 +109,8 @@ export function buildAiTools(shopId: string) {
           wave_configured,
           om_configured,
           site_active,
+          trial_model: shop.trial_model,
+          status: shop.status,
           domain_configured,
           missing_steps,
           setup_complete: missing_steps.length === 0,
