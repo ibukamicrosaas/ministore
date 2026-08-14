@@ -832,3 +832,21 @@ Le code de la route existe et répond normalement sur la préversion (Vercel n'e
   `CRON_SECRET` est la même variable que celle déjà en production (§15) — si la réponse à la question 1 est oui, elle s'applique aussi à la préversion sans configuration séparée. URL de la préversion à récupérer dans la liste des déploiements Vercel pour la branche `dev`, pas devinable depuis ce dépôt.
 
 **Pour `notify-held-orders` précisément : `notified` affichera 0 quel que soit le bon fonctionnement du reste**, tant que Lafricamobile n'est pas réparé (§13-§16) — `sendWhatsApp` échoue avant que `held_notified_at` ne soit posé (ligne 51-53 du fichier, `if (!success) continue`). Ne pas lire un `notified: 0` comme un échec de recette sur ce point précis — seulement `checked` (le nombre de commandes retenues correctement identifiées) mesure la partie testable aujourd'hui.
+
+---
+
+## 20. Écrans de fin d'essai `free_orders` — les trois variantes exactes, constaté en recette le 2026-08-14
+
+Condition commune à tout écran (`dashboard/page.tsx:143`) : `isFreeOrders && shop?.status === 'expired'`. Rien ne s'affiche en dehors de cette condition — pas de quatrième variante possible.
+
+**Cas A — quota atteint** (`dashboard/page.tsx:144-145`) : `shop.free_orders_used >= shop.free_orders_quota`. Écran : cumul collecté, commandes retenues en attente, choix de plan.
+
+**Cas B — essai expiré par la date, quota non atteint** (`dashboard/page.tsx:161`, le `else` de la condition ci-dessus) : calcule `visitCount` depuis `shop_visits` (filtré depuis `trial_started_at`) et le transmet à `TrialEndScreen`. **`TrialEndScreen.tsx` se sous-divise lui-même en deux variantes, selon une condition qui n'est pas dans `dashboard/page.tsx`** (ligne 133, `const neverOpened = visitCount === 0`) :
+- **`visitCount === 0`** (variante vue en recette le 2026-08-14) : *« Ta boutique est prête, mais personne ne l'a encore vue. »*
+- **`visitCount > 0`** (le troisième sous-cas demandé — boutique avec des visites mais zéro vente) : *« Ta boutique est prête. Il lui manque des visiteurs. »*, avec le nombre exact de visites affiché.
+
+Les deux variantes de Cas B partagent le même bloc Assistant IA et le même bloc de prolongation (`TrialEndScreen.tsx:169-215`) — seul le titre/sous-titre change.
+
+**Déclencheur réel de la prolongation (« Partager ma boutique »), tracé dans `TrialEndScreen.tsx:143-152` (`handleShareAndExtend`) et `lib/actions/trial.ts` (`extendTrialByShare`) :** le clic déclenche les deux actions en parallèle, sans dépendance entre elles — `window.open` vers un lien `wa.me` préempli (fenêtre WhatsApp cliente, aucune confirmation d'envoi possible côté serveur) et l'appel serveur `extendTrialByShare()` en même temps, via `startTransition`. **La prolongation de 7 jours est posée au clic sur le bouton, jamais à l'ouverture effective du lien par qui que ce soit.** `extendTrialByShare` (trial.ts:36-42) vérifie seulement `trial_model='free_orders'`, `status='expired'`, quota non atteint, et `trial_extended_at` encore `NULL` — aucune vérification de partage réel. Un marchand qui clique puis ferme l'onglet WhatsApp sans rien envoyer obtient quand même ses 7 jours.
+
+**Lien "Tu peux aussi activer ta boutique dès maintenant"** (`TrialEndScreen.tsx:209-215`) : `href="/dashboard/upgrade"`, confirmé. La boutique est déjà publique à ce stade (`is_active=true`, `status='expired'` reste visible dans ce modèle — §12) : "activer" ne peut donc désigner ici que le passage à un plan payant, jamais la visibilité, qui n'est pas en jeu sur cet écran.
