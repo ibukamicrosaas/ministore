@@ -93,7 +93,7 @@ export function Sidebar({ shop, profile, open, onClose, isAdmin = false }: Sideb
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{shop.name}</p>
-              <PlanBadge plan={shop.plan} />
+              <PlanBadge plan={shop.plan} trialModel={shop.trial_model} status={shop.status} />
             </div>
           </div>
           <button
@@ -186,7 +186,27 @@ export function Sidebar({ shop, profile, open, onClose, isAdmin = false }: Sideb
   )
 }
 
-function PlanBadge({ plan }: { plan: string }) {
+function PlanBadge({ plan, trialModel, status }: { plan: string; trialModel?: string; status?: string }) {
+  // free_orders : plan reste 'trial' tout au long de l'essai (14 jours), y
+  // compris après passage en 'expired' — le badge "Non activé" hérité de
+  // legacy y serait donc soit trompeur (contredit le bandeau "X/3 · N jours
+  // restants" pendant l'essai), soit muet au moment où il faudrait vraiment
+  // alerter (expired). C'est status qui fait foi pour ce modèle, jamais plan.
+  if (trialModel === 'free_orders') {
+    if (status === 'expired') {
+      return (
+        <Link
+          href="/dashboard/upgrade"
+          className="flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+        >
+          <AlertCircle className="h-3 w-3 shrink-0" />
+          Essai terminé
+        </Link>
+      )
+    }
+    if (plan === 'trial') return null
+  }
+
   if (plan === 'trial') {
     return (
       <Link

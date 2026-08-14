@@ -33,8 +33,7 @@ export const AFRICA_PLANS: Plan[] = [
     features: [
       'Tout du plan Découverte',
       'Produits illimités',
-      'Confirmations WhatsApp automatiques aux clients',
-      'Rappels J-1 avant livraison',
+      'Confirmations automatiques par SMS',
       'Alertes retour en stock pour tes clients',
       'Codes promo & réductions',
       'Dashboard optimisé sur mobile',

@@ -29,7 +29,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   business: [
     'Boutique en ligne immédiatement',
     'Produits illimités',
-    'Confirmations WhatsApp automatiques aux clients',
+    'Confirmations automatiques par SMS',
     'Alertes retour en stock pour vos clients',
     'Codes promo & réductions',
     'Dashboard optimisé sur mobile',

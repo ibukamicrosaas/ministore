@@ -41,7 +41,7 @@ export function DeliveryConfirmButton({ deliveryToken, primaryColor }: Props) {
         </div>
         <div>
           <p className="text-base font-bold text-green-800">Livraison confirmée !</p>
-          <p className="text-sm text-green-600 mt-0.5">Le marchand a été notifié automatiquement.</p>
+          <p className="text-sm text-green-600 mt-0.5">Ta confirmation a bien été enregistrée.</p>
         </div>
       </div>
     )

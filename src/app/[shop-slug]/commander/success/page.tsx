@@ -166,9 +166,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
           ? 'Votre paiement a été reçu. La boutique prépare votre commande.'
           : isOnline
           ? 'Votre paiement mobile money est en cours de vérification.'
-          : order.payment_type === 'on_delivery'
-          ? 'Vous payerez à la livraison. La boutique a été notifiée.'
-          : 'Vous payerez en boutique. La boutique a été notifiée.'}
+          : 'Ta commande a bien été enregistrée.'}
         {order.is_held && heldWaLink && (
           <>
             {' '}Tu peux aussi le joindre directement :{' '}
