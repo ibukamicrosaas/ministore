@@ -1,5 +1,13 @@
 import type { Shop } from '@/types'
 import { APP_URL, PLAN_LABELS, FREE_ORDERS, FREE_ORDERS_TRIAL_DAYS } from '@/constants'
+import { AFRICA_PLANS } from '@/lib/billing/plans'
+
+// Prix réels, lus depuis la même source que la page /dashboard/upgrade —
+// jamais recopiés en dur ici, pour ne plus jamais diverger du vrai tarif.
+function monthlyPriceLabel(key: string): string {
+  const plan = AFRICA_PLANS.find(p => p.key === key)
+  return plan ? `${plan.price} FCFA/mois` : 'prix à confirmer'
+}
 
 const COUNTRY_LABELS: Record<string, string> = {
   SN: 'Sénégal',
@@ -53,11 +61,11 @@ Ne t'excuse pas excessivement. Sois ferme mais bienveillant, et propose toujours
 
 --- CONNAISSANCE TEKKISHOP ---
 
-PLANS ET TARIFS :
+PLANS ET TARIFS (Afrique — prix différents en Europe/Canada, voir le contexte de la boutique plus bas si applicable) :
 Il existe exactement trois plans : Découverte, Business, Pro. Il n'y a pas de "plan Essai" séparé — une boutique pas encore payante est en période d'essai (statut "trial"), avec les limites du plan Découverte tant qu'elle n'a pas payé.
-- Plan Découverte : payant mensuel, max 10 produits, commission de 3% sur les paiements en ligne
-- Plan Business : payant mensuel, produits illimités, analytics avancés, commission de 3% sur les paiements en ligne
-- Plan Pro : payant mensuel, toutes les fonctionnalités Business + domaine personnalisé + masquage du branding TEKKIShop
+- Plan Découverte (${monthlyPriceLabel('decouverte')}) : max 10 produits, commission de 3% sur les paiements en ligne
+- Plan Business (${monthlyPriceLabel('business')}) : produits illimités, analytics avancés, commission de 3% sur les paiements en ligne
+- Plan Pro (${monthlyPriceLabel('pro')}) : toutes les fonctionnalités Business + domaine personnalisé + masquage du branding TEKKIShop
 
 COMMISSION SUR LES PAIEMENTS EN LIGNE :
 - Le taux est de 3% sur tous les plans, y compris Pro, tant que le marchand n'a pas connecté ses propres identifiants Bictorys.
@@ -155,7 +163,7 @@ CHANGEMENTS DE PLAN ET RENOUVELLEMENTS :
 - Le changement est immédiat : le nouveau plan est activé dès le paiement, valable 31 jours
 - Il n'y a pas de proratisation : les jours restants de l'ancien plan ne sont pas déduits
 - Un marchand peut renouveler son plan actuel avant la fin de son abonnement en cours
-- Si un marchand du plan Découverte (2 900 FCFA/mois) passe au plan Pro (9 900 FCFA/mois), il paie 9 900 FCFA et repart pour 31 jours. Il ne paie pas 12 800 FCFA au total.
+- Exemple : un marchand du plan Découverte (${monthlyPriceLabel('decouverte')}) qui passe au plan Pro (${monthlyPriceLabel('pro')}) paie le prix plein du plan Pro et repart pour 31 jours — jamais la somme des deux plans.
 - Pour les paiements par carte bancaire (EUR via Stripe), les abonnements sont récurrents et gérés automatiquement par Stripe
 
 OPTIMISATION AVANCÉE (pour les boutiques actives) :

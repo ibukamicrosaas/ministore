@@ -19,11 +19,11 @@ interface UsageState {
 }
 
 const WELCOME_MESSAGES: Record<string, string> = {
-  '/dashboard':          "Bonjour 👋 Comment puis-je vous aider avec votre boutique aujourd'hui ?",
-  '/dashboard/products': 'Vous gérez vos produits ? Je peux vous aider à optimiser votre catalogue.',
-  '/dashboard/orders':   'Vous avez des questions sur vos commandes ? Je suis là pour vous aider.',
-  '/dashboard/revenues': 'Des questions sur vos revenus ou reversements ? Posez-moi vos questions.',
-  '/dashboard/settings': "Besoin d'aide pour configurer votre boutique ? Je vous guide.",
+  '/dashboard':          "Salut ! Comment puis-je t'aider avec ta boutique aujourd'hui ?",
+  '/dashboard/products': 'Tu gères tes produits ? Je peux t\'aider à optimiser ton catalogue.',
+  '/dashboard/orders':   'Tu as des questions sur tes commandes ? Je suis là pour t\'aider.',
+  '/dashboard/revenues': 'Des questions sur tes revenus ou reversements ? Pose-moi tes questions.',
+  '/dashboard/settings': "Besoin d'aide pour configurer ta boutique ? Je te guide.",
 }
 
 const QUICK_SUGGESTIONS: Record<string, string[]> = {
@@ -64,7 +64,7 @@ const DEFAULT_SUGGESTIONS = [
 function getWelcomeMessage(pathname: string): string {
   return (
     WELCOME_MESSAGES[pathname] ??
-    "Bonjour 👋 Je suis l'assistant TEKKIShop. Posez-moi vos questions sur votre boutique !"
+    "Salut, je suis l'assistant TEKKIShop. Pose-moi tes questions sur ta boutique !"
   )
 }
 
