@@ -200,7 +200,7 @@ function PlanBadge({ plan, trialModel, status }: { plan: string; trialModel?: st
           className="flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
         >
           <AlertCircle className="h-3 w-3 shrink-0" />
-          Essai terminé
+          Plan requis
         </Link>
       )
     }

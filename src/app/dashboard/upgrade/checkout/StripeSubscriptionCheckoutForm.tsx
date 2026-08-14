@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowLeft, CreditCard, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { AFRICA_PLANS, EU_CA_PRO_PLAN_EUR, EU_CA_PRO_PLAN_CAD } from '@/lib/billing/plans'
 
 interface Props {
   planKey:       string
@@ -13,38 +14,15 @@ interface Props {
   shopName:      string
   primaryColor:  string
   customerEmail?: string
+  isEuCa:        boolean
 }
 
 const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', CAD: 'CAD' }
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  decouverte: [
-    'Boutique en ligne immédiatement',
-    "Jusqu'à 10 produits actifs",
-    'Paiements Wave & Orange Money',
-    'Paiement à la livraison',
-    'Suivi des commandes en temps réel',
-    '3% de commission sur paiements en ligne',
-  ],
-  business: [
-    'Boutique en ligne immédiatement',
-    'Produits illimités',
-    'Confirmations automatiques par SMS',
-    'Alertes retour en stock pour vos clients',
-    'Codes promo & réductions',
-    'Dashboard optimisé sur mobile',
-    '3% de commission sur paiements en ligne',
-  ],
-  pro: [
-    'Boutique en ligne immédiatement',
-    'Produits illimités',
-    'Paiement par carte bancaire (Stripe Connect)',
-    'Domaine personnalisé',
-    'Statistiques avancées & export CSV',
-    'Notifications automatiques à vos clients',
-    '0% de commission sur vos ventes',
-    'Support prioritaire WhatsApp',
-  ],
+function getPlanFeatures(planKey: string, currency: 'EUR' | 'CAD', isEuCa: boolean): string[] {
+  if (isEuCa) return (currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR).features
+  return AFRICA_PLANS.find(p => p.key === planKey)?.features
+    ?? AFRICA_PLANS.find(p => p.key === 'pro')!.features
 }
 
 export function StripeSubscriptionCheckoutForm({
@@ -56,6 +34,7 @@ export function StripeSubscriptionCheckoutForm({
   shopName,
   primaryColor,
   customerEmail,
+  isEuCa,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -129,7 +108,7 @@ export function StripeSubscriptionCheckoutForm({
           </div>
 
           <ul className="space-y-2 border-t border-gray-100 pt-4">
-            {(PLAN_FEATURES[planKey] ?? PLAN_FEATURES.pro).map(f => (
+            {getPlanFeatures(planKey, currency, isEuCa).map(f => (
               <li key={f} className="flex items-center gap-2 text-xs text-gray-700">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: primaryColor }} />
                 {f}

@@ -250,6 +250,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           hasProduct={(productCount ?? 0) > 0}
           hasPayoutNumbers={!!(shop.payout_wave_number || shop.payout_om_number)}
           isActivePlan={shop.plan !== 'trial'}
+          isFreeOrders={isFreeOrders}
         />
       )}
 

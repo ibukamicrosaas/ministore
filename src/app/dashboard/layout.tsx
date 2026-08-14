@@ -215,7 +215,7 @@ export default async function DashboardLayout({
       <div className="flex items-center gap-3 bg-gray-800 px-4 py-2.5 shrink-0">
         <p className="flex-1 text-sm font-medium text-white">
           {heldCount > 0
-            ? `${heldCount} commande${heldCount > 1 ? 's' : ''} t'attend${heldCount > 1 ? 'ent' : ''}. Active ta boutique pour les traiter.`
+            ? `${heldCount} commande${heldCount > 1 ? 's' : ''} retenue${heldCount > 1 ? 's' : ''}, en attente que tu actives un plan.`
             : 'Ta boutique reste visible, mais elle ne peut plus recevoir de commandes.'}
         </p>
         <Link

@@ -36,25 +36,13 @@ export async function activatePlan(
     .eq('id', shopId)
     .single()
 
-  // 1er paiement mensuel → 1 mois offert (62 jours au lieu de 31)
-  // Critère : aucune transaction déjà activée pour cette boutique
-  let effectiveDurationDays = durationDays
-  if (durationDays === 31 && planKey === 'business') {
-    const { count: prevActivated } = await (supabase
-      .from('subscription_transactions' as never)
-      .select('*', { count: 'exact', head: true })
-      .eq('shop_id', shopId)
-      .eq('status', 'activated') as unknown as Promise<{ count: number | null }>)
-    if ((prevActivated ?? 0) === 0) effectiveDurationDays = 62
-  }
-
   const now = Date.now()
   const currentEnd = currentShop?.subscription_ends_at
     ? new Date(currentShop.subscription_ends_at).getTime()
     : 0
   // Si l'abonnement est encore actif, on prolonge depuis la fin actuelle (pas depuis maintenant)
   const baseTs = currentEnd > now ? currentEnd : now
-  const subscriptionEndsAt = new Date(baseTs + effectiveDurationDays * 24 * 60 * 60 * 1000).toISOString()
+  const subscriptionEndsAt = new Date(baseTs + durationDays * 24 * 60 * 60 * 1000).toISOString()
 
   const { error, data } = await supabase
     .from('shops')

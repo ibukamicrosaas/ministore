@@ -96,6 +96,7 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
         shopName={shop.name}
         primaryColor={shop.primary_color ?? '#0EA5E9'}
         customerEmail={shopEmail}
+        isEuCa={shopEuCa}
       />
     )
   }

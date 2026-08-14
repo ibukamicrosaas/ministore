@@ -12,7 +12,6 @@ export const AFRICA_PLANS: Plan[] = [
     promo:        null,
     currency:     'XOF',
     features: [
-      'Boutique en ligne immédiatement',
       "Jusqu'à 10 produits actifs",
       'Paiements Wave & Orange Money',
       'Paiement à la livraison',
@@ -28,12 +27,11 @@ export const AFRICA_PLANS: Plan[] = [
     priceInt:     4900,
     annualPrice:  49000,
     description:  'Le plus populaire',
-    promo:        '🎁 1 MOIS OFFERT — OFFRE DE LANCEMENT',
+    promo:        null,
     currency:     'XOF',
     features: [
       'Tout du plan Découverte',
       'Produits illimités',
-      'Confirmations automatiques par SMS',
       'Alertes retour en stock pour tes clients',
       'Codes promo & réductions',
       'Dashboard optimisé sur mobile',
@@ -75,7 +73,6 @@ export const EU_CA_PRO_PLAN_EUR: Plan = {
   promo:        null,
   currency:     'EUR',
   features: [
-    'Boutique en ligne immédiatement',
     'Produits illimités',
     'Paiement par carte bancaire (Stripe)',
     'Domaine personnalisé (tonsite.com)',

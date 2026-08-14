@@ -19,6 +19,7 @@ interface SetupChecklistProps {
   hasProduct: boolean
   hasPayoutNumbers: boolean
   isActivePlan: boolean
+  isFreeOrders: boolean
 }
 
 interface Step {
@@ -29,7 +30,7 @@ interface Step {
   action: React.ReactNode
 }
 
-export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumbers, isActivePlan }: SetupChecklistProps) {
+export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumbers, isActivePlan, isFreeOrders }: SetupChecklistProps) {
   const [hasShared, setHasShared]   = useState(false)
   const [collapsed, setCollapsed]   = useState(false)
   const [dismissed, setDismissed]   = useState(false)
@@ -94,8 +95,10 @@ export function SetupChecklist({ shopSlug, shopName, hasProduct, hasPayoutNumber
     },
     {
       id:          'activate',
-      label:       'Active ton site',
-      description: 'Choisis un plan pour rendre ton site visible et recevoir tes premières commandes.',
+      label:       isFreeOrders ? 'Passe à un plan payant' : 'Active ton site',
+      description: isFreeOrders
+        ? 'Pour continuer à recevoir des commandes sans limite, au-delà des 3 offertes.'
+        : 'Choisis un plan pour rendre ton site visible et recevoir tes premières commandes.',
       done:        isActivePlan,
       action: (
         <Link
