@@ -205,6 +205,16 @@ Les deux somment `order_items.line_total` au lieu d'imputer la remise par ligne.
     **Testé en conditions réelles le 2026-08-14**, sur préversion `dev` (bypass de la protection Vercel utilisé pour le test serveur) : les quatre scénarios validés — écran + bouton remplacés côté client, rejet `400` sur appel direct à `/api/orders` (message exact confirmé), garde bloquant l'enregistrement côté réglages, cas produit digital confirmé sur un vrai produit (« Et Pourtant, on s'aimait », `viensonsconnait`).
 
     **Entré en Livraison 1 par exception explicite au périmètre gelé du §0** : la refonte du tunnel de commande reste hors périmètre, mais ce correctif n'en fait pas partie — trois points de code isolés pour un bug de sécurité/argent démontré atteignable sans friction, pas une refonte.
+25. **`/onboarding` — collision de slug invisible via RLS, erreur avalée, "Réessaie" ne répare rien — trouvé le 2026-08-14 en testant le point recette du §0, non corrigé, Livraison 2.**
+
+    **Cause.** `startOnboarding` (`lib/actions/onboarding.ts:52-59`) vérifie l'unicité du slug via le client de session (soumis au RLS), puis crée réellement la boutique via le client `admin` (qui contourne le RLS). La policy `shops_public_read` actuelle (migration `078`) cache toute boutique `trial_model='legacy'` avec `is_active=false` à tout le monde sauf son propriétaire — la vérification d'unicité ne voit donc jamais ces boutiques-là, même quand leur slug est déjà pris. Si le nom choisi collisionne avec l'une d'elles, la boucle conclut à tort que le slug est libre ; l'insert réel percute alors l'index unique partiel `shops_slug_unique_non_draft` (`slug` unique WHERE `status <> 'draft'`). L'erreur Postgres réelle (`23505 duplicate key value violates unique constraint`) est avalée en `console.error` seul (ligne 75) — jamais renvoyée au client, jamais en Sentry — remplacée par le message générique « Impossible de créer la boutique. Réessaie. ». **"Réessaie" ne répare jamais rien** : le nom ne changeant pas, le même slug "faussement libre" est recalculé à l'identique à chaque tentative — un piège permanent pour ce nom précis, pas un échec transitoire.
+
+    **Reproduit directement** (insert admin avec un slug déjà pris par une boutique `legacy` `is_active=false` réelle) :
+    ```
+    {"code":"23505","message":"duplicate key value violates unique constraint \"shops_slug_unique_non_draft\"","details":"Key (slug)=(ma-boutique) already exists."}
+    ```
+
+    **Portée volontairement limitée à la Livraison 2** : `startOnboarding` n'a qu'un seul appelant dans tout `src/` (`OnboardingWizard.tsx`), lui-même atteignable uniquement via la garde middleware sur `/dashboard/*` pour un profil sans `shop_id`/`onboarding_completed` — vérifié par recherche exhaustive, pas supposé. Après déploiement de la Livraison 1, ce chemin ne s'ouvre plus que par la même fenêtre résiduelle étroite déjà documentée au §16 (interruption de `completeSignupFromStart` entre `auth.signUp()` et le second `profiles.update`) — le parcours normal de création passe par `/start`, pas par `/onboarding`. Contrairement au §24 (argent, atteignable sans friction sur n'importe quelle boutique), ce bug n'est atteignable qu'à travers cette fenêtre étroite : pas de fusion argent, pas d'exception au périmètre gelé.
 
 ---
 
