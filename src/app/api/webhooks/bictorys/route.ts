@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyBictorysSignature, getBictorysCharge, type BictorysWebhookPayload } from '@/lib/payments/bictorys'
 import {
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
 
   if (!verifyBictorysSignature(headerSecret, platformSecret)) {
     console.error('[webhook] Signature invalide — webhook rejeté', reference)
+    Sentry.captureException(new Error('Bictorys webhook: signature invalide'), { extra: { reference } })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
