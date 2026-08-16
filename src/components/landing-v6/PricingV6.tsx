@@ -2,17 +2,37 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { AFRICA_PLANS } from '@/lib/billing/plans'
 
 type PlanFeature = { label: string; locked?: boolean }
 
+function planByKey(key: string) {
+  const plan = AFRICA_PLANS.find(p => p.key === key)
+  if (!plan) throw new Error(`Plan inconnu dans AFRICA_PLANS: ${key}`)
+  return plan
+}
+
+function formatFcfa(n: number): string {
+  return n.toLocaleString('fr-FR')
+}
+
+const decouverte = planByKey('decouverte')
+const business   = planByKey('business')
+const pro        = planByKey('pro')
+
+// Prix annuel et note dérivés de AFRICA_PLANS.annualPrice — la même valeur
+// que /dashboard/upgrade facture réellement, pas un -20% calculé à part.
+// annualPrice = priceInt * 10 (2 mois offerts, pay 10 get 12) : le badge
+// "2 mois offerts" ci-dessous reste donc exact tant que ce ratio tient côté
+// plans.ts.
 const PLANS = [
   {
     name: 'Découverte',
     desc: 'Pour lancer ta première boutique et tester tes ventes.',
-    monthPrice: '2 900',
-    yearPrice:  '2 320',
+    monthPrice: decouverte.price,
+    yearPrice:  formatFcfa(Math.round(decouverte.annualPrice / 12)),
     noteMonth: 'Payé chaque mois. Tu peux arrêter quand tu veux.',
-    noteYear:  'Soit 27 840 FCFA payés une fois dans l\'année.',
+    noteYear:  `Soit ${formatFcfa(decouverte.annualPrice)} FCFA payés une fois dans l'année.`,
     headLine: 'Pour démarrer simplement',
     features: [
       { label: 'Jusqu\'à 10 produits en ligne' },
@@ -24,17 +44,17 @@ const PLANS = [
       { label: 'Produits illimités', locked: true },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
-      { label: '0% de commission', locked: true },
+      { label: '0% de commission avec tes propres clés de paiement', locked: true },
     ] as PlanFeature[],
     cta: { label: 'Commencer', href: '/start?plan=decouverte', primary: false },
   },
   {
     name: 'Business',
     desc: 'La solution complète pour vendre sans limites.',
-    monthPrice: '4 900',
-    yearPrice:  '3 920',
+    monthPrice: business.price,
+    yearPrice:  formatFcfa(Math.round(business.annualPrice / 12)),
     noteMonth: 'Payé chaque mois. Tu peux arrêter quand tu veux.',
-    noteYear:  'Soit 47 040 FCFA payés une fois dans l\'année.',
+    noteYear:  `Soit ${formatFcfa(business.annualPrice)} FCFA payés une fois dans l'année.`,
     headLine: 'Pour vendre sérieusement',
     badge: 'Le plus choisi',
     features: [
@@ -47,7 +67,7 @@ const PLANS = [
       { label: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs' },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
-      { label: '0% de commission', locked: true },
+      { label: '0% de commission avec tes propres clés de paiement', locked: true },
     ] as PlanFeature[],
     cta: { label: 'Choisir Business', href: '/start?plan=business', primary: true },
     best: true,
@@ -55,15 +75,15 @@ const PLANS = [
   {
     name: 'Pro',
     desc: 'Pour les boutiques qui veulent une image professionnelle au maximum.',
-    monthPrice: '9 900',
-    yearPrice:  '7 920',
+    monthPrice: pro.price,
+    yearPrice:  formatFcfa(Math.round(pro.annualPrice / 12)),
     noteMonth: 'Payé chaque mois. Tu peux arrêter quand tu veux.',
-    noteYear:  'Soit 95 040 FCFA payés une fois dans l\'année.',
+    noteYear:  `Soit ${formatFcfa(pro.annualPrice)} FCFA payés une fois dans l'année.`,
     headLine: 'Pour les boutiques qui grandissent',
     features: [
       { label: 'Tout ce qu\'offre Business' },
       { label: 'Assistant IA illimité pour ta boutique' },
-      { label: '0% de commission sur tes paiements' },
+      { label: '0% de commission avec tes propres clés de paiement' },
       { label: 'Domaine personnalisé (tonsite.com)' },
       { label: 'Image de couverture + produits Coups de cœur' },
       { label: 'Marque TEKKIShop masquée — ta boutique, ta marque' },
@@ -166,11 +186,10 @@ export function PricingV6() {
               <tbody>
                 <tr><th scope="row">Nombre de produits</th><td>10 max</td><td>Illimités</td><td>Illimités</td></tr>
                 <tr><th scope="row">Assistant IA</th><td>20 msg/jour</td><td>50 msg/jour</td><td>Illimité</td></tr>
-                <tr><th scope="row">Commission paiements en ligne</th><td>3%</td><td>3%</td><td>0%</td></tr>
+                <tr><th scope="row">Commission paiements en ligne</th><td>3%</td><td>3%</td><td>0%*</td></tr>
                 <tr><th scope="row">Paiement mobile money</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Paiement à la livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Envoi et confirmation livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
-                <tr><th scope="row">Codes promo</th><td className="no">—</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Image de couverture boutique</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Domaine personnalisé (.com)</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Marque TEKKIShop masquée</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
@@ -178,6 +197,9 @@ export function PricingV6() {
               </tbody>
             </table>
           </div>
+          <p style={{ fontSize: 13, color: '#697893', marginTop: 12 }}>
+            * 0% uniquement si tu configures tes propres clés Bictorys (plan Pro, Paramètres → Paiements). Sans clés propres, la commission de 3% s&rsquo;applique comme sur les autres plans.
+          </p>
         </details>
       </div>
     </section>

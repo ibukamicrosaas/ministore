@@ -16,10 +16,10 @@ export function LandingNav() {
           </Link>
 
           <div className="nav-links">
-            <a href="#probleme">Pourquoi TEKKIShop</a>
-            <a href="#etapes">Comment ça marche</a>
-            <a href="#tarifs">Tarifs</a>
-            <a href="#faq">FAQ</a>
+            <Link href="/#probleme">Pourquoi TEKKIShop</Link>
+            <Link href="/#etapes">Comment ça marche</Link>
+            <Link href="/#tarifs">Tarifs</Link>
+            <Link href="/#faq">FAQ</Link>
           </div>
 
           <div className="nav-actions">
@@ -48,10 +48,10 @@ export function LandingNav() {
       {open && (
         <div className="container">
           <div className="mobile-menu open">
-            <a href="#probleme" onClick={() => setOpen(false)}>Pourquoi TEKKIShop</a>
-            <a href="#etapes"   onClick={() => setOpen(false)}>Comment ça marche</a>
-            <a href="#tarifs"   onClick={() => setOpen(false)}>Tarifs</a>
-            <a href="#faq"      onClick={() => setOpen(false)}>FAQ</a>
+            <Link href="/#probleme" onClick={() => setOpen(false)}>Pourquoi TEKKIShop</Link>
+            <Link href="/#etapes"   onClick={() => setOpen(false)}>Comment ça marche</Link>
+            <Link href="/#tarifs"   onClick={() => setOpen(false)}>Tarifs</Link>
+            <Link href="/#faq"      onClick={() => setOpen(false)}>FAQ</Link>
             <Link href="/login" onClick={() => setOpen(false)}>Connexion</Link>
             <Link href="/start" className="btn btn-primary btn-full" onClick={() => setOpen(false)}>
               Créer ma boutique

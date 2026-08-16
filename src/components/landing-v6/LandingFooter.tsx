@@ -17,7 +17,7 @@ export function LandingFooter() {
               <Image src="/logo_white.svg" alt="TEKKIShop" width={140} height={40} style={{ height: 40, width: 'auto' }} />
             </a>
             <p>La manière simple de créer une boutique en ligne, encaisser par mobile money et gérer ses ventes depuis son téléphone.</p>
-            <a className="foot-tt" href="https://www.tiktok.com/@tekkishop" target="_blank" rel="noopener noreferrer">
+            <a className="foot-tt" href="https://www.tiktok.com/@tekki.shop" target="_blank" rel="noopener noreferrer">
               {tiktok}
               Suis-nous sur TikTok
             </a>
@@ -39,7 +39,7 @@ export function LandingFooter() {
           <div className="foot-col">
             <h4>Aide</h4>
             <Link href="/aide">Centre d&rsquo;aide</Link>
-            <a href="https://www.tiktok.com/@tekkishop" target="_blank" rel="noopener noreferrer">Nos tutoriels vidéo</a>
+            <a href="https://www.tiktok.com/@tekki.shop" target="_blank" rel="noopener noreferrer">Nos tutoriels vidéo</a>
             <a href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}>Support WhatsApp</a>
             <Link href="/contact">Nous contacter</Link>
           </div>
