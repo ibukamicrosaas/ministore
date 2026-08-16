@@ -120,7 +120,7 @@ export const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
       headline: 'Crée ta boutique en ligne au Togo en 5 minutes, avec ton téléphone.',
       highlightedText: 'au Togo',
       subtext:
-        "Tu vends à Lomé, Kara, Sokodé ou ailleurs ? Tes clients commandent seuls, même quand tu dors, paient par Flooz ou T-Money, et tu retires ton argent directement sur ton téléphone.",
+        "Tu vends à Lomé, Kara, Sokodé ou ailleurs ? Tes clients commandent seuls, même quand tu dors, paient par Flooz ou T-Money, et tu retires ton argent sur ton téléphone.",
       flagsLabel: 'Disponible au Togo et dans 6 autres pays africains :',
       flags: ['🇹🇬', '🇸🇳', '🇨🇮', '🇧🇯', '🇲🇱', '🇧🇫', '🇨🇲'],
       avatarNote: 'noté par des marchands à Lomé, Kara, Sokodé et partout au Togo',

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { COUNTRY_CONFIGS } from '@/data/country-configs'
-import { CountryLandingPage } from '@/components/landing/CountryLandingPage'
+import { CountryLandingV6 } from '@/components/landing/CountryLandingV6'
 
 export const revalidate = 3600
 
@@ -17,5 +17,5 @@ export const metadata: Metadata = {
 }
 
 export default function TogoPage() {
-  return <CountryLandingPage config={cfg} />
+  return <CountryLandingV6 config={cfg} />
 }
