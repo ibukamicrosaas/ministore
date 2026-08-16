@@ -1,0 +1,77 @@
+name: Sauvegarde Supabase Storage vers Cloudflare R2
+
+# Supabase ne sauvegarde que la base de données — jamais les fichiers Storage
+# (logos, photos produits, produits digitaux). Ce workflow copie tout le
+# contenu des buckets Supabase Storage vers un bucket Cloudflare R2 séparé,
+# via l'API S3-compatible exposée par Supabase Storage.
+#
+# `rclone copy` (jamais `sync`) : n'ajoute et ne met à jour que des fichiers,
+# ne supprime jamais rien côté R2 même si un fichier est supprimé côté
+# Supabase — l'objectif est une protection contre la perte accidentelle, pas
+# un miroir en temps réel. Conséquence acceptée : le stockage R2 grossit
+# indéfiniment (volume actuel ~2,5 Go, coût R2 ~0,015 $/Go/mois — négligeable
+# tant que le volume reste dans cet ordre de grandeur). À revisiter avec une
+# politique de rétention si le volume devient significatif.
+#
+# Horaire choisi (03:00 UTC) : approximatif, Supabase ne documente pas
+# l'heure exacte de sa sauvegarde quotidienne de la base — voir la note dans
+# REPRISE.md sur la cohérence temporelle entre backup base et backup Storage.
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch: {} # permet un lancement manuel depuis l'onglet Actions
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Installer rclone
+        run: |
+          sudo -v
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configurer rclone (Supabase Storage source, R2 destination)
+        env:
+          SUPABASE_S3_ENDPOINT:        ${{ secrets.SUPABASE_S3_ENDPOINT }}
+          SUPABASE_S3_REGION:          ${{ secrets.SUPABASE_S3_REGION }}
+          SUPABASE_S3_ACCESS_KEY_ID:   ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+          SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT:          ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf << EOF
+          [supabase]
+          type = s3
+          provider = Other
+          access_key_id = ${SUPABASE_S3_ACCESS_KEY_ID}
+          secret_access_key = ${SUPABASE_S3_SECRET_ACCESS_KEY}
+          endpoint = ${SUPABASE_S3_ENDPOINT}
+          region = ${SUPABASE_S3_REGION}
+
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${R2_ACCESS_KEY_ID}
+          secret_access_key = ${R2_SECRET_ACCESS_KEY}
+          endpoint = ${R2_ENDPOINT}
+          EOF
+
+      - name: Copier tous les buckets vers R2
+        env:
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          rclone copy supabase: "r2:${R2_BUCKET}" \
+            --transfers 8 \
+            --checkers 16 \
+            --stats 30s \
+            --stats-one-line \
+            --log-level INFO
+
+      - name: Alerter en cas d'échec
+        if: failure()
+        run: |
+          echo "::error::Sauvegarde Storage échouée — vérifier les identifiants R2/Supabase S3 et les logs ci-dessus."
