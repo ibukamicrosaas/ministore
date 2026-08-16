@@ -5,6 +5,7 @@ import { Building2, ShoppingBag, TrendingUp, Clock, AlertCircle, Zap, UserCheck,
 import Link from 'next/link'
 import { APP_URL } from '@/constants'
 import CountryConversionWidget from '@/components/admin/CountryConversionWidget'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 export const metadata = { title: 'Admin — TekkiShop' }
 
@@ -66,7 +67,7 @@ export default async function AdminOverviewPage() {
       .gte('created_at', monthStart).lte('created_at', monthEnd + 'T23:59:59'),
     supabase.from('orders').select('id', { count: 'exact' })
       .gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd + 'T23:59:59'),
-    supabase.from('payments').select('amount, created_at').eq('status', 'completed'),
+    supabase.from('payments').select('amount, created_at, shops!inner(country, bictorys_secret_key)').eq('status', 'completed'),
     supabase.from('shops').select('id, name, slug, trial_ends_at').eq('plan', 'trial').eq('is_active', true)
       .gte('trial_ends_at', now.toISOString())
       .lte('trial_ends_at', sevenDaysFromNow.toISOString()),
@@ -104,12 +105,24 @@ export default async function AdminOverviewPage() {
     ? Math.round(((ordersThisMonth - ordersPrevMonth) / ordersPrevMonth) * 100)
     : null
 
-  const payments = (paymentsRes.data ?? []) as { amount: number; created_at: string }[]
+  type PaymentShopRow = {
+    amount: number
+    created_at: string
+    shops: { country: string | null; bictorys_secret_key: string | null }
+      | { country: string | null; bictorys_secret_key: string | null }[]
+      | null
+  }
+  const payments = (paymentsRes.data ?? []) as unknown as PaymentShopRow[]
   const totalRevenue     = payments.reduce((s, p) => s + p.amount, 0)
   const revenueThisMonth = payments
     .filter(p => p.created_at >= monthStart && p.created_at <= monthEnd + 'T23:59:59')
     .reduce((s, p) => s + p.amount, 0)
-  const tekkishopCommission = Math.floor(totalRevenue * 0.03)
+  // Commission ligne par ligne (pays + clés propres de chaque boutique),
+  // jamais un taux plat sur la somme globale — voir lib/billing/commission.ts.
+  const tekkishopCommission = payments.reduce((s, p) => {
+    const shop = Array.isArray(p.shops) ? p.shops[0] : p.shops
+    return s + Math.floor(p.amount * (getCommissionRate(shop?.country, !!shop?.bictorys_secret_key) / 100))
+  }, 0)
 
   const paidShops = allShops.filter(s => s.is_active && s.plan !== 'trial')
   const monthlyCount = paidShops.filter(s => !annualShopIds.has(s.id)).length
@@ -282,7 +295,7 @@ export default async function AdminOverviewPage() {
                 <p className="text-3xl font-bold text-gray-900">{totalRevenue.toLocaleString('fr-FR')} <span className="text-lg font-normal text-gray-400">FCFA</span></p>
               </div>
               <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
-                <p className="text-xs text-gray-600 mb-1">Commission TekkiShop (3%)</p>
+                <p className="text-xs text-gray-600 mb-1">Commission TekkiShop</p>
                 <p className="text-lg font-bold text-sky-700">{tekkishopCommission.toLocaleString('fr-FR')} FCFA</p>
               </div>
               <div className="border-t border-gray-200 pt-4">

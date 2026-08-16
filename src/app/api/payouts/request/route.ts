@@ -3,9 +3,11 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysPayout } from '@/lib/payments/bictorys'
 import type { BictorysPayoutPaymentType } from '@/lib/payments/bictorys'
-import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
+import { PAYOUT_MIN_AMOUNT } from '@/constants'
 import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
+import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import * as Sentry from '@sentry/nextjs'
 
 const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { data: shop } = await admin
     .from('shops')
-    .select('name, country, payout_wave_number, payout_om_number')
+    .select('name, country, payout_wave_number, payout_om_number, bictorys_secret_key')
     .eq('id', profile.shop_id)
     .single()
 
@@ -59,6 +61,16 @@ export async function POST(req: NextRequest) {
     : shop?.payout_om_number
   if (!payoutNumber) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
+  }
+
+  // Frais de retrait PAY OUT — un taux non confirmé (Mali aujourd'hui)
+  // bloque la demande plutôt que de facturer 0% par défaut. Vérifié avant
+  // le calcul de commission ci-dessous pour échouer tôt, message clair.
+  const payoutFeeRate = getPayoutFeeRate(shop?.country ?? null, method as PayoutMethodKey)
+  if (payoutFeeRate === null) {
+    return NextResponse.json({
+      error: 'Le retrait par cette méthode n\'est pas encore disponible dans ton pays — contacte le support.',
+    }, { status: 400 })
   }
 
   // Calcul serveur-side (ne pas faire confiance au montant envoyé par le client)
@@ -80,8 +92,16 @@ export async function POST(req: NextRequest) {
   const totalPaidOutGross = (payoutsResult.data ?? []).reduce((s, p) => s + p.gross_amount, 0)
   const grossBalance     = totalCollected - totalPaidOutGross
 
-  const commissionAmount = Math.floor(grossBalance * (TEKKISHOP_COMMISSION_RATE / 100))
-  const netAmount        = grossBalance - commissionAmount
+  // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
+  const commissionRate       = getCommissionRate(shop?.country ?? null, !!shop?.bictorys_secret_key)
+  const commissionAmount     = Math.floor(grossBalance * (commissionRate / 100))
+  const amountAfterCommission = grossBalance - commissionAmount
+
+  // Frais de retrait PAY OUT (opérateur + Bictorys) — désormais facturés au
+  // marchand, distincts de la commission ci-dessus. payoutFeeRate déjà
+  // vérifié non-null plus haut.
+  const payoutFeeAmount = Math.floor(amountAfterCommission * (payoutFeeRate / 100))
+  const netAmount        = amountAfterCommission - payoutFeeAmount
 
   if (netAmount < PAYOUT_MIN_AMOUNT) {
     return NextResponse.json({
@@ -96,6 +116,7 @@ export async function POST(req: NextRequest) {
       shop_id:           profile.shop_id,
       gross_amount:      grossBalance,
       commission_amount: commissionAmount,
+      payout_fee_amount: payoutFeeAmount,
       net_amount:        netAmount,
       payout_method:     method as PayoutMethodKey,
       payout_number:     payoutNumber,

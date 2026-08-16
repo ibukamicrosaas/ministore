@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { formatPrice, type ShopCurrency } from '@/lib/utils/country-groups'
 import { sendWhatsApp, buildFreeOrdersActivatedMessage } from '@/lib/notifications/whatsapp'
-import { TEKKISHOP_COMMISSION_RATE } from '@/constants'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 export type ShopStatus = 'draft' | 'trial' | 'expired' | 'active'
 
@@ -31,7 +31,7 @@ export async function setShopStatus(
 
   const { data: shop } = await admin
     .from('shops')
-    .select('trial_model, status, slug, name, phone_whatsapp, currency')
+    .select('trial_model, status, slug, name, phone_whatsapp, currency, country, bictorys_secret_key')
     .eq('id', shopId)
     .single()
 
@@ -68,8 +68,9 @@ export async function setShopStatus(
     // Fonds de commandes digitales retenues et payées, débloqués dans la même
     // transaction que la RPC — net de commission, comme partout sur la page
     // Revenus. Voir ADDITIF-argent-commandes-retenues.md.
+    const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
     const fundsGross = result?.released_funds_gross ?? 0
-    const fundsNet    = fundsGross - Math.floor(fundsGross * (TEKKISHOP_COMMISSION_RATE / 100))
+    const fundsNet    = fundsGross - Math.floor(fundsGross * (commissionRate / 100))
 
     await admin.from('shop_events').insert({
       shop_id: shopId,

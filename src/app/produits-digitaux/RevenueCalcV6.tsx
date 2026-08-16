@@ -1,14 +1,21 @@
 'use client'
 import { useState } from 'react'
+import { MIN_COMMISSION_RATE, MAX_COMMISSION_RATE } from '@/lib/billing/commission'
 
 const fmt = (n: number) => Math.max(0, n).toLocaleString('fr-FR')
+
+// Simulation générique, sans pays connu — utilise le taux le plus bas
+// (Sénégal/Côte d'Ivoire) comme référence, avec une note explicite que le
+// taux réel dépend du pays de la boutique. Jamais un taux tapé en dur ici.
+const REFERENCE_RATE = MIN_COMMISSION_RATE
+const MAX_RATE = MAX_COMMISSION_RATE
 
 export function RevenueCalcV6() {
   const [price, setPrice] = useState(4500)
   const [sales, setSales] = useState(20)
 
   const revenue = price * sales
-  const commission = Math.round(revenue * 0.03)
+  const commission = Math.round(revenue * (REFERENCE_RATE / 100))
   const plan = 2900
   const net = revenue - commission - plan
 
@@ -48,7 +55,7 @@ export function RevenueCalcV6() {
           <b>{fmt(revenue)} FCFA</b>
         </div>
         <div className="rv-row">
-          <span>Commission TEKKIShop — 3&nbsp;%</span>
+          <span>Commission TEKKIShop — {REFERENCE_RATE}&nbsp;%</span>
           <b>− {fmt(commission)} FCFA</b>
         </div>
         <div className="rv-row">
@@ -61,7 +68,7 @@ export function RevenueCalcV6() {
         </div>
       </div>
       <p className="rv-note">
-        Simulation indicative. Commission de 3&nbsp;% sur les paiements en ligne (frais agrégateur inclus). Retrait instantané sur mobile money.
+        Simulation indicative, à partir du taux le plus bas ({REFERENCE_RATE}&nbsp;%) — la commission réelle dépend de ton pays (jusqu&rsquo;à {MAX_RATE}&nbsp;%). Retrait instantané sur mobile money.
       </p>
     </div>
   )

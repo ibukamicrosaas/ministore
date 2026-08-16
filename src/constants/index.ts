@@ -8,7 +8,8 @@ export const REMINDER_HOURS_BEFORE  = 24
 // Paiements
 export const DEFAULT_DEPOSIT_PERCENTAGE  = 50
 export const DEFAULT_CURRENCY            = 'XOF'
-export const TEKKISHOP_COMMISSION_RATE   = 3    // % prélevé sur les paiements en ligne
+// Commission sur les paiements en ligne : voir lib/billing/commission.ts
+// (taux par pays, jamais un taux plat unique — supprimé d'ici le 2026-08-16).
 export const PAYOUT_MIN_AMOUNT           = 2000 // montant minimum pour déclencher un retrait (FCFA)
 
 // Modèle "boutique publique + 3 commandes offertes" (trial_model='free_orders' uniquement).

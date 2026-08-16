@@ -8,6 +8,9 @@ import { LandingFooter } from '@/components/landing-v6/LandingFooter'
 import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { JourneyTabs } from './JourneyTabs'
 import { RevenueCalcV6 } from './RevenueCalcV6'
+import { getCommissionRateRangeLabel, MIN_COMMISSION_RATE } from '@/lib/billing/commission'
+
+const COMMISSION_RANGE = getCommissionRateRangeLabel()
 
 export const metadata = {
   title: `Vendre des produits digitaux — Ebooks, guides, templates — ${APP_NAME}`,
@@ -107,7 +110,7 @@ const PLANS = [
       'Vente de produits digitaux',
       'Commandes et livraison automatique',
       'Assistant IA (20 messages/jour)',
-      '3 % sur les paiements en ligne, pour couvrir les frais des opérateurs',
+      `${COMMISSION_RANGE} sur les paiements en ligne selon ton pays, pour couvrir les frais des opérateurs`,
     ],
     cta: { label: 'Commencer avec Découverte', href: '/start?plan=decouverte', primary: false },
   },
@@ -135,7 +138,7 @@ const PLANS = [
     features: [
       "Tout ce qu'offre Business",
       'Assistant IA illimité',
-      '0 % de commission sur tes paiements',
+      '0 % de commission avec tes propres clés de paiement',
       'Domaine personnalisé (tonsite.com)',
       'Support prioritaire par WhatsApp',
       'Export Excel des commandes',
@@ -150,7 +153,7 @@ const FAQS = [
   { q: 'Comment mon client reçoit-il son fichier ?', a: "Après validation de son paiement, l'accès au fichier lui est transmis automatiquement, sans intervention manuelle de ta part." },
   { q: 'Puis-je vendre des produits physiques et digitaux ?', a: "Oui. TEKKIShop te permet de réunir des produits physiques et digitaux dans le même environnement." },
   { q: 'Faut-il choisir un plan pour pouvoir vendre ?', a: "Non. Ta boutique est en ligne et peut recevoir des commandes dès que tu publies ton premier produit. Tes 3 premières commandes sont offertes. Tu choisis un plan seulement pour continuer à en recevoir au-delà." },
-  { q: 'Comment sont calculés mes gains ?', a: "Tu fixes le prix de ton produit. Tes revenus dépendent du nombre de ventes, de la commission applicable (3 % sur les paiements en ligne) et du plan d'abonnement choisi." },
+  { q: 'Comment sont calculés mes gains ?', a: `Tu fixes le prix de ton produit. Tes revenus dépendent du nombre de ventes, de la commission applicable (${COMMISSION_RANGE} sur les paiements en ligne, selon ton pays) et du plan d'abonnement choisi.` },
 ]
 
 const CHECK_ICO = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
@@ -781,7 +784,7 @@ export default async function ProduitsDigitauxPage() {
                   Transparence totale
                 </span>
                 <h2 className="pd-h2 pd-calc-title">Vois combien tu peux gagner, <span style={{ color: '#a982ff' }}>exactement.</span></h2>
-                <p className="pd-calc-lead">La simulation ci-contre utilise une commission de 3&nbsp;% et le plan Découverte à 2&nbsp;900&nbsp;FCFA par mois, comme exemple.</p>
+                <p className="pd-calc-lead">La simulation ci-contre utilise le taux le plus bas ({MIN_COMMISSION_RATE}&nbsp;%, la commission réelle dépend de ton pays) et le plan Découverte à 2&nbsp;900&nbsp;FCFA par mois, comme exemple.</p>
                 <div className="pd-transparent-card">
                   {['Pas de calcul caché', 'Tu fixes librement le prix de ton produit', 'Tu vois ton revenu avant même de publier'].map(t => (
                     <div key={t} className="pd-transparent-item">

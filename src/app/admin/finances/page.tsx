@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
+import { getCommissionRate } from '@/lib/billing/commission'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AdminWithdrawSection } from './AdminWithdrawSection'
@@ -89,17 +90,19 @@ export default async function AdminFinancesPage({
         data: { plan_key: string }[] | null
       }>),
 
-    // Paiements marchands sur la période
+    // Paiements marchands sur la période — jointure shops pour calculer la
+    // commission réelle par pays/clés propres, pas un taux plat global
+    // (voir lib/billing/commission.ts).
     admin
       .from('payments')
-      .select('amount, created_at')
+      .select('amount, created_at, shops!inner(country, bictorys_secret_key)')
       .eq('status', 'completed')
       .gte('created_at', periodStart),
 
     // Paiements marchands all-time
     admin
       .from('payments')
-      .select('amount')
+      .select('amount, shops!inner(country, bictorys_secret_key)')
       .eq('status', 'completed'),
 
     // Reversements effectués all-time
@@ -144,14 +147,34 @@ export default async function AdminFinancesPage({
   const subAvailable = Math.max(0, subRevAllTime - totalAdminWithdrawn)
 
   // ── Paiements marchands ──
-  const COMMISSION_RATE = 3
-  const orderGrossPeriod = (payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
-  const orderCommPeriod  = Math.floor(orderGrossPeriod * COMMISSION_RATE / 100)
-  const orderNetPeriod   = orderGrossPeriod - orderCommPeriod
+  // Commission calculée ligne par ligne (pays + clés Bictorys propres de
+  // chaque boutique), jamais un taux plat appliqué à la somme globale —
+  // voir lib/billing/commission.ts.
+  type PaymentShopRow = {
+    amount: number
+    shops: { country: string | null; bictorys_secret_key: string | null }
+      | { country: string | null; bictorys_secret_key: string | null }[]
+      | null
+  }
+  const shopOfPayment = (p: PaymentShopRow) => Array.isArray(p.shops) ? p.shops[0] : p.shops
+  function sumGrossAndCommission(rows: PaymentShopRow[] | null) {
+    let gross = 0, commission = 0
+    for (const p of rows ?? []) {
+      const s = shopOfPayment(p)
+      gross += p.amount
+      commission += Math.floor(p.amount * (getCommissionRate(s?.country, !!s?.bictorys_secret_key) / 100))
+    }
+    return { gross, commission }
+  }
 
-  const orderGrossAll = (paymentsAll ?? []).reduce((s, p) => s + p.amount, 0)
-  const orderCommAll  = Math.floor(orderGrossAll * COMMISSION_RATE / 100)
-  const orderNetAll   = orderGrossAll - orderCommAll
+  const { gross: orderGrossPeriod, commission: orderCommPeriod } = sumGrossAndCommission(payments as unknown as PaymentShopRow[] | null)
+  const orderNetPeriod = orderGrossPeriod - orderCommPeriod
+
+  const { gross: orderGrossAll, commission: orderCommAll } = sumGrossAndCommission(paymentsAll as unknown as PaymentShopRow[] | null)
+  const orderNetAll = orderGrossAll - orderCommAll
+  // Taux moyen affiché — indicatif seulement, la vraie commission varie par
+  // boutique (pays + clés propres), voir sumGrossAndCommission ci-dessus.
+  const blendedCommissionRate = orderGrossAll > 0 ? Math.round((orderCommAll / orderGrossAll) * 1000) / 10 : 0
 
   // ── Reversements marchands ──
   const totalPaidOutNet   = (payoutsCompleted ?? []).reduce((s, p) => s + p.net_amount, 0)
@@ -193,7 +216,7 @@ export default async function AdminFinancesPage({
           <div>
             <p className="text-xs text-gray-400 mb-0.5">Commission sur commandes</p>
             <p className="text-2xl font-black text-sky-400">{fmt(orderCommAll)} F</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{COMMISSION_RATE}% sur {fmt(orderGrossAll)} F collectés</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">{blendedCommissionRate}% en moyenne sur {fmt(orderGrossAll)} F collectés</p>
           </div>
         </div>
       </div>
@@ -261,7 +284,7 @@ export default async function AdminFinancesPage({
             color="text-sky-600"
           />
           <StatCard
-            label={`Commission (${COMMISSION_RATE}%)`}
+            label={`Commission (${blendedCommissionRate}% moy.)`}
             value={`${fmt(orderCommPeriod)} F`}
             sub="revient à TEKKIShop"
             color="text-emerald-600"

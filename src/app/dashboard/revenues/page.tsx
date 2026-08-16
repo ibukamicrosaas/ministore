@@ -6,10 +6,12 @@ import Link from 'next/link'
 import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon, Lock } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { RequestPayoutButton } from './RequestPayoutButton'
-import { TEKKISHOP_COMMISSION_RATE, PAYOUT_MIN_AMOUNT } from '@/constants'
+import { PAYOUT_MIN_AMOUNT } from '@/constants'
 import type { Profile, Payout } from '@/types'
 import { isEuCaCountry, getPayoutMethods, formatPrice, PAYOUT_METHODS_BY_COUNTRY } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
+import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 
 export const metadata = { title: 'Revenus — TekkiShop' }
 
@@ -31,7 +33,7 @@ export default async function RevenuesPage() {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, country, currency, payout_wave_number, payout_om_number')
+    .select('name, country, currency, payout_wave_number, payout_om_number, bictorys_secret_key')
     .eq('id', shopId)
     .single()
 
@@ -41,21 +43,26 @@ export default async function RevenuesPage() {
     currency: string | null
     payout_wave_number: string | null
     payout_om_number: string | null
+    bictorys_secret_key: string | null
   } | null
   if (!shop) redirect('/dashboard')
 
   const shopCurrency = (shop.currency ?? 'XOF') as import('@/lib/utils/country-groups').ShopCurrency
   const euCa = isEuCaCountry(shop.country)
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
 
-  // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis les slots DB
+  // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis
+  // les slots DB, et frais de retrait réels (opérateur + Bictorys) par
+  // méthode — affichés au marchand avant qu'il ne confirme un retrait.
   const rawMethods = getPayoutMethods(shop.country)
   const payoutMethodsWithNumbers = rawMethods
     .map(m => ({
       label:  m.label,
       key:    m.key,
       number: m.col === 'payout_wave_number' ? shop.payout_wave_number : shop.payout_om_number,
+      feeRate: getPayoutFeeRate(shop.country, m.key),
     }))
-    .filter((m): m is { label: string; key: PayoutMethodKey; number: string } => !!m.number)
+    .filter((m): m is { label: string; key: PayoutMethodKey; number: string; feeRate: number | null } => !!m.number)
 
   // Total collecté via paiements en ligne (status completed). Les paiements
   // liés à une commande encore retenue (is_held=true, released_at IS NULL)
@@ -80,9 +87,9 @@ export default async function RevenuesPage() {
     .filter(p => isBlocked(p.orders))
     .reduce((s, p) => s + p.amount, 0)
 
-  const commissionTotal = Math.floor(totalCollected * (TEKKISHOP_COMMISSION_RATE / 100))
+  const commissionTotal = Math.floor(totalCollected * (commissionRate / 100))
   const totalNet = totalCollected - commissionTotal
-  const blockedNet = blockedGross - Math.floor(blockedGross * (TEKKISHOP_COMMISSION_RATE / 100))
+  const blockedNet = blockedGross - Math.floor(blockedGross * (commissionRate / 100))
 
   // Historique des reversements
   const { data: payoutsData } = await supabase
@@ -209,7 +216,7 @@ export default async function RevenuesPage() {
           <div className="flex items-center gap-2 mb-1">
             <p className="text-xs text-gray-500">Commission TekkiShop</p>
           </div>
-          <p className="text-lg font-bold text-gray-900">{TEKKISHOP_COMMISSION_RATE}%</p>
+          <p className="text-lg font-bold text-gray-900">{commissionRate}%</p>
           <p className="text-xs text-gray-400">{formatPrice(commissionTotal, shopCurrency)} déduits</p>
         </Card>
       </div>
@@ -224,7 +231,7 @@ export default async function RevenuesPage() {
               <span className="font-medium text-gray-900">{formatPrice(totalCollected + blockedGross, shopCurrency)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Commission TekkiShop ({TEKKISHOP_COMMISSION_RATE}%)</span>
+              <span className="text-gray-500">Commission TekkiShop ({commissionRate}%)</span>
               <span className="font-medium text-red-500">− {formatPrice(commissionTotal + (blockedGross - blockedNet), shopCurrency)}</span>
             </div>
             {blockedNet > 0 && (

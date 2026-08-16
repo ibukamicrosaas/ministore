@@ -1,7 +1,8 @@
 import { tool, zodSchema, stepCountIs } from 'ai'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { TEKKISHOP_COMMISSION_RATE, APP_URL } from '@/constants'
+import { APP_URL } from '@/constants'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 // Tous les tools sont en LECTURE SEULE.
 // Le shop_id est toujours injecté côté serveur depuis la session — jamais depuis le client.
@@ -318,7 +319,7 @@ export function buildAiTools(shopId: string) {
             .eq('shop_id', shopId)
             .in('status', ['pending', 'processing', 'completed'])
             .order('created_at', { ascending: false }),
-          admin.from('shops').select('plan').eq('id', shopId).single(),
+          admin.from('shops').select('country, bictorys_secret_key').eq('id', shopId).single(),
         ])
 
         const total_collected = (paymentsRes.data ?? []).reduce((s, p) => s + p.amount, 0)
@@ -328,8 +329,7 @@ export function buildAiTools(shopId: string) {
           .filter((p) => p.status === 'pending' || p.status === 'processing')
           .reduce((s, p) => s + p.net_amount, 0)
 
-        const plan = shopRes.data?.plan ?? 'trial'
-        const commission_rate = plan === 'pro' ? 0 : TEKKISHOP_COMMISSION_RATE
+        const commission_rate = getCommissionRate(shopRes.data?.country, !!shopRes.data?.bictorys_secret_key)
 
         return {
           total_collected,

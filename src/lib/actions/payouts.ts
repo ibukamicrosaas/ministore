@@ -5,6 +5,8 @@ import { createBictorysPayout } from '@/lib/payments/bictorys'
 import type { BictorysPayoutPaymentType } from '@/lib/payments/bictorys'
 import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
+import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import { revalidatePath } from 'next/cache'
 import * as Sentry from '@sentry/nextjs'
 
@@ -16,12 +18,6 @@ const PAYOUT_METHOD_MAP: Record<string, BictorysPayoutPaymentType> = {
   moov:         'moov',
   tmoney:       'moov',  // Togocel/Flooz non nativement supportés → moov fallback
   flooz:        'moov',
-}
-
-const COMMISSION_RATES: Record<string, number> = {
-  decouverte: 0.03,
-  business:   0.03,
-  pro:        0,
 }
 
 /**
@@ -64,7 +60,7 @@ export async function processPayout(
   // Récupérer les infos de la boutique
   const { data: shop, error: shopError } = await admin
     .from('shops')
-    .select('plan, payout_wave_number, payout_om_number, country, name')
+    .select('plan, payout_wave_number, payout_om_number, country, name, bictorys_secret_key')
     .eq('id', shopId)
     .single()
 
@@ -97,9 +93,22 @@ export async function processPayout(
     return { error: `Numéro de reversement "${payoutMethod}" non configuré.` }
   }
 
-  const commissionRate = COMMISSION_RATES[shop.plan ?? 'decouverte'] ?? 0.03
-  const commissionAmount = Math.round(grossAmount * commissionRate)
-  const netAmount = grossAmount - commissionAmount
+  // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
+  const commissionRate = getCommissionRate(country, !!(shop as any).bictorys_secret_key)
+  const commissionAmount = Math.round(grossAmount * (commissionRate / 100))
+  const amountAfterCommission = grossAmount - commissionAmount
+
+  // Frais de retrait PAY OUT — désormais facturés au marchand, distincts de
+  // la commission ci-dessus (décision du 2026-08-16, voir payout-fees.ts).
+  // Un taux non confirmé (Mali aujourd'hui) bloque le retrait plutôt que de
+  // facturer 0% par défaut — mieux vaut un retrait qui attend qu'un retrait
+  // sous-facturé.
+  const payoutFeeRate = getPayoutFeeRate(country, payoutMethod as PayoutMethodKey)
+  if (payoutFeeRate === null) {
+    return { error: `Frais de retrait non confirmés pour "${payoutMethod}" dans ce pays — contacter le support avant de traiter ce reversement.` }
+  }
+  const payoutFeeAmount = Math.round(amountAfterCommission * (payoutFeeRate / 100))
+  const netAmount = amountAfterCommission - payoutFeeAmount
 
   const bictorysPaymentType: BictorysPayoutPaymentType = PAYOUT_METHOD_MAP[payoutMethod] ?? 'wave_money'
 
@@ -113,6 +122,7 @@ export async function processPayout(
         shop_id:           shopId,
         gross_amount:      grossAmount,
         commission_amount: commissionAmount,
+        payout_fee_amount: payoutFeeAmount,
         net_amount:        netAmount,
         payout_method:     payoutMethod as PayoutMethodKey,
         payout_number:     recipientPhone,

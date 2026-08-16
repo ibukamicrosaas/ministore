@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
-const TEKKISHOP_COMMISSION_RATE = 3
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -32,13 +32,15 @@ export async function POST(req: NextRequest) {
 
   const { data: shop } = await admin
     .from('shops')
-    .select('id, name')
+    .select('id, name, country, bictorys_secret_key')
     .eq('slug', shopSlug.trim())
     .single()
 
   if (!shop) {
     return NextResponse.json({ error: `Boutique "${shopSlug}" introuvable` }, { status: 404 })
   }
+
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
 
   // Calcul du solde disponible pour information (non bloquant — admin connaît son contexte)
   const [{ data: payments }, { data: payouts }] = await Promise.all([
@@ -49,10 +51,12 @@ export async function POST(req: NextRequest) {
   const totalCollected   = (payments ?? []).reduce((s, p) => s + p.amount, 0)
   const totalPaidOut     = (payouts ?? []).reduce((s, p) => s + p.gross_amount, 0)
   const grossBalance     = totalCollected - totalPaidOut
-  const commissionAmount = Math.floor(grossBalance * (TEKKISHOP_COMMISSION_RATE / 100))
+  const commissionAmount = Math.floor(grossBalance * (commissionRate / 100))
   const netBalance       = grossBalance - commissionAmount
 
-  const grossAmount      = Math.ceil(amount / (1 - TEKKISHOP_COMMISSION_RATE / 100))
+  // Reversement manuel hors Bictorys (virement bancaire, espèces...) : pas de
+  // frais de retrait Bictorys à appliquer ici, seulement la commission PAY IN.
+  const grossAmount      = Math.ceil(amount / (1 - commissionRate / 100))
   const commission       = grossAmount - amount
 
   const { data: payout, error } = await admin

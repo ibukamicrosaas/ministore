@@ -6,11 +6,12 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, TEKKISHOP_COMMISSION_RATE } from '@/constants'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import type { Profile } from '@/types'
 import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 import { logShopEvent } from '@/lib/billing/events'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 function relativeTime(dateStr: string): string {
   const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / 36e5)
@@ -68,8 +69,9 @@ export default async function OrdersPage({
   if (!profile?.shop_id) redirect('/onboarding')
 
   const { data: shopData } = await supabase
-    .from('shops').select('plan').eq('id', profile.shop_id).single()
+    .from('shops').select('plan, country, bictorys_secret_key').eq('id', profile.shop_id).single()
   const isPro = (shopData as { plan: string } | null)?.plan === 'pro'
+  const commissionRate = getCommissionRate(shopData?.country, !!shopData?.bictorys_secret_key)
 
   let query = supabase
     .from('orders')
@@ -107,7 +109,7 @@ export default async function OrdersPage({
   function heldFundsNet(orderId: string): number | null {
     const gross = paidAmountByOrder.get(orderId)
     if (gross === undefined) return null
-    return gross - Math.floor(gross * (TEKKISHOP_COMMISSION_RATE / 100))
+    return gross - Math.floor(gross * (commissionRate / 100))
   }
 
   const { data: allOrders } = await supabase

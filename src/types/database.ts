@@ -658,6 +658,7 @@ export type Database = {
           shop_id: string
           gross_amount: number
           commission_amount: number
+          payout_fee_amount: number
           net_amount: number
           payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number: string
@@ -674,6 +675,7 @@ export type Database = {
           shop_id: string
           gross_amount: number
           commission_amount?: number
+          payout_fee_amount?: number
           net_amount: number
           payout_method: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number: string
@@ -690,6 +692,7 @@ export type Database = {
           shop_id?: string
           gross_amount?: number
           commission_amount?: number
+          payout_fee_amount?: number
           net_amount?: number
           payout_method?: 'wave' | 'orange_money' | 'mtn' | 'moov' | 'tmoney' | 'flooz' | 'mobicash' | 'maxit' | 'airtel' | 'mvola'
           payout_number?: string

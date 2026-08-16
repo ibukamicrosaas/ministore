@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
   const { data: shop } = await admin
     .from('shops')
-    .select('id, name, plan, country, is_active, slug, created_at, trial_model, status, free_orders_used, free_orders_quota')
+    .select('id, name, plan, country, is_active, slug, created_at, trial_model, status, free_orders_used, free_orders_quota, bictorys_secret_key')
     .eq('id', profile.shop_id)
     .single()
 

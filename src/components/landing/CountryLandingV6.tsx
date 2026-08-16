@@ -589,7 +589,7 @@ export async function CountryLandingV6({ config: cfg }: { config: CountryConfig 
       </section>
 
       {/* ── Tarifs — partagé, mêmes plans pour tous les pays FCFA ───── */}
-      <PricingV6 />
+      <PricingV6 country={cfg.code} />
 
       {/* ── Fondateur — générique, identique à la landing ───────────── */}
       <section className="section" style={{ background: 'var(--sky)' }}>

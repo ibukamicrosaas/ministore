@@ -7,9 +7,10 @@ import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 export interface PayoutOption {
-  label:  string
-  key:    string
-  number: string
+  label:   string
+  key:     string
+  number:  string
+  feeRate: number | null
 }
 
 interface Props {
@@ -74,7 +75,7 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
             </div>
 
             <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 text-center">
-              <p className="text-xs text-gray-500">Montant à retirer</p>
+              <p className="text-xs text-gray-500">Solde avant frais de retrait</p>
               <p className="text-2xl font-bold text-gray-900 mt-0.5">
                 {formatPrice(availableBalance, currency)}
               </p>
@@ -92,18 +93,46 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
                     <p className="text-sm font-semibold text-gray-900">{m.label}</p>
                     <p className="text-xs text-gray-500">{m.number}</p>
                   </div>
-                  {method === m.key && (
-                    <div className="h-5 w-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">
+                      {m.feeRate === null ? 'Frais à confirmer' : `Frais ${m.feeRate}%`}
+                    </span>
+                    {method === m.key && (
+                      <div className="h-5 w-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
 
+            {selected && (
+              selected.feeRate === null ? (
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                  Les frais de retrait pour cette méthode ne sont pas encore confirmés — contacte le support avant de retirer.
+                </p>
+              ) : (
+                <div className="rounded-xl border border-gray-100 p-3 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Frais de retrait Bictorys ({selected.feeRate}%)</span>
+                    <span className="font-medium text-red-500">
+                      − {formatPrice(Math.round(availableBalance * (selected.feeRate / 100)), currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-gray-100 pt-1.5">
+                    <span className="font-semibold text-gray-900">Tu recevras</span>
+                    <span className="font-bold text-gray-900">
+                      {formatPrice(availableBalance - Math.round(availableBalance * (selected.feeRate / 100)), currency)}
+                    </span>
+                  </div>
+                </div>
+              )
+            )}
+
             <button
               onClick={handleRequest}
-              disabled={loading || !selected?.number}
+              disabled={loading || !selected?.number || selected?.feeRate === null}
               className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white disabled:opacity-60 active:opacity-80 transition-opacity"
             >
               {loading ? 'Traitement...' : 'Confirmer le retrait'}

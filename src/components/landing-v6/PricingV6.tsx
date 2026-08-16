@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { AFRICA_PLANS } from '@/lib/billing/plans'
+import { getCommissionRate, getCommissionRateRangeLabel } from '@/lib/billing/commission'
 
 type PlanFeature = { label: string; locked?: boolean }
 
@@ -25,7 +26,11 @@ const pro        = planByKey('pro')
 // annualPrice = priceInt * 10 (2 mois offerts, pay 10 get 12) : le badge
 // "2 mois offerts" ci-dessous reste donc exact tant que ce ratio tient côté
 // plans.ts.
-const PLANS = [
+//
+// commissionLabel : "3%" si le pays est connu (pages pays), "3% à 5%" sinon
+// (landing générale) — jamais un taux tapé en dur, voir lib/billing/commission.ts.
+function buildPlans(commissionLabel: string) {
+  return [
   {
     name: 'Découverte',
     desc: 'Pour lancer ta première boutique et tester tes ventes.',
@@ -40,7 +45,7 @@ const PLANS = [
       { label: 'Assistant IA (20 messages/jour)' },
       { label: 'Envoi et confirmation de livraison en 1 clic' },
       { label: 'Tableau de bord pour suivre tes ventes' },
-      { label: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs' },
+      { label: `${commissionLabel} sur les paiements en ligne, pour couvrir les frais des opérateurs` },
       { label: 'Produits illimités', locked: true },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
@@ -64,7 +69,7 @@ const PLANS = [
       { label: 'Envoi et confirmation de livraison en 1 clic' },
       { label: 'Codes promo pour fidéliser tes clients' },
       { label: 'Tableau de bord avancé avec rapports de ventes' },
-      { label: '3% sur les paiements en ligne, pour couvrir les frais des opérateurs' },
+      { label: `${commissionLabel} sur les paiements en ligne, pour couvrir les frais des opérateurs` },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
       { label: '0% de commission avec tes propres clés de paiement', locked: true },
@@ -92,7 +97,8 @@ const PLANS = [
     ] as PlanFeature[],
     cta: { label: 'Choisir Pro', href: '/start?plan=pro', primary: false },
   },
-]
+  ]
+}
 
 const CHECK = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -107,8 +113,18 @@ const LOCK = (
   </svg>
 )
 
-export function PricingV6() {
+interface Props {
+  /** Code pays (ex: 'TG') — quand connu (pages pays), affiche le taux exact
+   * de ce pays. Absent sur la landing générale, où le pays du visiteur
+   * n'est pas encore connu : affiche une fourchette à la place. */
+  country?: string
+}
+
+export function PricingV6({ country }: Props = {}) {
   const [period, setPeriod] = useState<'month' | 'year'>('month')
+
+  const commissionLabel = country ? `${getCommissionRate(country, false)}%` : getCommissionRateRangeLabel()
+  const PLANS = buildPlans(commissionLabel)
 
   return (
     <section className="section" id="tarifs">
@@ -186,7 +202,7 @@ export function PricingV6() {
               <tbody>
                 <tr><th scope="row">Nombre de produits</th><td>10 max</td><td>Illimités</td><td>Illimités</td></tr>
                 <tr><th scope="row">Assistant IA</th><td>20 msg/jour</td><td>50 msg/jour</td><td>Illimité</td></tr>
-                <tr><th scope="row">Commission paiements en ligne</th><td>3%</td><td>3%</td><td>0%*</td></tr>
+                <tr><th scope="row">Commission paiements en ligne</th><td>{commissionLabel}</td><td>{commissionLabel}</td><td>0%*</td></tr>
                 <tr><th scope="row">Paiement mobile money</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Paiement à la livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Envoi et confirmation livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
@@ -198,7 +214,7 @@ export function PricingV6() {
             </table>
           </div>
           <p style={{ fontSize: 13, color: '#697893', marginTop: 12 }}>
-            * 0% uniquement si tu configures tes propres clés Bictorys (plan Pro, Paramètres → Paiements). Sans clés propres, la commission de 3% s&rsquo;applique comme sur les autres plans.
+            * 0% uniquement si tu configures tes propres clés Bictorys (plan Pro, Paramètres → Paiements). Sans clés propres, la commission de {commissionLabel} s&rsquo;applique comme sur les autres plans.
           </p>
         </details>
       </div>

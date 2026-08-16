@@ -7,8 +7,9 @@ import { fr } from 'date-fns/locale'
 import {
   ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock, Download,
 } from 'lucide-react'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, TEKKISHOP_COMMISSION_RATE } from '@/constants'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
+import { getCommissionRate } from '@/lib/billing/commission'
 import { CancelOrderButton } from './CancelOrderButton'
 import { CopyReviewLinkButton } from './CopyReviewLinkButton'
 import { SendToDeliveryButton } from './SendToDeliveryButton'
@@ -99,11 +100,13 @@ export default async function OrderDetailPage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('slug, currency')
+    .select('slug, currency, country, bictorys_secret_key')
     .eq('id', profile.shop_id)
     .single()
-  const shopSlug    = (shopData as { slug?: string; currency?: string | null } | null)?.slug ?? ''
-  const shopCurrency = (shopData as { slug?: string; currency?: string | null } | null)?.currency ?? 'XOF'
+  type ShopFields = { slug?: string; currency?: string | null; country?: string | null; bictorys_secret_key?: string | null }
+  const shopSlug    = (shopData as ShopFields | null)?.slug ?? ''
+  const shopCurrency = (shopData as ShopFields | null)?.currency ?? 'XOF'
+  const commissionRate = getCommissionRate((shopData as ShopFields | null)?.country, !!(shopData as ShopFields | null)?.bictorys_secret_key)
 
   const order = data as unknown as OrderRow
 
@@ -141,7 +144,7 @@ export default async function OrderDetailPage({
       .eq('status', 'completed')
       .maybeSingle()
     if (paymentData) {
-      heldFundsNet = paymentData.amount - Math.floor(paymentData.amount * (TEKKISHOP_COMMISSION_RATE / 100))
+      heldFundsNet = paymentData.amount - Math.floor(paymentData.amount * (commissionRate / 100))
     }
   }
 

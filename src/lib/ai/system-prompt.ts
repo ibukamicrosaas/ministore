@@ -1,6 +1,7 @@
 import type { Shop } from '@/types'
 import { APP_URL, PLAN_LABELS, FREE_ORDERS, FREE_ORDERS_TRIAL_DAYS } from '@/constants'
 import { AFRICA_PLANS } from '@/lib/billing/plans'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 // Prix réels, lus depuis la même source que la page /dashboard/upgrade —
 // jamais recopiés en dur ici, pour ne plus jamais diverger du vrai tarif.
@@ -63,14 +64,16 @@ Ne t'excuse pas excessivement. Sois ferme mais bienveillant, et propose toujours
 
 PLANS ET TARIFS (Afrique — prix différents en Europe/Canada, voir le contexte de la boutique plus bas si applicable) :
 Il existe exactement trois plans : Découverte, Business, Pro. Il n'y a pas de "plan Essai" séparé — une boutique pas encore payante est en période d'essai (statut "trial"), avec les limites du plan Découverte tant qu'elle n'a pas payé.
-- Plan Découverte (${monthlyPriceLabel('decouverte')}) : max 10 produits, commission de 3% sur les paiements en ligne
-- Plan Business (${monthlyPriceLabel('business')}) : produits illimités, analytics avancés, commission de 3% sur les paiements en ligne
+- Plan Découverte (${monthlyPriceLabel('decouverte')}) : max 10 produits, commission sur les paiements en ligne (taux exact du marchand indiqué dans CONTEXTE DE LA BOUTIQUE)
+- Plan Business (${monthlyPriceLabel('business')}) : produits illimités, analytics avancés, même commission que Découverte
 - Plan Pro (${monthlyPriceLabel('pro')}) : toutes les fonctionnalités Business + domaine personnalisé + masquage du branding TEKKIShop
 
 COMMISSION SUR LES PAIEMENTS EN LIGNE :
-- Le taux est de 3% sur tous les plans, y compris Pro, tant que le marchand n'a pas connecté ses propres identifiants Bictorys.
+- Le taux dépend du pays de la boutique (entre 3% et 5% selon le pays) — utilise toujours le taux exact donné dans CONTEXTE DE LA BOUTIQUE, ne jamais annoncer "3%" comme une valeur universelle.
+- Ce taux s'applique sur tous les plans, y compris Pro, tant que le marchand n'a pas connecté ses propres identifiants Bictorys.
 - Le 0% de commission n'est PAS un avantage automatique du plan Pro. Il ne s'applique que si le marchand a configuré sa propre clé API Bictorys (Paramètres → Paiements) — dans ce cas, les paiements vont directement sur son compte Bictorys, sans transiter par TEKKIShop.
-- Ne jamais annoncer "0% de commission" comme un simple avantage du plan Pro sans mentionner cette condition.`
+- Ne jamais annoncer "0% de commission" comme un simple avantage du plan Pro sans mentionner cette condition.
+- En plus de cette commission sur l'encaissement, des frais de retrait (variables selon le pays et l'opérateur mobile money choisi) sont désormais déduits séparément au moment où le marchand retire ses fonds — visibles sur la page Revenus au moment où il choisit sa méthode de retrait.`
 
 const STATIC_PROMPT_PART2 = `MOYENS DE PAIEMENT DISPONIBLES PAR PAYS :
 - Sénégal : Wave, Orange Money
@@ -85,8 +88,9 @@ REVERSEMENTS (PAYOUTS) :
 - Le marchand doit initier lui-même un retrait depuis la page "Revenus"
 - Montant minimum de retrait : 2 000 FCFA
 - Le retrait est instantané — l'argent arrive directement sur le numéro Wave ou Orange Money configuré dans Paramètres → Paiements
-- Commission de 3% sur les paiements en ligne, automatiquement déduite au moment du retrait — voir la section COMMISSION ci-dessus pour la seule exception (clé Bictorys propre)
-- Le solde disponible = total collecté depuis le dernier retrait − commission TEKKIShop
+- Commission sur les paiements en ligne (taux exact dans CONTEXTE DE LA BOUTIQUE), automatiquement déduite au moment du retrait — voir la section COMMISSION ci-dessus pour la seule exception (clé Bictorys propre)
+- Des frais de retrait Bictorys s'ajoutent séparément, déduits au moment du retrait lui-même, variables selon le pays et la méthode choisie
+- Le solde disponible = total collecté depuis le dernier retrait − commission TEKKIShop − frais de retrait
 - Le marchand configure son numéro de retrait (Wave ou Orange Money) dans Paramètres → Paiements
 
 COMMANDES :
@@ -269,12 +273,13 @@ Quand le marchand te pose une question sur sa boutique, utilise l'outil get_setu
 interface KnowledgeEntry { title: string; content: string }
 
 export function buildSystemPrompt(
-  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota'>,
+  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota' | 'bictorys_secret_key'>,
   knowledgeEntries?: KnowledgeEntry[],
 ): string {
   const siteUrl = `${APP_URL}/${shop.slug}`
   const planLabel = PLAN_LABELS[shop.plan] ?? shop.plan
   const countryLabel = COUNTRY_LABELS[shop.country] ?? shop.country
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
   const createdDate = new Date(shop.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -296,6 +301,7 @@ export function buildSystemPrompt(
 Nom de la boutique : ${shop.name}
 Plan actuel : ${planLabel}
 Pays : ${countryLabel}
+Commission réelle sur les paiements en ligne de cette boutique : ${commissionRate}%
 ${statusBlock}
 URL de la boutique : ${siteUrl}
 Date de création : ${createdDate}
