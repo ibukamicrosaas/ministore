@@ -7,6 +7,11 @@ export const revalidate = 3600
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: APP_URL,              lastModified: new Date(), changeFrequency: 'weekly',  priority: 1 },
+    { url: `${APP_URL}/togo`,          lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${APP_URL}/mali`,          lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${APP_URL}/benin`,         lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${APP_URL}/burkina-faso`,  lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${APP_URL}/licence`,       lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
     { url: `${APP_URL}/login`,   lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${APP_URL}/legal/cgu`,     lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${APP_URL}/legal/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
