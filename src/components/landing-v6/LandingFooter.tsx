@@ -41,7 +41,6 @@ export function LandingFooter() {
             <Link href="/aide">Centre d&rsquo;aide</Link>
             <a href="https://www.tiktok.com/@tekki.shop" target="_blank" rel="noopener noreferrer">Nos tutoriels vidéo</a>
             <a href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, '')}`}>Support WhatsApp</a>
-            <Link href="/contact">Nous contacter</Link>
           </div>
           <div className="foot-col">
             <h4>Légal</h4>
