@@ -123,7 +123,7 @@ const MAIN_COUNTRIES = [
   { code: 'SN', flag: '🇸🇳', name: 'Sénégal'       },
   { code: 'BJ', flag: '🇧🇯', name: 'Bénin'         },
   { code: 'TG', flag: '🇹🇬', name: 'Togo'          },
-  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso'  },
+  { code: 'BK', flag: '🇧🇫', name: 'Burkina Faso'  },
   { code: 'FR', flag: '🇫🇷', name: 'France'        },
 ]
 
@@ -139,7 +139,7 @@ function detectCountryFromPhone(phone: string | null): string {
   if (p.startsWith('+225')) return 'CI'
   if (p.startsWith('+228')) return 'TG'
   if (p.startsWith('+229')) return 'BJ'
-  if (p.startsWith('+226')) return 'BF'
+  if (p.startsWith('+226')) return 'BK'
   if (p.startsWith('+223')) return 'ML'
   if (p.startsWith('+237')) return 'CM'
   if (p.startsWith('+224')) return 'GN'

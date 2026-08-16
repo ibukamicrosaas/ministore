@@ -22,7 +22,7 @@ const PAYOUT_COUNTRIES = [
   { code: 'BJ', flag: '🇧🇯', name: 'Bénin',          dial: '+229', placeholder: '97 00 00 00' },
   { code: 'TG', flag: '🇹🇬', name: 'Togo',           dial: '+228', placeholder: '90 00 00 00' },
   { code: 'ML', flag: '🇲🇱', name: 'Mali',           dial: '+223', placeholder: '70 00 00 00' },
-  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '70 00 00 00' },
+  { code: 'BK', flag: '🇧🇫', name: 'Burkina Faso',   dial: '+226', placeholder: '70 00 00 00' },
 ]
 
 const MARKET_COUNTRIES_AFRICA = [
@@ -31,7 +31,7 @@ const MARKET_COUNTRIES_AFRICA = [
   { code: 'BJ', flag: '🇧🇯', name: 'Bénin' },
   { code: 'TG', flag: '🇹🇬', name: 'Togo' },
   { code: 'ML', flag: '🇲🇱', name: 'Mali' },
-  { code: 'BF', flag: '🇧🇫', name: 'Burkina Faso' },
+  { code: 'BK', flag: '🇧🇫', name: 'Burkina Faso' },
 ]
 
 const MARKET_COUNTRIES_EU_CA = [
@@ -47,7 +47,7 @@ const COUNTRY_OPTIONS = [
   { value: 'SN', label: '🇸🇳 Sénégal' },
   { value: 'CI', label: "🇨🇮 Côte d'Ivoire" },
   { value: 'BJ', label: '🇧🇯 Bénin' },
-  { value: 'BF', label: '🇧🇫 Burkina Faso' },
+  { value: 'BK', label: '🇧🇫 Burkina Faso' },
   { value: 'TG', label: '🇹🇬 Togo' },
   { value: 'ML', label: '🇲🇱 Mali' },
   { value: 'CM', label: '🇨🇲 Cameroun' },

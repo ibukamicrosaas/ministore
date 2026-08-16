@@ -12,7 +12,7 @@ function monthlyPriceLabel(key: string): string {
 const COUNTRY_LABELS: Record<string, string> = {
   SN: 'Sénégal',
   CI: "Côte d'Ivoire",
-  BF: 'Burkina Faso',
+  BK: 'Burkina Faso',
   ML: 'Mali',
   TG: 'Togo',
   BJ: 'Bénin',

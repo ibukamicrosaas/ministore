@@ -16,7 +16,7 @@ const COUNTRIES = [
   { code: 'CI', flag: '🇨🇮', dial: '+225', name: "Côte d'Ivoire" },
   { code: 'TG', flag: '🇹🇬', dial: '+228', name: 'Togo' },
   { code: 'BJ', flag: '🇧🇯', dial: '+229', name: 'Bénin' },
-  { code: 'BF', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso' },
+  { code: 'BK', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso' },
   { code: 'ML', flag: '🇲🇱', dial: '+223', name: 'Mali' },
   // Europe & Canada
   { code: 'FR', flag: '🇫🇷', dial: '+33',  name: 'France' },

@@ -1,8 +1,8 @@
 import {
   AFRICA_PHONE_COUNTRIES, EU_CA_PHONE_COUNTRIES, ALL_PHONE_COUNTRIES,
-  getCurrencyForCountry, getCurrencySymbol, toBictorysCountry,
+  getCurrencyForCountry, getCurrencySymbol,
 } from '@/lib/utils/country-groups'
-import { getPaymentMethodsByCountry } from '@/lib/payments/bictorys'
+import { getPaymentMethodsByCountry, type BictorysCountry } from '@/lib/payments/bictorys'
 
 // ── Catégories (Q2) ─────────────────────────────────────────────────────────────
 // Liste finale validée sur la base du GROUP BY specialty réel (voir migration 071
@@ -172,15 +172,18 @@ function joinFr(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`
 }
 
+const AFRICA_CODES: readonly string[] = AFRICA_PHONE_COUNTRIES.map(c => c.code)
+
 /**
  * Moyens de paiement à afficher pour un pays donné (Q4, écran 7, écran 8).
- * Afrique : dérivé de la config Bictorys réelle (via le mapping BF→BK partagé).
+ * Afrique : dérivé de la config Bictorys réelle — depuis l'unification des
+ * codes pays (migration 093), AFRICA_PHONE_COUNTRIES utilise déjà les codes
+ * Bictorys, plus besoin de mapping intermédiaire.
  * Europe/Canada : carte bancaire uniquement (pas de mobile money Bictorys là-bas).
  */
 export function getPaymentInfo(code: QuizPays): { labels: string[]; text: string } {
-  const bictorysCode = toBictorysCountry(code)
-  if (bictorysCode) {
-    const labels = getPaymentMethodsByCountry(bictorysCode).map(m => m.label)
+  if (AFRICA_CODES.includes(code)) {
+    const labels = getPaymentMethodsByCountry(code as BictorysCountry).map(m => m.label)
     if (labels.length > 0) return { labels, text: joinFr(labels) }
   }
   return { labels: ['Carte bancaire'], text: 'carte bancaire' }

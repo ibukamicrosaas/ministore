@@ -1,31 +1,14 @@
-import type { BictorysCountry } from '@/lib/payments/bictorys'
-
 export type CountryGroup = 'africa' | 'europe' | 'canada'
 export type ShopCurrency = 'XOF' | 'EUR' | 'CAD'
 
 const EU_COUNTRIES  = ['FR', 'BE', 'LU', 'CH'] as const
 const CA_COUNTRIES  = ['CA'] as const
 
-/**
- * NOTE TECHNIQUE — deux conventions de code pays coexistent dans le code base :
- *  - Code ISO 3166-1 (utilisé dans `shops.country`, ce fichier, OnboardingForm) : Burkina Faso = 'BF'.
- *  - Code interne Bictorys (utilisé dans src/lib/payments/bictorys.ts et payment-methods.ts,
- *    ainsi que src/constants/countries.ts) : Burkina Faso = 'BK'.
- * Cette incohérence est antérieure à ce fichier et n'a jamais posé de problème en pratique
- * car le choix du moyen de paiement au checkout se fait à partir du téléphone du CLIENT
- * (getCountryFromPhone), jamais à partir de `shops.country`. Elle reste à résoudre pour de bon —
- * ce n'était pas l'objet de la tâche qui a introduit ce mapping (refonte /start, 2026-08).
- * En attendant, cet unique helper fait le pont : ne pas dupliquer ce mapping ailleurs.
- */
-const ISO_TO_BICTORYS_COUNTRY: Record<string, BictorysCountry> = {
-  SN: 'SN', CI: 'CI', BF: 'BK', ML: 'ML', TG: 'TG', BJ: 'BJ',
-}
-
-/** Traduit un code pays ISO (celui stocké dans shops.country) vers le code Bictorys correspondant. */
-export function toBictorysCountry(isoCode: string | null | undefined): BictorysCountry | null {
-  if (!isoCode) return null
-  return ISO_TO_BICTORYS_COUNTRY[isoCode] ?? null
-}
+// NOTE TECHNIQUE — jusqu'au 2026-08-16, deux conventions de code pays
+// coexistaient pour le Burkina Faso : 'BF' (ISO 3166-1, utilisé dans
+// shops.country et la plupart des formulaires) et 'BK' (seul code accepté
+// par l'API Bictorys). Unifié vers 'BK' partout — migration 093, REPRISE.md
+// §4. Ne jamais réintroduire 'BF' comme code pays dans ce dépôt.
 
 export function getCountryGroup(countryCode: string | null | undefined): CountryGroup {
   if (!countryCode) return 'africa'
@@ -75,7 +58,7 @@ export const AFRICA_PHONE_COUNTRIES = [
   { code: 'CI', flag: '🇨🇮', dial: '+225', name: "Côte d'Ivoire", placeholder: '07 00 00 00 00'  },
   { code: 'TG', flag: '🇹🇬', dial: '+228', name: 'Togo',          placeholder: '90 00 00 00'     },
   { code: 'BJ', flag: '🇧🇯', dial: '+229', name: 'Bénin',         placeholder: '97 00 00 00'     },
-  { code: 'BF', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso',  placeholder: '70 00 00 00'     },
+  { code: 'BK', flag: '🇧🇫', dial: '+226', name: 'Burkina Faso',  placeholder: '70 00 00 00'     },
   { code: 'ML', flag: '🇲🇱', dial: '+223', name: 'Mali',          placeholder: '70 00 00 00'     },
 ] as const
 
@@ -142,7 +125,7 @@ export const PAYOUT_METHODS_BY_COUNTRY: Record<string, PayoutMethod[]> = {
     { label: 'Orange Money', key: 'orange_money', col: 'payout_wave_number' },
     { label: 'Mobicash',     key: 'mobicash',     col: 'payout_om_number'   },
   ],
-  BF: [
+  BK: [
     { label: 'Orange Money', key: 'orange_money',  col: 'payout_wave_number' },
     { label: 'Moov Money',   key: 'moov',          col: 'payout_om_number'   },
   ],

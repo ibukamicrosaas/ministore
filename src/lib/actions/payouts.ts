@@ -78,7 +78,13 @@ export async function processPayout(
     return { error: 'Boutique introuvable.' }
   }
 
-  const country = (shop as any).country as string | null ?? 'SN'
+  const rawCountry = (shop as any).country as string | null ?? 'SN'
+  // Garde-fou : 'BF' n'est pas un code pays valide côté Bictorys (seul 'BK'
+  // l'est), voir migration 093 et REPRISE.md §4. shops.country ne devrait
+  // plus jamais valoir 'BF' après cette migration, mais ce chemin envoie
+  // le code tel quel à l'API sans aucune autre validation — on ne suppose
+  // pas que la source restera propre indéfiniment.
+  const country = rawCountry === 'BF' ? 'BK' : rawCountry
   const shopName = (shop as any).name as string | null ?? 'Marchand TekkiShop'
 
   // Résoudre le numéro de réception depuis le bon slot DB selon pays + méthode

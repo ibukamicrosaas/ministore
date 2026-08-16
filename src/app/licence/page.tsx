@@ -37,14 +37,15 @@ export default async function LicencePage() {
     .select('id', { count: 'exact', head: true })
   const shopCountDisplay = shopCount ? shopCount.toLocaleString('fr-FR') : '1 400+'
 
-  // Marchands déjà actifs par pays — is_active=true, cohérent avec le flag
-  // déjà utilisé partout ailleurs pour "boutique publiquement visible".
-  // Burkina Faso existe sous deux codes en base (BF, code ISO du nouveau
-  // /start ; BK, hérité de l'ancien flux Bictorys) — les deux comptent.
+  // Total de marchands par pays — aucun filtre is_active, sur demande
+  // explicite (ce compteur veut refléter tous les marchands déjà présents
+  // dans le pays, pas seulement ceux dont la boutique est publiquement
+  // visible aujourd'hui). Burkina Faso unifié sur le code 'BK' (migration
+  // 093, REPRISE.md §4) — plus de duplication BF/BK à gérer ici.
   const [{ count: beninCount }, { count: maliCount }, { count: burkinaCount }] = await Promise.all([
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BJ').eq('is_active', true),
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'ML').eq('is_active', true),
-    admin.from('shops').select('id', { count: 'exact', head: true }).in('country', ['BF', 'BK']).eq('is_active', true),
+    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BJ'),
+    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'ML'),
+    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BK'),
   ])
 
   return (
@@ -525,9 +526,9 @@ export default async function LicencePage() {
                 <h3 className="lic-h3">Marchands déjà actifs</h3>
                 <p>TEKKIShop compte déjà des utilisateurs dans ces pays. Vous ne démarrez pas d&apos;une page blanche.</p>
                 <ul>
-                  <li><i>🇧🇯</i> Bénin ({beninCount ?? 0}) <em>libre</em></li>
-                  <li><i>🇲🇱</i> Mali ({maliCount ?? 0}) <em>libre</em></li>
-                  <li><i>🇧🇫</i> Burkina Faso ({burkinaCount ?? 0}) <em>libre</em></li>
+                  <li><i>🇧🇯</i> Bénin ({beninCount ?? 0} marchands) <em>libre</em></li>
+                  <li><i>🇲🇱</i> Mali ({maliCount ?? 0} marchands) <em>libre</em></li>
+                  <li><i>🇧🇫</i> Burkina Faso ({burkinaCount ?? 0} marchands) <em>libre</em></li>
                 </ul>
                 <p className="lic-mk-foot">Les marchands existants vous sont transférés au lancement.</p>
               </article>
