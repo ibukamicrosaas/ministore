@@ -1,6 +1,6 @@
-import type { PaymentLogo } from '@/components/landing/PaymentScroll'
+// ── Sub-types (also imported par les composants landing) ───────────────────
 
-// ── Sub-types (also imported by landing components) ────────────────────────
+export type PaymentLogo = { src?: string; icon?: string; name: string }
 
 export type StepsConfig = {
   boutiqueName: string
@@ -29,7 +29,7 @@ export type Testimonial = {
   color: string
 }
 
-// ── Full country config (for CountryLandingPage) ───────────────────────────
+// ── Full country config (pour CountryLandingV6, une entrée par page pays) ──
 
 export interface CountryConfig {
   code: string
