@@ -7,6 +7,8 @@ import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { LicenceSimulator } from './LicenceSimulator'
 import { LicenceForm } from './LicenceForm'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: `Devenir licencié TEKKIShop — Lancez TEKKIShop dans votre pays — ${APP_NAME}`,
   description: "Devenez Country Manager de TEKKIShop dans votre pays. Un SaaS e-commerce déjà construit, exclusivité nationale, 100 % des abonnements pour vous.",
@@ -34,6 +36,16 @@ export default async function LicencePage() {
     .from('shops')
     .select('id', { count: 'exact', head: true })
   const shopCountDisplay = shopCount ? shopCount.toLocaleString('fr-FR') : '1 400+'
+
+  // Marchands déjà actifs par pays — is_active=true, cohérent avec le flag
+  // déjà utilisé partout ailleurs pour "boutique publiquement visible".
+  // Burkina Faso existe sous deux codes en base (BF, code ISO du nouveau
+  // /start ; BK, hérité de l'ancien flux Bictorys) — les deux comptent.
+  const [{ count: beninCount }, { count: maliCount }, { count: burkinaCount }] = await Promise.all([
+    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BJ').eq('is_active', true),
+    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'ML').eq('is_active', true),
+    admin.from('shops').select('id', { count: 'exact', head: true }).in('country', ['BF', 'BK']).eq('is_active', true),
+  ])
 
   return (
     <>
@@ -513,9 +525,9 @@ export default async function LicencePage() {
                 <h3 className="lic-h3">Marchands déjà actifs</h3>
                 <p>TEKKIShop compte déjà des utilisateurs dans ces pays. Vous ne démarrez pas d&apos;une page blanche.</p>
                 <ul>
-                  <li><i>🇧🇯</i> Bénin <em>libre</em></li>
-                  <li><i>🇲🇱</i> Mali <em>libre</em></li>
-                  <li><i>🇧🇫</i> Burkina Faso <em>libre</em></li>
+                  <li><i>🇧🇯</i> Bénin ({beninCount ?? 0}) <em>libre</em></li>
+                  <li><i>🇲🇱</i> Mali ({maliCount ?? 0}) <em>libre</em></li>
+                  <li><i>🇧🇫</i> Burkina Faso ({burkinaCount ?? 0}) <em>libre</em></li>
                 </ul>
                 <p className="lic-mk-foot">Les marchands existants vous sont transférés au lancement.</p>
               </article>

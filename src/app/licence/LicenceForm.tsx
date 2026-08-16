@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { submitLicenceApplication } from '@/lib/actions/licence'
 
 const COUNTRIES = [
   'Bénin — marchands déjà actifs',
@@ -14,9 +15,29 @@ const COUNTRIES = [
 
 export function LicenceForm() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
+    setSubmitting(true)
+
+    const fd = new FormData(e.currentTarget)
+    const result = await submitLicenceApplication({
+      country:         (fd.get('country') as string) ?? '',
+      fullName:        (fd.get('name') as string)?.trim() ?? '',
+      whatsappPhone:   (fd.get('phone') as string)?.trim() ?? '',
+      email:           (fd.get('email') as string)?.trim() ?? '',
+      experience:      (fd.get('experience') as string)?.trim() ?? '',
+      acquisitionPlan: (fd.get('plan') as string)?.trim() ?? '',
+    })
+
+    setSubmitting(false)
+    if (result.error) {
+      setError(result.error)
+      return
+    }
     setSubmitted(true)
   }
 
@@ -44,30 +65,36 @@ export function LicenceForm() {
 
   return (
     <form className="lic-form-card" onSubmit={handleSubmit} noValidate>
+      {error && (
+        <p style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, background: '#fdecec', color: '#c0392b', fontSize: 13.5 }}>
+          {error}
+        </p>
+      )}
       <div className="lic-field">
         <label htmlFor="f-country">Pays que vous souhaitez ouvrir</label>
-        <select id="f-country" required>
+        <select id="f-country" name="country" required>
           {COUNTRIES.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
       <div className="lic-frow">
         <div className="lic-field">
           <label htmlFor="f-name">Nom complet</label>
-          <input id="f-name" type="text" placeholder="Prénom et nom" required />
+          <input id="f-name" name="name" type="text" placeholder="Prénom et nom" required />
         </div>
         <div className="lic-field">
           <label htmlFor="f-phone">Numéro WhatsApp</label>
-          <input id="f-phone" type="tel" placeholder="+229 ..." required />
+          <input id="f-phone" name="phone" type="tel" placeholder="+229 ..." required />
         </div>
       </div>
       <div className="lic-field">
         <label htmlFor="f-email">Adresse e-mail</label>
-        <input id="f-email" type="email" placeholder="vous@exemple.com" required />
+        <input id="f-email" name="email" type="email" placeholder="vous@exemple.com" required />
       </div>
       <div className="lic-field">
         <label htmlFor="f-exp">Votre parcours en quelques lignes</label>
         <textarea
           id="f-exp"
+          name="experience"
           placeholder="Votre activité actuelle, vos expériences en vente, en tech ou en entrepreneuriat."
           required
         />
@@ -76,13 +103,14 @@ export function LicenceForm() {
         <label htmlFor="f-plan">Comment comptez-vous trouver vos 100 premiers marchands&nbsp;?</label>
         <textarea
           id="f-plan"
+          name="plan"
           placeholder="Réseau, terrain, réseaux sociaux, partenariats, associations de commerçants…"
           required
         />
         <small>C&apos;est la partie que nous lisons le plus attentivement.</small>
       </div>
-      <button className="lic-btn lic-btn-primary lic-btn-full" type="submit">
-        Envoyer ma candidature
+      <button className="lic-btn lic-btn-primary lic-btn-full" type="submit" disabled={submitting}>
+        {submitting ? 'Envoi en cours…' : 'Envoyer ma candidature'}
       </button>
       <p className="lic-form-legal">
         En envoyant ce formulaire, vous acceptez que Dukka utilise ces informations pour étudier

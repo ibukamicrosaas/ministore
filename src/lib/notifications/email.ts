@@ -248,3 +248,58 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
     console.error('[email] sendOrderConfirmationEmail failed:', err)
   }
 }
+
+interface LicenceApplicationEmailParams {
+  toEmail: string
+  country: string
+  fullName: string
+  whatsappPhone: string
+  email: string
+  experience: string
+  acquisitionPlan: string
+}
+
+export async function sendLicenceApplicationEmail(params: LicenceApplicationEmailParams): Promise<void> {
+  if (!resend) return // silencieux si RESEND_API_KEY non configurée
+
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:#0f172a;padding:24px 28px;">
+      <p style="margin:0;color:rgba(255,255,255,0.6);font-size:13px;">Nouvelle candidature de licence</p>
+      <h1 style="margin:4px 0 0;color:#fff;font-size:20px;font-weight:700;">${escapeHtml(params.country)}</h1>
+    </div>
+    <div style="padding:28px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;margin-bottom:20px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Nom</td><td style="padding:6px 0;">${escapeHtml(params.fullName)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">WhatsApp</td><td style="padding:6px 0;">${escapeHtml(params.whatsappPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">E-mail</td><td style="padding:6px 0;">${escapeHtml(params.email)}</td></tr>
+      </table>
+      <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;margin-bottom:16px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Parcours</p>
+        <p style="margin:0;font-size:13px;color:#374151;white-space:pre-wrap;">${escapeHtml(params.experience)}</p>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">100 premiers marchands</p>
+        <p style="margin:0;font-size:13px;color:#374151;white-space:pre-wrap;">${escapeHtml(params.acquisitionPlan)}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+
+  try {
+    await resend.emails.send({
+      from:    FROM_ADDRESS,
+      to:      [params.toEmail],
+      subject: `Candidature licence — ${params.country} (${params.fullName})`,
+      html,
+    })
+  } catch (err) {
+    console.error('[email] sendLicenceApplicationEmail failed:', err)
+  }
+}
