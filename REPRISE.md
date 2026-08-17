@@ -1054,3 +1054,29 @@ Deux lots distincts, tranchés par l'utilisateur après audit des 11 fichiers no
 **2. Suivi des 7 maquettes HTML manquantes — rattrapage, pas une nouvelle production.** `tekkishop-commande-v2.html`, `europe-canada`, `licence`, `pourquoi-pas-shopify`, `produits-digitaux-landing-95`, `produits-digitaux`, `start-v4` — datées du 9-10 août (jamais touchées depuis, jamais créées ni modifiées par un agent cette session), même nature que les 5 déjà suivies (`tekkishop-boutique-accueil.html`, `boutique-produit`, `landing-v6`, `flow-start`, `nouvelle-landing`) : maquettes de référence ayant servi à construire les pages aujourd'hui en production (`/licence`, `/produits-digitaux`, `/europe-canada`, `/pourquoi-pas-shopify`). Contrairement à `AGENTS.md`/`CLAUDE.md`/`IMPROVEMENTS.md`, rien dans REPRISE.md ne les excluait explicitement — oubli du suivi initial du 10 août (§1), pas une décision. `git add` + commit séparé (`9897c4c`), diff vérifié avant push : 7 fichiers, `new file mode 100644` chacun, 4 635 insertions au total, **0 suppression, 0 fichier existant modifié** — confirmé fichier par fichier (`git show --stat` sur chacun), pas seulement sur l'agrégat.
 
 **État final des branches après ce lot** : `main` = `dev` = `9897c4c` (`git rev-parse` sur les quatre — `main`, `dev`, `origin/main`, `origin/dev` — identiques). `refonte-start` reste à `e004e6c`, **4 commits derrière** (`9a072c1` audit REPRISE.md §21, `c77bda8` bannière/bleu §22, `d93d019` CGU/privacy, `9897c4c` ce lot) — non resynchronisé, non demandé.
+
+---
+
+## 24. Chantiers documentés, non commencés
+
+**Refonte du dashboard marchand — spec déposée le 2026-08-17. Ne pas commencer.**
+
+Fichiers : `SPEC-refonte-dashboard-marchand.md` (spec complète) et `tekkishop-dashboard-mockup.html` (maquette interactive de référence, mobile + desktop) — trackés dans ce commit, même politique que les autres specs de la racine (voir §1). **Aucun plan d'exécution rendu, aucune exploration du code du dashboard actuel effectuée** — sur consigne explicite, ce chantier attend son tour.
+
+**Objectif** (résumé du §1 de la spec) : le dashboard actuel est un menu à plat de 10 entrées, construit fonctionnalité après fonctionnalité sans hiérarchie d'ensemble. La refonte vise une hiérarchie à 3 niveaux (quotidien / occasionnel / administratif), pensée pour un marchand qui consulte depuis son téléphone et n'a souvent jamais utilisé d'outil e-commerce. **Périmètre strict UI/UX** — la spec exclut explicitement toute logique métier, appel API, schéma de données ou calcul (commissions, statuts, soldes).
+
+**9 lots (§13 de la spec), dans l'ordre prévu** :
+1. Fondations (tokens + composants partagés)
+2. Navigation (barre mobile basse + sidebar desktop groupée)
+3. Accueil / Tableau de bord
+4. Commandes
+5. Produits
+6. Revenus
+7. Clients
+8. Paramètres
+9. Assistant IA
+
+**Position dans la file d'attente des chantiers, trois chantiers dans cet ordre** :
+1. Refonte du tunnel de commande (Livraison 2, `SPEC-refonte-tunnel-commande.md`, 4 lots A-D, aucun commencé — §4 point 0, priorité immédiate après la Livraison 1).
+2. Lots 2 à 5 de la refonte des boutiques publiques (`SPEC-v2-refonte-boutiques-publiques.md` — §4 point 5).
+3. **Refonte du dashboard marchand** (ce chantier) — après les deux précédents.
