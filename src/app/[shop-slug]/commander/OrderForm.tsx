@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Trash2, ChevronDown, ChevronLeft, ChevronRight, Package, MapPin, ShoppingBag } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { ProductVariant, DeliveryZone } from '@/types'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
@@ -40,25 +40,13 @@ const PHONE_PLACEHOLDERS: Record<string, string> = {
   '+1':   '514 000 0000',    // CA — 10 chiffres
 }
 
-function SectionLabel({
-  n,
-  label,
-  primaryColor,
-}: {
-  n: number
-  label: string
-  primaryColor: string
-}) {
+// Titre de section — sans numérotation (corrige 3.1 : le stepper affichait `step`
+// mais les puces de section étaient écrites en dur, trois sections "1" à la fois).
+function SectionTitle({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-        style={{ backgroundColor: primaryColor }}
-      >
-        {n}
-      </div>
-      <p className="text-sm font-bold text-gray-900">{label}</p>
-    </div>
+    <p className="mb-4 text-sm font-bold text-gray-900" style={{ fontFamily: 'var(--lv6-display, "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif)' }}>
+      {label}
+    </p>
   )
 }
 
@@ -76,7 +64,7 @@ function RadioCard({
       className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${
         checked ? '' : 'border-gray-200 bg-white'
       }`}
-      style={checked ? { borderColor: primaryColor, backgroundColor: `${primaryColor}0d` } : {}}
+      style={checked ? { borderColor: primaryColor, backgroundColor: `color-mix(in srgb, ${primaryColor} 5%, white)` } : {}}
     >
       <div
         className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center"
@@ -238,10 +226,9 @@ export function OrderForm({
   isDigital = false,
 }: Props) {
   const router = useRouter()
-  const [step, setStep] = useState(1)
-  const justTransitionedRef = useRef(false)
   const [submitting, setSubmitting] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   const pendingOrderBody = useRef<Record<string, unknown> | null>(null)
   const [errors, setErrors] = useState<{
     firstName?: string
@@ -249,39 +236,15 @@ export function OrderForm({
     address?: string
   }>({})
 
-  function scrollTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // Bloque les ghost-clicks mobiles : quand step passe à 3, on ignore
-  // tout submit pendant 400 ms (délai tactile Safari/Chrome Android)
+  // Garde anti-ghost-click : un tap juste après que la page devient interactive
+  // (rebond tactile Safari/Chrome Android) ne doit pas déclencher un submit.
+  // Ancrée sur le montage du composant — la page ne comporte plus d'étapes
+  // dont la transition pourrait servir de point d'ancrage (§5 de la spec).
+  const justMountedRef = useRef(true)
   useEffect(() => {
-    if (step === 3) {
-      justTransitionedRef.current = true
-      const t = setTimeout(() => { justTransitionedRef.current = false }, 400)
-      return () => clearTimeout(t)
-    }
-  }, [step])
-
-  function goToStep2() {
-    scrollTop()
-    setStep(2)
-  }
-
-  function goToStep3() {
-    const newErrors: typeof errors = {}
-    if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
-    if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
-    if (!isDigital && deliveryType === 'home_delivery' && !address.trim())
-      newErrors.address = "L'adresse de livraison est obligatoire."
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-    setErrors({})
-    scrollTop()
-    setStep(3)
-  }
+    const t = setTimeout(() => { justMountedRef.current = false }, 400)
+    return () => clearTimeout(t)
+  }, [])
 
   // Filtrer les pays selon les marchés cibles de la boutique
   const availableCountries = targetCountries && targetCountries.length > 0
@@ -466,7 +429,7 @@ export function OrderForm({
   const hasDeposit = deposit > 0 && deposit < total
   // Troisième état du choix de paiement marchand : ni en ligne ni à la livraison
   // n'est actif (un digital n'a de toute façon jamais la livraison comme option).
-  // paymentType par défaut reste 'online' dans ce cas (ligne ~355) mais ça n'a
+  // paymentType par défaut reste 'online' dans ce cas (ligne ~230) mais ça n'a
   // plus d'importance : hasAnyPaymentMethod bloque la confirmation avant que
   // cette valeur ne serve à quoi que ce soit.
   const hasAnyPaymentMethod = isDigital ? acceptOnlinePayment : (acceptOnlinePayment || acceptCashOnDelivery)
@@ -476,8 +439,8 @@ export function OrderForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Ghost-click guard : ignorer tout submit si on vient juste de transitionner
-    if ((!isDigital && step !== 3) || justTransitionedRef.current) return
+    // Ghost-click guard : ignorer tout submit si la page vient tout juste de devenir interactive
+    if (justMountedRef.current) return
 
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
@@ -487,6 +450,8 @@ export function OrderForm({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      const firstErrorField = document.querySelector('[data-error-anchor]')
+      firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     setErrors({})
@@ -596,23 +561,81 @@ export function OrderForm({
   const inputCls =
     'w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gray-300 bg-white'
 
+  const displayFont = { fontFamily: 'var(--lv6-display, "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif)' }
+
+  // ── Relevé (recap) — contenu partagé entre la barre mobile et la colonne desktop ──
+  // Pas encore le composant partagé décrit au §6 de la spec (lot B) : mêmes lignes
+  // qu'avant la refonte, seulement replacées dans la nouvelle disposition.
+  const recapContent = total > 0 && (
+    <div className="space-y-0.5">
+      {deliveryPrice > 0 && (
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Livraison ({selectedZone?.name})</span>
+          <span>+{formatPrice(deliveryPrice, shopCurrency)}</span>
+        </div>
+      )}
+      {promoAmount > 0 && (
+        <div className="flex items-center justify-between text-xs text-green-600 font-medium">
+          <span>Réduction ({promoDiscount}%)</span>
+          <span>-{formatPrice(promoAmount, shopCurrency)}</span>
+        </div>
+      )}
+      {hasDeposit && paymentType === 'online' ? (
+        <>
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>Total commande</span>
+            <span>{formatPrice(total, shopCurrency)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+            <span>Acompte à payer maintenant</span>
+            <span>{formatPrice(deposit, shopCurrency)}</span>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+          <span>Total commande</span>
+          <span>{formatPrice(total, shopCurrency)}</span>
+        </div>
+      )}
+    </div>
+  )
+
+  const ctaButton = (
+    <>
+      {!acceptingOrders ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+          Cette boutique ne prend pas de commandes en ce moment.
+        </div>
+      ) : !hasAnyPaymentMethod ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+          Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-60"
+          style={{ backgroundColor: primaryColor }}
+        >
+          <ShoppingBag className="h-5 w-5" />
+          {submitting ? 'Envoi en cours...' : isDigital ? 'Acheter et télécharger' : 'Confirmer la commande'}
+        </button>
+      )}
+      <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center text-[10px] text-gray-400 pt-2">
+        <span>Paiement traité par Bictorys</span>
+        <span className="hidden min-[380px]:inline">·</span>
+        <span>Lien de suivi envoyé après la commande</span>
+      </p>
+    </>
+  )
+
   return (
-    <form onSubmit={handleSubmit} className="pb-32">
+    <form onSubmit={handleSubmit}>
       {/* Shop header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 bg-white">
-        {step > 1 ? (
-          <button
-            type="button"
-            onClick={() => { setStep(s => s - 1); scrollTop() }}
-            className="shrink-0 text-gray-400 hover:text-gray-600"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        ) : (
-          <Link href={`/${shopSlug}`} className="shrink-0 text-gray-400 hover:text-gray-600">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-        )}
+        <Link href={`/${shopSlug}`} className="shrink-0 text-gray-400 hover:text-gray-600">
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
         {shopLogoUrl ? (
           <img src={shopLogoUrl} alt={shopName} className="h-10 w-10 shrink-0 rounded-xl object-cover" />
         ) : (
@@ -624,7 +647,7 @@ export function OrderForm({
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-gray-900">{shopName}</p>
+          <p className="truncate text-sm font-bold text-gray-900" style={displayFont}>{shopName}</p>
           {shopCity && (
             <p className="flex items-center gap-1 text-xs text-gray-500">
               <MapPin className="h-2.5 w-2.5" /> {shopCity}
@@ -634,636 +657,510 @@ export function OrderForm({
         <p className="ml-auto shrink-0 text-xs font-semibold text-gray-500">Commander</p>
       </div>
 
-      {/* Indicateur de progression — masqué pour les produits digitaux (page unique) */}
-      {!isDigital && (
-        <div className="flex items-center px-5 pt-4 pb-1 gap-0">
-          {[
-            { n: 1, label: 'Commande' },
-            { n: 2, label: 'Infos' },
-            { n: 3, label: 'Paiement' },
-          ].map(({ n, label }, i) => (
-            <div key={n} className={`flex items-center ${i < 2 ? 'flex-1' : ''}`}>
-              <div className="flex flex-col items-center">
-                <div
-                  className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors"
-                  style={step >= n
-                    ? { backgroundColor: primaryColor, color: 'white' }
-                    : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}
-                >
-                  {step > n ? '✓' : n}
-                </div>
-                <span
-                  className="mt-0.5 text-[10px] font-medium"
-                  style={{ color: step >= n ? primaryColor : '#9ca3af' }}
-                >
-                  {label}
-                </span>
-              </div>
-              {i < 2 && (
-                <div
-                  className="flex-1 h-px mx-1 mb-3.5 transition-colors"
-                  style={{ backgroundColor: step > n ? primaryColor : '#e5e7eb' }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Disposition : une colonne mobile, deux colonnes ≥960px (formulaire + relevé collant) — §5 de la spec */}
+      <div className="mx-auto max-w-[1040px] min-[960px]:grid min-[960px]:grid-cols-[1fr_360px] min-[960px]:gap-10 min-[960px]:px-8 min-[960px]:py-8">
 
-      <div className="space-y-6 px-4 pt-4">
-        {/* ── ÉTAPE 1 : Articles + Date ── */}
-        {(step === 1 || isDigital) && <>
-        {/* 1 — Articles */}
-        <section>
-          <SectionLabel n={1} label="Votre commande" primaryColor={primaryColor} />
-          <div className="space-y-3">
-            {items.map((item, i) => {
-              const p = getProduct(item.product_id)
-              return (
-                <div key={i} className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      Article {i + 1}
-                    </p>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(i)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
+        {/* ── Colonne formulaire ── */}
+        <div className="space-y-6 px-4 pt-4 pb-44 min-[960px]:px-0 min-[960px]:pb-0">
 
-                  {/* Premier article pré-sélectionné : carte confirmée (pas de dropdown) */}
-                  {i === 0 && firstItemLocked && p ? (
-                    <div className="flex items-center gap-3">
-                      {p.photo ? (
-                        <img
-                          src={p.photo}
-                          alt={p.name}
-                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
-                          <Package className="h-5 w-5 text-gray-300" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                        <p className="text-xs font-bold mt-0.5" style={{ color: primaryColor }}>
-                          {formatPrice(p.price, shopCurrency)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFirstItemLocked(false)}
-                        className="shrink-0 text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
-                      >
-                        Changer
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      {p?.photo ? (
-                        <img
-                          src={p.photo}
-                          alt={p.name}
-                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
-                          <Package className="h-5 w-5 text-gray-300" />
-                        </div>
-                      )}
-                      <div className="relative flex-1">
-                        <select
-                          value={item.product_id}
-                          onChange={(e) => updateItem(i, { product_id: e.target.value })}
-                          className={`${inputCls} appearance-none py-2.5 pr-10`}
+          {/* 1 — Ce que tu commandes */}
+          <section>
+            <SectionTitle label="Ce que tu commandes" />
+            <div className="space-y-3">
+              {items.map((item, i) => {
+                const p = getProduct(item.product_id)
+                return (
+                  <div key={i} className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Article {i + 1}
+                      </p>
+                      {items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(i)}
+                          className="text-red-400 hover:text-red-600"
                         >
-                          {products.map((prod) => (
-                            <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
-                              {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Premier article pré-sélectionné : carte confirmée (pas de dropdown) */}
+                    {i === 0 && firstItemLocked && p ? (
+                      <div className="flex items-center gap-3">
+                        {p.photo ? (
+                          <img
+                            src={p.photo}
+                            alt={p.name}
+                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                            <Package className="h-5 w-5 text-gray-300" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                          <p className="text-xs font-bold mt-0.5" style={{ color: primaryColor }}>
+                            {formatPrice(p.price, shopCurrency)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFirstItemLocked(false)}
+                          className="shrink-0 text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
+                        >
+                          Changer
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        {p?.photo ? (
+                          <img
+                            src={p.photo}
+                            alt={p.name}
+                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                            <Package className="h-5 w-5 text-gray-300" />
+                          </div>
+                        )}
+                        <div className="relative flex-1">
+                          <select
+                            value={item.product_id}
+                            onChange={(e) => updateItem(i, { product_id: e.target.value })}
+                            className={`${inputCls} appearance-none py-2.5 pr-10`}
+                          >
+                            {products.map((prod) => (
+                              <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
+                                {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        </div>
+                      </div>
+                    )}
+                    {p?.stock_count === 0 && (
+                      <p className="text-xs font-semibold text-red-500">Ce produit est en rupture de stock.</p>
+                    )}
+
+                    {p?.variants && p.variants.length > 0 && (
+                      <div className="relative">
+                        <select
+                          value={item.variant_label ?? ''}
+                          onChange={(e) => updateItem(i, { variant_label: e.target.value || null })}
+                          className={`${inputCls} appearance-none pr-10`}
+                        >
+                          <option value="">— Choisir une variante —</option>
+                          {p.variants.map((v, vi) => (
+                            <option key={vi} value={v.label}>
+                              {v.label} — {formatPrice(v.price, shopCurrency)}
                             </option>
                           ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       </div>
-                    </div>
-                  )}
-                  {p?.stock_count === 0 && (
-                    <p className="text-xs font-semibold text-red-500">Ce produit est en rupture de stock.</p>
-                  )}
-
-                  {p?.variants && p.variants.length > 0 && (
-                    <div className="relative">
-                      <select
-                        value={item.variant_label ?? ''}
-                        onChange={(e) => updateItem(i, { variant_label: e.target.value || null })}
-                        className={`${inputCls} appearance-none pr-10`}
-                      >
-                        <option value="">— Choisir une variante —</option>
-                        {p.variants.map((v, vi) => (
-                          <option key={vi} value={v.label}>
-                            {v.label} — {formatPrice(v.price, shopCurrency)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    </div>
-                  )}
-
-                  {p?.customization_enabled && (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {p.customization_label || 'Personnalisation'} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={item.customization_note}
-                        onChange={(e) => updateItem(i, { customization_note: e.target.value })}
-                        placeholder={p.customization_label ? `Ex : votre ${p.customization_label.toLowerCase()}` : 'Votre texte de personnalisation'}
-                        maxLength={200}
-                        className={inputCls}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-500">Quantité</span>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => updateItem(i, { quantity: Math.max(1, item.quantity - 1) })}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100"
-                      >
-                        −
-                      </button>
-                      <span className="w-6 text-center text-sm font-bold text-gray-900">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 99) : 99
-                          updateItem(i, { quantity: Math.min(maxQty, item.quantity + 1) })
-                        }}
-                        disabled={p?.stock_count != null && item.quantity >= p.stock_count}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Remises sur quantité */}
-                  {p?.quantity_discounts && p.quantity_discounts.length > 0 && (() => {
-                    const activePct = getQtyDiscountPct(p, item.quantity)
-                    const basePrice = getItemBasePrice(p, item.variant_label)
-                    const nextTier  = p.quantity_discounts
-                      .filter(d => d.min_qty > item.quantity)
-                      .sort((a, b) => a.min_qty - b.min_qty)[0]
-                    return (
-                      <div className="space-y-1">
-                        {activePct > 0 ? (
-                          <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5">
-                            <span className="text-xs font-bold text-emerald-700">-{activePct}% appliqué</span>
-                            <span className="text-[10px] text-emerald-600">
-                              ({formatPrice(basePrice, shopCurrency)} → {formatPrice(Math.floor(basePrice * (100 - activePct) / 100), shopCurrency)})
-                            </span>
-                          </div>
-                        ) : nextTier ? (
-                          <p className="text-[10px] text-gray-400">
-                            Achetez {nextTier.min_qty} pièces ou plus et économisez {nextTier.discount_pct}%
-                          </p>
-                        ) : null}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )
-            })}
-          </div>
-
-          {items.length < 5 && (
-            <button
-              type="button"
-              onClick={addItem}
-              className="mt-3 flex items-center gap-2 text-sm font-semibold"
-              style={{ color: primaryColor }}
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter un article
-            </button>
-          )}
-
-          {/* Total en temps réel — affiché dès que le sous-total > 0 */}
-          {itemsSubtotal > 0 && (
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-              <span className="text-sm font-medium text-gray-500">Sous-total</span>
-              <span className="text-base font-bold" style={{ color: primaryColor }}>
-                {formatPrice(itemsSubtotal, shopCurrency)}
-              </span>
-            </div>
-          )}
-        </section>
-
-        <div className="border-t border-gray-100" />
-        </>}
-
-        {/* ── ÉTAPE 2 : Coordonnées + Livraison ── */}
-        {(step === 2 || isDigital) && <>
-
-        {/* Récapitulatif commande — affiché en tête d'étape 2 uniquement */}
-        {step === 2 && (
-          <section className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Votre commande</p>
-            {items.map((it, i) => {
-              const p = getProduct(it.product_id)
-              if (!p) return null
-              let price = p.price
-              if (it.variant_label && p.variants) {
-                const v = p.variants.find(v => v.label === it.variant_label)
-                if (v) price = v.price
-              }
-              return (
-                <div key={i} className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                    {it.variant_label && (
-                      <p className="text-xs text-gray-500">{it.variant_label}</p>
                     )}
+
+                    {p?.customization_enabled && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          {p.customization_label || 'Personnalisation'} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={item.customization_note}
+                          onChange={(e) => updateItem(i, { customization_note: e.target.value })}
+                          placeholder={p.customization_label ? `Ex : votre ${p.customization_label.toLowerCase()}` : 'Votre texte de personnalisation'}
+                          maxLength={200}
+                          className={inputCls}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-500">Quantité</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => updateItem(i, { quantity: Math.max(1, item.quantity - 1) })}
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-sm font-bold text-gray-900">
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const maxQty = p?.stock_count != null ? Math.min(p.stock_count, 99) : 99
+                            updateItem(i, { quantity: Math.min(maxQty, item.quantity + 1) })
+                          }}
+                          disabled={p?.stock_count != null && item.quantity >= p.stock_count}
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Remises sur quantité */}
+                    {p?.quantity_discounts && p.quantity_discounts.length > 0 && (() => {
+                      const activePct = getQtyDiscountPct(p, item.quantity)
+                      const basePrice = getItemBasePrice(p, item.variant_label)
+                      const nextTier  = p.quantity_discounts
+                        .filter(d => d.min_qty > item.quantity)
+                        .sort((a, b) => a.min_qty - b.min_qty)[0]
+                      return (
+                        <div className="space-y-1">
+                          {activePct > 0 ? (
+                            <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5">
+                              <span className="text-xs font-bold text-emerald-700">-{activePct}% appliqué</span>
+                              <span className="text-[10px] text-emerald-600">
+                                ({formatPrice(basePrice, shopCurrency)} → {formatPrice(Math.floor(basePrice * (100 - activePct) / 100), shopCurrency)})
+                              </span>
+                            </div>
+                          ) : nextTier ? (
+                            <p className="text-[10px] text-gray-400">
+                              Achetez {nextTier.min_qty} pièces ou plus et économisez {nextTier.discount_pct}%
+                            </p>
+                          ) : null}
+                        </div>
+                      )
+                    })()}
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-xs text-gray-500">×{it.quantity}</p>
-                    <p className="text-sm font-bold" style={{ color: primaryColor }}>
-                      {formatPrice(price * it.quantity, shopCurrency)}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-            {itemsSubtotal > 0 && items.length > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-1">
-                <span className="text-xs font-medium text-gray-500">Sous-total</span>
-                <span className="text-sm font-bold text-gray-900">{formatPrice(itemsSubtotal, shopCurrency)}</span>
+                )
+              })}
+            </div>
+
+            {items.length < 5 && (
+              <button
+                type="button"
+                onClick={addItem}
+                className="mt-3 flex items-center gap-2 text-sm font-semibold"
+                style={{ color: primaryColor }}
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter un autre article
+              </button>
+            )}
+
+            {itemsSubtotal > 0 && (
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <span className="text-sm font-medium text-gray-500">Sous-total</span>
+                <span className="text-base font-bold" style={{ color: primaryColor }}>
+                  {formatPrice(itemsSubtotal, shopCurrency)}
+                </span>
               </div>
             )}
           </section>
-        )}
 
-        {/* 1 — Coordonnées */}
-        <section>
-          <SectionLabel n={1} label="Vos coordonnées" primaryColor={primaryColor} />
-          <div className="space-y-3">
-            <div>
-              <input
-                value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value)
-                  if (errors.firstName) setErrors(p => ({ ...p, firstName: undefined }))
-                  saveCart({ firstName: e.target.value })
-                }}
-                placeholder="Nom complet *"
-                className={`${inputCls} ${errors.firstName ? 'border-red-400 focus:border-red-400' : ''}`}
-              />
-              {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-gray-500">Téléphone *</label>
-              <PhoneInput
-                value={phoneNum}
-                onChange={(v) => {
-                  setPhoneNum(v)
-                  if (errors.phone) setErrors(p => ({ ...p, phone: undefined }))
-                  saveCart({ phoneNum: v })
-                }}
-                dialCode={phoneDial}
-                onDialChange={(d) => { setPhoneDial(d); saveCart({ phoneDial: d }) }}
-                placeholder={PHONE_PLACEHOLDERS[phoneDial] ?? '00 00 00 00'}
-                countries={availableCountries}
-              />
-              {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
-            </div>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                id="same-wa"
-                checked={sameWa}
-                onChange={(e) => setSameWa(e.target.checked)}
-                className="h-4 w-4 rounded"
-                style={{ accentColor: primaryColor }}
-              />
-              <span className="text-sm text-gray-700">Même numéro pour WhatsApp</span>
-            </label>
-            {!sameWa && (
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-500">WhatsApp</label>
+          <div className="border-t border-gray-100" />
+
+          {/* 2 — Comment tu reçois ta commande — masquée entièrement pour un produit digital (§5.2) */}
+          {!isDigital && (deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
+            <>
+              <section>
+                <SectionTitle label="Comment tu reçois ta commande" />
+                <div className="space-y-2">
+                  {deliveryOptions.home_delivery && (
+                    <label
+                      className="block cursor-pointer"
+                      onClick={() => setDeliveryType('home_delivery')}
+                    >
+                      <RadioCard checked={deliveryType === 'home_delivery'} primaryColor={primaryColor}>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Livraison à domicile</p>
+                          <p className="text-xs text-gray-500">Livré chez vous</p>
+                        </div>
+                      </RadioCard>
+                    </label>
+                  )}
+                  {deliveryOptions.store_pickup && (
+                    <label
+                      className="block cursor-pointer"
+                      onClick={() => setDeliveryType('store_pickup')}
+                    >
+                      <RadioCard checked={deliveryType === 'store_pickup'} primaryColor={primaryColor}>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Retrait en boutique</p>
+                          <p className="text-xs text-gray-500">Récupérez votre commande</p>
+                        </div>
+                      </RadioCard>
+                    </label>
+                  )}
+                </div>
+                {deliveryType === 'home_delivery' && (
+                  <div className="mt-3 space-y-2">
+                    {deliveryZones.length > 0 && (
+                      <div className="space-y-2">
+                        {(showAllZones ? deliveryZones : deliveryZones.slice(0, ZONES_VISIBLE)).map((z) => (
+                          <label
+                            key={z.id}
+                            className="block cursor-pointer"
+                            onClick={() => setSelectedZoneId(z.id)}
+                          >
+                            <RadioCard checked={selectedZoneId === z.id} primaryColor={primaryColor}>
+                              <div className="flex w-full items-center justify-between">
+                                <p className="text-sm font-semibold text-gray-900">{z.name}</p>
+                                <p
+                                  className="text-sm font-bold shrink-0"
+                                  style={{ color: selectedZoneId === z.id ? primaryColor : '#6b7280' }}
+                                >
+                                  {z.price > 0 ? formatPrice(z.price, shopCurrency) : 'Gratuit'}
+                                </p>
+                              </div>
+                            </RadioCard>
+                          </label>
+                        ))}
+                        {deliveryZones.length > ZONES_VISIBLE && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllZones(v => !v)}
+                            className="mt-1 text-xs font-semibold"
+                            style={{ color: primaryColor }}
+                          >
+                            {showAllZones
+                              ? 'Voir moins'
+                              : `Voir ${deliveryZones.length - ZONES_VISIBLE} zone${deliveryZones.length - ZONES_VISIBLE > 1 ? 's' : ''} de plus`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div data-error-anchor={errors.address ? true : undefined}>
+                      <textarea
+                        value={address}
+                        onChange={(e) => {
+                          setAddress(e.target.value)
+                          if (errors.address) setErrors(p => ({ ...p, address: undefined }))
+                          saveCart({ address: e.target.value })
+                        }}
+                        rows={2}
+                        placeholder="Adresse de livraison * (quartier, rue, repère...)"
+                        className={`${inputCls} resize-none ${errors.address ? 'border-red-400 focus:border-red-400' : ''}`}
+                      />
+                      {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
+                    </div>
+                  </div>
+                )}
+              </section>
+              <div className="border-t border-gray-100" />
+            </>
+          )}
+
+          {/* 3 — Où on te joint */}
+          <section>
+            <SectionTitle label="Où on te joint" />
+            <div className="space-y-3">
+              <div data-error-anchor={errors.firstName ? true : undefined}>
+                <input
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value)
+                    if (errors.firstName) setErrors(p => ({ ...p, firstName: undefined }))
+                    saveCart({ firstName: e.target.value })
+                  }}
+                  placeholder="Nom complet *"
+                  className={`${inputCls} ${errors.firstName ? 'border-red-400 focus:border-red-400' : ''}`}
+                />
+                {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
+              </div>
+              <div data-error-anchor={errors.phone ? true : undefined}>
+                <label className="mb-1.5 block text-xs font-medium text-gray-500">Téléphone *</label>
                 <PhoneInput
-                  value={waNum}
-                  onChange={setWaNum}
-                  dialCode={waDial}
-                  onDialChange={setWaDial}
-                  placeholder={PHONE_PLACEHOLDERS[waDial] ?? '00 00 00 00'}
+                  value={phoneNum}
+                  onChange={(v) => {
+                    setPhoneNum(v)
+                    if (errors.phone) setErrors(p => ({ ...p, phone: undefined }))
+                    saveCart({ phoneNum: v })
+                  }}
+                  dialCode={phoneDial}
+                  onDialChange={(d) => { setPhoneDial(d); saveCart({ phoneDial: d }) }}
+                  placeholder={PHONE_PLACEHOLDERS[phoneDial] ?? '00 00 00 00'}
                   countries={availableCountries}
                 />
+                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
               </div>
-            )}
-            <div>
-              <input
-                type="email"
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="E-mail (optionnel)"
-                autoComplete="email"
-                className={inputCls}
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                Votre adresse e-mail nous permettra de vous envoyer une confirmation de commande.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <div className="border-t border-gray-100" />
-
-        {/* 2 — Livraison — masquée pour les produits digitaux */}
-        {!isDigital && (deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
-          <>
-            <section>
-              <SectionLabel n={2} label="Mode de réception" primaryColor={primaryColor} />
-              <div className="space-y-2">
-                {deliveryOptions.home_delivery && (
-                  <label
-                    className="block cursor-pointer"
-                    onClick={() => setDeliveryType('home_delivery')}
-                  >
-                    <RadioCard checked={deliveryType === 'home_delivery'} primaryColor={primaryColor}>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">Livraison à domicile</p>
-                        <p className="text-xs text-gray-500">Livré chez vous</p>
-                      </div>
-                    </RadioCard>
-                  </label>
-                )}
-                {deliveryOptions.store_pickup && (
-                  <label
-                    className="block cursor-pointer"
-                    onClick={() => setDeliveryType('store_pickup')}
-                  >
-                    <RadioCard checked={deliveryType === 'store_pickup'} primaryColor={primaryColor}>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">Retrait en boutique</p>
-                        <p className="text-xs text-gray-500">Récupérez votre commande</p>
-                      </div>
-                    </RadioCard>
-                  </label>
-                )}
-              </div>
-              {deliveryType === 'home_delivery' && (
-                <div className="mt-3 space-y-2">
-                  {deliveryZones.length > 0 && (
-                    <div className="space-y-2">
-                      {(showAllZones ? deliveryZones : deliveryZones.slice(0, ZONES_VISIBLE)).map((z) => (
-                        <label
-                          key={z.id}
-                          className="block cursor-pointer"
-                          onClick={() => setSelectedZoneId(z.id)}
-                        >
-                          <RadioCard checked={selectedZoneId === z.id} primaryColor={primaryColor}>
-                            <div className="flex w-full items-center justify-between">
-                              <p className="text-sm font-semibold text-gray-900">{z.name}</p>
-                              <p
-                                className="text-sm font-bold shrink-0"
-                                style={{ color: selectedZoneId === z.id ? primaryColor : '#6b7280' }}
-                              >
-                                {z.price > 0 ? formatPrice(z.price, shopCurrency) : 'Gratuit'}
-                              </p>
-                            </div>
-                          </RadioCard>
-                        </label>
-                      ))}
-                      {deliveryZones.length > ZONES_VISIBLE && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAllZones(v => !v)}
-                          className="mt-1 text-xs font-semibold"
-                          style={{ color: primaryColor }}
-                        >
-                          {showAllZones
-                            ? 'Voir moins'
-                            : `Voir ${deliveryZones.length - ZONES_VISIBLE} zone${deliveryZones.length - ZONES_VISIBLE > 1 ? 's' : ''} de plus`}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <textarea
-                      value={address}
-                      onChange={(e) => {
-                        setAddress(e.target.value)
-                        if (errors.address) setErrors(p => ({ ...p, address: undefined }))
-                        saveCart({ address: e.target.value })
-                      }}
-                      rows={2}
-                      placeholder="Adresse de livraison * (quartier, rue, repère...)"
-                      className={`${inputCls} resize-none ${errors.address ? 'border-red-400 focus:border-red-400' : ''}`}
-                    />
-                    {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
-                  </div>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="same-wa"
+                  checked={sameWa}
+                  onChange={(e) => setSameWa(e.target.checked)}
+                  className="h-4 w-4 rounded"
+                  style={{ accentColor: primaryColor }}
+                />
+                <span className="text-sm text-gray-700">Même numéro pour WhatsApp</span>
+              </label>
+              {!sameWa && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">WhatsApp</label>
+                  <PhoneInput
+                    value={waNum}
+                    onChange={setWaNum}
+                    dialCode={waDial}
+                    onDialChange={setWaDial}
+                    placeholder={PHONE_PLACEHOLDERS[waDial] ?? '00 00 00 00'}
+                    countries={availableCountries}
+                  />
                 </div>
               )}
-            </section>
-            <div className="border-t border-gray-100" />
-          </>
-        )}
+              <div>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="E-mail (optionnel)"
+                  autoComplete="email"
+                  className={inputCls}
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Votre adresse e-mail nous permettra de vous envoyer une confirmation de commande.
+                </p>
+              </div>
+            </div>
+          </section>
 
-        </>}
+          <div className="border-t border-gray-100" />
 
-        {/* ── ÉTAPE 3 : Notes + Code promo + Paiement ── */}
-        {(step === 3 || isDigital) && <>
+          {/* 4 — Comment tu paies */}
+          <section>
+            <SectionTitle label="Comment tu paies" />
+            {!hasAnyPaymentMethod ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
+                Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
+              </div>
+            ) : (
+            <div className="space-y-2">
+              {acceptOnlinePayment && (
+                <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
+                  <RadioCard checked={paymentType === 'online'} primaryColor={primaryColor}>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
+                      <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
+                      {paymentType === 'online' && hasDeposit && (
+                        <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
+                          Acompte : {formatPrice(deposit, shopCurrency)}
+                        </p>
+                      )}
+                      {paymentType === 'online' && !hasDeposit && total > 0 && (
+                        <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
+                          Total : {formatPrice(total, shopCurrency)}
+                        </p>
+                      )}
+                    </div>
+                  </RadioCard>
+                </label>
+              )}
+              {!isDigital && acceptCashOnDelivery && (
+                <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
+                  <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
+                      </p>
+                      <p className="text-xs text-gray-500">Vous payez à la réception</p>
+                    </div>
+                  </RadioCard>
+                </label>
+              )}
+            </div>
+            )}
+          </section>
 
-        {/* 1 — Notes */}
-        <section>
-          <SectionLabel n={1} label="Notes (optionnel)" primaryColor={primaryColor} />
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Allergies, instructions particulières..."
-            className={`${inputCls} resize-none`}
-          />
-        </section>
+          <div className="border-t border-gray-100" />
 
-        <div className="border-t border-gray-100" />
+          {/* Code promo — reste ici tel quel ; son déplacement dans le relevé partagé est le lot B */}
+          <section>
+            <SectionTitle label="Code promo (optionnel)" />
+            <div className="flex gap-2">
+              <input
+                value={promoCode}
+                onChange={e => {
+                  setPromoCode(e.target.value.toUpperCase())
+                  if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoDiscount(0) }
+                }}
+                onKeyDown={e => e.key === 'Enter' && applyPromoCode()}
+                placeholder="Ex : SOLDES15"
+                maxLength={30}
+                className={`${inputCls} flex-1 font-mono uppercase ${
+                  promoStatus === 'valid'   ? 'border-green-400' :
+                  promoStatus === 'invalid' ? 'border-red-400'   : ''
+                }`}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                onClick={applyPromoCode}
+                disabled={!promoCode.trim() || promoStatus === 'checking'}
+                className="shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
+                {promoStatus === 'checking' ? '...' : 'Appliquer'}
+              </button>
+            </div>
+            {promoStatus === 'valid' && (
+              <p className="mt-1 text-xs text-green-600 font-medium">
+                Code valide — {promoDiscount}% de réduction ({formatPrice(promoAmount, shopCurrency)})
+              </p>
+            )}
+            {promoStatus === 'invalid' && (
+              <p className="mt-1 text-xs text-red-500">{promoError}</p>
+            )}
+          </section>
 
-        {/* 2 — Code promo */}
-        <section>
-          <SectionLabel n={2} label="Code promo (optionnel)" primaryColor={primaryColor} />
-          <div className="flex gap-2">
-            <input
-              value={promoCode}
-              onChange={e => {
-                setPromoCode(e.target.value.toUpperCase())
-                if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoDiscount(0) }
-              }}
-              onKeyDown={e => e.key === 'Enter' && applyPromoCode()}
-              placeholder="Ex : SOLDES15"
-              maxLength={30}
-              className={`${inputCls} flex-1 font-mono uppercase ${
-                promoStatus === 'valid'   ? 'border-green-400' :
-                promoStatus === 'invalid' ? 'border-red-400'   : ''
-              }`}
-              autoCapitalize="characters"
-              spellCheck={false}
-            />
+          {/* Hors sections : précision optionnelle, dépliée à la demande (§5) */}
+          <div>
             <button
               type="button"
-              onClick={applyPromoCode}
-              disabled={!promoCode.trim() || promoStatus === 'checking'}
-              className="shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              onClick={() => setNotesOpen(v => !v)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700"
             >
-              {promoStatus === 'checking' ? '...' : 'Appliquer'}
+              <Pencil className="h-3 w-3" />
+              Ajouter une précision
             </button>
-          </div>
-          {promoStatus === 'valid' && (
-            <p className="mt-1 text-xs text-green-600 font-medium">
-              ✓ Code valide — {promoDiscount}% de réduction ({formatPrice(promoAmount, shopCurrency)})
-            </p>
-          )}
-          {promoStatus === 'invalid' && (
-            <p className="mt-1 text-xs text-red-500">{promoError}</p>
-          )}
-        </section>
-
-        <div className="border-t border-gray-100" />
-
-        {/* 3 — Paiement */}
-        <section>
-          <SectionLabel n={3} label="Mode de paiement" primaryColor={primaryColor} />
-          {!hasAnyPaymentMethod ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
-              Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
-            </div>
-          ) : (
-          <div className="space-y-2">
-            {acceptOnlinePayment && (
-              <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
-                <RadioCard checked={paymentType === 'online'} primaryColor={primaryColor}>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
-                    <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
-                    {paymentType === 'online' && hasDeposit && (
-                      <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                        Acompte : {formatPrice(deposit, shopCurrency)}
-                      </p>
-                    )}
-                    {paymentType === 'online' && !hasDeposit && total > 0 && (
-                      <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                        Total : {formatPrice(total, shopCurrency)}
-                      </p>
-                    )}
-                  </div>
-                </RadioCard>
-              </label>
-            )}
-            {!isDigital && acceptCashOnDelivery && (
-              <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
-                <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
-                    </p>
-                    <p className="text-xs text-gray-500">Vous payez à la réception</p>
-                  </div>
-                </RadioCard>
-              </label>
+            {notesOpen && (
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Allergies, instructions particulières..."
+                className={`${inputCls} resize-none mt-2`}
+                autoFocus
+              />
             )}
           </div>
-          )}
-        </section>
-        </>}
+
+        </div>
+
+        {/* ── Colonne relevé — desktop uniquement (≥960px), collante ── */}
+        <div className="hidden min-[960px]:block">
+          <div className="sticky top-6 space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-gray-900" style={displayFont}>Ce que tu paies</p>
+            {recapContent}
+            {ctaButton}
+          </div>
+        </div>
       </div>
 
-      {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto space-y-2 bg-white border-t border-gray-100 px-4 pb-8 pt-3 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
-        {/* Récapitulatif total — étape 3 ou page unique digital */}
-        {(step === 3 || isDigital) && total > 0 && (
-          <div className="space-y-0.5 px-1">
-            {deliveryPrice > 0 && (
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Livraison ({selectedZone?.name})</span>
-                <span>+{formatPrice(deliveryPrice, shopCurrency)}</span>
-              </div>
-            )}
-            {promoAmount > 0 && (
-              <div className="flex items-center justify-between text-xs text-green-600 font-medium">
-                <span>Réduction ({promoDiscount}%)</span>
-                <span>-{formatPrice(promoAmount, shopCurrency)}</span>
-              </div>
-            )}
-            {hasDeposit && paymentType === 'online' ? (
-              <>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Total commande</span>
-                  <span>{formatPrice(total, shopCurrency)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-                  <span>Acompte à payer maintenant</span>
-                  <span>{formatPrice(deposit, shopCurrency)}</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-                <span>Total commande</span>
-                <span>{formatPrice(total, shopCurrency)}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Bouton Continuer (étapes 1-2) ou Confirmer (étape 3 ou page unique digital) */}
-        {!acceptingOrders ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
-            Cette boutique ne prend pas de commandes en ce moment.
-          </div>
-        ) : !hasAnyPaymentMethod ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
-            Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
-          </div>
-        ) : step < 3 && !isDigital ? (
-          <button
-            type="button"
-            onClick={step === 1 ? goToStep2 : goToStep3}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90"
-            style={{ backgroundColor: primaryColor }}
-          >
-            Continuer
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: primaryColor }}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            {submitting ? 'Envoi en cours...' : isDigital ? 'Acheter et télécharger' : 'Confirmer la commande'}
-          </button>
-        )}
-
-        {(step === 3 || isDigital) && (
-          <p className="flex items-center justify-center gap-3 text-[10px] text-gray-400 pt-0.5">
-            <span>🔒 Commande sécurisée</span>
-            <span>·</span>
-            <span>✅ Satisfaction garantie</span>
-            <span>·</span>
-            <span>💬 Support WhatsApp</span>
-          </p>
-        )}
+      {/* Barre collante mobile — hauteur réservée par le pb-44 de la colonne formulaire (corrige 3.2).
+          max-w-lg mx-auto sur le contenu (pas sur la barre elle-même, qui reste pleine largeur) : sans
+          cap explicite, un texte qui ne se coupe pas peut forcer la barre — donc toute la page — plus
+          large que le viewport (constaté en recette sur cette refonte, corrigé ici). */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 min-[960px]:hidden overflow-x-hidden bg-white border-t border-gray-100 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]"
+      >
+        <div
+          className="max-w-lg mx-auto space-y-2 px-4 pt-3"
+          style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom))' }}
+        >
+          {total > 0 && <div className="px-1">{recapContent}</div>}
+          {ctaButton}
+        </div>
       </div>
 
       {/* ── Modal engagement paiement mobile money ───────────────────────── */}
@@ -1280,10 +1177,10 @@ export function OrderForm({
             <div className="px-6 pt-6 pb-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div
-                  className="h-10 w-10 rounded-xl flex items-center justify-center text-white text-lg shrink-0"
+                  className="h-10 w-10 rounded-xl flex items-center justify-center text-white shrink-0"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  💳
+                  <ShoppingBag className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 text-base leading-tight">Confirme ton paiement</p>
@@ -1302,7 +1199,7 @@ export function OrderForm({
                 {hasDeposit ? "d'acompte " : ''}par mobile money (Wave, Orange Money, etc.).
               </p>
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
-                ⚠️ Si tu n&apos;effectues pas le paiement, la commande sera automatiquement annulée.
+                Si tu n&apos;effectues pas le paiement, la commande sera automatiquement annulée.
               </div>
             </div>
 

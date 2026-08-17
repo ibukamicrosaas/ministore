@@ -22,53 +22,41 @@ export default async function CommanderPage({ params, searchParams }: Props) {
 
   const supabase = await createServerClient()
 
-  // Pas de filtre is_active : le layout est le gardien des boutiques inactives
-  const { data: shopData } = await supabase
-    .from('shops')
-    .select('id, name, logo_url, primary_color, city, country, currency, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones')
+  // Pas de filtre is_active : le layout est le gardien des boutiques inactives.
+  // Une seule requête shops (regroupe les 3 .single() séparées d'avant — §11 de
+  // la spec) : status/accept_cash_on_delivery/target_countries n'existent pas
+  // forcément sur toutes les instances DB plus anciennes, d'où le typage large
+  // et les valeurs par défaut ci-dessous plutôt qu'un select typé strict.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: shopData } = await (supabase.from('shops') as any)
+    .select('id, name, logo_url, primary_color, city, country, currency, phone_whatsapp, available_days, delivery_options, deposit_percentage, accept_online_payment, delivery_zones, status, accept_cash_on_delivery, target_countries')
     .eq('slug', slug)
     .single()
 
   if (!shopData) notFound()
+
+  const raw = shopData as unknown as Record<string, unknown>
 
   // Fermeture du bouton de commande : uniquement pertinent pour une boutique
   // free_orders en 'expired' avec trop de commandes retenues non résolues
   // (§5 de la spec). Nécessite l'admin client : aucune policy RLS ne permet à
   // un visiteur anonyme de compter les commandes d'une boutique.
   let acceptingOrders = true
-  const { data: statusData } = await supabase
-    .from('shops')
-    .select('status')
-    .eq('id', shopData.id)
-    .single()
-  if (statusData?.status === 'expired') {
+  if (raw.status === 'expired') {
     const admin = createAdminClient()
     const heldPhysicalCount = await getHeldPhysicalOrderCount(admin, shopData.id)
     if (heldPhysicalCount >= MAX_HELD_ORDERS) acceptingOrders = false
   }
 
   // accept_cash_on_delivery may not exist yet in older DB instances — default true if missing
-  let acceptCashOnDelivery = true
-  const { data: cashData } = await supabase
-    .from('shops')
-    .select('accept_cash_on_delivery')
-    .eq('id', shopData.id)
-    .single()
-  if (cashData && typeof (cashData as Record<string, unknown>).accept_cash_on_delivery === 'boolean') {
-    acceptCashOnDelivery = (cashData as Record<string, unknown>).accept_cash_on_delivery as boolean
-  }
+  const acceptCashOnDelivery = typeof raw.accept_cash_on_delivery === 'boolean'
+    ? raw.accept_cash_on_delivery
+    : true
 
   // target_countries not yet in generated types — fetch separately
-  let targetCountriesVal: string[] | null = null
-  const { data: tcData } = await supabase
-    .from('shops')
-    .select('target_countries' as never)
-    .eq('id', shopData.id)
-    .single()
-  if (tcData) {
-    const raw = (tcData as unknown as Record<string, unknown>).target_countries
-    if (Array.isArray(raw)) targetCountriesVal = raw as string[]
-  }
+  const targetCountriesVal: string[] | null = Array.isArray(raw.target_countries)
+    ? raw.target_countries as string[]
+    : null
 
   const shop = shopData as Pick<Shop,
     'id' | 'name' | 'logo_url' | 'primary_color' | 'city' | 'country' | 'phone_whatsapp' |
@@ -107,14 +95,14 @@ export default async function CommanderPage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto bg-white">
+    <div className="bg-white">
       <OrderForm
         shopId={shop.id}
         shopSlug={slug}
         shopName={shop.name}
         shopLogoUrl={shop.logo_url}
         shopCity={shop.city ?? null}
-        primaryColor={shop.primary_color ?? '#0EA5E9'}
+        primaryColor="var(--brand)"
         products={products.map(p => ({
           id: p.id,
           name: p.name,
