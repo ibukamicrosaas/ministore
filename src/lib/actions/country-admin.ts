@@ -13,7 +13,7 @@ export async function requireCountryManager() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/cm/login')
 
   const admin = createAdminClient()
   const { data: cm } = await (admin
@@ -22,7 +22,7 @@ export async function requireCountryManager() {
     .eq('user_id' as never, user.id)
     .single() as unknown as Promise<{ data: { country: string; name: string } | null }>)
 
-  if (!cm) redirect('/dashboard')
+  if (!cm) redirect('/cm/login')
 
   return { userId: user.id, country: cm.country, name: cm.name }
 }
@@ -82,7 +82,7 @@ type CMInfo = { userId: string; country: string; name: string; id: string; licen
 export async function requireCountryManagerFull(): Promise<CMInfo> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/cm/login')
 
   const admin = createAdminClient()
   const { data: cm } = await (admin
@@ -93,7 +93,7 @@ export async function requireCountryManagerFull(): Promise<CMInfo> {
       data: { id: string; country: string; name: string; license_start_at: string } | null
     }>)
 
-  if (!cm) redirect('/dashboard')
+  if (!cm) redirect('/cm/login')
 
   return {
     userId:         user.id,

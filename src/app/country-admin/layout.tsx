@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { CountryAdminNav } from './CountryAdminNav'
-import { signOut } from '@/lib/actions/auth'
+import { cmSignOut } from '@/lib/actions/cm-auth'
 import { LogOut } from 'lucide-react'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -12,7 +12,7 @@ export default async function CountryAdminLayout({ children }: { children: React
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/cm/login')
 
   const admin = createAdminClient()
   const { data: cm } = await (admin
@@ -21,7 +21,7 @@ export default async function CountryAdminLayout({ children }: { children: React
     .eq('user_id' as never, user.id)
     .single() as unknown as Promise<{ data: { country: string; name: string } | null }>)
 
-  if (!cm) redirect('/dashboard')
+  if (!cm) redirect('/cm/login')
 
   const countryLabel = cm.country === 'TG' ? '🇹🇬 Togo' :
                        cm.country === 'SN' ? '🇸🇳 Sénégal' :
@@ -42,7 +42,7 @@ export default async function CountryAdminLayout({ children }: { children: React
         </div>
         <CountryAdminNav variant="sidebar" country={cm.country} />
         <div className="mt-auto p-4 border-t border-white/[0.06]">
-          <form action={signOut}>
+          <form action={cmSignOut}>
             <button
               type="submit"
               className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
@@ -66,7 +66,7 @@ export default async function CountryAdminLayout({ children }: { children: React
               </p>
               <p className="text-[10px] text-gray-500">{cm.name}</p>
             </div>
-            <form action={signOut}>
+            <form action={cmSignOut}>
               <button type="submit" className="text-gray-400 hover:text-white transition-colors">
                 <LogOut className="h-4 w-4" />
               </button>

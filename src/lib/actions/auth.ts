@@ -65,17 +65,6 @@ export async function signIn(formData: FormData) {
     return { error: 'Numéro ou code PIN incorrect.' }
   }
 
-  // Country managers → espace dédié
-  const { data: { user: loggedUser } } = await supabase.auth.getUser()
-  if (loggedUser) {
-    const { data: cm } = await (admin
-      .from('country_managers' as never)
-      .select('country')
-      .eq('user_id' as never, loggedUser.id)
-      .single() as unknown as Promise<{ data: { country: string } | null }>)
-    if (cm) redirect('/country-admin')
-  }
-
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
