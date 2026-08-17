@@ -1080,3 +1080,19 @@ Fichiers : `SPEC-refonte-dashboard-marchand.md` (spec complète) et `tekkishop-d
 1. Refonte du tunnel de commande (Livraison 2, `SPEC-refonte-tunnel-commande.md`, 4 lots A-D, aucun commencé — §4 point 0, priorité immédiate après la Livraison 1).
 2. Lots 2 à 5 de la refonte des boutiques publiques (`SPEC-v2-refonte-boutiques-publiques.md` — §4 point 5).
 3. **Refonte du dashboard marchand** (ce chantier) — après les deux précédents.
+
+---
+
+## 25. Fuite `resend-digital` — corrigée, 2026-08-17, hors calendrier du tunnel de commande
+
+**Trouvée en préparant le plan du tunnel de commande (§26), traitée séparément et immédiatement — fuite d'argent réelle, pas de la dette technique.** `api/dashboard/orders/[id]/resend-digital/route.ts` (bouton marchand « Générer un nouveau lien et envoyer au client », créé le 13 juillet comme filet de secours pour les échecs SMS — voir §14) générait un vrai `download_token` en ne vérifiant que l'appartenance de la commande à la boutique et son statut non-retenu (`isOrderBlocked`) — **aucune vérification qu'un paiement en ligne avait réellement été encaissé.** Il posait aussi lui-même `status: 'completed'` comme effet de bord, sans condition.
+
+**Ampleur mesurée avant correctif, une fois le projet Supabase lié dans cet environnement (`supabase link --project-ref fvkamhditdyvadljjrvn`, réussi sans mot de passe) :** exactement **2 commandes** en base concernées (`payment_type` hors `online_full`/`online_deposit`, contenant au moins un produit digital, avec au moins un `download_token` généré) :
+- `8c485241…`, K.B.Y multi services, `on_site`, 2 000 FCFA, créée le 2026-07-19 — **5 tokens générés en 1h30 le même jour, 6 téléchargements réels au total**, commande aujourd'hui `cancelled`.
+- `ff652b97…`, LolaShop, `on_delivery`, 3 000 FCFA, créée le 2026-08-06 — **4 tokens générés en 13 minutes, 1 téléchargement réel**, commande aujourd'hui `pending`.
+
+**Correctif** : recherche exhaustive de tout endroit du code écrivant `orders.status = 'completed'` — exactement 3 : le webhook Bictorys (`webhooks/bictorys/route.ts:506`, après paiement confirmé), le webhook Stripe (`webhooks/stripe/route.ts:122`, idem), et `resend-digital` lui-même (le seul sans garde). Confirmé par ailleurs que `advanceOrderStatus` (l'action normale de progression marchand) ne peut structurellement jamais produire `'completed'` (`STATUS_TRANSITIONS`, `completed: null`, aucune transition n'y mène). `status === 'completed'` est donc un signal fiable de paiement en ligne réellement confirmé, jamais atteignable par une action marchand. Ajouté comme precondition avant toute génération de token ; retiré l'écriture inconditionnelle du statut, devenue inutile (le statut est déjà garanti `'completed'` par la precondition). Vérifié directement sur les deux commandes réelles ci-dessus : aucune des deux n'est `'completed'` — le correctif les aurait bloquées.
+
+**Cas légitime préservé, vérifié** : une commande digitale payée en ligne dont l'envoi WhatsApp automatique échoue (la raison d'être originelle de ce bouton, §14) a déjà son statut à `'completed'` posé par le webhook avant même que le marchand ne clique — le correctif ne change rien pour ce cas.
+
+**`npx tsc --noEmit` et `npm run build` propres. Diff isolé, un seul fichier, aucun changement UI nécessaire** (`DigitalDeliveryCard.tsx` affichait déjà `data.error` sur réponse non-`ok`, testé par lecture du composant).

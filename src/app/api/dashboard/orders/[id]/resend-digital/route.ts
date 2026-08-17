@@ -49,6 +49,18 @@ export async function POST(
     return NextResponse.json({ error: 'Commande retenue — active ta boutique pour l\'envoyer au client.' }, { status: 403 })
   }
 
+  // Le statut 'completed' n'est jamais posé que par les webhooks Bictorys/Stripe,
+  // après paiement en ligne réellement confirmé (jamais par une action marchand).
+  // Sans cette vérification, ce bouton distribuait le fichier sur une commande
+  // payment_type='on_site'/'on_delivery' jamais payée en ligne — 2 commandes
+  // réelles concernées, trouvées le 2026-08-17 (K.B.Y multi services, LolaShop).
+  if (o.status !== 'completed') {
+    return NextResponse.json(
+      { error: 'Aucun paiement en ligne confirmé pour cette commande — impossible d\'envoyer le fichier depuis ce bouton.' },
+      { status: 403 },
+    )
+  }
+
   // Récupérer les produits digitaux de la commande
   const { data: orderItems } = await (supabase as any)
     .from('order_items')
@@ -86,14 +98,6 @@ export async function POST(
       const productName   = item.products?.digital_file_name ?? 'ton fichier'
       newTokens.push({ token: tokenData.token, downloadUrl, productName })
     }
-  }
-
-  // Marquer la commande comme complétée si elle était encore en pending/confirmed
-  if (o.status === 'pending' || o.status === 'confirmed') {
-    await supabase
-      .from('orders')
-      .update({ status: 'completed', updated_at: new Date().toISOString() })
-      .eq('id', orderId)
   }
 
   return NextResponse.json({ ok: true, tokens: newTokens })
