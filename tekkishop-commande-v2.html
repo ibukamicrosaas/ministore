@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commander — Viens on s'connaît (maquette tunnel v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#1B2A6B;
+  --ink:#101820; --ink2:#5A6873; --ink3:#8A959E;
+  --line:#E4E8EC; --surface:#F5F7F9; --paper:#FFFFFF;
+  --ok:#0E7C55; --ok-bg:#E8F5EF; --warn:#9A6410; --warn-bg:#FBF1DF;
+  --r-lg:18px; --r-md:12px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(16,24,32,.05), 0 8px 24px -18px rgba(16,24,32,.35);
+  --wrap:1120px;
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bar-h:78px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-body);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.price{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.015em}
+[hidden]{display:none!important}
+
+/* ---------- bandeau maquette (hors produit) ---------- */
+.demo{background:#101820;color:#fff}
+.demo__in{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:10px 16px;max-width:var(--wrap);margin:0 auto;font-size:12.5px}
+.demo b{font-weight:600;letter-spacing:.03em;text-transform:uppercase;font-size:10.5px;color:#8A959E}
+.demo__grp{display:flex;align-items:center;gap:6px}
+.demo__lab{color:#8A959E;font-size:11.5px}
+.demo__btn{height:27px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:none;color:#fff;font-size:12px;cursor:pointer}
+.demo__btn[aria-pressed="true"]{background:#fff;color:#101820;border-color:#fff;font-weight:600}
+
+/* ---------- barre haute ---------- */
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar__in{display:flex;align-items:center;gap:11px;height:58px;max-width:var(--wrap);margin:0 auto;padding:0 16px}
+@media(min-width:900px){.topbar__in{padding:0 28px}}
+.topbar__logo{width:34px;height:34px;border-radius:9px;flex:none;background:var(--brand);display:grid;place-items:center;color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px}
+.topbar__name{font-weight:600;font-size:15px;line-height:1.15}
+.topbar__city{font-size:12.5px;color:var(--ink3)}
+.topbar__back{margin-left:auto;font-size:14px;color:var(--ink2);font-weight:500}
+.topbar__back:hover{color:var(--ink)}
+
+/* ---------- disposition ---------- */
+.page{padding:20px 0 calc(var(--bar-h) + 22px)}
+.page__in{display:grid;gap:22px;max-width:var(--wrap);margin:0 auto;padding:0 16px}
+@media(min-width:960px){
+  .page{padding:32px 0 60px}
+  .page__in{grid-template-columns:minmax(0,1fr) 372px;gap:34px;align-items:start;padding:0 28px}
+}
+.head h1{font-family:var(--font-display);font-size:27px;font-weight:700;letter-spacing:-.025em;margin:0;line-height:1.12}
+@media(min-width:960px){.head h1{font-size:33px}}
+.head p{margin:7px 0 0;color:var(--ink2);font-size:14.5px}
+
+/* ---------- sections ---------- */
+.sec{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);margin-top:16px;overflow:hidden}
+.sec__head{display:flex;align-items:center;gap:10px;padding:15px 16px 0}
+.sec__head h2{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-.015em;margin:0}
+.sec__hint{margin-left:auto;font-size:12.5px;color:var(--ink3)}
+.sec__body{padding:13px 16px 16px}
+@media(min-width:960px){.sec__head{padding:18px 20px 0}.sec__body{padding:14px 20px 20px}}
+
+/* ---------- articles ---------- */
+.item{display:flex;gap:12px;align-items:flex-start}
+.item__img{width:66px;height:66px;flex:none;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;overflow:hidden}
+.item__img svg{width:64%;height:64%;color:var(--ink3)}
+.item__main{flex:1;min-width:0}
+.item__name{font-weight:600;font-size:15px;line-height:1.25}
+.item__meta{font-size:13.5px;color:var(--ink2);margin-top:3px}
+.item__unit{font-size:13.5px;color:var(--ink3);margin-top:2px}
+.item__side{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+.item__price{font-size:15.5px}
+.link{background:none;border:0;padding:0;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--brand);text-decoration:underline;text-underline-offset:3px}
+.link:hover{opacity:.75}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.stepper button{width:34px;height:34px;border:0;background:none;cursor:pointer;font-size:17px;color:var(--ink2);line-height:1}
+.stepper button:hover{background:var(--surface);color:var(--ink)}
+.stepper span{min-width:26px;text-align:center;font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums}
+.additem{margin-top:13px}
+
+/* ---------- choix ---------- */
+.choices{display:grid;gap:9px}
+.choice{position:relative;display:flex;gap:11px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line);border-radius:var(--r-md);cursor:pointer;transition:.14s;background:var(--paper)}
+.choice:hover{border-color:var(--ink3)}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice__dot{width:19px;height:19px;flex:none;border-radius:50%;border:1.5px solid var(--ink3);margin-top:1px;display:grid;place-items:center;transition:.14s}
+.choice__dot::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--brand);transform:scale(0);transition:.14s}
+.choice__t{font-weight:600;font-size:14.5px}
+.choice__d{font-size:13px;color:var(--ink2);margin-top:2px;display:block}
+.choice__amt{margin-left:auto;text-align:right;font-size:14px;white-space:nowrap;padding-left:8px}
+.choice__amt small{display:block;font-size:12px;color:var(--ink3);font-weight:400}
+.choice:has(input:checked){border-color:var(--brand);box-shadow:0 0 0 1px var(--brand);background:color-mix(in srgb,var(--brand) 3%,#fff)}
+.choice:has(input:checked) .choice__dot{border-color:var(--brand)}
+.choice:has(input:checked) .choice__dot::after{transform:scale(1)}
+
+/* mode unique : une phrase, pas un choix */
+.single{display:flex;gap:11px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
+.single svg{flex:none;margin-top:2px;color:var(--ink3)}
+.single__t{font-weight:600;font-size:14.5px}
+.single__d{font-size:13px;color:var(--ink2);margin-top:2px}
+.single__amt{margin-left:auto;text-align:right;white-space:nowrap;padding-left:8px;font-size:14px}
+.single__amt small{display:block;font-size:12px;color:var(--ink3);font-weight:400}
+
+/* ---------- champs ---------- */
+.fields{display:grid;gap:13px}
+.flabel{display:block;font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:5px}
+.req{color:#B4231F}
+.input{width:100%;height:48px;padding:0 13px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--paper);transition:.14s}
+.input:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 12%,transparent)}
+textarea.input{height:auto;padding:11px 13px;min-height:78px;resize:vertical}
+select.input{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A6873' stroke-width='2.2' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px}
+.phone{display:flex;gap:8px}
+.phone__cc{width:104px;flex:none}
+.check{display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-size:14px}
+.check input{width:19px;height:19px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+
+/* ---------- option repliée ---------- */
+.extras{margin-top:14px}
+.extra{height:38px;padding:0 14px;border:1px dashed var(--line);border-radius:999px;background:var(--paper);
+  font-size:13.5px;font-weight:500;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.extra:hover{border-color:var(--ink3);color:var(--ink)}
+.extra[aria-expanded="true"]{border-style:solid;border-color:var(--ink);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;border-radius:var(--r-md);
+  font-weight:600;font-size:15px;border:1px solid transparent;cursor:pointer;background:none;transition:.16s;white-space:nowrap}
+.btn--brand{background:var(--brand);color:#fff}
+.btn--brand:hover{filter:brightness(1.14)}
+.btn--outline{border-color:var(--line);background:var(--paper)}
+.btn--outline:hover{border-color:var(--ink3)}
+.btn--block{width:100%}
+.btn--sm{height:44px;padding:0 15px;font-size:14.5px}
+
+/* ---------- relevé ---------- */
+.ledger{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:16px}
+@media(min-width:960px){.ledger{position:sticky;top:78px;margin-top:0}}
+.ledger__head{padding:14px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+.ledger__head h2{font-family:var(--font-display);font-size:16px;font-weight:600;margin:0;letter-spacing:-.01em}
+.ledger__body{padding:13px 17px}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:5px 0;font-size:14.5px}
+.row > span:first-child{color:var(--ink2)}
+.row--cut,.row--cut > span:first-child{color:var(--ok)}
+.row--total{border-top:1px solid var(--line);margin-top:9px;padding-top:12px;font-size:17px;font-weight:700}
+.row--total > span:first-child{color:var(--ink);font-family:var(--font-display);letter-spacing:-.015em}
+
+/* promo dans le relevé */
+.promo{border-top:1px solid var(--line);padding:13px 17px}
+.promo__btn{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;padding:0;cursor:pointer;
+  font-size:14px;font-weight:500;color:var(--brand);text-align:left}
+.promo__btn svg{flex:none}
+.promo__form{display:flex;gap:8px;margin-top:11px}
+.promo__form .input{flex:1;height:44px}
+.promo__ok{display:flex;gap:8px;align-items:flex-start;background:var(--ok-bg);color:var(--ok);border-radius:var(--r-md);
+  padding:10px 12px;font-size:13.5px;font-weight:500;line-height:1.35}
+.promo__ok svg{flex:none;margin-top:2px}
+.promo__ok button{margin-left:auto;background:none;border:0;color:var(--ok);cursor:pointer;text-decoration:underline;
+  text-underline-offset:3px;font-size:13px;padding:0;flex:none}
+
+.split{padding:14px 17px;background:var(--surface);border-top:1px solid var(--line)}
+.split__t{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
+.split .row{padding:4px 0}
+.split .row b{font-weight:600;color:var(--ink)}
+.ledger__cta{padding:14px 17px;border-top:1px solid var(--line)}
+.trust{display:grid;gap:7px;margin-top:12px}
+.trust div{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--ink2);line-height:1.35}
+.trust svg{flex:none;margin-top:1px;color:var(--ink3)}
+.desk-only{display:none}
+@media(min-width:960px){.desk-only{display:block}}
+
+/* ---------- barre mobile ---------- */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);border-top:1px solid var(--line);
+  box-shadow:0 -8px 24px -20px rgba(16,24,32,.5)}
+@media(min-width:960px){.bar{display:none}}
+.bar__in{display:flex;align-items:center;gap:12px;padding:11px 16px calc(11px + env(safe-area-inset-bottom,0px));height:var(--bar-h)}
+.bar__sum{min-width:0;flex:1}
+.bar__lab{font-size:12px;color:var(--ink3)}
+.bar__amt{font-size:20px;line-height:1.15;margin-top:1px}
+.bar__later{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.bar .btn{flex:none;min-width:150px}
+
+/* ---------- modale ---------- */
+.modal{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:18px;background:rgba(16,24,32,.55)}
+.modal[data-open="true"]{display:grid}
+.modal__box{background:var(--paper);border-radius:var(--r-lg);max-width:430px;width:100%;overflow:hidden;box-shadow:var(--shadow)}
+.modal__head{display:flex;gap:11px;align-items:center;padding:17px;border-bottom:1px solid var(--line)}
+.modal__ic{width:40px;height:40px;border-radius:11px;flex:none;background:color-mix(in srgb,var(--brand) 10%,#fff);display:grid;place-items:center;color:var(--brand)}
+.modal__head h3{font-family:var(--font-display);margin:0;font-size:17px;font-weight:600}
+.modal__head p{margin:1px 0 0;font-size:13px;color:var(--ink3)}
+.modal__body{padding:17px}
+.modal__warn{display:flex;gap:9px;background:var(--warn-bg);color:var(--warn);border-radius:var(--r-md);padding:11px 13px;font-size:13.5px;margin-top:13px;line-height:1.4}
+.modal__warn svg{flex:none;margin-top:1px}
+.modal__foot{display:flex;gap:9px;padding:0 17px 17px}
+.modal__foot .btn{flex:1}
+</style>
+</head>
+<body>
+
+<!-- bandeau de démonstration, ne fait pas partie du produit -->
+<div class="demo">
+  <div class="demo__in">
+    <b>Maquette</b>
+    <div class="demo__grp">
+      <span class="demo__lab">Produit</span>
+      <button class="demo__btn" data-kind="physique" aria-pressed="true">Physique</button>
+      <button class="demo__btn" data-kind="digital" aria-pressed="false">Digital</button>
+    </div>
+    <div class="demo__grp">
+      <span class="demo__lab">Réglages du marchand</span>
+      <button class="demo__btn" data-opt="online" aria-pressed="true">Mobile money</button>
+      <button class="demo__btn" data-opt="cod" aria-pressed="true">Paiement à la livraison</button>
+      <button class="demo__btn" data-opt="deposit" aria-pressed="true">Acompte 50 %</button>
+    </div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <div class="topbar__logo">VC</div>
+    <div>
+      <div class="topbar__name">Viens on s'connaît</div>
+      <div class="topbar__city">Dakar</div>
+    </div>
+    <a href="#" class="topbar__back">Retour à la boutique</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page__in">
+
+    <!-- ================= colonne formulaire ================= -->
+    <div>
+      <div class="head">
+        <h1>Finalise ta commande</h1>
+        <p id="lede">Rien n'est débité avant que tu confirmes.</p>
+      </div>
+
+      <!-- ARTICLES -->
+      <section class="sec">
+        <div class="sec__head">
+          <h2>Ce que tu commandes</h2>
+          <span class="sec__hint" id="itemcount">1 article</span>
+        </div>
+        <div class="sec__body">
+          <div class="item">
+            <div class="item__img">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v16H6.5A2.5 2.5 0 004 21.5z"/><path d="M4 17.5A2.5 2.5 0 016.5 15H19"/></svg>
+            </div>
+            <div class="item__main">
+              <div class="item__name" id="prodname">Et pourtant, on s'aimait — livre broché</div>
+              <div class="item__meta" id="prodmeta">Format : broché</div>
+              <div class="item__unit"><span id="unitprice">14 000</span> FCFA l'unité</div>
+            </div>
+            <div class="item__side">
+              <div class="item__price price"><span id="lineprice">14 000</span> FCFA</div>
+              <div class="stepper">
+                <button type="button" id="qtyminus" aria-label="Retirer un exemplaire">−</button>
+                <span id="qty">1</span>
+                <button type="button" id="qtyplus" aria-label="Ajouter un exemplaire">+</button>
+              </div>
+              <button class="link" type="button">Changer</button>
+            </div>
+          </div>
+          <button class="link additem" type="button">+ Ajouter un autre article</button>
+        </div>
+      </section>
+
+      <!-- LIVRAISON -->
+      <section class="sec" id="sec-livraison">
+        <div class="sec__head"><h2>Comment tu reçois ta commande</h2></div>
+        <div class="sec__body">
+          <div class="choices">
+            <label class="choice">
+              <input type="radio" name="mode" value="livraison" checked>
+              <span class="choice__dot"></span>
+              <span>
+                <span class="choice__t">Livraison à domicile</span>
+                <span class="choice__d">Un livreur t'appelle avant de passer</span>
+              </span>
+              <span class="choice__amt price">2 000 FCFA<small>selon la zone</small></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mode" value="retrait">
+              <span class="choice__dot"></span>
+              <span>
+                <span class="choice__t">Retrait en boutique</span>
+                <span class="choice__d">Sacré-Cœur 3, VDN — ouvert jusqu'à 19h</span>
+              </span>
+              <span class="choice__amt price">Gratuit</span>
+            </label>
+          </div>
+          <div id="zonebox" style="margin-top:14px">
+            <div class="fields">
+              <div>
+                <label class="flabel" for="zone">Zone de livraison <span class="req">*</span></label>
+                <select class="input" id="zone">
+                  <option value="2000">Dakar centre — 2 000 FCFA</option>
+                  <option value="3000">Banlieue (Pikine, Guédiawaye) — 3 000 FCFA</option>
+                  <option value="5000">Autre région — 5 000 FCFA</option>
+                </select>
+              </div>
+              <div>
+                <label class="flabel" for="adresse">Adresse ou point de repère <span class="req">*</span></label>
+                <input class="input" id="adresse" placeholder="Yoff Travaux, en face de la pharmacie" value="Yoff Travaux">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COORDONNÉES -->
+      <section class="sec">
+        <div class="sec__head"><h2>Où on te joint</h2></div>
+        <div class="sec__body">
+          <div class="fields">
+            <div>
+              <label class="flabel" for="nom">Ton nom <span class="req">*</span></label>
+              <input class="input" id="nom" value="Yatma Ndiaye" autocomplete="name">
+            </div>
+            <div>
+              <label class="flabel" for="tel">Ton téléphone <span class="req">*</span></label>
+              <div class="phone">
+                <select class="input phone__cc" id="cc" aria-label="Indicatif">
+                  <option>+221</option><option>+225</option><option>+237</option><option>+229</option>
+                </select>
+                <input class="input" id="tel" inputmode="tel" value="78 136 27 28" autocomplete="tel">
+              </div>
+            </div>
+            <label class="check">
+              <input type="checkbox" checked>
+              <span>C'est aussi mon numéro WhatsApp — la boutique peut m'y écrire</span>
+            </label>
+            <div>
+              <label class="flabel" for="mail" id="maillabel">Ton e-mail</label>
+              <input class="input" id="mail" type="email" placeholder="ton@email.com" value="marcusdawriter@gmail.com" autocomplete="email">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAIEMENT -->
+      <section class="sec">
+        <div class="sec__head"><h2>Comment tu paies</h2></div>
+        <div class="sec__body" id="paybody"></div>
+      </section>
+
+      <!-- PRÉCISION -->
+      <div class="extras">
+        <button class="extra" type="button" id="btn-note" aria-expanded="false" aria-controls="p-note">Ajouter une précision</button>
+      </div>
+      <div class="sec" id="p-note" hidden style="margin-top:12px">
+        <div class="sec__body">
+          <label class="flabel" for="note">Une précision pour la boutique</label>
+          <textarea class="input" id="note" placeholder="Un cadeau à emballer, une heure qui t'arrange, un détail sur l'adresse…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= relevé ================= -->
+    <aside>
+      <div class="ledger">
+        <div class="ledger__head">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--ink3)"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg>
+          <h2>Ce que tu paies</h2>
+        </div>
+
+        <div class="ledger__body">
+          <div class="row"><span id="subtitle">Sous-total (1 article)</span><span class="price"><span id="l-sub">14 000</span> FCFA</span></div>
+          <div class="row row--cut" id="l-cutrow" hidden><span>Réduction (95 %)</span><span class="price">−<span id="l-cut">13 300</span> FCFA</span></div>
+          <div class="row" id="l-delrow"><span>Livraison — Dakar centre</span><span class="price"><span id="l-del">2 000</span> FCFA</span></div>
+          <div class="row row--total"><span>Total</span><span class="price"><span id="l-tot">16 000</span> FCFA</span></div>
+        </div>
+
+        <!-- code promo, au plus près du total -->
+        <div class="promo">
+          <button class="promo__btn" type="button" id="promo-open" aria-expanded="false" aria-controls="promo-form">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4L13.4 20.6a2 2 0 01-2.8 0l-7.2-7.2A2 2 0 013 12V5a2 2 0 012-2h7a2 2 0 011.4.6l7.2 7.2a2 2 0 010 2.6z"/><path d="M7.5 7.5h.01"/></svg>
+            J'ai un code promo
+          </button>
+          <div class="promo__form" id="promo-form" hidden>
+            <input class="input" id="promo" placeholder="Ex : SORAYA95" value="SORAYA95" aria-label="Code promo">
+            <button class="btn btn--outline btn--sm" type="button" id="promo-apply">Appliquer</button>
+          </div>
+          <div class="promo__ok" id="promo-ok" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span><b>SORAYA95</b> appliqué — 95 % de réduction</span>
+            <button type="button" id="promo-remove">Retirer</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="split__t">Réparti dans le temps</div>
+          <div class="row"><span>Tu paies maintenant</span><b class="price"><span id="l-now">0</span> FCFA</b></div>
+          <div class="row" id="l-laterrow"><span>Tu paies à la livraison</span><b class="price"><span id="l-later">16 000</span> FCFA</b></div>
+        </div>
+
+        <div class="ledger__cta desk-only">
+          <button class="btn btn--brand btn--block" id="cta-desk">Confirmer ma commande</button>
+          <div class="trust">
+            <div id="trust-pay">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+              <span>Paiement mobile money traité par Bictorys.</span>
+            </div>
+            <div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-8.9A8.4 8.4 0 1121 11.5z"/></svg>
+              <span>Un lien de suivi t'est envoyé dès la commande passée.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<!-- ================= barre mobile ================= -->
+<div class="bar">
+  <div class="bar__in">
+    <div class="bar__sum">
+      <div class="bar__lab" id="b-lab">Tu paies maintenant</div>
+      <div class="bar__amt price"><span id="b-now">0</span> FCFA</div>
+      <div class="bar__later" id="b-later">puis 16 000 FCFA à la livraison</div>
+    </div>
+    <button class="btn btn--brand" id="cta-mob">Confirmer</button>
+  </div>
+</div>
+
+<!-- ================= modale ================= -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modaltitle">
+  <div class="modal__box">
+    <div class="modal__head">
+      <div class="modal__ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg>
+      </div>
+      <div>
+        <h3 id="modaltitle">Confirme ton paiement</h3>
+        <p>Mobile money — Wave, Orange Money, Max It</p>
+      </div>
+    </div>
+    <div class="modal__body">
+      <div class="row"><span>Total de ta commande</span><span class="price"><span id="k-tot">16 000</span> FCFA</span></div>
+      <div class="row row--total"><span>À payer maintenant</span><span class="price"><span id="k-now">8 000</span> FCFA</span></div>
+      <div class="row" id="k-laterrow"><span>Puis à la livraison</span><span class="price"><span id="k-later">8 000</span> FCFA</span></div>
+      <div class="modal__warn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        <span>Ta commande est gardée 30 minutes. Sans paiement d'ici là, elle est annulée et les articles repartent en stock.</span>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" id="modalcancel">Revenir</button>
+      <button class="btn btn--brand" id="modalgo">Payer maintenant</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var UNIT = 14000, DIGITAL_UNIT = 4500;
+  // shop : réglages du marchand · s : état de la commande
+  var shop = { online:true, cod:true, deposit:true, depositPct:0.5 };
+  var s = { kind:'physique', qty:1, mode:'livraison', zone:2000, pay:'cod', promo:0 };
+
+  var f = function(n){ return n.toLocaleString('fr-FR').replace(/\u202F|\u00A0/g,' '); };
+  var $ = function(id){ return document.getElementById(id); };
+  var txt = function(id,v){ var e=$(id); if(e) e.textContent = v; };
+
+  // modes de paiement réellement proposables
+  function methods(){
+    var digital = s.kind==='digital';
+    var m = [];
+    if(shop.online) m.push('now');
+    // l'acompte suppose les deux canaux : une part en ligne, le reste en espèces
+    if(shop.deposit && shop.online && shop.cod && !digital) m.push('deposit');
+    if(shop.cod && !digital) m.push('cod');
+    return m;
+  }
+
+  function compute(){
+    var unit = s.kind==='digital' ? DIGITAL_UNIT : UNIT;
+    var sub = unit * s.qty;
+    var cut = Math.round(sub * s.promo);
+    var del = (s.kind==='digital' || s.mode==='retrait') ? 0 : s.zone;
+    var tot = sub - cut + del;
+    var now = s.pay==='now' ? tot : (s.pay==='deposit' ? Math.round(tot*shop.depositPct) : 0);
+    return { unit:unit, sub:sub, cut:cut, del:del, tot:tot, now:now, later:tot-now };
+  }
+
+  var LABELS = {
+    now:    { t:'Tout payer maintenant', d:'Wave, Orange Money, Max It' },
+    deposit:{ t:'Payer un acompte de 50 %', d:'Le reste en espèces à la livraison' },
+    cod:    { t:'Payer à la livraison', d:'En espèces, quand tu reçois ta commande' }
+  };
+
+  function renderPay(c){
+    var av = methods(), box = $('paybody'), html = '';
+    if(av.indexOf(s.pay) === -1) s.pay = av[0];
+
+    if(av.length === 0){
+      box.innerHTML = '<div class="single"><span class="single__t">Cette boutique n\'accepte aucun paiement pour l\'instant.</span></div>';
+      return;
+    }
+    if(av.length === 1){
+      var k = av[0], amt = k==='cod' ? 0 : (k==='deposit' ? Math.round(c.tot*shop.depositPct) : c.tot);
+      var line = k==='cod'
+        ? 'Tu régleras ' + f(c.tot) + ' FCFA en espèces à la livraison.'
+        : 'Tu paies ' + f(amt) + ' FCFA maintenant par mobile money.';
+      box.innerHTML =
+        '<div class="single">'+
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg>'+
+          '<span><span class="single__t">'+LABELS[k].t+'</span><span class="single__d">'+line+'</span></span>'+
+        '</div>';
+      return;
+    }
+    html += '<div class="choices">';
+    av.forEach(function(k){
+      var amt = k==='cod' ? 0 : (k==='deposit' ? Math.round(c.tot*shop.depositPct) : c.tot);
+      var sub = (k==='now') ? '' : '<small>maintenant</small>';
+      html +=
+        '<label class="choice">'+
+          '<input type="radio" name="pay" value="'+k+'"'+(s.pay===k?' checked':'')+'>'+
+          '<span class="choice__dot"></span>'+
+          '<span><span class="choice__t">'+LABELS[k].t+'</span><span class="choice__d">'+LABELS[k].d+'</span></span>'+
+          '<span class="choice__amt price">'+f(amt)+' FCFA'+sub+'</span>'+
+        '</label>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    Array.prototype.forEach.call(box.querySelectorAll('input[name=pay]'), function(r){
+      r.addEventListener('change', function(){ s.pay = r.value; render(); });
+    });
+  }
+
+  function render(){
+    var digital = s.kind==='digital';
+    if(digital) s.pay = 'now';
+    var c = compute();
+
+    txt('prodname', digital ? "Et pourtant, on s'aimait (ebook)" : "Et pourtant, on s'aimait — livre broché");
+    txt('prodmeta', digital ? 'Fichier PDF, 2,7 Mo — téléchargeable tout de suite' : 'Format : broché');
+    txt('unitprice', f(c.unit));
+    txt('lineprice', f(c.unit * s.qty));
+    txt('qty', s.qty);
+    txt('itemcount', s.qty>1 ? s.qty+' articles' : '1 article');
+
+    $('lede').textContent = digital
+      ? "Ton fichier est disponible dès le paiement confirmé."
+      : (methods().indexOf('cod') > -1
+          ? "Tu peux payer à la livraison si tu préfères. Rien n'est débité avant que tu confirmes."
+          : "Rien n'est débité avant que tu confirmes.");
+
+    $('sec-livraison').hidden = digital;
+    $('zonebox').hidden = (s.mode !== 'livraison');
+    $('maillabel').innerHTML = digital
+      ? 'Ton e-mail <span class="req">*</span> <span style="color:var(--ink3);font-weight:400">— c\'est là qu\'arrive ton fichier</span>'
+      : 'Ton e-mail <span style="color:var(--ink3);font-weight:400">— pour recevoir ta confirmation</span>';
+
+    renderPay(c);
+
+    txt('subtitle', s.qty>1 ? 'Sous-total ('+s.qty+' articles)' : 'Sous-total (1 article)');
+    txt('l-sub', f(c.sub)); txt('l-cut', f(c.cut)); txt('l-del', f(c.del)); txt('l-tot', f(c.tot));
+    $('l-cutrow').hidden = (c.cut === 0);
+    $('l-delrow').hidden = digital;
+    txt('l-now', f(c.now)); txt('l-later', f(c.later));
+    $('l-laterrow').hidden = (c.later === 0);
+
+    txt('b-now', f(c.now));
+    $('b-lab').textContent = c.now > 0 ? 'Tu paies maintenant' : 'Tu paieras à la livraison';
+    if(c.now > 0 && c.later > 0){ $('b-later').textContent = 'puis '+f(c.later)+' FCFA à la livraison'; $('b-later').hidden = false; }
+    else if(c.now === 0){ $('b-later').textContent = f(c.tot)+' FCFA en espèces'; $('b-later').hidden = false; }
+    else { $('b-later').textContent = 'tout est réglé en une fois'; $('b-later').hidden = false; }
+    if(c.now === 0) txt('b-now', f(c.tot));
+
+    $('trust-pay').hidden = !shop.online;
+
+    var cta = digital ? 'Payer et télécharger' : (s.pay === 'cod' ? 'Confirmer ma commande' : 'Payer maintenant');
+    $('cta-desk').textContent = cta;
+    $('cta-mob').textContent = digital ? 'Payer' : (s.pay === 'cod' ? 'Confirmer' : 'Payer');
+
+    txt('k-tot', f(c.tot)); txt('k-now', f(c.now)); txt('k-later', f(c.later));
+    $('k-laterrow').hidden = (c.later === 0);
+  }
+
+  // bandeau maquette
+  Array.prototype.forEach.call(document.querySelectorAll('.demo__btn[data-kind]'), function(b){
+    b.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.demo__btn[data-kind]'), function(o){ o.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      s.kind = b.dataset.kind;
+      render();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.demo__btn[data-opt]'), function(b){
+    b.addEventListener('click', function(){
+      var on = b.getAttribute('aria-pressed') === 'true';
+      shop[b.dataset.opt] = !on;
+      b.setAttribute('aria-pressed', String(!on));
+      render();
+    });
+  });
+
+  $('qtyplus').addEventListener('click', function(){ if(s.qty < 20){ s.qty++; render(); } });
+  $('qtyminus').addEventListener('click', function(){ if(s.qty > 1){ s.qty--; render(); } });
+  $('zone').addEventListener('change', function(e){ s.zone = parseInt(e.target.value,10); render(); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=mode]'), function(r){
+    r.addEventListener('change', function(){ s.mode = r.value; render(); });
+  });
+
+  var noteBtn = $('btn-note');
+  noteBtn.addEventListener('click', function(){
+    var open = noteBtn.getAttribute('aria-expanded') === 'true';
+    noteBtn.setAttribute('aria-expanded', String(!open));
+    $('p-note').hidden = open;
+    if(!open) $('note').focus();
+  });
+
+  var pOpen = $('promo-open');
+  pOpen.addEventListener('click', function(){
+    var open = pOpen.getAttribute('aria-expanded') === 'true';
+    pOpen.setAttribute('aria-expanded', String(!open));
+    $('promo-form').hidden = open;
+    if(!open) $('promo').focus();
+  });
+  $('promo-apply').addEventListener('click', function(){
+    s.promo = 0.95;
+    $('promo-form').hidden = true; pOpen.hidden = true; $('promo-ok').hidden = false;
+    render();
+  });
+  $('promo-remove').addEventListener('click', function(){
+    s.promo = 0;
+    $('promo-ok').hidden = true; pOpen.hidden = false; pOpen.setAttribute('aria-expanded','false');
+    render();
+  });
+
+  var modal = $('modal');
+  function openModal(){
+    if(s.pay === 'cod' && s.kind !== 'digital'){ alert('Maquette : la commande partirait ici, sans paiement en ligne.'); return; }
+    modal.dataset.open = 'true';
+  }
+  $('cta-desk').addEventListener('click', openModal);
+  $('cta-mob').addEventListener('click', openModal);
+  $('modalcancel').addEventListener('click', function(){ modal.dataset.open = 'false'; });
+  modal.addEventListener('click', function(e){ if(e.target === modal) modal.dataset.open = 'false'; });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') modal.dataset.open = 'false'; });
+
+  render();
+})();
+</script>
+</body>
+</html>

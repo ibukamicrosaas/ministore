@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Vends tes ebooks, guides, templates, formations et autres produits digitaux avec TEKKIShop." />
+  <title>Produits digitaux — TEKKIShop</title>
+  <style>
+    :root{
+      --navy:#0b1830;
+      --navy-2:#101f3a;
+      --ink:#101828;
+      --muted:#667085;
+      --line:#e6e9ef;
+      --soft:#f7f8fc;
+      --lav:#f4f0ff;
+      --violet:#7c3aed;
+      --violet-2:#9b5cff;
+      --blue:#2f8cff;
+      --mint:#12b76a;
+      --mint-soft:#ecfdf3;
+      --orange:#f79009;
+      --white:#fff;
+      --shadow:0 24px 80px rgba(16,24,40,.14);
+      --shadow-sm:0 12px 40px rgba(16,24,40,.09);
+      --radius-xl:28px;
+      --radius-lg:22px;
+      --radius-md:16px;
+      --container:min(1180px, calc(100% - 40px));
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:#fff;
+      line-height:1.55;
+      overflow-x:hidden;
+    }
+    a{text-decoration:none;color:inherit}
+    button,input,select{font:inherit}
+    .container{width:var(--container);margin:0 auto}
+    .section{padding:112px 0}
+    .section-sm{padding:72px 0}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      background:var(--lav);color:var(--violet);
+      font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    }
+    .eyebrow-dot{width:7px;height:7px;border-radius:50%;background:var(--violet)}
+    h1,h2,h3,p{margin-top:0}
+    h1{
+      font-size:clamp(45px,6vw,78px);
+      line-height:.98;
+      letter-spacing:-.055em;
+      margin-bottom:24px;
+      max-width:790px;
+    }
+    h2{
+      font-size:clamp(34px,4.5vw,56px);
+      line-height:1.05;
+      letter-spacing:-.045em;
+      margin-bottom:18px;
+    }
+    h3{font-size:22px;line-height:1.2;letter-spacing:-.02em}
+    .lead{
+      font-size:19px;color:var(--muted);
+      max-width:680px;margin-bottom:30px;
+    }
+    .accent{color:var(--violet)}
+    .blue{color:var(--blue)}
+    .center{text-align:center}
+    .center .lead{margin-left:auto;margin-right:auto}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      min-height:52px;padding:0 22px;border-radius:13px;
+      font-weight:800;border:1px solid transparent;cursor:pointer;
+      transition:.22s ease;
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn-primary{
+      color:white;background:linear-gradient(135deg,var(--violet),var(--violet-2));
+      box-shadow:0 14px 32px rgba(124,58,237,.27);
+    }
+    .btn-blue{color:#fff;background:var(--blue);box-shadow:0 14px 32px rgba(47,140,255,.24)}
+    .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+    .btn-dark{background:var(--navy);color:#fff}
+    .btn-small{min-height:42px;padding:0 16px;font-size:14px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap}
+    .micro{font-size:13px;color:var(--muted)}
+    .checkline{display:flex;gap:8px;align-items:center}
+    .check{
+      width:19px;height:19px;border-radius:50%;
+      display:grid;place-items:center;background:var(--mint-soft);color:var(--mint);
+      font-size:12px;font-weight:900;flex:none;
+    }
+
+    /* NAV */
+    .nav{
+      position:sticky;top:0;z-index:50;
+      background:rgba(255,255,255,.88);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(230,233,239,.7);
+    }
+    .nav-inner{height:74px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .logo{display:flex;align-items:center;gap:9px;font-weight:900;letter-spacing:-.03em}
+    .logo-mark{
+      width:31px;height:31px;border-radius:9px;background:linear-gradient(145deg,var(--blue),var(--violet));
+      position:relative;box-shadow:0 8px 20px rgba(47,140,255,.24)
+    }
+    .logo-mark:before,.logo-mark:after{
+      content:"";position:absolute;left:8px;width:15px;height:5px;border-radius:4px;background:#fff
+    }
+    .logo-mark:before{top:8px}.logo-mark:after{top:18px;width:10px}
+    .nav-links{display:flex;align-items:center;gap:26px;font-size:14px;font-weight:650;color:#344054}
+    .nav-cta{display:flex;align-items:center;gap:10px}
+    .menu-btn{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;width:42px;height:42px}
+
+    /* HERO */
+    .hero{
+      padding:76px 0 52px;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(124,58,237,.13), transparent 28%),
+        radial-gradient(circle at 88% 18%, rgba(47,140,255,.13), transparent 30%),
+        linear-gradient(180deg,#fbfaff 0%,#fff 75%);
+      position:relative;
+    }
+    .hero-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:66px;align-items:center}
+    .hero .lead{max-width:670px}
+    .hero-points{display:flex;gap:16px;flex-wrap:wrap;margin:20px 0 0}
+    .hero-point{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#344054}
+    .hero-categories{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+    .chip{
+      border:1px solid var(--line);background:#fff;border-radius:999px;
+      padding:7px 10px;font-size:12px;font-weight:750;color:#475467;
+    }
+    .hero-visual{position:relative;min-height:610px}
+    .phone{
+      width:320px;height:610px;border-radius:46px;background:#0d1b31;padding:10px;
+      position:absolute;right:48px;top:0;box-shadow:0 35px 90px rgba(13,27,49,.28);
+      transform:rotate(1.5deg)
+    }
+    .phone-screen{
+      height:100%;border-radius:37px;background:#fff;overflow:hidden;position:relative;
+      border:1px solid rgba(255,255,255,.5)
+    }
+    .notch{
+      position:absolute;top:10px;left:50%;transform:translateX(-50%);
+      width:92px;height:25px;border-radius:20px;background:#0d1b31;z-index:2
+    }
+    .store-head{
+      padding:50px 20px 14px;text-align:center;background:linear-gradient(180deg,#f7f3ff,white);
+      border-bottom:1px solid #eee;
+    }
+    .creator-avatar{
+      width:52px;height:52px;border-radius:18px;margin:0 auto 10px;
+      background:linear-gradient(145deg,#6e5cff,#9f87ff);
+      display:grid;place-items:center;color:#fff;font-size:25px;font-weight:900;
+      box-shadow:0 8px 22px rgba(124,58,237,.25)
+    }
+    .store-head strong{display:block;font-size:14px}
+    .store-head span{font-size:11px;color:var(--muted)}
+    .product-card{margin:16px;padding:14px;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 25px rgba(16,24,40,.06)}
+    .product-cover{
+      height:160px;border-radius:13px;background:
+      linear-gradient(145deg,#0d1b31 0 50%,#7650ff 50% 100%);
+      padding:18px;color:white;display:flex;flex-direction:column;justify-content:flex-end;
+    }
+    .product-cover small{opacity:.76;font-weight:700}
+    .product-cover b{font-size:22px;line-height:1.08;letter-spacing:-.03em}
+    .price-row{display:flex;align-items:center;justify-content:space-between;margin-top:13px}
+    .price-row b{font-size:17px}
+    .buy-btn{width:100%;height:45px;border:0;border-radius:12px;background:var(--violet);color:white;font-weight:850;margin-top:12px}
+    .trust-row{display:flex;justify-content:center;gap:14px;font-size:10px;color:var(--muted);margin-top:8px}
+    .delivery-toast{
+      position:absolute;right:-12px;top:95px;background:#fff;border:1px solid var(--line);
+      border-radius:14px;padding:12px 15px;box-shadow:var(--shadow-sm);
+      display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;z-index:3;
+    }
+    .delivery-toast .icon{
+      width:31px;height:31px;border-radius:50%;background:var(--mint-soft);color:var(--mint);display:grid;place-items:center
+    }
+    .payment-card{
+      position:absolute;left:0;bottom:38px;background:#fff;border:1px solid var(--line);
+      border-radius:20px;padding:18px;width:246px;box-shadow:var(--shadow-sm);z-index:5;
+    }
+    .payment-title{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .pay-option{display:flex;align-items:center;justify-content:space-between;padding:11px;border:1px solid var(--line);border-radius:11px;margin-top:8px;font-size:12px;font-weight:750}
+    .pay-logo{width:28px;height:28px;border-radius:8px;background:#eaf4ff;display:grid;place-items:center;color:var(--blue);font-weight:900}
+    .file-badge{
+      position:absolute;left:38px;top:88px;padding:12px 14px;background:var(--navy);color:#fff;
+      border-radius:16px;font-size:12px;box-shadow:var(--shadow-sm)
+    }
+    .file-badge b{display:block;font-size:17px}
+    .proofbar{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
+    .proof-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+    .proof-item{padding:25px;text-align:center;border-right:1px solid var(--line)}
+    .proof-item:last-child{border-right:0}
+    .proof-item strong{display:block;font-size:24px;letter-spacing:-.03em}
+    .proof-item span{font-size:13px;color:var(--muted)}
+
+    /* BEFORE AFTER */
+    .problem{background:var(--soft)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:44px}
+    .panel{border-radius:var(--radius-xl);padding:30px;border:1px solid var(--line);background:#fff}
+    .panel.dark{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .panel-label{display:flex;align-items:center;gap:10px;font-weight:850;margin-bottom:24px}
+    .panel-list{display:grid;gap:18px}
+    .panel-row{display:flex;gap:12px;align-items:flex-start}
+    .panel-row .icon{
+      width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;
+      background:#fff7e8;color:var(--orange);font-weight:900
+    }
+    .panel.dark .panel-row .icon{background:rgba(18,183,106,.15);color:#4ade80}
+    .panel-row b{display:block;margin-bottom:3px}
+    .panel-row p{font-size:14px;color:var(--muted);margin:0}
+    .panel.dark .panel-row p{color:#c8d2e1}
+    .positioning{
+      margin:28px auto 0;max-width:820px;text-align:center;font-size:18px;font-weight:800
+    }
+
+    /* HOW */
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+    .step{
+      padding:26px;border:1px solid var(--line);border-radius:22px;background:#fff;position:relative;
+      transition:.2s ease;
+    }
+    .step:hover{transform:translateY(-5px);box-shadow:var(--shadow-sm)}
+    .step-num{
+      width:38px;height:38px;border-radius:13px;background:var(--lav);color:var(--violet);
+      display:grid;place-items:center;font-weight:900;margin-bottom:22px
+    }
+    .step p{color:var(--muted);font-size:14px;margin:0}
+    .step-mini{margin-top:20px;border-radius:14px;background:var(--soft);padding:13px;min-height:92px}
+    .fake-input{height:11px;border-radius:6px;background:#e6e9ef;margin-bottom:8px}
+    .fake-input.short{width:63%}
+    .fake-btn{height:29px;border-radius:8px;background:var(--violet);margin-top:12px}
+
+    /* BUYER EXPERIENCE */
+    .experience{background:linear-gradient(180deg,#fff,#fafbff)}
+    .journey{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;margin-top:48px}
+    .journey-tabs{display:grid;gap:12px}
+    .journey-tab{
+      width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:17px;
+      padding:18px 20px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;transition:.2s ease
+    }
+    .journey-tab.active{border-color:rgba(124,58,237,.45);box-shadow:0 10px 28px rgba(124,58,237,.10);background:#fcfbff}
+    .journey-tab .n{width:32px;height:32px;border-radius:10px;background:var(--lav);color:var(--violet);display:grid;place-items:center;font-weight:900;flex:none}
+    .journey-tab b{display:block}
+    .journey-tab span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+    .browser{
+      border:1px solid var(--line);border-radius:26px;background:#fff;box-shadow:var(--shadow);overflow:hidden;
+    }
+    .browser-top{height:44px;background:#f4f5f7;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 15px;gap:7px}
+    .dot{width:9px;height:9px;border-radius:50%;background:#d0d5dd}
+    .address{height:24px;border-radius:8px;background:#fff;border:1px solid #e4e7ec;margin-left:8px;flex:1}
+    .browser-body{padding:28px;min-height:435px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#fbfbfe)}
+    .demo-product{display:grid;grid-template-columns:.92fr 1.08fr;gap:22px;width:100%;align-items:center}
+    .demo-cover{height:270px;border-radius:20px;background:linear-gradient(145deg,#111d35 0 48%,#8a5cff 48%);padding:25px;color:white;display:flex;flex-direction:column;justify-content:flex-end}
+    .demo-cover b{font-size:27px;line-height:1.05}
+    .demo-info h3{font-size:25px}
+    .demo-info p{font-size:14px;color:var(--muted)}
+    .rating{color:#fdb022;font-size:14px}
+    .demo-price{font-size:26px;font-weight:900;margin:18px 0}
+    .demo-pay{height:46px;border-radius:12px;background:var(--violet);color:white;display:grid;place-items:center;font-weight:850}
+    .success-card{text-align:center;max-width:340px}
+    .success-icon{width:70px;height:70px;border-radius:50%;background:var(--mint-soft);color:var(--mint);display:grid;place-items:center;margin:0 auto 20px;font-size:30px}
+    .download-card{border:1px solid var(--line);border-radius:18px;padding:17px;margin-top:18px;text-align:left}
+    .download-card b{display:block}
+    .download-card span{font-size:12px;color:var(--muted)}
+    .download-btn{height:40px;border-radius:10px;background:var(--navy);color:#fff;display:grid;place-items:center;margin-top:12px;font-weight:800;font-size:13px}
+
+    /* USE CASES */
+    .usecases{background:var(--soft)}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+    .use-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:25px;min-height:205px;transition:.2s ease}
+    .use-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-sm)}
+    .use-icon{width:48px;height:48px;border-radius:15px;background:var(--lav);display:grid;place-items:center;font-size:23px;margin-bottom:20px}
+    .use-card p{font-size:14px;color:var(--muted)}
+    .example{display:inline-flex;padding:7px 10px;border-radius:999px;background:var(--lav);color:var(--violet);font-size:12px;font-weight:800}
+
+    /* CALCULATOR */
+    .calculator-section{background:var(--navy);color:#fff;overflow:hidden}
+    .calculator-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:55px;align-items:center}
+    .calculator-section .lead{color:#bac6d8}
+    .calculator{
+      background:#fff;color:var(--ink);border-radius:28px;padding:30px;box-shadow:0 30px 90px rgba(0,0,0,.24)
+    }
+    .field{margin-bottom:23px}
+    .field label{display:flex;justify-content:space-between;font-weight:800;margin-bottom:10px}
+    .field label span{color:var(--violet)}
+    input[type=range]{width:100%;accent-color:var(--violet)}
+    .calc-result{
+      background:linear-gradient(145deg,#f7f3ff,#eef8ff);
+      border:1px solid #e7ddff;border-radius:20px;padding:22px;margin-top:22px
+    }
+    .calc-row{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid rgba(16,24,40,.08)}
+    .calc-row:last-child{border:0}
+    .calc-row.total{font-size:20px;font-weight:900;color:var(--mint)}
+    .calc-note{font-size:12px;color:var(--muted);margin-top:12px}
+    .transparent-card{display:grid;gap:12px;margin-top:25px}
+    .transparent-item{display:flex;align-items:center;gap:12px;color:#d7dfec}
+    .transparent-item .check{background:rgba(18,183,106,.15)}
+
+    /* FEATURES */
+    .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:45px}
+    .feature{padding:25px;border:1px solid var(--line);border-radius:20px}
+    .feature .icon{font-size:22px;margin-bottom:15px}
+    .feature p{color:var(--muted);font-size:14px;margin:0}
+
+    /* PRICING */
+    .pricing{background:linear-gradient(180deg,#fafbff,#fff)}
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px;align-items:stretch}
+    .price-card{padding:30px;border:1px solid var(--line);border-radius:26px;background:#fff;display:flex;flex-direction:column}
+    .price-card.featured{background:var(--navy);color:#fff;border-color:var(--navy);transform:translateY(-8px);box-shadow:var(--shadow)}
+    .price-card .tag{font-size:12px;font-weight:850;color:var(--violet);margin-bottom:16px}
+    .price-card.featured .tag{color:#a9cfff}
+    .price{font-size:42px;line-height:1;font-weight:950;letter-spacing:-.045em}
+    .price small{font-size:14px;font-weight:700;color:var(--muted)}
+    .price-card.featured .price small{color:#b8c3d5}
+    .price-desc{font-size:14px;color:var(--muted);min-height:48px;margin:15px 0 22px}
+    .price-card.featured .price-desc{color:#c6cfdd}
+    .price-list{display:grid;gap:12px;margin:22px 0 28px;font-size:14px}
+    .price-card .btn{margin-top:auto}
+    .trial-note{margin:28px auto 0;max-width:760px;padding:17px 20px;border-radius:16px;background:var(--lav);color:#513095;text-align:center;font-weight:750}
+
+    /* FOUNDER */
+    .mission-card{
+      display:grid;grid-template-columns:.72fr 1.28fr;gap:40px;align-items:center;
+      background:linear-gradient(145deg,var(--navy),#13294c);color:#fff;border-radius:32px;padding:45px;overflow:hidden;position:relative
+    }
+    .founder-visual{height:330px;border-radius:25px;background:
+      radial-gradient(circle at 50% 30%,#d6b08c 0 17%,transparent 18%),
+      radial-gradient(circle at 50% 44%,#16233c 0 28%,transparent 29%),
+      linear-gradient(145deg,#2f8cff,#7650ff);
+      position:relative;overflow:hidden
+    }
+    .founder-visual:after{content:"IBUKA • FONDATEUR DE TEKKISHOP";position:absolute;left:18px;right:18px;bottom:18px;background:rgba(8,18,36,.82);padding:13px 15px;border-radius:12px;font-size:12px;font-weight:900;letter-spacing:.06em;text-align:center}
+    .mission-card .lead{color:#c8d2e1}
+    .mission-quote{font-size:24px;font-weight:850;line-height:1.35;letter-spacing:-.02em;margin-bottom:18px}
+
+    /* FAQ */
+    .faq{max-width:850px;margin:42px auto 0;display:grid;gap:10px}
+    .faq-item{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+    .faq-q{
+      width:100%;border:0;background:#fff;padding:20px;text-align:left;font-weight:850;cursor:pointer;display:flex;justify-content:space-between;gap:20px
+    }
+    .faq-a{display:none;padding:0 20px 20px;color:var(--muted);font-size:15px}
+    .faq-item.open .faq-a{display:block}
+    .faq-item.open .plus{transform:rotate(45deg)}
+    .plus{transition:.2s ease;font-size:20px}
+
+    /* CTA FOOTER */
+    .cta{padding:105px 0;background:var(--navy);color:#fff;text-align:center}
+    .cta h2{max-width:760px;margin-left:auto;margin-right:auto}
+    .cta .lead{color:#b9c4d6}
+    footer{background:#081326;color:#aeb9ca;padding:34px 0}
+    .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;font-size:13px}
+    .footer-links{display:flex;gap:18px;flex-wrap:wrap}
+    .whatsapp{
+      position:fixed;right:22px;bottom:22px;z-index:40;background:#21c063;color:#fff;border-radius:999px;padding:13px 17px;font-size:13px;font-weight:850;box-shadow:0 12px 30px rgba(33,192,99,.3)
+    }
+
+    /* Reveal */
+    .reveal{opacity:0;transform:translateY(22px);transition:.7s ease}
+    .reveal.visible{opacity:1;transform:none}
+
+    @media (max-width: 980px){
+      .nav-links{display:none}.menu-btn{display:grid;place-items:center}
+      .hero-grid,.journey,.calculator-grid,.mission-card{grid-template-columns:1fr}
+      .hero-visual{margin-top:30px;min-height:575px}
+      .phone{right:12%}
+      .payment-card{left:8%}
+      .steps{grid-template-columns:repeat(2,1fr)}
+      .cards,.feature-grid,.pricing-grid{grid-template-columns:repeat(2,1fr)}
+      .price-card.featured{transform:none}
+      .proof-grid{grid-template-columns:repeat(2,1fr)}
+      .proof-item:nth-child(2){border-right:0}.proof-item:nth-child(-n+2){border-bottom:1px solid var(--line)}
+      .mission-card{padding:32px}
+      .founder-visual{max-width:520px;width:100%}
+    }
+
+    @media (max-width: 680px){
+      :root{--container:min(100% - 28px, 1180px)}
+      .section{padding:80px 0}.section-sm{padding:55px 0}
+      .nav-inner{height:66px}.nav-cta .btn{display:none}
+      h1{font-size:47px}.lead{font-size:17px}
+      .hero{padding-top:52px}
+      .hero-visual{min-height:560px;margin-left:-5px;margin-right:-5px}
+      .phone{width:275px;height:530px;right:0}
+      .file-badge{left:0;top:60px}
+      .payment-card{left:0;bottom:0;width:210px}
+      .delivery-toast{right:-4px;top:83px}
+      .split,.steps,.cards,.feature-grid,.pricing-grid{grid-template-columns:1fr}
+      .proof-grid{grid-template-columns:1fr 1fr}
+      .proof-item{padding:20px 10px}
+      .journey{gap:28px}.browser-body{padding:18px;min-height:410px}
+      .demo-product{grid-template-columns:1fr}
+      .demo-cover{height:180px}
+      .calculator{padding:21px}
+      .panel{padding:23px}
+      .mission-card{padding:24px}
+      .founder-visual{height:290px}
+      .footer-inner{align-items:flex-start;flex-direction:column}
+      .whatsapp{right:14px;bottom:14px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="logo" href="#">
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span>TEKKI<span class="blue">Shop</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="#comment">Comment ça marche</a>
+        <a href="#experience">Expérience client</a>
+        <a href="#gains">Tes gains</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="nav-cta">
+        <a class="btn btn-ghost btn-small" href="#tarifs">Voir les tarifs</a>
+        <a class="btn btn-blue btn-small" href="#cta">Créer ma boutique</a>
+        <button class="menu-btn" aria-label="Ouvrir le menu">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Produits digitaux sur TEKKIShop</span>
+          <h1>Transforme ce que tu sais en <span class="accent">revenu.</span></h1>
+          <p class="lead">
+            Vends tes ebooks, guides, templates, formations, audios et fichiers depuis ton téléphone.
+            Tes clients paient avec les moyens disponibles dans leur pays et reçoivent automatiquement leur achat.
+          </p>
+          <div class="actions">
+            <a href="#cta" class="btn btn-primary">Vendre mon premier produit →</a>
+            <a href="#gains" class="btn btn-ghost">Calculer mes gains</a>
+          </div>
+          <div class="hero-points">
+            <span class="hero-point"><span class="check">✓</span> 30 jours pour créer ta boutique</span>
+            <span class="hero-point"><span class="check">✓</span> Sans code ni développeur</span>
+            <span class="hero-point"><span class="check">✓</span> Depuis ton téléphone</span>
+          </div>
+          <div class="hero-categories">
+            <span class="chip">PDF</span><span class="chip">EPUB</span><span class="chip">ZIP</span>
+            <span class="chip">DOCX</span><span class="chip">XLSX</span><span class="chip">MP3</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="Aperçu d'une boutique de produits digitaux">
+          <div class="file-badge"><span>Ton fichier</span><b>prêt à vendre</b></div>
+          <div class="payment-card">
+            <div class="payment-title">Le client choisit son paiement</div>
+            <div class="pay-option"><span style="display:flex;align-items:center;gap:8px"><span class="pay-logo">W</span> Wave</span><b>›</b></div>
+            <div class="pay-option"><span style="display:flex;align-items:center;gap:8px"><span class="pay-logo" style="background:#fff2e8;color:#f79009">OM</span> Orange Money</span><b>›</b></div>
+          </div>
+          <div class="phone">
+            <div class="phone-screen">
+              <div class="notch"></div>
+              <div class="store-head">
+                <div class="creator-avatar">I</div>
+                <strong>La boutique d'Ibuka</strong>
+                <span>Guides pratiques pour entrepreneurs</span>
+              </div>
+              <div class="product-card">
+                <div class="product-cover">
+                  <small>GUIDE PRATIQUE</small>
+                  <b>Lancer sa première boutique rentable</b>
+                </div>
+                <div class="price-row"><span>PDF • 58 pages</span><b>4 500 FCFA</b></div>
+                <button class="buy-btn">Acheter maintenant</button>
+                <div class="trust-row"><span>🔒 Paiement sécurisé</span><span>⚡ Livraison auto</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="delivery-toast"><span class="icon">✓</span><span>Fichier envoyé<br><small style="color:var(--muted)">automatiquement</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="proofbar">
+      <div class="container proof-grid">
+        <div class="proof-item"><strong>1 435</strong><span>boutiques créées</span></div>
+        <div class="proof-item"><strong>6 pays</strong><span>déjà couverts</span></div>
+        <div class="proof-item"><strong>100 % mobile</strong><span>création et gestion</span></div>
+        <div class="proof-item"><strong>24 h/24</strong><span>livraison automatique</span></div>
+      </div>
+    </div>
+
+    <section class="section problem">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Le vrai bénéfice</span>
+          <h2>Toi, tu crées. <span class="accent">TEKKIShop gère le reste.</span></h2>
+          <p class="lead">Ton énergie doit servir à créer un produit utile et à le faire connaître, pas à bricoler une infrastructure technique.</p>
+        </div>
+        <div class="split">
+          <article class="panel reveal">
+            <div class="panel-label">😓 Sans TEKKIShop</div>
+            <div class="panel-list">
+              <div class="panel-row"><span class="icon">1</span><div><b>Tu construis plusieurs outils</b><p>Page de vente, formulaire, paiement, hébergement du fichier et suivi client.</p></div></div>
+              <div class="panel-row"><span class="icon">2</span><div><b>Tu confirmes chaque paiement</b><p>Le client envoie une capture, tu vérifies, puis tu réponds manuellement.</p></div></div>
+              <div class="panel-row"><span class="icon">3</span><div><b>Tu envoies chaque fichier</b><p>Un à un, sur WhatsApp ou par e-mail, même la nuit ou le week-end.</p></div></div>
+              <div class="panel-row"><span class="icon">4</span><div><b>Tu risques de perdre des ventes</b><p>À chaque délai, chaque oubli et chaque étape trop compliquée.</p></div></div>
+            </div>
+          </article>
+          <article class="panel dark reveal">
+            <div class="panel-label">✨ Avec TEKKIShop</div>
+            <div class="panel-list">
+              <div class="panel-row"><span class="icon">✓</span><div><b>Une vraie boutique en quelques minutes</b><p>Ajoute ton produit, son prix, sa description et ton fichier.</p></div></div>
+              <div class="panel-row"><span class="icon">✓</span><div><b>Des paiements adaptés aux marchés locaux</b><p>Tes clients paient directement pendant leur commande.</p></div></div>
+              <div class="panel-row"><span class="icon">✓</span><div><b>Une livraison instantanée</b><p>Après validation du paiement, l’accès au fichier est envoyé automatiquement.</p></div></div>
+              <div class="panel-row"><span class="icon">✓</span><div><b>Une activité qui tourne sans toi</b><p>Ta boutique continue de vendre pendant que tu crées, travailles ou dors.</p></div></div>
+            </div>
+          </article>
+        </div>
+        <p class="positioning reveal">Pas de colis. Pas de stock. Pas de livraison physique. <span class="accent">Ton savoir devient un produit vendable partout.</span></p>
+      </div>
+    </section>
+
+    <section class="section" id="comment">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> 4 étapes seulement</span>
+          <h2>Ton premier produit peut être en vente <span class="accent">aujourd’hui.</span></h2>
+          <p class="lead">Aucun tunnel complexe. Aucun outil à connecter. Tu avances étape par étape depuis ton téléphone.</p>
+        </div>
+        <div class="steps">
+          <article class="step reveal"><div class="step-num">1</div><h3>Crée ta boutique</h3><p>Choisis ton nom, ajoute ton logo et personnalise les couleurs.</p><div class="step-mini"><div class="fake-input short"></div><div class="fake-input"></div><div class="fake-btn"></div></div></article>
+          <article class="step reveal"><div class="step-num">2</div><h3>Ajoute ton produit</h3><p>Renseigne le titre, la couverture, le prix et importe ton fichier.</p><div class="step-mini"><div class="fake-input"></div><div class="fake-input short"></div><div class="fake-input"></div></div></article>
+          <article class="step reveal"><div class="step-num">3</div><h3>Active ta boutique</h3><p>Choisis ton abonnement lorsque tu es prêt à commencer à vendre.</p><div class="step-mini" style="background:#f2edff"><div class="fake-input short"></div><div class="fake-btn"></div></div></article>
+          <article class="step reveal"><div class="step-num">4</div><h3>Partage ton lien</h3><p>Publie-le sur WhatsApp, Instagram, TikTok, LinkedIn ou par e-mail.</p><div class="step-mini"><div class="fake-input"></div><div class="fake-btn" style="background:#12b76a"></div></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section experience" id="experience">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Une expérience qui rassure</span>
+          <h2>De la découverte au téléchargement, <span class="accent">tout est fluide.</span></h2>
+          <p class="lead">Une expérience d’achat claire réduit les hésitations et donne une image professionnelle à ton produit.</p>
+        </div>
+        <div class="journey">
+          <div class="journey-tabs reveal">
+            <button class="journey-tab active" data-screen="product"><span class="n">1</span><span><b>Le client découvre ton produit</b><span>Une page claire avec bénéfices, prix et aperçu.</span></span></button>
+            <button class="journey-tab" data-screen="payment"><span class="n">2</span><span><b>Il paie avec un moyen familier</b><span>Il choisit le moyen disponible dans son pays.</span></span></button>
+            <button class="journey-tab" data-screen="success"><span class="n">3</span><span><b>Le paiement est confirmé</b><span>La commande est validée sans intervention manuelle.</span></span></button>
+            <button class="journey-tab" data-screen="download"><span class="n">4</span><span><b>Il reçoit son fichier</b><span>Le téléchargement est transmis automatiquement.</span></span></button>
+          </div>
+          <div class="browser reveal">
+            <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="address"></span></div>
+            <div class="browser-body" id="journey-screen"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section usecases">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Ton expertise a déjà de la valeur</span>
+          <h2>Qu’est-ce que tu pourrais <span class="accent">vendre dès maintenant ?</span></h2>
+          <p class="lead">Commence avec ce que tu connais déjà, puis améliore ton offre grâce aux retours de tes premiers clients.</p>
+        </div>
+        <div class="cards">
+          <article class="use-card reveal"><div class="use-icon">✍️</div><h3>Auteur ou expert</h3><p>Ebook, guide pratique, méthode, checklist, recueil ou workbook.</p><span class="example">Ex. : ebook à 4 500 FCFA</span></article>
+          <article class="use-card reveal"><div class="use-icon">🎓</div><h3>Coach ou formateur</h3><p>Support de formation, exercices, ressources et mini-programmes.</p><span class="example">Ex. : guide à 10 000 FCFA</span></article>
+          <article class="use-card reveal"><div class="use-icon">🎨</div><h3>Designer ou créatif</h3><p>Templates, kits visuels, modèles Canva, packs et ressources créatives.</p><span class="example">Ex. : pack à 6 000 FCFA</span></article>
+          <article class="use-card reveal"><div class="use-icon">🎵</div><h3>Musicien ou producteur</h3><p>Beats, jingles, effets sonores, partitions et fichiers audio.</p><span class="example">Ex. : beat à 25 000 FCFA</span></article>
+          <article class="use-card reveal"><div class="use-icon">📊</div><h3>Consultant ou freelance</h3><p>Tableaux Excel, modèles de contrats, audits et outils métier.</p><span class="example">Ex. : modèle à 8 000 FCFA</span></article>
+          <article class="use-card reveal"><div class="use-icon">📱</div><h3>Créateur de contenu</h3><p>Calendriers éditoriaux, scripts, prompts, fiches pratiques et packs.</p><span class="example">Ex. : pack à 5 000 FCFA</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section calculator-section" id="gains">
+      <div class="container calculator-grid">
+        <div class="reveal">
+          <span class="eyebrow" style="background:rgba(124,58,237,.18);color:#cbb7ff"><span class="eyebrow-dot" style="background:#cbb7ff"></span> Transparence totale</span>
+          <h2>Vois combien tu peux gagner, <span style="color:#a982ff">exactement.</span></h2>
+          <p class="lead">La simulation ci-contre utilise une commission de 3 % et le plan Essentiel à 2 900 FCFA par mois, comme exemple.</p>
+          <div class="transparent-card">
+            <div class="transparent-item"><span class="check">✓</span> Pas de calcul caché</div>
+            <div class="transparent-item"><span class="check">✓</span> Tu fixes librement le prix de ton produit</div>
+            <div class="transparent-item"><span class="check">✓</span> Tu vois ton revenu avant même de publier</div>
+          </div>
+        </div>
+        <div class="calculator reveal">
+          <div class="field">
+            <label>Prix de ton produit <span id="price-label">4 500 FCFA</span></label>
+            <input id="price-range" type="range" min="1000" max="50000" step="500" value="4500">
+          </div>
+          <div class="field">
+            <label>Nombre de ventes par mois <span id="sales-label">20 ventes</span></label>
+            <input id="sales-range" type="range" min="1" max="200" step="1" value="20">
+          </div>
+          <div class="calc-result">
+            <div class="calc-row"><span>Chiffre d’affaires</span><b id="revenue">90 000 FCFA</b></div>
+            <div class="calc-row"><span>Commission TEKKIShop — 3 %</span><b id="commission">− 2 700 FCFA</b></div>
+            <div class="calc-row"><span>Abonnement Essentiel</span><b>− 2 900 FCFA</b></div>
+            <div class="calc-row total"><span>Tu conserves</span><b id="net">84 400 FCFA</b></div>
+          </div>
+          <p class="calc-note">Simulation indicative. Les frais de paiement éventuels peuvent varier selon le moyen utilisé et le pays.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> L’essentiel, sans la complexité</span>
+          <h2>Tout ce qu’il faut pour vendre. <span class="accent">Rien à bricoler.</span></h2>
+          <p class="lead">TEKKIShop réunit les briques indispensables dans une expérience pensée pour les personnes non techniques.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature reveal"><div class="icon">🛍️</div><h3>Boutique professionnelle</h3><p>Présente ton produit avec une page claire, cohérente avec ta marque et adaptée au mobile.</p></article>
+          <article class="feature reveal"><div class="icon">💳</div><h3>Paiements locaux</h3><p>Permets à tes clients de payer avec les solutions disponibles sur leur marché.</p></article>
+          <article class="feature reveal"><div class="icon">⚡</div><h3>Livraison automatique</h3><p>Le fichier est transmis sans que tu aies à vérifier et répondre à chaque commande.</p></article>
+          <article class="feature reveal"><div class="icon">📦</div><h3>Produits physiques et digitaux</h3><p>Gère les deux types de produits depuis une seule boutique TEKKIShop.</p></article>
+          <article class="feature reveal"><div class="icon">📱</div><h3>Gestion depuis le téléphone</h3><p>Ajoute tes produits, suis tes commandes et pilote ta boutique où que tu sois.</p></article>
+          <article class="feature reveal"><div class="icon">📈</div><h3>Suivi de ton activité</h3><p>Garde une vue claire sur tes ventes, tes produits et tes commandes.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section pricing" id="tarifs">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Commence sans pression</span>
+          <h2>Crée ta boutique gratuitement. <span class="accent">Active-la quand tu es prêt.</span></h2>
+          <p class="lead">Tu disposes de 30 jours pour créer et configurer ta boutique. Choisis ensuite un plan pour l’activer et commencer à vendre.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-card reveal">
+            <div class="tag">POUR COMMENCER</div>
+            <h3>Essentiel</h3>
+            <div class="price">2 900 <small>FCFA / mois</small></div>
+            <p class="price-desc">Pour lancer une première offre digitale et valider ton marché simplement.</p>
+            <div class="price-list">
+              <span class="checkline"><span class="check">✓</span> Boutique mobile-first</span>
+              <span class="checkline"><span class="check">✓</span> Vente de produits digitaux</span>
+              <span class="checkline"><span class="check">✓</span> Commandes et paiements</span>
+            </div>
+            <a href="#cta" class="btn btn-ghost">Choisir Essentiel</a>
+          </article>
+          <article class="price-card featured reveal">
+            <div class="tag">LE PLUS CHOISI</div>
+            <h3>Business</h3>
+            <div class="price">4 900 <small>FCFA / mois</small></div>
+            <p class="price-desc">Pour les créateurs qui veulent vendre régulièrement et développer plusieurs offres.</p>
+            <div class="price-list">
+              <span class="checkline"><span class="check">✓</span> Tout le nécessaire pour vendre</span>
+              <span class="checkline"><span class="check">✓</span> Une boutique plus complète</span>
+              <span class="checkline"><span class="check">✓</span> Pour une activité en croissance</span>
+            </div>
+            <a href="#cta" class="btn btn-blue">Choisir Business</a>
+          </article>
+          <article class="price-card reveal">
+            <div class="tag">POUR ALLER PLUS LOIN</div>
+            <h3>Pro</h3>
+            <div class="price">9 900 <small>FCFA / mois</small></div>
+            <p class="price-desc">Pour les marques et créateurs ayant des besoins plus avancés.</p>
+            <div class="price-list">
+              <span class="checkline"><span class="check">✓</span> Pour une boutique établie</span>
+              <span class="checkline"><span class="check">✓</span> Plus de possibilités</span>
+              <span class="checkline"><span class="check">✓</span> Pensé pour la croissance</span>
+            </div>
+            <a href="#cta" class="btn btn-ghost">Choisir Pro</a>
+          </article>
+        </div>
+        <div class="trial-note reveal">30 jours pour créer ta boutique. Le paiement d’un plan est requis uniquement pour l’activer et commencer à vendre.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="mission-card reveal">
+          <div class="founder-visual" aria-label="Emplacement réservé à la photo du fondateur"></div>
+          <div>
+            <span class="eyebrow" style="background:rgba(255,255,255,.09);color:#bcd7ff"><span class="eyebrow-dot" style="background:#75b5ff"></span> Pourquoi TEKKIShop existe</span>
+            <p class="mission-quote">« Vendre en ligne depuis l’Afrique ne devrait pas nécessiter un développeur, un ordinateur ou des connaissances techniques. »</p>
+            <p class="lead">TEKKIShop est construit pour rendre la vente en ligne aussi simple que possible : créer sa boutique, ajouter ses produits, accepter des paiements et commencer à vendre.</p>
+            <p class="micro" style="color:#9fb0c8">Ibuka Ndjoli — Fondateur de TEKKIShop</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="center reveal">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Questions fréquentes</span>
+          <h2>Tout ce qu’il faut savoir avant de <span class="accent">commencer.</span></h2>
+        </div>
+        <div class="faq">
+          <div class="faq-item open reveal"><button class="faq-q">Quels produits digitaux puis-je vendre ? <span class="plus">+</span></button><div class="faq-a">Tu peux vendre notamment des ebooks, guides, templates, fichiers audio, ressources de formation, documents, tableaux et packs téléchargeables.</div></div>
+          <div class="faq-item reveal"><button class="faq-q">Ai-je besoin d’un ordinateur ? <span class="plus">+</span></button><div class="faq-a">Non. La création et la gestion de ta boutique sont pensées pour être réalisées depuis ton téléphone.</div></div>
+          <div class="faq-item reveal"><button class="faq-q">Comment mon client reçoit-il son fichier ? <span class="plus">+</span></button><div class="faq-a">Après validation de son paiement, l’accès au fichier lui est transmis automatiquement, sans intervention manuelle de ta part.</div></div>
+          <div class="faq-item reveal"><button class="faq-q">Puis-je vendre des produits physiques et digitaux ? <span class="plus">+</span></button><div class="faq-a">Oui. TEKKIShop te permet de réunir des produits physiques et digitaux dans le même environnement.</div></div>
+          <div class="faq-item reveal"><button class="faq-q">La boutique est-elle réellement gratuite pendant 30 jours ? <span class="plus">+</span></button><div class="faq-a">Tu disposes de 30 jours pour la créer et la configurer. Pour l’activer et commencer à vendre, tu dois choisir l’un des trois plans proposés.</div></div>
+          <div class="faq-item reveal"><button class="faq-q">Comment sont calculés mes gains ? <span class="plus">+</span></button><div class="faq-a">Tu fixes le prix de ton produit. Tes revenus dépendent du nombre de ventes, de la commission applicable et du plan d’abonnement choisi.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="cta">
+      <div class="container reveal">
+        <span class="eyebrow" style="background:rgba(124,58,237,.18);color:#d8caff"><span class="eyebrow-dot" style="background:#d8caff"></span> Ton premier produit peut être prêt aujourd’hui</span>
+        <h2>Ce que tu sais peut se vendre pendant que tu dors.</h2>
+        <p class="lead">Crée ta boutique en quelques minutes, ajoute ton produit et prépare-toi à recevoir tes premières commandes.</p>
+        <div class="actions" style="justify-content:center">
+          <a href="#" class="btn btn-blue">Créer ma boutique gratuitement →</a>
+          <a href="#comment" class="btn btn-ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.25)">Revoir comment ça marche</a>
+        </div>
+        <p class="micro" style="color:#8ea0bb;margin-top:17px">30 jours pour créer • Aucun code • Activation lorsque tu es prêt à vendre</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <a class="logo" href="#"><span class="logo-mark"></span><span style="color:#fff">TEKKI<span class="blue">Shop</span></span></a>
+      <div class="footer-links"><a href="#">Fonctionnalités</a><a href="#">Produits digitaux</a><a href="#">Tarifs</a><a href="#">Confidentialité</a><a href="#">Support</a></div>
+      <span>© 2026 TEKKIShop</span>
+    </div>
+  </footer>
+
+  <a class="whatsapp" href="#">💬 Une question ?</a>
+
+  <script>
+    const screen = document.getElementById('journey-screen');
+
+    const screens = {
+      product: `
+        <div class="demo-product">
+          <div class="demo-cover"><small>GUIDE PRATIQUE</small><b>Lancer sa première boutique rentable</b></div>
+          <div class="demo-info">
+            <div class="rating">★★★★★ <span style="color:#667085">4,9</span></div>
+            <h3>Une méthode simple pour passer de l’idée à la vente</h3>
+            <p>Un guide concret, pensé pour les personnes qui veulent démarrer sans connaissances techniques.</p>
+            <div class="demo-price">4 500 FCFA</div>
+            <div class="demo-pay">Acheter maintenant</div>
+          </div>
+        </div>`,
+      payment: `
+        <div style="width:100%;max-width:420px">
+          <h3 style="text-align:center">Choisis ton moyen de paiement</h3>
+          <p style="text-align:center;color:#667085;font-size:14px">Finalise ta commande avec une solution disponible dans ton pays.</p>
+          <div class="pay-option"><span style="display:flex;align-items:center;gap:10px"><span class="pay-logo">W</span> Wave</span><b>›</b></div>
+          <div class="pay-option"><span style="display:flex;align-items:center;gap:10px"><span class="pay-logo" style="background:#fff2e8;color:#f79009">OM</span> Orange Money</span><b>›</b></div>
+          <div class="pay-option"><span style="display:flex;align-items:center;gap:10px"><span class="pay-logo" style="background:#eef2ff;color:#4f46e5">MM</span> Mobile Money</span><b>›</b></div>
+          <div class="demo-pay" style="margin-top:14px">Payer 4 500 FCFA</div>
+        </div>`,
+      success: `
+        <div class="success-card">
+          <div class="success-icon">✓</div>
+          <h3>Paiement confirmé</h3>
+          <p style="color:#667085">La commande est enregistrée et le fichier peut être transmis automatiquement.</p>
+          <div style="margin-top:22px;padding:14px;border-radius:14px;background:#ecfdf3;color:#067647;font-weight:800">Commande #TK-2048 validée</div>
+        </div>`,
+      download: `
+        <div class="success-card">
+          <div class="success-icon">↓</div>
+          <h3>Ton achat est prêt</h3>
+          <p style="color:#667085">Le client reçoit immédiatement l’accès au produit qu’il vient d’acheter.</p>
+          <div class="download-card"><b>Lancer-sa-boutique.pdf</b><span>PDF • 8,4 Mo</span><div class="download-btn">Télécharger mon fichier</div></div>
+        </div>`
+    };
+    function showScreen(name){ screen.innerHTML = screens[name]; }
+    showScreen('product');
+
+    document.querySelectorAll('.journey-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        document.querySelectorAll('.journey-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        showScreen(tab.dataset.screen);
+      });
+    });
+
+    const priceRange = document.getElementById('price-range');
+    const salesRange = document.getElementById('sales-range');
+    const format = n => new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' FCFA';
+    function updateCalc(){
+      const price = Number(priceRange.value);
+      const sales = Number(salesRange.value);
+      const revenue = price * sales;
+      const commission = revenue * .03;
+      const net = revenue - commission - 2900;
+      document.getElementById('price-label').textContent = format(price);
+      document.getElementById('sales-label').textContent = sales + (sales > 1 ? ' ventes' : ' vente');
+      document.getElementById('revenue').textContent = format(revenue);
+      document.getElementById('commission').textContent = '− ' + format(commission);
+      document.getElementById('net').textContent = format(Math.max(net,0));
+    }
+    priceRange.addEventListener('input', updateCalc);
+    salesRange.addEventListener('input', updateCalc);
+    updateCalc();
+
+    document.querySelectorAll('.faq-q').forEach(q=>{
+      q.addEventListener('click',()=>q.parentElement.classList.toggle('open'));
+    });
+
+    const observer = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+    },{threshold:.08});
+    document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+  </script>
+</body>
+</html>

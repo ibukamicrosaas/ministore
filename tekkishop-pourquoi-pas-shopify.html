@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEKKIShop vs Shopify — Lequel choisir pour vendre en Afrique ?</title>
+<meta name="description" content="Nous avons utilisé Shopify pendant 11 ans en Afrique. Voici honnêtement ce qui lui manque ici — et quand il reste le bon choix. Comparaison complète TEKKIShop vs Shopify.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#2E90FA;
+    --bleu-fonce:#175CD3;
+    --bleu-pale:#EFF6FF;
+    --nuit:#0B1B32;
+    --texte:#1D2939;
+    --gris:#5D6B82;
+    --ligne:#E4EAF2;
+    --vert:#12B76A;
+    --vert-pale:#ECFDF3;
+    --rouge:#E0492E;
+    --rouge-pale:#FFF5F3;
+    --fond-2:#F5F9FF;
+    --radius:16px;
+    --maxw:1080px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--texte);background:#fff;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;line-height:1.12;letter-spacing:-0.02em}
+  a{color:inherit}
+  a:focus-visible,button:focus-visible{outline:3px solid var(--bleu);outline-offset:3px;border-radius:6px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .eyebrow{display:inline-block;font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--bleu-fonce);background:var(--bleu-pale);padding:7px 14px;border-radius:999px;margin-bottom:16px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:16px 28px;border-radius:14px;font-weight:800;font-size:1.02rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-bleu{background:var(--bleu);color:#fff;box-shadow:0 10px 26px rgba(46,144,250,.35)}
+  .btn-blanc{background:#fff;color:var(--nuit);border:1.5px solid var(--ligne)}
+  .rassure{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.88rem;color:var(--gris)}
+  .rassure span::before{content:"✓ ";color:var(--vert);font-weight:800}
+  .titre-sec{text-align:center;max-width:62ch;margin:0 auto 48px}
+  .titre-sec h2{font-size:clamp(1.7rem,3.8vw,2.4rem);font-weight:700}
+  .titre-sec h2 em{font-style:normal;color:var(--bleu)}
+  .titre-sec p{margin-top:12px;color:var(--gris);font-size:1.05rem}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--ligne)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-family:'Space Grotesk';font-weight:700;font-size:1.3rem;text-decoration:none}
+  .logo b{color:var(--bleu)}
+  .nav .btn{padding:11px 20px;font-size:.9rem}
+
+  /* HERO */
+  .hero{padding:64px 0 56px;background:linear-gradient(180deg,var(--fond-2) 0%,#fff 100%);text-align:center}
+  .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;max-width:22ch;margin:0 auto}
+  .hero h1 em{font-style:normal;color:var(--bleu)}
+  .hero .sous{margin:20px auto 0;font-size:1.15rem;color:var(--gris);max-width:56ch}
+  .hero .sous b{color:var(--texte)}
+  .cred{display:flex;justify-content:center;gap:34px;flex-wrap:wrap;margin-top:36px}
+  .cred div{text-align:center}
+  .cred b{font-family:'Space Grotesk';font-size:1.7rem;display:block;color:var(--nuit)}
+  .cred span{font-size:.85rem;color:var(--gris)}
+
+  /* HISTOIRE */
+  .histoire{padding:80px 0}
+  .histoire .carte-h{
+    max-width:780px;margin:0 auto;background:var(--nuit);color:#fff;border-radius:24px;padding:46px 44px;
+    box-shadow:0 24px 60px rgba(11,27,50,.25);position:relative;
+  }
+  .carte-h .guillemet{font-family:'Space Grotesk';font-size:4rem;line-height:0;color:var(--bleu);position:absolute;top:38px;left:32px;opacity:.6}
+  .carte-h p{font-size:1.12rem;line-height:1.75}
+  .carte-h p + p{margin-top:16px}
+  .carte-h p b{color:#7DB8FC}
+  .carte-h .qui{margin-top:26px;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:22px}
+  .carte-h .avatar{width:48px;height:48px;border-radius:50%;background:var(--bleu);display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;flex-shrink:0}
+  .carte-h .qui b{display:block}
+  .carte-h .qui span{color:#9FB0C7;font-size:.88rem}
+
+  /* TABLEAU COMPARATIF */
+  .compare{padding:80px 0;background:var(--fond-2)}
+  .tableau{max-width:900px;margin:0 auto;background:#fff;border:1px solid var(--ligne);border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(11,27,50,.07)}
+  .t-entete,.t-ligne{display:grid;grid-template-columns:1.15fr 1fr 1fr}
+  .t-entete{background:var(--nuit);color:#fff;font-family:'Space Grotesk';font-weight:700;font-size:.95rem}
+  .t-entete div{padding:16px 20px}
+  .t-entete .col-tk{background:var(--bleu)}
+  .t-ligne{border-top:1px solid var(--ligne);font-size:.92rem}
+  .t-ligne > div{padding:15px 20px}
+  .t-ligne .theme{font-weight:700;color:var(--nuit);background:var(--fond-2)}
+  .t-ligne .theme small{display:block;font-weight:500;color:var(--gris);font-size:.76rem}
+  .t-ligne .sh{color:var(--gris)}
+  .t-ligne .sh::before{content:"✗ ";color:var(--rouge);font-weight:800}
+  .t-ligne .tk{background:var(--bleu-pale);font-weight:600}
+  .t-ligne .tk::before{content:"✓ ";color:var(--vert);font-weight:800}
+  .compare .note-t{max-width:60ch;margin:22px auto 0;text-align:center;font-size:.85rem;color:var(--gris)}
+
+  /* LE VRAI COÛT */
+  .cout{padding:90px 0}
+  .cout-grille{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:880px;margin:0 auto;align-items:stretch}
+  .facture{border-radius:20px;padding:32px 28px;display:flex;flex-direction:column}
+  .facture.sh{background:var(--rouge-pale);border:1px solid #FFD9D0}
+  .facture.tk{background:var(--vert-pale);border:1px solid #B9F0D3}
+  .facture h3{font-size:1.1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .facture .ligne-f{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px dashed rgba(0,0,0,.1);font-size:.92rem}
+  .facture .ligne-f small{display:block;color:var(--gris);font-size:.76rem}
+  .facture .total{border-bottom:none;margin-top:auto;padding-top:16px;font-family:'Space Grotesk';font-weight:700;font-size:1.15rem;display:flex;justify-content:space-between}
+  .facture.sh .total{color:var(--rouge)}
+  .facture.tk .total{color:#087443}
+  .cout .note-c{max-width:62ch;margin:22px auto 0;text-align:center;font-size:.85rem;color:var(--gris)}
+
+  /* HONNÊTETÉ */
+  .honnete{padding:90px 0;background:var(--fond-2)}
+  .honnete-grille{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:880px;margin:0 auto}
+  .carte-hon{background:#fff;border:1.5px solid var(--ligne);border-radius:20px;padding:30px 28px}
+  .carte-hon.tk{border-color:var(--bleu)}
+  .carte-hon h3{font-size:1.12rem;margin-bottom:16px}
+  .carte-hon ul{list-style:none}
+  .carte-hon li{padding:10px 0;display:flex;gap:12px;font-size:.95rem;border-top:1px dashed var(--ligne)}
+  .carte-hon li:first-of-type{border-top:none}
+  .carte-hon li::before{content:"→";font-weight:800;color:var(--gris);flex-shrink:0}
+  .carte-hon.tk li::before{color:var(--bleu)}
+  .honnete .punchline{text-align:center;margin-top:32px;font-family:'Space Grotesk';font-size:clamp(1.05rem,2.4vw,1.4rem);font-weight:600;max-width:44ch;margin-left:auto;margin-right:auto}
+  .honnete .punchline em{font-style:normal;color:var(--bleu)}
+
+  /* MIGRATION */
+  .migration{padding:90px 0}
+  .migration .cadre-m{max-width:820px;margin:0 auto;border:1.5px dashed var(--bleu);background:var(--bleu-pale);border-radius:24px;padding:44px 40px;text-align:center}
+  .migration h2{font-size:clamp(1.5rem,3.2vw,2.1rem);font-weight:700}
+  .migration p{margin:14px auto 0;color:var(--gris);max-width:52ch}
+  .migration p b{color:var(--texte)}
+  .etapes-m{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:24px}
+  .etapes-m span{font-size:.85rem;font-weight:700;background:#fff;border:1px solid var(--ligne);border-radius:99px;padding:9px 16px}
+  .migration .btn{margin-top:26px}
+
+  /* FAQ */
+  .faq{padding:90px 0;background:var(--fond-2)}
+  .faq-liste{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .faq details{background:#fff;border:1px solid var(--ligne);border-radius:16px;padding:6px 22px}
+  .faq summary{cursor:pointer;font-weight:700;font-size:1rem;padding:15px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";font-family:'Space Grotesk';font-size:1.4rem;color:var(--bleu);transition:transform .2s}
+  .faq details[open] summary::after{transform:rotate(45deg)}
+  .faq details p{padding:0 0 16px;color:var(--gris);font-size:.95rem}
+
+  /* CTA FINAL */
+  .final{padding:96px 0;background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;text-align:center}
+  .final h2{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:700;max-width:22ch;margin:0 auto}
+  .final p{margin:16px auto 0;max-width:46ch;color:#DCEBFF;font-size:1.08rem}
+  .final .actions{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .final .btn-blanc{border:none}
+  .final .rassure{justify-content:center;color:#CFE4FF}
+  .final .rassure span::before{color:#fff}
+
+  footer{background:var(--nuit);color:#9FB0C7;padding:44px 0;font-size:.88rem;text-align:center}
+  footer a{color:#fff}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.vu{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+  @media (max-width:860px){
+    .cout-grille,.honnete-grille{grid-template-columns:1fr}
+    /* Tableau → cartes empilées */
+    .t-entete{display:none}
+    .t-ligne{grid-template-columns:1fr}
+    .t-ligne .theme{background:var(--nuit);color:#fff}
+    .t-ligne .theme small{color:#9FB0C7}
+    .t-ligne .sh::after{content:" — Shopify";font-size:.72rem;color:#B4BFCF;font-weight:700}
+    .t-ligne .tk::after{content:" — TEKKIShop";font-size:.72rem;color:var(--bleu-fonce);font-weight:700}
+    .carte-h{padding:36px 26px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#">TEKKI<b>Shop</b></a>
+    <a class="btn btn-bleu" href="#final">Créer ma boutique</a>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">TEKKIShop vs Shopify</span>
+    <h1>Shopify est un excellent outil. <em>On l'a utilisé pendant 11 ans.</em></h1>
+    <p class="sous">C'est justement pour ça qu'on sait exactement ce qui lui manque en Afrique. <b>TEKKIShop n'a pas été construit contre Shopify — il a été construit à partir de tout ce que Shopify nous a fait vivre ici.</b> Voici la comparaison honnête.</p>
+    <div class="cred">
+      <div><b>11 ans</b><span>d'utilisation de Shopify</span></div>
+      <div><b>+7 000</b><span>commandes gérées en Afrique</span></div>
+      <div><b>+1 200</b><span>marchands déjà sur TEKKIShop</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HISTOIRE ============ -->
+<section class="histoire">
+  <div class="wrap">
+    <div class="carte-h reveal">
+      <span class="guillemet">“</span>
+      <p>Pendant des années, chaque soir, je faisais la même chose : ouvrir Shopify et <b>mettre à jour à la main le statut de toutes les commandes payées à la livraison</b>. Une par une. Parce que Shopify ne sait pas qu'ici, le client paie le livreur en cash, et que ce cash doit être compté quelque part.</p>
+      <p>J'appelais mes livreurs pour leur dicter les adresses. Je recopiais les numéros. Je perdais des ventes Wave parce qu'il n'existait aucun moyen de l'intégrer proprement. <b>Shopify n'était pas mauvais — il était juste pensé pour un monde qui n'est pas le nôtre.</b></p>
+      <p>Chaque fonctionnalité de TEKKIShop est née d'une de ces soirées-là.</p>
+      <div class="qui">
+        <div class="avatar">IK</div>
+        <div><b>Ibuka Kinkela</b><span>Fondateur de TEKKIShop · 11 ans d'e-commerce entre l'Europe et l'Afrique</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TABLEAU ============ -->
+<section class="compare">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Les différences qui comptent <em>vraiment ici.</em></h2>
+      <p>Pas une liste de 200 fonctionnalités — juste ce qui change ta vie de marchand en Afrique ou dans la diaspora.</p>
+    </div>
+    <div class="tableau reveal" role="table" aria-label="Comparaison TEKKIShop et Shopify">
+      <div class="t-entete" role="row"><div>Ce qui compte pour toi</div><div>Shopify</div><div class="col-tk">TEKKIShop</div></div>
+      <div class="t-ligne" role="row">
+        <div class="theme">S'inscrire<small>Le premier obstacle</small></div>
+        <div class="sh">Carte Visa/Mastercard exigée dès l'inscription</div>
+        <div class="tk">Ton numéro WhatsApp suffit — sans carte bancaire</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Encaisser tes clients<small>Wave, Orange Money, MTN, Moov</small></div>
+        <div class="sh">Aucun paiement mobile money africain</div>
+        <div class="tk">Intégrés nativement selon ton pays, dès le 1er jour</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Le paiement à la livraison<small>La norme ici</small></div>
+        <div class="sh">Statuts à mettre à jour à la main, cash non réconcilié</div>
+        <div class="tk">Confirmation du livreur en 1 clic, paiements comptés automatiquement</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Tes livreurs<small>Livreurs indépendants</small></div>
+        <div class="sh">Aucun outil — appels et dictée d'adresses</div>
+        <div class="tk">Commande envoyée sur son WhatsApp en 1 clic, avec tout</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">La langue<small>Toi et ton équipe</small></div>
+        <div class="sh">Interface et support essentiellement en anglais</div>
+        <div class="tk">100 % en français, pensé pour les marchands africains</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Le prix<small>Et la devise</small></div>
+        <div class="sh">≥ 29 $/mois (≈ 18 000 FCFA), facturé en dollars</div>
+        <div class="tk">Dès 2 900 FCFA/mois — en FCFA, euros ou CAD</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">WhatsApp<small>Là où sont tes clients</small></div>
+        <div class="sh">Rien en natif — apps tierces payantes</div>
+        <div class="tk">Notifications automatiques clients, vendeur et livreur incluses</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Comprendre tes chiffres<small>Marges, bénéfices, tendances</small></div>
+        <div class="sh">Tableaux de bord complexes, en anglais</div>
+        <div class="tk">Assistant IA intégré : pose ta question, il répond simplement</div>
+      </div>
+      <div class="t-ligne" role="row">
+        <div class="theme">Le support<small>Quand tu es bloqué</small></div>
+        <div class="sh">Pas de support francophone dédié à l'Afrique</div>
+        <div class="tk">Des humains, en français, sur WhatsApp</div>
+      </div>
+    </div>
+    <p class="note-t">Comparaison établie en juillet 2026 sur la base des offres publiques de Shopify. Les tarifs Shopify varient selon les plans et promotions en cours.</p>
+  </div>
+</section>
+
+<!-- ============ LE VRAI COÛT ============ -->
+<section class="cout">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Le calcul que personne ne fait</span>
+      <h2>Le prix affiché n'est pas <em>le prix réel.</em></h2>
+      <p>Pour faire fonctionner Shopify en Afrique, il faut empiler des applications tierces. Voici la facture complète, pour un marchand qui vend avec livreurs et paiement à la livraison.</p>
+    </div>
+    <div class="cout-grille reveal">
+      <div class="facture sh">
+        <h3>🧾 Shopify, équipé pour l'Afrique</h3>
+        <div class="ligne-f"><span>Abonnement Basic<small>Facturé en dollars</small></span><b>≈ 18 000 FCFA</b></div>
+        <div class="ligne-f"><span>App notifications WhatsApp<small>Application tierce payante</small></span><b>≈ 6 000 FCFA</b></div>
+        <div class="ligne-f"><span>App paiement à la livraison / suivi<small>Application tierce payante</small></span><b>≈ 5 000 FCFA</b></div>
+        <div class="ligne-f"><span>Paiements Wave / Orange Money<small>Toujours pas disponibles nativement</small></span><b>—</b></div>
+        <div class="total"><span>Par mois</span><span>≈ 29 000 FCFA</span></div>
+      </div>
+      <div class="facture tk">
+        <h3>🧾 TEKKIShop, tout inclus</h3>
+        <div class="ligne-f"><span>Abonnement Découverte<small>En FCFA, payable par mobile money</small></span><b>2 900 FCFA</b></div>
+        <div class="ligne-f"><span>Notifications WhatsApp<small>Clients, vendeur et livreur</small></span><b>Inclus</b></div>
+        <div class="ligne-f"><span>Livreurs + paiement à la livraison<small>Avec réconciliation automatique</small></span><b>Inclus</b></div>
+        <div class="ligne-f"><span>Wave, Orange Money, MTN, Moov<small>Selon ton pays, natifs</small></span><b>Inclus</b></div>
+        <div class="total"><span>Par mois</span><span>Dès 2 900 FCFA</span></div>
+      </div>
+    </div>
+    <p class="note-c">Montants indicatifs convertis en FCFA pour comparaison. Sur TEKKIShop, une commission de 3 % s'applique aux paiements en ligne par mobile money — elle couvre les frais de l'agrégateur et du transfert, et ton argent est retirable instantanément.</p>
+  </div>
+</section>
+
+<!-- ============ HONNÊTETÉ ============ -->
+<section class="honnete">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">En toute honnêteté</span>
+      <h2>Parfois, Shopify est <em>le bon choix.</em></h2>
+      <p>On ne va pas te mentir pour te convaincre. Voici comment choisir, selon ta situation réelle.</p>
+    </div>
+    <div class="honnete-grille reveal">
+      <div class="carte-hon">
+        <h3>Choisis Shopify si…</h3>
+        <ul>
+          <li>Tes clients sont uniquement en Occident et paient tous par carte bancaire</li>
+          <li>Tu as besoin d'un écosystème de milliers d'apps et de thèmes très spécifiques</li>
+          <li>Tu as une équipe technique (ou un budget développeur) pour tout configurer</li>
+        </ul>
+      </div>
+      <div class="carte-hon tk">
+        <h3>Choisis TEKKIShop si…</h3>
+        <ul>
+          <li>Tes clients sont en Afrique — ou entre l'Afrique et l'Europe/Canada — et paient par mobile money, carte ou à la livraison</li>
+          <li>Tu veux vendre dès aujourd'hui, depuis ton téléphone, sans configuration technique</li>
+          <li>Tu travailles avec des livreurs indépendants et tu veux que le cash soit compté tout seul</li>
+        </ul>
+      </div>
+    </div>
+    <p class="punchline reveal">La question n'est pas « quel outil est le meilleur ? » mais <em>« quel outil a été construit pour ton marché ? »</em></p>
+  </div>
+</section>
+
+<!-- ============ MIGRATION ============ -->
+<section class="migration">
+  <div class="wrap">
+    <div class="cadre-m reveal">
+      <h2>Déjà sur Shopify (ou ailleurs)&nbsp;?</h2>
+      <p>Pas besoin de tout ressaisir à la main. <b>Importe tous tes produits en une fois avec un simple fichier CSV</b> — noms, prix, descriptions — et compare les deux boutiques par toi-même. Ta boutique TEKKIShop est gratuite à créer&nbsp;: tu ne risques rien à essayer.</p>
+      <div class="etapes-m">
+        <span>1 · Exporte ton CSV depuis Shopify</span>
+        <span>2 · Importe-le dans TEKKIShop</span>
+        <span>3 · Compare, puis décide</span>
+      </div>
+      <a class="btn btn-bleu" href="#final">Importer ma boutique et comparer →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Questions fréquentes</h2>
+    </div>
+    <div class="faq-liste reveal">
+      <details>
+        <summary>Est-ce vraiment moins cher que Shopify&nbsp;?</summary>
+        <p>Oui, nettement — surtout une fois Shopify équipé des apps nécessaires pour l'Afrique (WhatsApp, livraison, suivi). Shopify Basic seul coûte environ 18 000 FCFA/mois, facturé en dollars. TEKKIShop démarre à 2 900 FCFA/mois, tout inclus, payable par mobile money.</p>
+      </details>
+      <details>
+        <summary>TEKKIShop a-t-il autant de fonctionnalités que Shopify&nbsp;?</summary>
+        <p>Non, et c'est assumé : Shopify a des milliers d'apps pour des milliers de cas d'usage. TEKKIShop a exactement les fonctionnalités dont un marchand en Afrique a besoin — paiements locaux, livreurs, WhatsApp, cash à la livraison, produits digitaux — sans que tu aies à chercher, installer et payer quoi que ce soit en plus. Moins de fonctionnalités, mais les bonnes, déjà branchées.</p>
+      </details>
+      <details>
+        <summary>Puis-je importer mes produits existants dans TEKKIShop&nbsp;?</summary>
+        <p>Oui. Depuis ton tableau de bord, importe tous tes produits en une fois via un fichier CSV — pas besoin de tout ressaisir à la main, produit par produit.</p>
+      </details>
+      <details>
+        <summary>Puis-je garder ma boutique Shopify pendant que je teste TEKKIShop&nbsp;?</summary>
+        <p>Bien sûr. Créer ta boutique TEKKIShop est gratuit, et rien ne t'oblige à fermer l'ancienne. Beaucoup de marchands font tourner les deux quelques semaines, comparent leurs ventes, puis choisissent.</p>
+      </details>
+      <details>
+        <summary>Et si je change d'avis&nbsp;?</summary>
+        <p>Tu peux exporter tes données et arrêter ton abonnement à tout moment, sans frais ni engagement. Ta boutique t'appartient — nos marchands restent parce que ça marche, pas parce qu'ils sont bloqués.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="final" id="final">
+  <div class="wrap">
+    <h2 class="reveal">Ne nous crois pas sur parole. Compare par toi-même.</h2>
+    <p class="reveal">Crée ta boutique gratuitement en 5 minutes, importe tes produits, et regarde laquelle des deux te fait vendre le plus simplement.</p>
+    <div class="actions reveal">
+      <a class="btn btn-blanc" href="#">Créer ma boutique gratuitement →</a>
+    </div>
+    <div class="rassure reveal">
+      <span>Boutique gratuite à créer</span>
+      <span>Sans carte bancaire</span>
+      <span>Import CSV en 1 fois</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>TEKKIShop — un produit <a href="https://getdukka.com">Dukka</a> · 🇸🇳 🇨🇮 🇧🇯 🇹🇬 🇲🇱 🇧🇫 + 🇫🇷 🇧🇪 🇱🇺 🇨🇭 🇨🇦 · © 2026</p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    if(!("IntersectionObserver" in window)){document.querySelectorAll(".reveal").forEach(e=>e.classList.add("vu"));return}
+    const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("vu");obs.unobserve(e.target)}})},{threshold:.1});
+    document.querySelectorAll(".reveal").forEach(e=>obs.observe(e));
+  })();
+</script>
+</body>
+</html>

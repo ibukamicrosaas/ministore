@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEKKIShop — Vends tes produits digitaux, on s'occupe du reste</title>
+<meta name="description" content="Ebooks, guides, templates, musique : ajoute ton fichier, partage ton lien. TEKKIShop encaisse par mobile money, livre ton fichier automatiquement et collecte les avis. Toi, tu retires ton argent instantanément.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bleu:#2E90FA;
+    --bleu-fonce:#175CD3;
+    --bleu-pale:#EFF6FF;
+    --violet:#7A5AF8;        /* accent "digital" */
+    --violet-fonce:#5B3DE0;
+    --violet-pale:#F4F1FF;
+    --nuit:#0B1B32;
+    --texte:#1D2939;
+    --gris:#5D6B82;
+    --ligne:#E4EAF2;
+    --vert:#12B76A;
+    --vert-pale:#ECFDF3;
+    --jaune:#FDB022;
+    --fond-2:#F7FAFF;
+    --radius:16px;
+    --maxw:1120px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--texte);background:#fff;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;line-height:1.12;letter-spacing:-0.02em}
+  a{color:inherit}
+  a:focus-visible,button:focus-visible{outline:3px solid var(--violet);outline-offset:3px;border-radius:6px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .eyebrow{display:inline-block;font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--violet-fonce);background:var(--violet-pale);padding:7px 14px;border-radius:999px;margin-bottom:16px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:16px 28px;border-radius:14px;font-weight:800;font-size:1.02rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-violet{background:var(--violet);color:#fff;box-shadow:0 10px 26px rgba(122,90,248,.35)}
+  .btn-blanc{background:#fff;color:var(--nuit);border:1.5px solid var(--ligne)}
+  .rassure{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.88rem;color:var(--gris)}
+  .rassure span::before{content:"✓ ";color:var(--vert);font-weight:800}
+  .titre-sec{text-align:center;max-width:62ch;margin:0 auto 52px}
+  .titre-sec h2{font-size:clamp(1.7rem,3.8vw,2.5rem);font-weight:700}
+  .titre-sec h2 em{font-style:normal;color:var(--violet)}
+  .titre-sec p{margin-top:12px;color:var(--gris);font-size:1.05rem}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--ligne)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-family:'Space Grotesk';font-weight:700;font-size:1.3rem;text-decoration:none}
+  .logo b{color:var(--bleu)}
+  .nav .btn{padding:11px 20px;font-size:.9rem}
+
+  /* HERO */
+  .hero{padding:60px 0 50px;background:linear-gradient(180deg,var(--violet-pale) 0%,#fff 100%);overflow:hidden}
+  .hero .wrap{display:grid;grid-template-columns:1.15fr 1fr;gap:52px;align-items:center}
+  .hero h1{font-size:clamp(2.1rem,5vw,3.3rem);font-weight:700}
+  .hero h1 em{font-style:normal;color:var(--violet)}
+  .hero .sous{margin-top:18px;font-size:1.15rem;color:var(--gris);max-width:48ch}
+  .hero .sous b{color:var(--texte)}
+  .hero .actions{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+  .formats{margin-top:26px;display:flex;gap:8px;flex-wrap:wrap}
+  .formats span{font-size:.8rem;font-weight:700;background:#fff;border:1px solid var(--ligne);border-radius:99px;padding:6px 13px;color:var(--gris)}
+
+  /* Mini téléphone "achat confirmé" (CSS, remplaçable par vraie capture) */
+  .telephone{
+    width:min(310px,88%);margin:0 auto;background:#fff;border:1px solid var(--ligne);border-radius:30px;
+    box-shadow:0 30px 70px rgba(11,27,50,.16);padding:18px;position:relative;
+  }
+  .telephone .encoche{width:90px;height:8px;background:var(--ligne);border-radius:99px;margin:0 auto 16px}
+  .tel-entete{background:var(--violet);color:#fff;border-radius:14px;padding:14px;font-size:.85rem}
+  .tel-entete b{font-family:'Space Grotesk';font-size:1.05rem;display:block}
+  .tel-fichier{border:1px solid var(--ligne);border-radius:14px;padding:14px;margin-top:12px}
+  .tel-fichier .nomf{font-weight:700;font-size:.88rem}
+  .tel-fichier small{color:var(--gris);font-size:.72rem}
+  .tel-btn{margin-top:10px;background:var(--nuit);color:#fff;border-radius:10px;padding:11px;text-align:center;font-weight:700;font-size:.85rem}
+  .tel-paye{margin-top:12px;background:var(--vert-pale);border:1px solid #B9F0D3;border-radius:12px;padding:10px 12px;font-size:.78rem;font-weight:700;color:#087443;text-align:center}
+  .badge-vole{position:absolute;background:#fff;border:1px solid var(--ligne);border-radius:12px;box-shadow:0 12px 30px rgba(11,27,50,.12);padding:10px 14px;font-size:.78rem;font-weight:700}
+  .bv1{top:-14px;right:-10px;color:var(--vert)}
+  .bv2{bottom:24px;left:-26px;color:var(--violet-fonce)}
+  @media (max-width:960px){.bv2{left:-6px}}
+
+  /* Bande "types de vendeurs" */
+  .bande-vendeurs{border-top:1px solid var(--ligne);border-bottom:1px solid var(--ligne);padding:18px 0;background:#fff}
+  .bande-vendeurs .wrap{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;font-size:.9rem;color:var(--gris);font-weight:600}
+
+  /* LE CONTRAT : toi / nous */
+  .contrat{padding:90px 0;background:var(--fond-2)}
+  .contrat-grille{display:grid;grid-template-columns:1fr 1.4fr;gap:20px;max-width:980px;margin:0 auto}
+  .carte-contrat{border-radius:20px;padding:32px 28px}
+  .carte-contrat.toi{background:#fff;border:1.5px solid var(--ligne)}
+  .carte-contrat.nous{background:var(--nuit);color:#fff;box-shadow:0 24px 60px rgba(11,27,50,.25)}
+  .carte-contrat h3{font-size:1.25rem;margin-bottom:6px}
+  .carte-contrat .sous-t{font-size:.9rem;color:var(--gris);margin-bottom:18px}
+  .nous .sous-t{color:#9FB0C7}
+  .carte-contrat ul{list-style:none}
+  .carte-contrat li{padding:11px 0;display:flex;gap:12px;align-items:flex-start;font-size:.98rem;border-top:1px dashed rgba(0,0,0,.08)}
+  .nous li{border-top-color:rgba(255,255,255,.12)}
+  .carte-contrat li:first-of-type{border-top:none}
+  .toi li::before{content:"👉";flex-shrink:0}
+  .nous li::before{content:"✅";flex-shrink:0}
+  .nous li b{color:#fff}
+  .contrat .punchline{text-align:center;margin-top:36px;font-family:'Space Grotesk';font-size:clamp(1.15rem,2.6vw,1.5rem);font-weight:600}
+  .contrat .punchline em{font-style:normal;color:var(--violet)}
+
+  /* PARCOURS CLIENT (la preuve) */
+  .parcours{padding:90px 0}
+  .parcours-grille{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .etape-p{border:1px solid var(--ligne);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px;background:#fff}
+  .etape-p .num{width:34px;height:34px;border-radius:50%;background:var(--violet);color:#fff;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:.95rem}
+  .etape-p h3{font-size:1.02rem}
+  .etape-p p{font-size:.86rem;color:var(--gris);flex-grow:1}
+  .mini-ecran{border:1px solid var(--ligne);border-radius:14px;padding:12px;background:var(--fond-2);font-size:.72rem}
+  .mini-ecran .l{background:#fff;border:1px solid var(--ligne);border-radius:8px;padding:7px 9px;margin-top:6px;font-weight:700}
+  .mini-ecran .l:first-child{margin-top:0}
+  .mini-ecran .l small{display:block;font-weight:500;color:var(--gris);font-size:.66rem}
+  .mini-ecran .l.actif{border-color:var(--violet);color:var(--violet-fonce)}
+  .mini-ecran .l.vert{border-color:#B9F0D3;background:var(--vert-pale);color:#087443}
+  .mini-ecran .etoiles{color:var(--jaune);letter-spacing:2px;font-size:.85rem}
+  .parcours .note-preuve{text-align:center;margin-top:28px;color:var(--gris);font-size:.92rem}
+
+  /* COMBIEN TU GAGNES */
+  .argent{padding:90px 0;background:var(--fond-2)}
+  .calc{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:stretch}
+  .facture{background:#fff;border:1px solid var(--ligne);border-radius:20px;padding:30px}
+  .facture .ligne-f{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px dashed var(--ligne);font-size:1rem}
+  .facture .ligne-f small{display:block;color:var(--gris);font-size:.8rem}
+  .facture .ligne-f.total{border-bottom:none;font-family:'Space Grotesk';font-weight:700;font-size:1.25rem;color:var(--vert)}
+  .facture .instant{margin-top:14px;background:var(--vert-pale);border:1px solid #B9F0D3;border-radius:12px;padding:12px 14px;font-size:.88rem;font-weight:600;color:#087443;text-align:center}
+  .plans{background:var(--nuit);color:#fff;border-radius:20px;padding:30px;display:flex;flex-direction:column}
+  .plans h3{font-size:1.1rem;margin-bottom:16px}
+  .plans .ligne-p{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:.95rem}
+  .plans .ligne-p b{font-family:'Space Grotesk';font-size:1.05rem}
+  .plans .ligne-p small{color:#9FB0C7;font-size:.78rem}
+  .plans p.note-p{margin-top:auto;padding-top:16px;font-size:.82rem;color:#9FB0C7}
+  .plans p.note-p b{color:#fff}
+
+  /* QUI VEND QUOI — aspirationnel */
+  .personas{padding:90px 0}
+  .personas-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .persona{border:1px solid var(--ligne);border-radius:18px;padding:26px 22px;transition:box-shadow .2s,transform .2s;background:#fff}
+  .persona:hover{box-shadow:0 16px 40px rgba(11,27,50,.08);transform:translateY(-3px)}
+  .persona .emo{font-size:1.9rem}
+  .persona h3{font-size:1.08rem;margin:12px 0 6px}
+  .persona p{font-size:.9rem;color:var(--gris)}
+  .persona .ex{margin-top:12px;display:inline-block;font-size:.8rem;font-weight:700;color:var(--violet-fonce);background:var(--violet-pale);border-radius:99px;padding:6px 12px}
+  .personas .classes{max-width:760px;margin:36px auto 0;border:1.5px dashed #C9B8FF;background:var(--violet-pale);border-radius:16px;padding:18px 22px;font-size:.92rem;color:var(--violet-fonce);text-align:center}
+  .personas .classes b{color:var(--nuit)}
+
+  /* FAQ */
+  .faq{padding:90px 0;background:var(--fond-2)}
+  .faq-liste{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .faq details{background:#fff;border:1px solid var(--ligne);border-radius:16px;padding:6px 22px}
+  .faq summary{cursor:pointer;font-weight:700;font-size:1rem;padding:15px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";font-family:'Space Grotesk';font-size:1.4rem;color:var(--violet);transition:transform .2s}
+  .faq details[open] summary::after{transform:rotate(45deg)}
+  .faq details p{padding:0 0 16px;color:var(--gris);font-size:.95rem}
+
+  /* CTA FINAL */
+  .final{padding:96px 0;background:linear-gradient(135deg,var(--violet-fonce),var(--violet));color:#fff;text-align:center}
+  .final h2{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:700;max-width:22ch;margin:0 auto}
+  .final p{margin:16px auto 0;max-width:46ch;color:#E5DEFF;font-size:1.08rem}
+  .final .actions{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .final .btn-blanc{border:none}
+  .final .rassure{justify-content:center;color:#E5DEFF}
+  .final .rassure span::before{color:#fff}
+
+  footer{background:var(--nuit);color:#9FB0C7;padding:44px 0;font-size:.88rem;text-align:center}
+  footer a{color:#fff}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.vu{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+  @media (max-width:960px){
+    .hero .wrap{grid-template-columns:1fr}
+    .contrat-grille,.calc{grid-template-columns:1fr}
+    .parcours-grille{grid-template-columns:1fr 1fr}
+    .personas-grille{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    .parcours-grille{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#">TEKKI<b>Shop</b></a>
+    <a class="btn btn-violet" href="#final">Vendre mon premier fichier</a>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">💾 Produits digitaux</span>
+      <h1>Tu as un savoir, un talent, une création&nbsp;? <em>Vends-le en fichier.</em></h1>
+      <p class="sous">Ebook, guide, template, musique, modèle Excel… Ajoute ton fichier à ta boutique et partage ton lien. <b>Ton client paie par mobile money, reçoit son fichier automatiquement</b> — et toi, tu encaisses. Même à 3h du matin.</p>
+      <div class="actions">
+        <a class="btn btn-violet" href="#final">Vendre mon premier fichier</a>
+        <a class="btn btn-blanc" href="#argent">Combien je gagne&nbsp;?</a>
+      </div>
+      <div class="rassure">
+        <span>Boutique créée en 5 min</span>
+        <span>Depuis ton téléphone</span>
+        <span>Zéro livraison à gérer</span>
+      </div>
+      <div class="formats">
+        <span>PDF</span><span>EPUB</span><span>ZIP</span><span>DOCX</span><span>XLSX</span><span>Jusqu'à 50 Mo</span>
+      </div>
+    </div>
+    <div style="position:relative">
+      <!-- Remplaçable par la vraie capture "Achat confirmé" (IMG_1607) -->
+      <div class="telephone" aria-label="Aperçu : achat confirmé côté client">
+        <div class="encoche"></div>
+        <div class="tel-entete"><span>ACHAT CONFIRMÉ ✅</span><b>Coach Aminata — Formations</b></div>
+        <div class="tel-fichier">
+          <div class="nomf">📕 Guide business Afrique 2026.pdf</div>
+          <small>2,7 Mo · Lien sécurisé</small>
+          <div class="tel-btn">⬇️ Télécharger mon fichier</div>
+        </div>
+        <div class="tel-paye">💰 4 365 FCFA reçus sur ton Wave ✓</div>
+      </div>
+      <div class="badge-vole bv1">✓ Livré automatiquement</div>
+      <div class="badge-vole bv2">⭐ Avis collecté après l'achat</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BANDE VENDEURS ============ -->
+<section class="bande-vendeurs" aria-label="Pour qui">
+  <div class="wrap">
+    <span>✍️ Auteurs</span><span>🎓 Coachs & formateurs</span><span>🎨 Designers</span><span>🎵 Beatmakers</span><span>📊 Consultants</span><span>📱 Créateurs de contenu</span>
+  </div>
+</section>
+
+<!-- ============ LE CONTRAT ============ -->
+<section class="contrat">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Toi, tu crées. <em>Nous, on gère tout le reste.</em></h2>
+      <p>Vendre un produit digital, c'est 10 % de création et 90 % de logistique invisible. On a automatisé les 90 %.</p>
+    </div>
+    <div class="contrat-grille reveal">
+      <div class="carte-contrat toi">
+        <h3>🫵 Ce que tu fais</h3>
+        <p class="sous-t">Une seule fois, en quelques minutes.</p>
+        <ul>
+          <li>Tu crées ta boutique depuis ton téléphone</li>
+          <li>Tu ajoutes ton fichier, ton prix, ta description</li>
+          <li>Tu partages ton lien : statuts, bio, groupes</li>
+        </ul>
+      </div>
+      <div class="carte-contrat nous">
+        <h3>🤝 Ce que TEKKIShop gère pour toi</h3>
+        <p class="sous-t">À chaque vente, automatiquement, 24h/24.</p>
+        <ul>
+          <li><b>On encaisse</b> — Wave, Orange Money, MTN, Moov… selon ton pays, sans rien configurer</li>
+          <li><b>On livre ton fichier</b> — page de téléchargement + lien envoyé par e-mail et SMS, instantanément</li>
+          <li><b>On sécurise</b> — lien valable 48h, 5 téléchargements max : ton fichier ne circule pas librement</li>
+          <li><b>On collecte les avis clients</b> — et on les affiche sur ta page produit pour convertir les suivants</li>
+          <li><b>On te paie</b> — retrait instantané de ton argent sur ton mobile money</li>
+        </ul>
+      </div>
+    </div>
+    <p class="punchline reveal">Pas de colis. Pas de livreur. Pas de stock. <em>Le produit digital est le business le plus simple d'Afrique</em> — quand quelqu'un gère la technique pour toi.</p>
+  </div>
+</section>
+
+<!-- ============ PARCOURS CLIENT ============ -->
+<section class="parcours">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Ce que vivent tes clients</span>
+      <h2>Une expérience d'achat <em>irréprochable.</em></h2>
+      <p>Voici exactement ce qui se passe quand quelqu'un clique sur ton lien. Chaque étape travaille pour ta crédibilité.</p>
+    </div>
+    <div class="parcours-grille reveal">
+      <div class="etape-p">
+        <div class="num">1</div>
+        <h3>Il découvre ton produit</h3>
+        <p>Page pro avec ta couverture, ton prix, tes points forts et les avis de tes clients précédents.</p>
+        <div class="mini-ecran">
+          <div class="l">📕 Et pourtant, on s'aimait <small>4 500 FCFA <s>7 500 FCFA</s></small></div>
+          <div class="l"><span class="etoiles">★★★★★</span> <small>🔥 7 personnes ont déjà commandé</small></div>
+        </div>
+      </div>
+      <div class="etape-p">
+        <div class="num">2</div>
+        <h3>Il paie comme il a l'habitude</h3>
+        <p>Mobile money de ton pays, en quelques secondes. Pas de carte bancaire exigée, pas de compte à créer.</p>
+        <div class="mini-ecran">
+          <div class="l actif">🐧 Wave — paiement instantané</div>
+          <div class="l">🟠 Orange Money / Maxit</div>
+        </div>
+      </div>
+      <div class="etape-p">
+        <div class="num">3</div>
+        <h3>Il reçoit son fichier immédiatement</h3>
+        <p>Page de téléchargement + lien par e-mail et SMS. Sécurisé : 48h, 5 téléchargements. Zéro action de ta part.</p>
+        <div class="mini-ecran">
+          <div class="l vert">✅ Achat confirmé</div>
+          <div class="l">⬇️ Télécharger mon fichier <small>Aussi envoyé par e-mail + SMS</small></div>
+        </div>
+      </div>
+      <div class="etape-p">
+        <div class="num">4</div>
+        <h3>Il laisse un avis</h3>
+        <p>On lui demande son avis après l'achat, et on l'affiche sur ta page. Chaque vente rend la suivante plus facile.</p>
+        <div class="mini-ecran">
+          <div class="l"><span class="etoiles">★★★★★</span> <small>« Reçu en 2 minutes, super guide ! »</small></div>
+          <div class="l">Publier mon avis</div>
+        </div>
+      </div>
+    </div>
+    <p class="note-preuve">💡 Ces écrans sont ceux de vraies boutiques TEKKIShop — pas des maquettes marketing.</p>
+  </div>
+</section>
+
+<!-- ============ COMBIEN TU GAGNES ============ -->
+<section class="argent" id="argent">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Transparence totale</span>
+      <h2>Combien tu gagnes, <em>exactement.</em></h2>
+      <p>Pas de frais cachés, pas de surprise. Voici une vente réelle, chiffre par chiffre.</p>
+    </div>
+    <div class="calc reveal">
+      <div class="facture">
+        <div class="ligne-f"><span>Ton client achète ton ebook</span><b>4 500 FCFA</b></div>
+        <div class="ligne-f"><span>Commission TEKKIShop — 3 %<small>Elle couvre les frais de paiement mobile money et de transfert. C'est tout.</small></span><b>− 135 FCFA</b></div>
+        <div class="ligne-f total"><span>Tu reçois</span><b>4 365 FCFA</b></div>
+        <div class="instant">⚡ Retrait instantané sur ton Wave ou Orange Money — pas dans 24 ou 48h</div>
+      </div>
+      <div class="plans">
+        <h3>Ton abonnement boutique</h3>
+        <div class="ligne-p"><span>Découverte</span><span><b>2 900</b> <small>FCFA/mois</small></span></div>
+        <div class="ligne-p"><span>Business</span><span><b>4 900</b> <small>FCFA/mois</small></span></div>
+        <div class="ligne-p"><span>Pro</span><span><b>9 900</b> <small>FCFA/mois</small></span></div>
+        <p class="note-p">Crée ta boutique et ajoute tes produits <b>gratuitement</b>. Tu ne paies que pour activer les ventes — et <b>2 ebooks vendus par mois remboursent déjà ton abonnement</b>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERSONAS ============ -->
+<section class="personas">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <span class="eyebrow">Qui vend quoi</span>
+      <h2>Ton savoir vaut de l'argent. <em>Lequel vas-tu vendre&nbsp;?</em></h2>
+    </div>
+    <div class="personas-grille reveal">
+      <div class="persona"><span class="emo">✍️</span><h3>L'auteur·e</h3><p>Ton roman, ton recueil, ton essai — en EPUB ou PDF, vendu directement à ta communauté, sans maison d'édition.</p><span class="ex">Ex : ebook à 4 500 FCFA</span></div>
+      <div class="persona"><span class="emo">🎓</span><h3>Le coach / formateur</h3><p>Ton guide pratique, ton workbook, tes fiches méthode — ce que tu répètes en accompagnement, transformé en revenu qui tourne seul.</p><span class="ex">Ex : guide à 10 000 FCFA</span></div>
+      <div class="persona"><span class="emo">🎨</span><h3>Le designer / créateur</h3><p>Tes templates Canva, tes presets, tes maquettes de site — crée une fois, vends cent fois.</p><span class="ex">Ex : pack templates à 7 500 FCFA</span></div>
+      <div class="persona"><span class="emo">🎵</span><h3>Le beatmaker / musicien</h3><p>Tes instrus, tes packs de sons, tes projets — livrés en ZIP, payés par mobile money, sans intermédiaire.</p><span class="ex">Ex : beat à 15 000 FCFA</span></div>
+      <div class="persona"><span class="emo">📊</span><h3>Le consultant</h3><p>Tes modèles Excel, business plans types, grilles de calcul — l'outil que tes clients te réclament, enfin monétisé.</p><span class="ex">Ex : modèle XLSX à 5 000 FCFA</span></div>
+      <div class="persona"><span class="emo">📱</span><h3>Le créateur de contenu</h3><p>Ton audience te suit déjà. Ton guide « comment je fais » est le produit le plus simple à lui vendre — le lien est déjà dans ta bio.</p><span class="ex">Ex : guide à 3 000 FCFA</span></div>
+    </div>
+    <p class="classes reveal">🎬 Tu veux vendre une <b>formation vidéo complète</b>, module par module ? C'est le rôle de <b>TEKKI Classes</b>, notre prochaine solution. <a href="#" style="font-weight:800">Être prévenu du lancement →</a></p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq">
+  <div class="wrap">
+    <div class="titre-sec reveal">
+      <h2>Tes questions, nos réponses.</h2>
+    </div>
+    <div class="faq-liste reveal">
+      <details>
+        <summary>Quels types de fichiers puis-je vendre&nbsp;?</summary>
+        <p>PDF, EPUB, ZIP, DOCX et XLSX, jusqu'à 50 Mo par fichier. Pour vendre plusieurs documents d'un coup (un pack), regroupe-les dans un ZIP avant de l'ajouter à ta boutique.</p>
+      </details>
+      <details>
+        <summary>Comment mon client reçoit-il son fichier&nbsp;?</summary>
+        <p>De trois façons, automatiquement : une page de téléchargement s'affiche juste après le paiement, et le lien lui est aussi envoyé par e-mail et par SMS. Tu n'as rien à envoyer, jamais.</p>
+      </details>
+      <details>
+        <summary>Mon fichier est-il protégé contre le partage&nbsp;?</summary>
+        <p>Chaque lien de téléchargement est personnel, valable 48h et limité à 5 téléchargements. Ton fichier ne peut pas circuler librement via un lien public.</p>
+      </details>
+      <details>
+        <summary>Et si mon client perd son fichier ou rate le délai&nbsp;?</summary>
+        <p>Pas de panique : il peut te contacter en un clic depuis sa page de commande (bouton « Contacter la boutique »), et tu peux lui renvoyer un accès depuis ton tableau de bord. Personne ne reste bloqué.</p>
+      </details>
+      <details>
+        <summary>Combien ça me coûte&nbsp;?</summary>
+        <p>Ton abonnement boutique (à partir de 2 900 FCFA/mois) + 3 % de commission sur les paiements en ligne, qui couvrent les frais de l'agrégateur mobile money et du transfert. Exemple : une vente à 4 500 FCFA te rapporte 4 365 FCFA, retirables instantanément. C'est tout.</p>
+      </details>
+      <details>
+        <summary>Puis-je vendre des produits physiques ET digitaux sur la même boutique&nbsp;?</summary>
+        <p>Oui. Tes sacs et ton ebook peuvent vivre sur la même boutique : au moment d'ajouter un produit, tu choisis simplement « Physique » ou « Digital ». Le reste s'adapte automatiquement.</p>
+      </details>
+      <details>
+        <summary>Je veux vendre une formation vidéo, c'est possible&nbsp;?</summary>
+        <p>Les fichiers vidéo dépassent généralement 50 Mo, donc pas encore ici. Mais c'est exactement le rôle de TEKKI Classes, notre solution dédiée aux formations en ligne (modules, chapitres, progression des apprenants), bientôt disponible. Inscris-toi pour être prévenu du lancement.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="final" id="final">
+  <div class="wrap">
+    <h2 class="reveal">Ton fichier peut se vendre ce soir, pendant que tu dors.</h2>
+    <p class="reveal">Crée ta boutique en 5 minutes, ajoute ton premier produit digital, partage ton lien. On s'occupe du reste.</p>
+    <div class="actions reveal">
+      <a class="btn btn-blanc" href="#">Vendre mon premier fichier →</a>
+    </div>
+    <div class="rassure reveal">
+      <span>Boutique gratuite à créer</span>
+      <span>Sans carte bancaire</span>
+      <span>Depuis ton téléphone</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>TEKKIShop — un produit <a href="https://getdukka.com">Dukka</a> · 🇸🇳 🇨🇮 🇧🇯 🇹🇬 🇲🇱 🇧🇫 · © 2026</p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    if(!("IntersectionObserver" in window)){document.querySelectorAll(".reveal").forEach(e=>e.classList.add("vu"));return}
+    const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("vu");obs.unobserve(e.target)}})},{threshold:.1});
+    document.querySelectorAll(".reveal").forEach(e=>obs.observe(e));
+  })();
+</script>
+</body>
+</html>

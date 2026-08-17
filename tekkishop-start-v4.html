@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TEKKIShop — Parcours /start (prototype v3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bl:#2E90FA; --bld:#175CD3; --blp:#EFF6FF; --blb:#CFE2FF;
+  --vt:#12B76A; --vtp:#ECFDF3; --vtb:#B9F0D3;
+  --am:#F79009; --amp:#FFFAEB; --amb:#FEDF89;
+  --gr:#5D6B82; --gr2:#8494AB; --ln:#E4EAF2; --nt:#0B1B32; --bg:#F6F8FC;
+  --display:"Bricolage Grotesque","Inter",system-ui,sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--body);color:var(--nt);
+  background:
+    radial-gradient(circle at 78% 6%,rgba(46,144,250,.10),transparent 42%),
+    radial-gradient(circle at 12% 92%,rgba(46,144,250,.07),transparent 44%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;
+  min-height:100dvh;                     /* la page défile si le contenu déborde */
+}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--bl);outline-offset:2px;border-radius:10px}
+
+/* ---------- Ossature : une seule colonne centrée, mobile comme bureau ---------- */
+.page{min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+  padding:0 20px;max-width:100%}
+.wrap{width:100%;max-width:560px;min-height:100dvh;display:flex;flex-direction:column}
+
+.head{padding:18px 0 12px;display:flex;align-items:center;gap:12px;flex:none}
+.back{background:none;border:0;color:var(--gr);cursor:pointer;width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;flex:none;transition:background .16s}
+.back:hover{background:var(--blp)}
+.back svg{width:20px;height:20px}
+.logo{font-family:var(--display);font-weight:800;font-size:1.08rem;letter-spacing:-.035em}
+.logo span{color:var(--bl)}
+.stepnum{margin-left:auto;font-size:.78rem;font-weight:700;color:var(--gr2)}
+.bar{height:5px;background:var(--ln);border-radius:99px;overflow:hidden;flex:none}
+.bar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--bl),var(--bld));transition:width .45s cubic-bezier(.2,.8,.3,1)}
+
+/* Corps : occupe l'espace libre, pousse le bouton en bas quand le contenu est court */
+.body{flex:1;display:flex;flex-direction:column;padding:22px 0 8px;
+  animation:in .34s cubic-bezier(.2,.8,.3,1)}
+.body.mid{justify-content:center;text-align:center}
+@keyframes in{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.foot{flex:none;padding:12px 0 max(18px,env(safe-area-inset-bottom))}
+
+h1{font-family:var(--display);font-size:clamp(1.85rem,4.4vw,2.5rem);font-weight:800;line-height:1.11;
+  letter-spacing:-.038em;margin:0}
+h2{font-family:var(--display);font-size:clamp(1.45rem,3.2vw,1.95rem);font-weight:800;line-height:1.15;
+  letter-spacing:-.036em;margin:0 0 7px}
+.sub{color:var(--gr);font-size:.96rem;line-height:1.5;margin:0 0 20px}
+.bl{color:var(--bl)}
+.spread{margin-top:auto}
+
+/* ---------- Boutons ---------- */
+.btn{width:100%;border:0;border-radius:15px;padding:17px;cursor:pointer;font-weight:800;font-size:1.03rem;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:transform .18s,opacity .18s,box-shadow .18s}
+.btn svg{width:19px;height:19px}
+.btn-bl{background:var(--bl);color:#fff;box-shadow:0 10px 26px rgba(46,144,250,.32)}
+.btn-vt{background:var(--vt);color:#fff;box-shadow:0 10px 26px rgba(18,183,106,.32)}
+.btn-gh{background:#fff;color:var(--nt);border:2px solid var(--ln)}
+.btn:not(.off):hover{transform:translateY(-2px)}
+.btn.off{opacity:.36;pointer-events:none;box-shadow:none}
+.linkish{display:block;text-align:center;margin-top:12px;font-size:.85rem;color:var(--gr);
+  text-decoration:underline;cursor:pointer;background:none;border:0;width:100%}
+
+/* ---------- Tuiles et lignes ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stack{display:flex;flex-direction:column;gap:9px}
+.tile{border:2px solid var(--ln);border-radius:15px;background:#fff;padding:14px 8px;cursor:pointer;
+  font-size:.86rem;font-weight:600;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;
+  transition:border-color .16s,background .16s,transform .16s}
+.tile svg{width:22px;height:22px;color:var(--gr);transition:color .16s}
+.tile:hover{transform:translateY(-2px)}
+.tile.on{border-color:var(--bl);background:var(--blp)}
+.tile.on svg{color:var(--bl)}
+.tile .flag{font-size:1.6rem;line-height:1}
+.row{border:2px solid var(--ln);border-radius:15px;background:#fff;padding:15px 17px;cursor:pointer;
+  font-size:.95rem;font-weight:600;text-align:left;display:flex;align-items:center;gap:13px;
+  transition:border-color .16s,background .16s,transform .16s}
+.row svg{width:21px;height:21px;color:var(--gr);flex:none;transition:color .16s}
+.row:hover{transform:translateY(-2px)}
+.row.on{border-color:var(--bl);background:var(--blp)}
+.row.on svg{color:var(--bl)}
+.row b{display:block;font-size:.95rem;font-weight:700;line-height:1.3}
+.row small{display:block;font-size:.81rem;color:var(--gr2);font-weight:500;margin-top:2px;line-height:1.4}
+.row.on small{color:var(--gr)}
+
+/* ---------- Champs ---------- */
+.bigfield{width:100%;border:2px solid var(--ln);border-radius:15px;padding:17px;
+  font-family:var(--display);font-size:1.22rem;font-weight:700;text-align:center;outline:none;
+  transition:border-color .16s;background:#fff}
+.bigfield:focus,.bigfield.ok{border-color:var(--bl)}
+.hints{margin-top:11px;display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.hints span{border:1px solid var(--ln);border-radius:99px;padding:6px 13px;font-size:.78rem;color:var(--gr2);background:#fff}
+.lab{display:block;font-size:.85rem;font-weight:700;margin-bottom:7px}
+
+/* ---------- Micro-preuve ---------- */
+.proof{background:var(--vtp);border:1px solid var(--vtb);border-radius:15px;padding:14px 15px;margin-top:18px;
+  font-size:.89rem;line-height:1.5;animation:in .3s ease}
+
+/* ---------- Révélation ---------- */
+.kick{font-family:var(--mono);font-size:.68rem;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--bl);font-weight:600;margin-bottom:13px}
+.note{background:var(--blp);border:1px solid var(--blb);border-radius:15px;padding:16px;margin-top:18px;text-align:left}
+.note>b{font-size:.9rem}
+.prep{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.prep li{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;font-weight:600}
+.prep svg{width:18px;height:18px;color:var(--vt);flex:none;margin-top:2px}
+
+/* ---------- Construction ---------- */
+.spin{width:58px;height:58px;border-radius:50%;margin:0 auto;border:5px solid var(--blp);border-top-color:var(--bl);
+  animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.buildlist{list-style:none;max-width:320px;margin:22px auto 0;padding:0;text-align:left}
+.buildlist li{padding:9px 0;display:flex;gap:11px;align-items:center;font-size:.94rem;font-weight:600;
+  color:#B4BFCF;transition:color .3s}
+.buildlist li.done{color:var(--nt)}
+.buildlist svg{width:18px;height:18px;flex:none}
+.buildlist li:not(.done) svg{color:#D3DCEA}
+.buildlist li.done svg{color:var(--vt)}
+
+/* ---------- Carte boutique ---------- */
+.shopcard{border:1px solid var(--ln);border-radius:19px;padding:20px;background:#fff;text-align:center;
+  box-shadow:0 14px 36px rgba(11,27,50,.07)}
+.shopcard .ico{width:58px;height:58px;border-radius:17px;background:var(--nt);color:#fff;margin:0 auto 11px;
+  display:grid;place-items:center}
+.shopcard .ico svg{width:26px;height:26px}
+.shopcard h3{font-family:var(--display);font-size:1.3rem;font-weight:800;margin:0;letter-spacing:-.03em}
+.shopcard .url{font-size:.83rem;color:var(--bld);font-weight:600;margin-top:3px;font-family:var(--mono)}
+.badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.badges span{font-size:.71rem;font-weight:700;background:#F7F9FC;border:1px solid var(--ln);border-radius:99px;padding:5px 10px}
+.gauge-lab{font-size:.8rem;font-weight:700;margin:14px 0 6px;color:var(--am)}
+.gauge{height:8px;background:var(--ln);border-radius:99px;overflow:hidden}
+.gauge i{display:block;height:100%;width:0;border-radius:99px;background:var(--vt);transition:width 1s cubic-bezier(.2,.8,.3,1)}
+.missing{margin-top:13px;background:var(--amp);border:1px solid var(--amb);border-radius:13px;padding:12px 14px;
+  font-size:.86rem;color:#7A4A02;line-height:1.5;text-align:left;display:flex;gap:10px}
+.missing svg{width:19px;height:19px;flex:none;margin-top:1px;color:var(--am)}
+
+/* ---------- Compte ---------- */
+.phonerow{display:flex;gap:9px}
+.dial{border:2px solid var(--ln);border-radius:15px;padding:0 14px;display:flex;align-items:center;gap:7px;
+  font-weight:700;background:#fff;white-space:nowrap;font-size:.95rem}
+.phonerow input{flex:1;border:2px solid var(--ln);border-radius:15px;padding:14px 15px;font-size:1.02rem;
+  font-weight:600;outline:none;transition:border-color .16s;min-width:0;background:#fff}
+.phonerow input:focus{border-color:var(--bl)}
+.pin{display:flex;gap:8px}
+.pin input{width:100%;height:56px;border:2px solid var(--ln);border-radius:13px;text-align:center;
+  font-size:1.25rem;font-weight:700;outline:none;background:#fff;transition:border-color .16s;min-width:0}
+.pin input:focus{border-color:var(--bl)}
+.reassure{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:.79rem;color:var(--gr)}
+.reassure span{display:flex;align-items:center;gap:5px}
+.reassure svg{width:14px;height:14px;color:var(--vt)}
+
+/* ---------- Produit ---------- */
+.photo{width:100%;border:2px dashed #BCD4EA;border-radius:15px;padding:22px;display:grid;place-items:center;gap:6px;
+  background:#FBFDFF;color:#4E82BC;font-size:.9rem;text-align:center;cursor:pointer;
+  transition:border-color .16s,background .16s}
+.photo:hover{border-color:var(--bl);background:var(--blp)}
+.photo svg{width:26px;height:26px}
+.photo small{color:var(--gr2)}
+.thumbs{display:flex;gap:8px}
+.thumbs i{flex:1;height:70px;border-radius:12px;display:block}
+.thumbs .add{border:2px dashed #CFDCEA;display:grid;place-items:center;color:#9FB0C7;background:#fff}
+.thumbs .add svg{width:18px;height:18px}
+.field{margin-top:13px}
+.field input{width:100%;border:2px solid var(--ln);border-radius:14px;padding:13px 15px;font-size:1rem;
+  font-weight:600;outline:none;transition:border-color .16s;background:#fff}
+.field input:focus{border-color:var(--bl)}
+.duo{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.suffix{position:relative}
+.suffix span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:.83rem;
+  color:var(--gr2);font-weight:600;pointer-events:none}
+.suffix input{padding-right:62px}
+
+/* ---------- En ligne ---------- */
+.livecard{border:1px solid var(--ln);border-radius:18px;overflow:hidden;background:#fff;
+  box-shadow:0 14px 36px rgba(11,27,50,.07)}
+.livebar{background:#F4F7FC;border-bottom:1px solid var(--ln);padding:9px 12px;display:flex;align-items:center;gap:6px}
+.livebar i{width:8px;height:8px;border-radius:50%;background:#D3DCEA}
+.livebar .u{margin-left:7px;flex:1;background:#fff;border:1px solid var(--ln);border-radius:8px;
+  padding:5px 10px;font-size:.7rem;color:var(--gr2);font-family:var(--mono);overflow:hidden;white-space:nowrap}
+.livebody{padding:14px}
+.livehead{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.livehead .av{width:38px;height:38px;border-radius:50%;background:var(--nt);color:#fff;display:grid;
+  place-items:center;flex:none}
+.livehead .av svg{width:18px;height:18px}
+.livehead b{display:block;font-size:.93rem}
+.livehead small{color:var(--gr2);font-size:.72rem;font-family:var(--mono)}
+.liveprod{display:flex;gap:10px;align-items:center;border:1px solid var(--ln);border-radius:12px;padding:9px}
+.liveprod i{width:50px;height:50px;border-radius:10px;flex:none}
+.liveprod b{display:block;font-size:.86rem}
+.liveprod span{font-size:.83rem;font-weight:700;font-family:var(--mono)}
+.liveprod .voir{margin-left:auto;background:var(--nt);color:#fff;font-size:.7rem;font-weight:700;
+  padding:6px 10px;border-radius:8px;flex:none}
+.sharebtn{width:100%;border:2px solid var(--ln);background:#fff;border-radius:14px;padding:14px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;margin-top:9px;
+  transition:border-color .16s,transform .16s}
+.sharebtn:hover{transform:translateY(-2px);border-color:var(--blb)}
+.sharebtn.main{border-color:var(--vtb);background:var(--vtp)}
+.sharebtn svg{width:22px;height:22px;flex:none;color:var(--gr)}
+.sharebtn.main svg{color:var(--vt)}
+.sharebtn b{display:block;font-size:.92rem}
+.sharebtn small{color:var(--gr2);font-size:.79rem}
+.freebox{margin-top:15px;background:var(--amp);border:1px solid var(--amb);border-radius:14px;padding:13px 15px;
+  font-size:.86rem;color:#7A4A02;line-height:1.5}
+.dots{display:flex;gap:5px;margin-top:9px}
+.dots i{flex:1;height:6px;border-radius:99px;background:var(--amb)}
+
+/* ---------- Pays non couvert ---------- */
+.altbox{border:1px solid var(--ln);border-radius:15px;background:#fff;padding:17px;margin-top:16px}
+.altbox h4{font-family:var(--display);font-size:1rem;font-weight:800;margin:0 0 6px;letter-spacing:-.02em}
+.altbox p{margin:0 0 12px;font-size:.87rem;color:var(--gr);line-height:1.5}
+.altbox.licence{background:#0B1B32;border-color:#0B1B32;color:#fff}
+.altbox.licence h4{color:#fff}
+.altbox.licence p{color:#9FB3D4}
+.altbox.licence .btn-gh{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
+.sep{display:flex;align-items:center;gap:12px;margin:18px 0 4px;color:var(--gr2);font-size:.75rem;
+  font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.sep:before,.sep:after{content:"";flex:1;height:1px;background:var(--ln)}
+
+@media (max-height:700px){
+  .head{padding:12px 0 8px}
+  .body{padding:16px 0 6px}
+  h2{font-size:1.35rem}
+  .sub{margin-bottom:14px;font-size:.9rem}
+  .tile{padding:11px 6px}
+  .row{padding:12px 15px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="wrap">
+    <div class="head">
+      <button class="back" id="back" aria-label="Revenir en arrière" style="visibility:hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="logo">TEKKI<span>Shop</span></span>
+      <span class="stepnum" id="stepnum"></span>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div id="body" class="body"></div>
+    <div id="foot" class="foot"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   Icônes (style Lucide, au trait — aucun emoji dans l'interface)
+   ========================================================================= */
+const I = (d, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+  stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const IC = {
+  check:  I('<path d="M20 6L9 17l-5-5"/>'),
+  circle: I('<circle cx="12" cy="12" r="9"/>'),
+  arrow:  I('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  shirt:  I('<path d="M20.4 6.6 16 4a4 4 0 0 1-8 0L3.6 6.6a1 1 0 0 0-.4 1.3l1.6 3.2a1 1 0 0 0 1.3.5L8 10.6V20a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9.4l1.9.9a1 1 0 0 0 1.3-.4l1.6-3.2a1 1 0 0 0-.4-1.3Z"/>'),
+  sparkle:I('<path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>'),
+  scissors:I('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>'),
+  bag:    I('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4H6Z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>'),
+  food:   I('<path d="M3 11h18M5 11a7 7 0 0 1 14 0M4 15h16a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3ZM6 6.5c0-1 1-1 1-2M10 6.5c0-1 1-1 1-2M14 6.5c0-1 1-1 1-2"/>'),
+  book:   I('<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15Z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>'),
+  phone:  I('<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/>'),
+  box:    I('<path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="M3 7l9 5 9-5M12 12v10"/>'),
+  chat:   I('<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z"/>'),
+  camera: I('<path d="M14.5 4h-5L8 6.5H4.5A1.5 1.5 0 0 0 3 8v10.5A1.5 1.5 0 0 0 4.5 20h15a1.5 1.5 0 0 0 1.5-1.5V8a1.5 1.5 0 0 0-1.5-1.5H16L14.5 4Z"/><circle cx="12" cy="13" r="3.4"/>'),
+  store:  I('<path d="M3 9 4.5 4h15L21 9M3 9h18M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/>'),
+  pack:   I('<path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z"/><path d="M7.5 4.5 16.5 9.5M3 7l9 5 9-5"/>'),
+  rocket: I('<path d="M5 15c-1.5 1.5-2 6-2 6s4.5-.5 6-2a3 3 0 0 0-4-4Z"/><path d="M15 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M9 15 7 13c0-6 4-10 10-10 0 6-4 10-10 10Z"/>'),
+  target: I('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>'),
+  magnet: I('<path d="M6 4H3v7a9 9 0 0 0 18 0V4h-3v7a6 6 0 0 1-12 0V4Z"/><path d="M3 9h3M18 9h3"/>'),
+  gear:   I('<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4Z"/>'),
+  truck:  I('<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/>'),
+  wallet: I('<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2Z"/><path d="M17.5 13.5h.01"/>'),
+  flag:   I('<path d="M4 21V4M4 4h13l-2 4 2 4H4"/>'),
+  link:   I('<path d="M10 13a5 5 0 0 0 7.5.5l3-3A5 5 0 0 0 13.5 3.5l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3A5 5 0 0 0 10.5 20.5l1.7-1.7"/>'),
+  qr:     I('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/>'),
+  globe:  I('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/>'),
+  plus:   I('<path d="M12 5v14M5 12h14"/>'),
+  bell:   I('<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.5 20a2 2 0 0 0 3 0"/>'),
+  key:    I('<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M17 6l2.5 2.5M14.5 8.5 17 11"/>'),
+};
+
+/* =========================================================================
+   Données
+   ========================================================================= */
+/* ⚠️ Liste à valider par un GROUP BY business_type sur la base réelle */
+const CATS = {
+  mode:       { ic:'shirt',   label:'Mode & vêtements',    ex:'Robe wax grande taille',  grad:'linear-gradient(140deg,#e6d6ff,#b79bf0)' },
+  beaute:     { ic:'sparkle', label:'Cosmétiques & soins', ex:'Huile de karité pure',    grad:'linear-gradient(140deg,#ffd9e2,#f4a8bd)' },
+  cheveux:    { ic:'scissors',label:'Cheveux & perruques', ex:'Perruque lace frontale',  grad:'linear-gradient(140deg,#f2ddc9,#d9a97e)' },
+  chaussures: { ic:'bag',     label:'Chaussures & sacs',   ex:'Sac en cuir artisanal',   grad:'linear-gradient(140deg,#ffe0bd,#f0b072)' },
+  alimentaire:{ ic:'food',    label:'Alimentaire',         ex:'Bissap artisanal 1 L',    grad:'linear-gradient(140deg,#d9f5ee,#a8e0d0)' },
+  digital:    { ic:'book',    label:'Produits digitaux',   ex:'Guide PDF — 30 recettes', grad:'linear-gradient(140deg,#f3d9a8,#d9a35c)' },
+  electro:    { ic:'phone',   label:'Électronique',        ex:'Écouteurs sans fil',      grad:'linear-gradient(140deg,#cfe0ff,#8fa9e8)' },
+  autre:      { ic:'box',     label:'Autre chose',         ex:'Mon premier produit',     grad:'linear-gradient(140deg,#dfe6f0,#b6c2d4)' },
+};
+
+const PAYS = {
+  SN:{ flag:'🇸🇳', nom:'Sénégal',      dial:'+221', ph:'77 000 00 00',  paie:'Wave et Orange Money', dev:'FCFA' },
+  CI:{ flag:'🇨🇮', nom:"Côte d'Ivoire",dial:'+225', ph:'07 00 00 00 00',paie:'Wave et Orange Money', dev:'FCFA' },
+  BJ:{ flag:'🇧🇯', nom:'Bénin',        dial:'+229', ph:'01 00 00 00 00',paie:'MTN MoMo et Moov Money',dev:'FCFA' },
+  TG:{ flag:'🇹🇬', nom:'Togo',         dial:'+228', ph:'90 00 00 00',   paie:'T-Money et Flooz',     dev:'FCFA' },
+  ML:{ flag:'🇲🇱', nom:'Mali',         dial:'+223', ph:'70 00 00 00',   paie:'Orange Money et Moov Money', dev:'FCFA' },
+  BF:{ flag:'🇧🇫', nom:'Burkina Faso', dial:'+226', ph:'70 00 00 00',   paie:'Orange Money et Moov Money', dev:'FCFA' },
+};
+/* Les 5 pays d'Occident couverts, repliés derrière « Je suis à l'étranger » */
+const PAYS_DIASPORA = {
+  FR:{ flag:'🇫🇷', nom:'France',    dial:'+33',  ph:'6 12 34 56 78', paie:'carte bancaire', dev:'€' },
+  BE:{ flag:'🇧🇪', nom:'Belgique',  dial:'+32',  ph:'470 12 34 56',  paie:'carte bancaire', dev:'€' },
+  CH:{ flag:'🇨🇭', nom:'Suisse',    dial:'+41',  ph:'79 123 45 67',  paie:'carte bancaire', dev:'CHF' },
+  LU:{ flag:'🇱🇺', nom:'Luxembourg',dial:'+352', ph:'621 123 456',   paie:'carte bancaire', dev:'€' },
+  CA:{ flag:'🇨🇦', nom:'Canada',    dial:'+1',   ph:'514 123 4567',  paie:'carte bancaire', dev:'CAD' },
+};
+const ALL_PAYS = { ...PAYS, ...PAYS_DIASPORA };
+
+/* Q3 — « Où en es-tu aujourd'hui ? » : segmente ET donne le canal de partage */
+const ETATS = [
+  { v:'wa',     seg:'A', canal:'whatsapp', ic:'chat',   label:'Je vends déjà sur WhatsApp',
+    proof:"Tes clients sont déjà dans ton téléphone. Un lien dans ton statut, et ils commandent sans t'écrire." },
+  { v:'social', seg:'A', canal:'social',   ic:'camera', label:'Je vends sur Instagram ou TikTok',
+    proof:"Tes abonnés te suivent déjà. Un lien dans ta bio, et ils passent de spectateurs à acheteurs." },
+  { v:'phys',   seg:'A', canal:'physique', ic:'store',  label:'Je vends en boutique ou au marché',
+    proof:"Tes clients pourront commander toute la semaine, pas seulement le jour où ils passent devant toi." },
+  { v:'peu',    seg:'B', canal:'whatsapp', ic:'pack',   label:"J'ai des produits, mais peu de clients",
+    proof:"Tu as déjà le plus dur : de vrais produits. Ce qu'il te manque, c'est de la visibilité — on va s'en occuper." },
+  { v:'debut',  seg:'C', canal:'whatsapp', ic:'rocket', label:"Je démarre, je n'ai encore rien vendu",
+    proof:"Tout le monde commence quelque part. On va y aller une action à la fois, sans rien te demander de compliqué." },
+];
+
+/* Q5 — « Qu'est-ce qui te bloque le plus ? » — quatre blocages universels, valables pour tous les profils */
+const BLOCAGES = [
+  { v:'clients', ic:'magnet', label:'Trouver et attirer des clients',
+    sous:"Je ne sais pas à qui vendre, ni comment les faire venir",
+    proof:"Ta boutique génère des visuels prêts à publier, et ton Assistant IA te propose quoi poster, à qui, et quand." },
+  { v:'auto',    ic:'gear',   label:'Vendre même quand je ne suis pas là',
+    sous:"Sans moi, rien ne se passe : je dois répondre à chaque message",
+    proof:"Ton client choisit, commande et paie tout seul. Tu découvres la commande quand tu reprends ton téléphone." },
+  { v:'gestion', ic:'truck',  label:'Gérer mes commandes et mes livraisons',
+    sous:"Mes commandes partent dans tous les sens et je m'y perds",
+    proof:"Chaque commande arrive au même endroit, avec le nom, le numéro et l'adresse du client, prête pour ton livreur." },
+  { v:'paiement',ic:'wallet', label:'Me faire payer sans casse-tête',
+    sous:"Mes clients veulent payer autrement, et je ne peux pas toujours accepter",
+    proof:"Wave, Orange Money, MTN, Moov, carte ou paiement à la livraison : ton client choisit, et l'argent arrive chez toi." },
+];
+
+const REVEAL = {
+  A:{ titre:"Le plus dur est déjà fait, <span class='bl'>{nom}</span>.",
+      texte:"Tu as déjà des clients. Les vendeurs comme toi font leur première vente sur TEKKIShop <b>en moins de 48 heures</b> — il suffit de leur envoyer un lien." },
+  B:{ titre:"Tu as les produits. On s'occupe des <span class='bl'>clients</span>.",
+      texte:"Ta boutique ne se contente pas d'exister : ton <b>Assistant IA</b> te donne un plan d'acquisition, une action par jour, jusqu'à ta première vente." },
+  C:{ titre:"On va y aller <span class='bl'>étape par étape</span>.",
+      texte:"Une seule action à la fois, jamais deux. Tu n'as rien à savoir d'avance, et ton <b>Assistant IA</b> répond à tes questions quand tu bloques." },
+};
+
+const PREP = {
+  clients: ['Ton plan d\u2019acquisition sur 7 jours','Des visuels prêts à publier','Ton Assistant IA en première page'],
+  auto:    ['Commande et paiement enchaînés sans toi','Confirmation envoyée automatiquement','Ta boutique ouverte 24 h/24'],
+  gestion: ['Toutes tes commandes dans un seul écran','Adresses et numéros déjà remplis','Statuts de livraison à jour'],
+  paiement:['Tes moyens de paiement déjà branchés','Le paiement à la livraison activé','Le retrait sur ton mobile money'],
+};
+
+const PARTAGE = {
+  whatsapp:{ ic:'chat',  titre:'Partager sur WhatsApp',    sous:'Publie ton lien en statut ou envoie-le à tes contacts' },
+  social:  { ic:'camera',titre:'Mettre le lien dans ma bio',sous:'Copie ton lien pour Instagram ou TikTok' },
+  physique:{ ic:'qr',    titre:'Imprimer mon QR code',      sous:'À coller sur ta vitrine, ton stand ou tes emballages' },
+};
+
+/* =========================================================================
+   État
+   ========================================================================= */
+const S = { step:0, nom:'', cat:null, etat:null, pays:null, blocage:null,
+  diaspora:false, tel:'', pin:'', prodNom:'', prodPrix:'', photo:false, waitPays:'', waitTel:'' };
+
+const seg   = () => (ETATS.find(e => e.v === S.etat) || {}).seg   || 'C';
+const canal = () => (ETATS.find(e => e.v === S.etat) || {}).canal || 'whatsapp';
+const paysD = () => ALL_PAYS[S.pays] || PAYS.SN;
+const catD  = () => CATS[S.cat] || CATS.autre;
+const slug  = () => (S.nom || 'ma-boutique').toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'ma-boutique';
+
+const bodyEl = document.getElementById('body');
+const footEl = document.getElementById('foot');
+const bar = document.getElementById('bar');
+const stepnum = document.getElementById('stepnum');
+const backBtn = document.getElementById('back');
+
+const QUESTIONS = [1,2,3,4,5];
+function go(n){ S.step = n; render(); }
+backBtn.addEventListener('click', () => { if (S.step === 41) return go(4); if (S.step > 0) go(S.step - 1); });
+
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function money(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+
+/* =========================================================================
+   Rendu
+   ========================================================================= */
+function render(){
+  const q = QUESTIONS.indexOf(S.step);
+  bar.style.width = S.step === 0 ? '0%' : q >= 0 ? ((q + 1) / 5) * 100 + '%'
+    : S.step === 41 ? '80%' : S.step >= 6 ? '100%' : '0%';
+  stepnum.textContent = q >= 0 ? `Étape ${q + 1}/5` : '';
+  backBtn.style.visibility = ((S.step >= 1 && S.step <= 5) || S.step === 41) ? 'visible' : 'hidden';
+
+  const v = SCREENS[S.step]();
+  bodyEl.className = 'body' + (v.mid ? ' mid' : '');
+  bodyEl.innerHTML = v.body;
+  footEl.innerHTML = v.foot || '';
+  wire();
+}
+
+const SCREENS = {
+
+/* ---------- 0 · Accueil ---------- */
+0: () => ({ mid:true, body:`
+  <div style="display:flex;justify-content:center;margin-bottom:20px">
+    <span style="display:inline-flex;align-items:center;gap:8px;background:var(--blp);color:var(--bld);
+      font-size:.8rem;font-weight:700;padding:8px 15px;border-radius:99px">
+      <span style="width:16px;height:16px;display:inline-block">${IC.circle}</span> 60 secondes chrono
+    </span>
+  </div>
+  <h1>Réponds à 5 questions.<br />Ta boutique sera <span class="bl">prête</span>.</h1>
+  <p class="sub" style="margin:15px 0 0;font-size:1.02rem">
+    Pas de blabla, pas de formulaire compliqué. Tu réponds, on construit ta boutique pendant ce temps. Gratuit.
+  </p>
+  <div style="display:flex;align-items:center;justify-content:center;gap:11px;margin-top:26px;font-size:.86rem;color:var(--gr)">
+    <div style="display:flex">
+      ${['#e4572e','#4039c9','#078959'].map((c,i) => `<i style="width:30px;height:30px;border-radius:50%;
+        border:2px solid #F6F8FC;margin-left:${i?-8:0}px;background:${c};display:inline-block"></i>`).join('')}
+    </div>
+    <span><b>+1 483 marchands</b> ont déjà leur boutique</span>
+  </div>`,
+  foot:`<button class="btn btn-bl" data-go="1">C'est parti ${IC.arrow}</button>
+        <button class="linkish">J'ai déjà un compte TEKKIShop</button>` }),
+
+/* ---------- 1 · Nom de la boutique ---------- */
+1: () => ({ body:`
+  <h2>Comment s'appelle ta boutique&nbsp;?</h2>
+  <p class="sub">C'est le nom que tes clients verront. Tu pourras le changer plus tard.</p>
+  <input class="bigfield ${S.nom.trim().length >= 2 ? 'ok' : ''}" id="nom" maxlength="30"
+    placeholder="Ex : Nala Store" value="${esc(S.nom)}" autocomplete="off" />
+  <div class="hints"><span>Nala Store</span><span>Maison Kora</span><span>Élite Sneakers</span></div>
+  <div class="proof" id="pf">${proofNom()}</div>`,
+  foot:`<button class="btn btn-bl ${S.nom.trim().length < 2 ? 'off' : ''}" data-go="2">Continuer</button>` }),
+
+/* ---------- 2 · Catégorie ---------- */
+2: () => ({ body:`
+  <h2>Tu vends quoi, <span class="bl">${esc(S.nom || 'toi')}</span>&nbsp;?</h2>
+  <p class="sub">On adapte ta boutique et tes fiches produit à ce que tu vends.</p>
+  <div class="grid2">
+    ${Object.entries(CATS).map(([k,c]) => `
+      <button class="tile ${S.cat === k ? 'on' : ''}" data-set="cat" data-val="${k}">
+        ${IC[c.ic]}<span>${c.label}</span>
+      </button>`).join('')}
+  </div>
+  ${S.cat ? `<div class="proof">Ta première fiche produit sera préparée avec les champs utiles pour
+    <b>${catD().label.toLowerCase()}</b>. Tu n'auras qu'à ajouter ta photo et ton prix.</div>` : ''}`,
+  foot:`<button class="btn btn-bl ${!S.cat ? 'off' : ''}" data-go="3">Continuer</button>` }),
+
+/* ---------- 3 · Où en es-tu ---------- */
+3: () => ({ body:`
+  <h2>Où en es-tu aujourd'hui&nbsp;?</h2>
+  <p class="sub">Sois honnête, il n'y a pas de mauvaise réponse. Ça change ce qu'on prépare pour toi.</p>
+  <div class="stack">
+    ${ETATS.map(e => `
+      <button class="row ${S.etat === e.v ? 'on' : ''}" data-set="etat" data-val="${e.v}">
+        ${IC[e.ic]}<span>${e.label}</span>
+      </button>`).join('')}
+  </div>
+  ${S.etat ? `<div class="proof">${ETATS.find(e => e.v === S.etat).proof}</div>` : ''}`,
+  foot:`<button class="btn btn-bl ${!S.etat ? 'off' : ''}" data-go="4">Continuer</button>` }),
+
+/* ---------- 4 · Pays ---------- */
+4: () => ({ body:`
+  <h2>Tu es dans quel pays&nbsp;?</h2>
+  <p class="sub">Pour brancher les moyens de paiement de tes clients.</p>
+  <div class="grid2">
+    ${Object.entries(S.diaspora ? PAYS_DIASPORA : PAYS).map(([k,p]) => `
+      <button class="tile ${S.pays === k ? 'on' : ''}" data-set="pays" data-val="${k}">
+        <span class="flag">${p.flag}</span><span>${p.nom}</span>
+      </button>`).join('')}
+  </div>
+  <button class="linkish" id="toggleDia" style="margin-top:14px">
+    ${S.diaspora ? '← Revenir aux pays d\u2019Afrique' : "Je suis en Europe ou au Canada"}
+  </button>
+  ${S.pays ? `<div class="proof">Dès le premier jour, tes clients paient par <b>${paysD().paie}</b>,
+    déjà intégré, rien à configurer. Et tu <b>retires ton argent instantanément</b>.</div>` : ''}
+  <div class="spread" style="padding-top:16px">
+    <button class="linkish" data-go="41" style="color:var(--bld);font-weight:600">Je ne vois pas mon pays</button>
+  </div>`,
+  foot:`<button class="btn btn-bl ${!S.pays ? 'off' : ''}" data-go="5">Continuer</button>` }),
+
+/* ---------- 4 bis · Pays non couvert ---------- */
+41: () => ({ body:`
+  <h2>TEKKIShop n'est pas encore chez toi.</h2>
+  <p class="sub">On ouvre les pays un par un. Dis-nous où tu es : c'est ce qui nous dit lequel ouvrir ensuite.</p>
+
+  <div class="altbox">
+    <h4>Préviens-moi quand vous ouvrez</h4>
+    <p>On t'écrit sur WhatsApp le jour où ta boutique devient possible chez toi. Rien d'autre.</p>
+    <div class="field" style="margin-top:0">
+      <label class="lab" for="wp">Ton pays</label>
+      <input id="wp" placeholder="Ex : Cameroun" value="${esc(S.waitPays)}" />
+    </div>
+    <div class="field">
+      <label class="lab" for="wt">Ton numéro WhatsApp</label>
+      <input id="wt" type="tel" inputmode="tel" placeholder="+237 6 00 00 00 00" value="${esc(S.waitTel)}" />
+    </div>
+    <button class="btn btn-bl ${(S.waitPays.length < 3 || S.waitTel.replace(/\D/g,'').length < 8) ? 'off' : ''}"
+      id="waitBtn" style="margin-top:14px">${IC.bell} Me prévenir</button>
+  </div>
+
+  <div class="sep">ou</div>
+
+  <div class="altbox licence">
+    <h4>Tu veux lancer TEKKIShop dans ton pays&nbsp;?</h4>
+    <p>Une licence d'exploitation nationale permet à un entrepreneur d'ouvrir et de gérer TEKKIShop sur son territoire, en exclusivité.</p>
+    <button class="btn btn-gh">Découvrir la licence ${IC.arrow}</button>
+  </div>`,
+  foot:`<button class="linkish" data-go="4">← Revenir au choix du pays</button>` }),
+
+/* ---------- 5 · Blocage ---------- */
+5: () => {
+  const cur = BLOCAGES.find(o => o.v === S.blocage);
+  return { body:`
+  <h2>Qu'est-ce qui te bloque le plus&nbsp;?</h2>
+  <p class="sub">On configure ta boutique pour t'aider là-dessus en priorité.</p>
+  <div class="stack">
+    ${BLOCAGES.map(o => `
+      <button class="row ${S.blocage === o.v ? 'on' : ''}" data-set="blocage" data-val="${o.v}">
+        ${IC[o.ic]}<span><b>${o.label}</b><small>${o.sous}</small></span>
+      </button>`).join('')}
+  </div>
+  ${cur ? `<div class="proof">${cur.proof}</div>` : ''}`,
+  foot:`<button class="btn btn-bl ${!S.blocage ? 'off' : ''}" data-go="6">Créer ma boutique ${IC.arrow}</button>` };
+},
+
+/* ---------- 6 · Révélation ---------- */
+6: () => {
+  const r = REVEAL[seg()];
+  const prep = PREP[S.blocage] || PREP.clients;
+  return { mid:true, body:`
+  <div class="kick">Ce que ça change pour toi</div>
+  <h1 style="font-size:clamp(1.65rem,3.6vw,2.15rem)">${r.titre.replace('{nom}', esc(S.nom))}</h1>
+  <p class="sub" style="margin:15px 0 0">${r.texte}</p>
+  <div class="note">
+    <b>Ce qu'on prépare pour toi :</b>
+    <ul class="prep">${prep.map(p => `<li>${IC.check}<span>${p}</span></li>`).join('')}</ul>
+  </div>`,
+  foot:`<button class="btn btn-bl" data-go="7">On y va ${IC.arrow}</button>` };
+},
+
+/* ---------- 7 · Construction ---------- */
+7: () => ({ mid:true, body:`
+  <div class="spin"></div>
+  <h2 style="margin-top:22px">On construit <span class="bl">${esc(S.nom)}</span>…</h2>
+  <ul class="buildlist" id="buildlist">
+    <li>${IC.circle}<span>Ta page boutique au format mobile</span></li>
+    <li>${IC.circle}<span>Tes moyens de paiement (${paysD().paie})</span></li>
+    <li>${IC.circle}<span>Le paiement à la livraison et le suivi livreur</span></li>
+    <li>${IC.circle}<span>Ton Assistant IA personnel</span></li>
+  </ul>` }),
+
+/* ---------- 8 · Carte boutique ---------- */
+8: () => ({ body:`
+  <h2><span class="bl">${esc(S.nom)}</span> est presque prête&nbsp;!</h2>
+  <p class="sub">Il reste une chose à faire avant de pouvoir vendre.</p>
+  <div class="shopcard">
+    <div class="ico">${IC[catD().ic]}</div>
+    <h3>${esc(S.nom)}</h3>
+    <div class="url">tekki.shop/${slug()}</div>
+    <div class="badges">
+      ${paysD().paie.split(' et ').map(b => `<span>${b}</span>`).join('')}
+      <span>À la livraison</span><span>Suivi livreur</span><span>Assistant IA</span>
+    </div>
+    <div class="gauge-lab">Boutique prête à <span id="pct">0</span>%</div>
+    <div class="gauge"><i id="g"></i></div>
+    <div class="missing">${IC.pack}
+      <div>Il manque <b>ton premier produit</b>. Sans lui, ta boutique est vide et tu ne peux rien vendre. On s'en occupe juste après.</div>
+    </div>
+  </div>`,
+  foot:`<button class="btn btn-bl" data-go="9">${IC.key} Créer mon compte</button>` }),
+
+/* ---------- 9 · Compte ---------- */
+9: () => ({ body:`
+  <h2>Crée ton compte</h2>
+  <p class="sub">C'est ce qui protège <b style="color:var(--nt)">${esc(S.nom)}</b>, ton argent et tes commandes.
+    Toi seul y accèdes, depuis n'importe quel téléphone.</p>
+  <label class="lab" for="tel">Ton numéro WhatsApp</label>
+  <div class="phonerow">
+    <div class="dial"><span>${paysD().flag}</span> ${paysD().dial}</div>
+    <input id="tel" type="tel" inputmode="tel" placeholder="${paysD().ph}" value="${esc(S.tel)}" />
+  </div>
+  <div style="margin-top:20px">
+    <label class="lab">Choisis un code PIN à 6 chiffres</label>
+    <p class="sub" style="margin-bottom:11px">Il protège l'accès à tes ventes et à ton argent. Mémorise-le.</p>
+    <div class="pin" id="pinwrap">
+      ${[0,1,2,3,4,5].map(i => `<input type="tel" inputmode="numeric" maxlength="1" data-i="${i}"
+        value="${S.pin[i] || ''}" aria-label="Chiffre ${i + 1}" />`).join('')}
+    </div>
+  </div>
+  <div class="reassure">
+    <span>${IC.check} +1 483 boutiques créées</span>
+    <span>${IC.check} Création gratuite</span>
+    <span>${IC.check} Aucun engagement</span>
+  </div>`,
+  foot:`<button class="btn btn-vt ${(S.tel.replace(/\D/g,'').length < 8 || S.pin.length < 6) ? 'off' : ''}" data-go="10">
+      Ouvrir ma boutique</button>
+    <button class="linkish">J'ai déjà un compte</button>` }),
+
+/* ---------- 10 · Premier produit ---------- */
+10: () => ({ body:`
+  <h2>Ton premier produit</h2>
+  <p class="sub">Une photo, un nom, un prix. C'est tout — tu pourras en ajouter d'autres après.</p>
+  ${S.photo
+    ? `<div class="thumbs">
+         <i style="background:${catD().grad}"></i>
+         <i style="background:${catD().grad};opacity:.55"></i>
+         <i class="add">${IC.plus}</i>
+       </div>`
+    : `<button class="photo" id="addphoto">${IC.camera}<span>Ajouter une photo</span>
+        <small>Prends-la maintenant avec ton téléphone</small></button>`}
+  <div class="field">
+    <label class="lab" for="pnom">Nom du produit</label>
+    <input id="pnom" placeholder="Ex : ${catD().ex}" value="${esc(S.prodNom)}" />
+  </div>
+  <div class="field duo">
+    <div>
+      <label class="lab" for="pprix">Prix</label>
+      <div class="suffix"><input id="pprix" inputmode="numeric" placeholder="14 000" value="${esc(S.prodPrix)}" />
+        <span>${paysD().dev}</span></div>
+    </div>
+    <div>
+      <label class="lab" for="pstock">Stock</label>
+      <input id="pstock" inputmode="numeric" placeholder="12" />
+    </div>
+  </div>
+  <div class="proof">
+    ${S.cat === 'digital'
+      ? `Pour un produit à télécharger, ton client reçoit le fichier <b>automatiquement</b> après avoir payé.`
+      : `Le stock s'affiche sur ta boutique. Quand il reste peu d'articles, tes clients commandent plus vite.`}
+  </div>`,
+  foot:`<button class="btn btn-bl ${(!S.photo || S.prodNom.trim().length < 2 || !S.prodPrix) ? 'off' : ''}" data-go="11">
+      Publier et mettre ma boutique en ligne</button>` }),
+
+/* ---------- 11 · En ligne ---------- */
+11: () => {
+  const p = PARTAGE[canal()];
+  return { body:`
+  <h2>Ta boutique est <span class="bl">en ligne</span>.</h2>
+  <p class="sub">Elle est publique dès maintenant. Tes clients peuvent commander et payer.</p>
+  <div class="livecard">
+    <div class="livebar"><i></i><i></i><i></i><div class="u">tekki.shop/${slug()}</div></div>
+    <div class="livebody">
+      <div class="livehead">
+        <div class="av">${IC[catD().ic]}</div>
+        <div><b>${esc(S.nom)}</b><small>tekki.shop/${slug()}</small></div>
+      </div>
+      <div class="liveprod">
+        <i style="background:${catD().grad}"></i>
+        <div><b>${esc(S.prodNom || catD().ex)}</b>
+          <span>${money(S.prodPrix || '14000')} ${paysD().dev}</span></div>
+        <span class="voir">Voir</span>
+      </div>
+    </div>
+  </div>
+  <button class="sharebtn main">${IC[p.ic]}<div><b>${p.titre}</b><small>${p.sous}</small></div></button>
+  <button class="sharebtn">${IC.link}<div><b>Copier mon lien</b><small>tekki.shop/${slug()}</small></div></button>
+  <div class="freebox">
+    <b>Tes 3 premières commandes sont offertes.</b> Ensuite, tu choisis un plan pour continuer à recevoir des commandes.
+    Tu ne paies donc qu'après avoir vendu.
+    <div class="dots"><i></i><i></i><i></i></div>
+  </div>`,
+  foot:`<button class="btn btn-bl" data-go="0">Aller à mon tableau de bord ${IC.arrow}</button>` };
+},
+};
+
+function proofNom(){
+  return S.nom.trim().length >= 2
+    ? `L'adresse de ta boutique sera <b>tekki.shop/${slug()}</b>. Choisis un nom court, que tes clients retiennent facilement.`
+    : `Le nom de ta boutique deviendra son adresse : <b>tekki.shop/nom-de-ta-boutique</b>. Court et facile à retenir, c'est mieux.`;
+}
+
+/* =========================================================================
+   Interactions
+   ========================================================================= */
+function wire(){
+  document.querySelectorAll('[data-go]').forEach(b =>
+    b.addEventListener('click', () => go(+b.dataset.go)));
+
+  document.querySelectorAll('[data-set]').forEach(b =>
+    b.addEventListener('click', () => {
+      const k = b.dataset.set;
+      S[k] = b.dataset.val;
+      render();
+    }));
+
+  const dia = document.getElementById('toggleDia');
+  if (dia) dia.addEventListener('click', () => { S.diaspora = !S.diaspora; S.pays = null; render(); });
+
+  const nom = document.getElementById('nom');
+  if (nom){
+    setTimeout(() => nom.focus(), 160);
+    nom.addEventListener('input', e => {
+      S.nom = e.target.value;
+      const ok = S.nom.trim().length >= 2;
+      e.target.classList.toggle('ok', ok);
+      document.getElementById('pf').innerHTML = proofNom();
+      footEl.querySelector('[data-go="2"]').classList.toggle('off', !ok);
+    });
+    nom.addEventListener('keydown', e => { if (e.key === 'Enter' && S.nom.trim().length >= 2) go(2); });
+  }
+
+  /* Liste d'attente */
+  const wp = document.getElementById('wp'), wt = document.getElementById('wt');
+  function refreshWait(){
+    const btn = document.getElementById('waitBtn');
+    if (btn) btn.classList.toggle('off', S.waitPays.length < 3 || S.waitTel.replace(/\D/g,'').length < 8);
+  }
+  if (wp) wp.addEventListener('input', e => { S.waitPays = e.target.value; refreshWait(); });
+  if (wt) wt.addEventListener('input', e => { S.waitTel = e.target.value; refreshWait(); });
+  const waitBtn = document.getElementById('waitBtn');
+  if (waitBtn) waitBtn.addEventListener('click', () => {
+    waitBtn.innerHTML = IC.check + ' On te préviendra';
+    waitBtn.classList.add('off');
+  });
+
+  /* Construction */
+  if (S.step === 7){
+    const items = document.querySelectorAll('#buildlist li');
+    items.forEach((li,i) => setTimeout(() => {
+      li.classList.add('done');
+      li.querySelector('svg').outerHTML = IC.check;
+    }, 480 + i * 620));
+    setTimeout(() => go(8), 480 + items.length * 620 + 380);
+  }
+
+  /* Jauge */
+  if (S.step === 8){
+    const g = document.getElementById('g'), pct = document.getElementById('pct');
+    setTimeout(() => {
+      g.style.width = '80%';
+      let n = 0;
+      const iv = setInterval(() => { n += 4; pct.textContent = Math.min(n,80); if (n >= 80) clearInterval(iv); }, 38);
+    }, 280);
+  }
+
+  /* Compte */
+  const tel = document.getElementById('tel');
+  function refreshAccount(){
+    const btn = footEl.querySelector('[data-go="10"]');
+    if (btn) btn.classList.toggle('off', S.tel.replace(/\D/g,'').length < 8 || S.pin.length < 6);
+  }
+  if (tel) tel.addEventListener('input', e => { S.tel = e.target.value; refreshAccount(); });
+
+  const pinwrap = document.getElementById('pinwrap');
+  if (pinwrap){
+    const cells = [...pinwrap.querySelectorAll('input')];
+    cells.forEach((c,i) => {
+      c.addEventListener('input', e => {
+        e.target.value = e.target.value.replace(/\D/g,'').slice(0,1);
+        S.pin = cells.map(x => x.value).join('');
+        if (e.target.value && cells[i+1]) cells[i+1].focus();
+        refreshAccount();
+      });
+      c.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !e.target.value && cells[i-1]) cells[i-1].focus();
+      });
+    });
+  }
+
+  /* Produit */
+  const addphoto = document.getElementById('addphoto');
+  if (addphoto) addphoto.addEventListener('click', () => { S.photo = true; render(); });
+  const pnom = document.getElementById('pnom'), pprix = document.getElementById('pprix');
+  function refreshProduct(){
+    const btn = footEl.querySelector('[data-go="11"]');
+    if (btn) btn.classList.toggle('off', !S.photo || S.prodNom.trim().length < 2 || !S.prodPrix);
+  }
+  if (pnom) pnom.addEventListener('input', e => { S.prodNom = e.target.value; refreshProduct(); });
+  if (pprix) pprix.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g,'');
+    S.prodPrix = e.target.value; refreshProduct();
+  });
+}
+
+render();
+</script>
+</body>
+</html>
