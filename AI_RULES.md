@@ -239,7 +239,8 @@ La cible principale n'a jamais vendu en ligne et n'a souvent jamais utilisé de 
 
 ### Abonnements
 - Plans : **Découverte, Business, Pro**. Tarifs en base, jamais en dur.
-- **Commission de 3 %** sur les paiements en ligne, qui couvre les frais des opérateurs et du reversement. Ce n'est pas une marge : la formuler ainsi.
+- **Commission différenciée par pays** sur l'encaissement en ligne (PAY IN) : SN/CI 3 %, BJ/TG 4 %, BK 5 %, ML 5 % à titre temporaire (grille Bictorys Mali non confirmée). Taux calculé par `getCommissionRate(country, hasOwnBictorysKeys)` (`lib/billing/commission.ts`) — jamais recopié ni recalculé ailleurs. **0 % uniquement si `shops.bictorys_secret_key` est configuré, jamais dérivé du plan.** Ce n'est pas une marge : elle couvre les frais réels de l'encaissement (Bictorys + opérateur) — la formuler ainsi.
+- **Frais de retrait (PAY OUT)** facturés séparément au marchand, jamais fondus dans la commission : `getPayoutFeeRate(country, method)` (`lib/billing/payout-fees.ts`), stockés dans `payouts.payout_fee_amount`, distinct de `commission_amount`. Un pays/méthode non confirmé bloque le retrait avec un message explicite plutôt que de facturer 0 % par erreur.
 - Les abonnés conservent leur tarif en cas de changement de grille.
 
 ### Reversements

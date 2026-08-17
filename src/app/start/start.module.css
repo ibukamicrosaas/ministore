@@ -1,7 +1,7 @@
 .wrap {
-  --bl: #2E90FA;
-  --bld: #175CD3;
-  --blp: #EFF6FF;
+  --bl: #176bff;
+  --bld: #0d54d8;
+  --blp: #eaf2ff;
   --vt: #12B76A;
   --vtp: #ECFDF3;
   --vtb: #B9F0D3;
@@ -161,7 +161,7 @@
   text-decoration: none;
 }
 .btn:not(.off):hover { transform: translateY(-2px); }
-.btnBl { background: var(--bl); color: #fff; box-shadow: 0 10px 26px rgba(46, 144, 250, 0.32); }
+.btnBl { background: var(--bl); color: #fff; box-shadow: 0 10px 26px rgba(23, 107, 255, 0.32); }
 .btnVt { background: var(--vt); color: #fff; box-shadow: 0 10px 26px rgba(18, 183, 106, 0.32); }
 .btnGh { background: #fff; color: var(--nt); border: 2px solid var(--ln); }
 .off { opacity: 0.36; pointer-events: none; box-shadow: none; }

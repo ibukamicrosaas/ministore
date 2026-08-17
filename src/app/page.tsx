@@ -43,12 +43,12 @@ export default async function LandingPage() {
   return (
     <div className="lv6" id="top">
 
-      {/* ── Bannière TEKKIPro ──────────────────────────────────────── */}
+      {/* ── Bannière d'annonce ─────────────────────────────────────── */}
       <div className="announcement-bar">
-        <span>Tu proposes des services ?</span>
-        <a href="https://tekki.pro" target="_blank" rel="noopener noreferrer">
-          Découvre TEKKIPro →
-        </a>
+        <span>3 premières commandes offertes</span>
+        <Link href="/start">
+          Je me lance →
+        </Link>
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────── */}
