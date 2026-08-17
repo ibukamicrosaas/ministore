@@ -1,5 +1,11 @@
 import type { Plan } from '@/app/dashboard/upgrade/UpgradePlans'
 import { isEuCaCountry, getCurrencyForCountry } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
+
+// Marqueur remplacé par le taux réel du pays au moment de la résolution —
+// jamais un pourcentage tapé en dur dans la liste de base, voir
+// resolvePlanFeatures() et getPlansForCountry() ci-dessous.
+const COMMISSION_MARKER = '{{COMMISSION}}'
 
 export const AFRICA_PLANS: Plan[] = [
   {
@@ -16,7 +22,7 @@ export const AFRICA_PLANS: Plan[] = [
       'Paiements Wave & Orange Money',
       'Paiement à la livraison',
       'Suivi des commandes en temps réel',
-      '3% de commission sur paiements en ligne',
+      `${COMMISSION_MARKER} de commission sur paiements en ligne`,
     ],
     highlighted: false,
   },
@@ -35,7 +41,7 @@ export const AFRICA_PLANS: Plan[] = [
       'Alertes retour en stock pour tes clients',
       'Codes promo & réductions',
       'Dashboard optimisé sur mobile',
-      '3% de commission sur paiements en ligne',
+      `${COMMISSION_MARKER} de commission sur paiements en ligne`,
     ],
     highlighted: true,
   },
@@ -50,7 +56,7 @@ export const AFRICA_PLANS: Plan[] = [
     currency:     'XOF',
     features: [
       'Tout du plan Business',
-      '0% de commission sur paiements en ligne',
+      '0% de commission avec tes propres clés Bictorys',
       'Domaine personnalisé (tonsite.com)',
       'Section "À propos" avec photo de boutique',
       'Statistiques avancées & analyses',
@@ -95,9 +101,28 @@ export const EU_CA_PRO_PLAN_CAD: Plan = {
   currency:    'CAD',
 }
 
+/**
+ * Remplace le marqueur de commission par le taux réel — jamais utilisé
+ * en dehors de ce fichier pour la résolution automatique via
+ * getPlansForCountry(), mais exporté pour les rares consommateurs qui ne
+ * passent pas par cette fonction (voir StripeSubscriptionCheckoutForm.tsx).
+ */
+export function resolvePlanFeatures(features: string[], commissionLabel: string): string[] {
+  return features.map(f => f.replace(COMMISSION_MARKER, commissionLabel))
+}
+
 export function getPlansForCountry(country: string | null | undefined): { plans: Plan[]; isEuCa: boolean } {
   const isEuCa = isEuCaCountry(country)
-  if (!isEuCa) return { plans: AFRICA_PLANS, isEuCa }
-  const currency = getCurrencyForCountry(country)
-  return { plans: [currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR], isEuCa }
+  if (isEuCa) {
+    const currency = getCurrencyForCountry(country)
+    return { plans: [currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR], isEuCa }
+  }
+
+  // Le taux dépend du pays réel de la boutique — jamais un plan ne détient
+  // ses propres clés Bictorys tant qu'il n'est pas Pro et configuré
+  // manuellement (Paramètres → Paiements), donc toujours false ici : cette
+  // liste sert à choisir/comparer un plan, pas à refléter un état déjà acquis.
+  const commissionLabel = `${getCommissionRate(country, false)}%`
+  const plans = AFRICA_PLANS.map(p => ({ ...p, features: resolvePlanFeatures(p.features, commissionLabel) }))
+  return { plans, isEuCa }
 }

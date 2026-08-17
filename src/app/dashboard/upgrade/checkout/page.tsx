@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { SubscriptionCheckoutForm } from './SubscriptionCheckoutForm'
 import { StripeSubscriptionCheckoutForm } from './StripeSubscriptionCheckoutForm'
 import { isEuCaCountry, getCurrencyForCountry, PLAN_EUR_PRICES } from '@/lib/utils/country-groups'
+import { getCommissionRate } from '@/lib/billing/commission'
 
 interface Plan {
   key:         string
@@ -86,6 +87,11 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
       displayCurrency = 'EUR'
     }
 
+    // Taux de commission réel du pays — jamais tapé en dur dans le
+    // formulaire, voir lib/billing/commission.ts / plans.ts. Sans objet
+    // pour EU/CA (commission Stripe distincte, jamais liée à Bictorys).
+    const commissionLabel = `${getCommissionRate(shopCountry, false)}%`
+
     return (
       <StripeSubscriptionCheckoutForm
         planKey={plan.key}
@@ -97,6 +103,7 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
         primaryColor={shop.primary_color ?? '#0EA5E9'}
         customerEmail={shopEmail}
         isEuCa={shopEuCa}
+        commissionLabel={commissionLabel}
       />
     )
   }

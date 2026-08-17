@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ArrowLeft, CreditCard, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { AFRICA_PLANS, EU_CA_PRO_PLAN_EUR, EU_CA_PRO_PLAN_CAD } from '@/lib/billing/plans'
+import { AFRICA_PLANS, EU_CA_PRO_PLAN_EUR, EU_CA_PRO_PLAN_CAD, resolvePlanFeatures } from '@/lib/billing/plans'
 
 interface Props {
   planKey:       string
@@ -15,14 +15,19 @@ interface Props {
   primaryColor:  string
   customerEmail?: string
   isEuCa:        boolean
+  /** Taux réel du pays, déjà résolu par la page appelante — voir
+   * lib/billing/commission.ts. Sans objet si isEuCa (commission Stripe
+   * distincte, jamais liée à Bictorys). */
+  commissionLabel?: string
 }
 
 const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', CAD: 'CAD' }
 
-function getPlanFeatures(planKey: string, currency: 'EUR' | 'CAD', isEuCa: boolean): string[] {
+function getPlanFeatures(planKey: string, currency: 'EUR' | 'CAD', isEuCa: boolean, commissionLabel: string): string[] {
   if (isEuCa) return (currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR).features
-  return AFRICA_PLANS.find(p => p.key === planKey)?.features
+  const base = AFRICA_PLANS.find(p => p.key === planKey)?.features
     ?? AFRICA_PLANS.find(p => p.key === 'pro')!.features
+  return resolvePlanFeatures(base, commissionLabel)
 }
 
 export function StripeSubscriptionCheckoutForm({
@@ -35,6 +40,7 @@ export function StripeSubscriptionCheckoutForm({
   primaryColor,
   customerEmail,
   isEuCa,
+  commissionLabel,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -108,7 +114,7 @@ export function StripeSubscriptionCheckoutForm({
           </div>
 
           <ul className="space-y-2 border-t border-gray-100 pt-4">
-            {getPlanFeatures(planKey, currency, isEuCa).map(f => (
+            {getPlanFeatures(planKey, currency, isEuCa, commissionLabel ?? '3%').map(f => (
               <li key={f} className="flex items-center gap-2 text-xs text-gray-700">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: primaryColor }} />
                 {f}

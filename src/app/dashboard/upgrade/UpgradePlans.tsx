@@ -198,7 +198,7 @@ export function UpgradePlans({ plans, currentPlan, isEuCa, showCardOption, subsc
                     }`}
                   >
                     {isEuCa ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                    {isEuCa ? 'Payer par carte bancaire' : 'Activer ce plan'}
+                    {isEuCa ? 'Payer par carte bancaire' : 'Choisir ce plan'}
                   </button>
                   {showCardOption && (
                     <button
