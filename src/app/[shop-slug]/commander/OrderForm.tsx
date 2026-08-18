@@ -168,6 +168,7 @@ interface ProductOption {
   customization_enabled: boolean
   customization_label: string | null
   quantity_discounts: { min_qty: number; discount_pct: number }[] | null
+  product_type: 'physical' | 'digital'
 }
 
 interface OrderItem {
@@ -198,7 +199,6 @@ interface Props {
   preselectedVariant: string | null
   preselectedQuantity?: number
   basePath: string
-  isDigital?: boolean
   acceptingOrders?: boolean
 }
 
@@ -224,7 +224,6 @@ export function OrderForm({
   preselectedVariant,
   preselectedQuantity = 1,
   basePath,
-  isDigital = false,
 }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
@@ -235,6 +234,7 @@ export function OrderForm({
     firstName?: string
     phone?: string
     address?: string
+    email?: string
   }>({})
 
   // Garde anti-ghost-click : un tap juste après que la page devient interactive
@@ -314,12 +314,19 @@ export function OrderForm({
   const [notes, setNotes] = useState('')
   // Premier article en mode "carte confirmée" si arrivé depuis une page produit
   const [firstItemLocked, setFirstItemLocked] = useState(!!preselectedProductId)
-  // Si le cash à la livraison est désactivé, forcer le paiement en ligne.
-  // Si les deux sont désactivés, cette valeur ne sera jamais soumise —
-  // hasAnyPaymentMethod (plus bas) bloque la confirmation avant ce cas-là.
-  const [paymentType, setPaymentType] = useState<'online' | 'on_delivery'>(
-    acceptCashOnDelivery ? 'on_delivery' : 'online'
+  // Choix de paiement explicite à 3 valeurs (lot C, §7 de la spec) — remplace
+  // l'ancien état binaire où l'acompte était déduit en silence dès que "online"
+  // était choisi et qu'un deposit_percentage était configuré. Défaut : même ordre
+  // de préférence qu'avant (cash à la livraison si actif, sinon en ligne complet).
+  // Si aucun mode n'est actif, cette valeur ne sera jamais soumise — hasAnyPaymentMethod
+  // (plus bas) bloque la confirmation avant ce cas-là.
+  const [paymentChoice, setPaymentChoice] = useState<'online_full' | 'online_deposit' | 'on_delivery'>(
+    acceptCashOnDelivery ? 'on_delivery' : 'online_full'
   )
+  // Vrai une fois qu'un article digital a forcé le paiement en ligne complet — la
+  // bascule reste acquise même si l'article digital est ensuite retiré (décision
+  // explicite, pas de retour automatique au choix précédent).
+  const [switchedForDigital, setSwitchedForDigital] = useState(false)
   // Code promo
   const [promoCode, setPromoCode]         = useState('')
   const [promoDiscount, setPromoDiscount] = useState(0)
@@ -351,6 +358,22 @@ export function OrderForm({
   function getProduct(id: string) {
     return products.find((p) => p.id === id)
   }
+
+  // isDigital disparaît au profit de deux informations dérivées du panier réel,
+  // recalculées à chaque changement d'article (§8 de la spec, corrige 3.11 — avant,
+  // isDigital était figé côté serveur sur le seul produit présélectionné).
+  const hasDigitalItem  = items.some(it => getProduct(it.product_id)?.product_type === 'digital')
+  const hasPhysicalItem = items.some(it => getProduct(it.product_id)?.product_type !== 'digital')
+
+  // Bascule annoncée, jamais subie (§8) : un fichier dans le panier force le
+  // paiement en ligne complet — si l'acheteur avait choisi autre chose, on le
+  // fait basculer et on garde une trace pour expliquer pourquoi à l'écran.
+  useEffect(() => {
+    if (hasDigitalItem && paymentChoice !== 'online_full') {
+      setPaymentChoice('online_full')
+      setSwitchedForDigital(true)
+    }
+  }, [hasDigitalItem, paymentChoice])
 
   function updateItem(index: number, patch: Partial<OrderItem>) {
     setItems((prev) => {
@@ -426,14 +449,12 @@ export function OrderForm({
   const total          = itemsSubtotal - promoAmount + deliveryPrice
   const subtotal       = itemsSubtotal + deliveryPrice  // pour l'affichage du sous-total si besoin
   void subtotal
-  const deposit = paymentType === 'online' ? computeDeposit() : 0
-  const hasDeposit = deposit > 0 && deposit < total
 
   // Décomposition pour le relevé (lot B) — valeurs d'affichage dérivées, ne changent
-  // ni `itemsSubtotal`, ni `promoAmount`, ni `total`, ni `deposit` ci-dessus, tous
-  // calculés exactement comme avant. rawSubtotal (prix plein, avant remise quantité)
-  // sert de "Sous-total" affiché ; qtyDiscountAmount est la différence avec
-  // itemsSubtotal (déjà remisé quantité) — reconstitue le total à l'identique :
+  // ni `itemsSubtotal`, ni `promoAmount`, ni `total` ci-dessus, tous calculés
+  // exactement comme avant. rawSubtotal (prix plein, avant remise quantité) sert
+  // de "Sous-total" affiché ; qtyDiscountAmount est la différence avec itemsSubtotal
+  // (déjà remisé quantité) — reconstitue le total à l'identique :
   // rawSubtotal - qtyDiscountAmount - promoAmount + deliveryPrice === total.
   const rawSubtotal = items.reduce((sum, it) => {
     const p = getProduct(it.product_id)
@@ -441,17 +462,40 @@ export function OrderForm({
     return sum + getItemBasePrice(p, it.variant_label) * it.quantity
   }, 0)
   const qtyDiscountAmount = rawSubtotal - itemsSubtotal
-  // Troisième état du choix de paiement marchand : ni en ligne ni à la livraison
-  // n'est actif (un digital n'a de toute façon jamais la livraison comme option).
-  // paymentType par défaut reste 'online' dans ce cas (ligne ~230) mais ça n'a
-  // plus d'importance : hasAnyPaymentMethod bloque la confirmation avant que
-  // cette valeur ne serve à quoi que ce soit.
-  const hasAnyPaymentMethod = isDigital ? acceptOnlinePayment : (acceptOnlinePayment || acceptCashOnDelivery)
 
-  // "Ce que tu paies maintenant" / "à la livraison" (§6 de la spec) — dérivé des
-  // mêmes valeurs (total, deposit, paymentType, isDigital), rien de recalculé.
-  const amountNow   = isDigital ? total : (paymentType === 'online' ? (hasDeposit ? deposit : total) : 0)
-  const amountLater = isDigital ? 0     : (paymentType === 'online' ? (hasDeposit ? total - deposit : 0) : total)
+  // Acompte : montant inchangé (computeDeposit(), même calcul qu'avant le lot C) —
+  // seule la façon dont il est proposé change. hasDeposit détermine si le choix
+  // explicite "Payer un acompte" existe (§7) ; avant, cette même valeur décidait
+  // en silence si "payer maintenant" devenait un acompte sans que l'acheteur l'ait demandé.
+  const depositAmount = computeDeposit()
+  const hasDeposit = depositAmount > 0 && depositAmount < total
+  // Panier mixte : l'acompte ne couvre que les articles qui en ont un configuré
+  // (computeDeposit() les ignore déjà, comportement hérité, pas changé ici) — ce
+  // drapeau sert uniquement à afficher "Acompte partiel" quand ce n'est pas la
+  // totalité du panier qui est concernée.
+  const allItemsHaveDeposit = items.length > 0 && items.every(it => {
+    const p = getProduct(it.product_id)
+    if (!p) return true
+    const pct = p.deposit_percentage != null ? p.deposit_percentage : shopDepositPct
+    return pct > 0
+  })
+
+  // Composition des choix disponibles (§7) — un article digital exclut cash et
+  // acompte quel que soit le reste du panier (§8), géré par useEffect plus haut
+  // qui force paymentChoice à 'online_full' dans ce cas.
+  const paymentChoices: ('online_full' | 'online_deposit' | 'on_delivery')[] = []
+  if (acceptOnlinePayment) paymentChoices.push('online_full')
+  if (!hasDigitalItem && acceptCashOnDelivery) paymentChoices.push('on_delivery')
+  if (!hasDigitalItem && acceptOnlinePayment && acceptCashOnDelivery && hasDeposit) paymentChoices.push('online_deposit')
+  const hasAnyPaymentMethod = paymentChoices.length > 0
+
+  // "Ce que tu paies maintenant" / "à la livraison" (§6 de la spec).
+  const amountNow = paymentChoice === 'online_deposit' ? depositAmount
+    : paymentChoice === 'online_full' ? total
+    : 0
+  const amountLater = paymentChoice === 'online_deposit' ? total - depositAmount
+    : paymentChoice === 'on_delivery' ? total
+    : 0
 
   const fullPhone = `${phoneDial}${phoneNum}`
   const fullWhatsapp = sameWa ? fullPhone : `${waDial}${waNum}`
@@ -464,8 +508,13 @@ export function OrderForm({
     const newErrors: typeof errors = {}
     if (!firstName.trim()) newErrors.firstName = 'Votre nom est obligatoire.'
     if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
-    if (!isDigital && deliveryType === 'home_delivery' && !address.trim())
+    if (hasPhysicalItem && deliveryType === 'home_delivery' && !address.trim())
       newErrors.address = "L'adresse de livraison est obligatoire."
+    // Panier 100% digital : l'e-mail devient obligatoire (§8) — c'est le seul moyen
+    // de retrouver son fichier hors de cette session. Validation client uniquement
+    // pour ce lot, sur décision explicite — pas de renfort côté serveur ici.
+    if (!hasPhysicalItem && hasDigitalItem && !clientEmail.trim())
+      newErrors.email = "L'e-mail est obligatoire pour un achat numérique."
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -511,8 +560,8 @@ export function OrderForm({
         }
       }),
       delivery_date: null,
-      delivery_type: isDigital ? 'store_pickup' : deliveryType,
-      delivery_address: (!isDigital && deliveryType === 'home_delivery') ? address.trim() : null,
+      delivery_type: hasPhysicalItem ? deliveryType : 'store_pickup',
+      delivery_address: (hasPhysicalItem && deliveryType === 'home_delivery') ? address.trim() : null,
       client_first_name: firstName.trim(),
       client_phone: fullPhone,
       client_whatsapp: fullWhatsapp,
@@ -521,22 +570,18 @@ export function OrderForm({
       delivery_zone_name: (deliveryType === 'home_delivery' && selectedZone) ? selectedZone.name : null,
       delivery_price: deliveryPrice,
       promo_code: promoStatus === 'valid' ? promoCode.trim().toUpperCase() : null,
-      payment_type: isDigital
-        ? (acceptOnlinePayment ? 'online_full' : 'on_site')
-        : paymentType === 'online'
-          ? hasDeposit
-            ? 'online_deposit'
-            : 'online_full'
-          : deliveryType === 'home_delivery'
-            ? 'on_delivery'
-            : 'on_site',
+      // Les 4 valeurs envoyées au serveur restent celles d'aujourd'hui (§7 de la
+      // spec) — seul paymentChoice, l'état client, est nouveau. Le cas digital sans
+      // paiement en ligne (ancien repli 'on_site') n'est plus atteignable : ces
+      // produits sont désormais désactivés dans le sélecteur si !acceptOnlinePayment.
+      payment_type: paymentChoice === 'online_full' ? 'online_full'
+        : paymentChoice === 'online_deposit' ? 'online_deposit'
+        : deliveryType === 'home_delivery' ? 'on_delivery' : 'on_site',
     }
 
     // Pour les paiements en ligne (acompte ou complet), afficher le modal d'engagement
     // avant de soumettre — réduit les commandes fantômes.
-    const willPayOnline =
-      (isDigital && acceptOnlinePayment) ||
-      (!isDigital && paymentType === 'online')
+    const willPayOnline = paymentChoice === 'online_full' || paymentChoice === 'online_deposit'
 
     if (willPayOnline) {
       pendingOrderBody.current = body
@@ -612,7 +657,7 @@ export function OrderForm({
       total={total}
       amountNow={amountNow}
       amountLater={amountLater}
-      laterContext={isDigital ? null : deliveryType}
+      laterContext={hasPhysicalItem ? deliveryType : null}
     />
   )
 
@@ -634,7 +679,7 @@ export function OrderForm({
           style={{ backgroundColor: primaryColor }}
         >
           <ShoppingBag className="h-5 w-5" />
-          {submitting ? 'Envoi en cours...' : isDigital ? 'Acheter et télécharger' : 'Confirmer la commande'}
+          {submitting ? 'Envoi en cours...' : hasDigitalItem ? 'Acheter et télécharger' : 'Confirmer la commande'}
         </button>
       )}
       <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center text-[10px] text-gray-400 pt-2">
@@ -749,11 +794,19 @@ export function OrderForm({
                             onChange={(e) => updateItem(i, { product_id: e.target.value })}
                             className={`${inputCls} appearance-none py-2.5 pr-10`}
                           >
-                            {products.map((prod) => (
-                              <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0}>
-                                {prod.name}{prod.stock_count === 0 ? ' — Rupture' : ''}
-                              </option>
-                            ))}
+                            {products.map((prod) => {
+                              // Panier non finançable (§8) : sans paiement en ligne accepté par
+                              // la boutique, un produit digital n'a structurellement aucun mode
+                              // de paiement possible — désactivé à la sélection plutôt que
+                              // découvert en bas de formulaire sans issue.
+                              const digitalBlocked = prod.product_type === 'digital' && !acceptOnlinePayment
+                              return (
+                                <option key={prod.id} value={prod.id} disabled={prod.stock_count === 0 || digitalBlocked}>
+                                  {prod.name}
+                                  {prod.stock_count === 0 ? ' — Rupture' : digitalBlocked ? ' — Paiement en ligne requis' : ''}
+                                </option>
+                              )
+                            })}
                           </select>
                           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         </div>
@@ -869,7 +922,7 @@ export function OrderForm({
           <div className="border-t border-gray-100" />
 
           {/* 2 — Comment tu reçois ta commande — masquée entièrement pour un produit digital (§5.2) */}
-          {!isDigital && (deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
+          {hasPhysicalItem && (deliveryOptions.home_delivery || deliveryOptions.store_pickup) && (
             <>
               <section>
                 <SectionTitle label="Comment tu reçois ta commande" />
@@ -1016,18 +1069,27 @@ export function OrderForm({
                   />
                 </div>
               )}
-              <div>
+              <div data-error-anchor={errors.email ? true : undefined}>
                 <input
                   type="email"
                   value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="E-mail (optionnel)"
+                  onChange={(e) => {
+                    setClientEmail(e.target.value)
+                    if (errors.email) setErrors(p => ({ ...p, email: undefined }))
+                  }}
+                  placeholder={!hasPhysicalItem && hasDigitalItem ? 'E-mail *' : 'E-mail (optionnel)'}
                   autoComplete="email"
-                  className={inputCls}
+                  className={`${inputCls} ${errors.email ? 'border-red-400 focus:border-red-400' : ''}`}
                 />
-                <p className="mt-1 text-xs text-gray-400">
-                  Votre adresse e-mail nous permettra de vous envoyer une confirmation de commande.
-                </p>
+                {errors.email ? (
+                  <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-400">
+                    {!hasPhysicalItem && hasDigitalItem
+                      ? 'Ton lien de téléchargement sera aussi envoyé par e-mail.'
+                      : 'Votre adresse e-mail nous permettra de vous envoyer une confirmation de commande.'}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -1037,44 +1099,68 @@ export function OrderForm({
           {/* 4 — Comment tu paies */}
           <section>
             <SectionTitle label="Comment tu paies" />
+
+            {switchedForDigital && hasDigitalItem && (
+              <p className="mb-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-xs text-violet-700">
+                Ta commande contient un fichier à télécharger, elle se règle en ligne.
+              </p>
+            )}
+
             {!hasAnyPaymentMethod ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm font-semibold text-amber-800">
                 Cette boutique n&apos;accepte aucun mode de paiement en ce moment.
               </div>
+            ) : paymentChoices.length === 1 ? (
+              // Une décision qui n'en est pas une disparaît (§5, principe D) : un seul
+              // mode possible devient une phrase, pas un bouton radio pré-coché seul.
+              <p className="text-sm font-medium text-gray-700">
+                {paymentChoices[0] === 'online_full' && (
+                  <>Tu paies <strong>{formatPrice(total, shopCurrency)}</strong> maintenant par mobile money.</>
+                )}
+                {paymentChoices[0] === 'on_delivery' && (
+                  <>Tu régleras <strong>{formatPrice(total, shopCurrency)}</strong> en espèces {deliveryType === 'home_delivery' ? 'à la livraison' : 'en boutique'}.</>
+                )}
+              </p>
             ) : (
             <div className="space-y-2">
-              {acceptOnlinePayment && (
-                <label className="block cursor-pointer" onClick={() => setPaymentType('online')}>
-                  <RadioCard checked={paymentType === 'online'} primaryColor={primaryColor}>
+              {paymentChoices.map(choice => (
+                <label key={choice} className="block cursor-pointer" onClick={() => setPaymentChoice(choice)}>
+                  <RadioCard checked={paymentChoice === choice} primaryColor={primaryColor}>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
-                      <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
-                      {paymentType === 'online' && hasDeposit && (
-                        <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                          Acompte : {formatPrice(deposit, shopCurrency)}
-                        </p>
+                      {choice === 'online_full' && (
+                        <>
+                          <p className="text-sm font-semibold text-gray-900">Payer maintenant</p>
+                          <p className="text-xs text-gray-500">Wave, Orange Money, Maxit</p>
+                          {paymentChoice === 'online_full' && total > 0 && (
+                            <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
+                              Total : {formatPrice(total, shopCurrency)}
+                            </p>
+                          )}
+                        </>
                       )}
-                      {paymentType === 'online' && !hasDeposit && total > 0 && (
-                        <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
-                          Total : {formatPrice(total, shopCurrency)}
-                        </p>
+                      {choice === 'online_deposit' && (
+                        <>
+                          <p className="text-sm font-semibold text-gray-900">Payer un acompte</p>
+                          <p className="text-xs text-gray-500">
+                            {allItemsHaveDeposit ? 'Le reste se règle à la livraison' : 'Acompte partiel — le reste se paie à la livraison'}
+                          </p>
+                          <p className="mt-1 text-xs font-bold" style={{ color: primaryColor }}>
+                            Acompte : {formatPrice(depositAmount, shopCurrency)}
+                          </p>
+                        </>
+                      )}
+                      {choice === 'on_delivery' && (
+                        <>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
+                          </p>
+                          <p className="text-xs text-gray-500">Tu payes à la réception</p>
+                        </>
                       )}
                     </div>
                   </RadioCard>
                 </label>
-              )}
-              {!isDigital && acceptCashOnDelivery && (
-                <label className="block cursor-pointer" onClick={() => setPaymentType('on_delivery')}>
-                  <RadioCard checked={paymentType === 'on_delivery'} primaryColor={primaryColor}>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {deliveryType === 'home_delivery' ? 'Payer à la livraison' : 'Payer en boutique'}
-                      </p>
-                      <p className="text-xs text-gray-500">Vous payez à la réception</p>
-                    </div>
-                  </RadioCard>
-                </label>
-              )}
+              ))}
             </div>
             )}
           </section>
@@ -1162,9 +1248,9 @@ export function OrderForm({
               <p className="text-sm text-gray-700 leading-relaxed mb-4">
                 En cliquant sur <strong>Continuer</strong>, tu t&apos;engages à payer{' '}
                 <strong className="text-gray-900">
-                  {formatPrice(hasDeposit ? deposit : total, shopCurrency)}
+                  {formatPrice(paymentChoice === 'online_deposit' ? depositAmount : total, shopCurrency)}
                 </strong>{' '}
-                {hasDeposit ? "d'acompte " : ''}par mobile money (Wave, Orange Money, etc.).
+                {paymentChoice === 'online_deposit' ? "d'acompte " : ''}par mobile money (Wave, Orange Money, etc.).
               </p>
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
                 Si tu n&apos;effectues pas le paiement, la commande sera automatiquement annulée.
