@@ -1164,3 +1164,25 @@ Troisième des 4 lots (§13 de la spec). Plan envoyé et validé séparément av
 **Tests réalisés sans écriture en base** : navigation et captures d'écran uniquement (`Page.navigate`/`Page.reload`/`Page.captureScreenshot`), aucun champ du formulaire rempli, aucun clic sur « Confirmer la commande »/« Acheter et télécharger » à aucun moment — confirmé en relisant chaque script utilisé. Les 4 boutiques suspendues/inactives testées pour la bannière n'ont de toute façon jamais affiché le formulaire de commande. Aucune commande de test créée.
 
 **Prochaine étape** : lot D (sorties — plan à proposer séparément avant code, comme convenu).
+
+---
+
+## 29. Annuaire des boutiques — idée déposée le 2026-08-18, pas de spec écrite, dernier de la file
+
+**Pas de spec, pas d'exploration de code, pas de plan — à ne pas commencer avant que ce chantier ne remonte dans la file.**
+
+**Objectif** : page publique listant les boutiques TEKKIShop, filtrable par pays/ville/catégorie, pour aider les nouveaux marchands à se faire découvrir au-delà de leur réseau.
+
+**Décisions déjà prises** :
+- Inscription automatique pour tout abonné à un plan payant actif (Découverte, Business, ou Pro) — exclut explicitement les boutiques en essai (`trial_model = 'free_orders'`), même publiques, tant qu'aucun paiement n'a eu lieu.
+- Le marchand peut se rendre invisible depuis ses paramètres (toggle opt-out), sans perdre son abonnement.
+
+**Questions ouvertes, à trancher quand ce chantier remontera dans la file, pas maintenant** :
+- Un champ catégorie existe-t-il déjà sur les boutiques, ou faut-il le créer ?
+- Comment cet annuaire s'articule avec les pages pays déjà en production (`/mali`, `/togo`, `/benin`, etc.) — remplacement, complément, ou lien entre les deux ?
+
+**Position dans la file** : après le dashboard marchand — donc en dernier des chantiers actuellement documentés.
+1. Refonte du tunnel de commande (Livraison 2, `SPEC-refonte-tunnel-commande.md`, 4 lots A-D — A, B, C livrés, D en attente de plan — §4 point 0).
+2. Lots 2 à 5 de la refonte des boutiques publiques (`SPEC-v2-refonte-boutiques-publiques.md` — §4 point 5).
+3. Refonte du dashboard marchand (§24).
+4. **Annuaire des boutiques** (ce chantier) — après les trois précédents.
