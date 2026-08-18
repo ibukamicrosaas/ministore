@@ -9,6 +9,7 @@ import type { ProductVariant, DeliveryZone } from '@/types'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { OrderSummary } from '@/components/shop/OrderSummary'
 
 const COUNTRIES = [
   // Afrique
@@ -427,12 +428,30 @@ export function OrderForm({
   void subtotal
   const deposit = paymentType === 'online' ? computeDeposit() : 0
   const hasDeposit = deposit > 0 && deposit < total
+
+  // Décomposition pour le relevé (lot B) — valeurs d'affichage dérivées, ne changent
+  // ni `itemsSubtotal`, ni `promoAmount`, ni `total`, ni `deposit` ci-dessus, tous
+  // calculés exactement comme avant. rawSubtotal (prix plein, avant remise quantité)
+  // sert de "Sous-total" affiché ; qtyDiscountAmount est la différence avec
+  // itemsSubtotal (déjà remisé quantité) — reconstitue le total à l'identique :
+  // rawSubtotal - qtyDiscountAmount - promoAmount + deliveryPrice === total.
+  const rawSubtotal = items.reduce((sum, it) => {
+    const p = getProduct(it.product_id)
+    if (!p) return sum
+    return sum + getItemBasePrice(p, it.variant_label) * it.quantity
+  }, 0)
+  const qtyDiscountAmount = rawSubtotal - itemsSubtotal
   // Troisième état du choix de paiement marchand : ni en ligne ni à la livraison
   // n'est actif (un digital n'a de toute façon jamais la livraison comme option).
   // paymentType par défaut reste 'online' dans ce cas (ligne ~230) mais ça n'a
   // plus d'importance : hasAnyPaymentMethod bloque la confirmation avant que
   // cette valeur ne serve à quoi que ce soit.
   const hasAnyPaymentMethod = isDigital ? acceptOnlinePayment : (acceptOnlinePayment || acceptCashOnDelivery)
+
+  // "Ce que tu paies maintenant" / "à la livraison" (§6 de la spec) — dérivé des
+  // mêmes valeurs (total, deposit, paymentType, isDigital), rien de recalculé.
+  const amountNow   = isDigital ? total : (paymentType === 'online' ? (hasDeposit ? deposit : total) : 0)
+  const amountLater = isDigital ? 0     : (paymentType === 'online' ? (hasDeposit ? total - deposit : 0) : total)
 
   const fullPhone = `${phoneDial}${phoneNum}`
   const fullWhatsapp = sameWa ? fullPhone : `${waDial}${waNum}`
@@ -563,41 +582,38 @@ export function OrderForm({
 
   const displayFont = { fontFamily: 'var(--lv6-display, "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif)' }
 
-  // ── Relevé (recap) — contenu partagé entre la barre mobile et la colonne desktop ──
-  // Pas encore le composant partagé décrit au §6 de la spec (lot B) : mêmes lignes
-  // qu'avant la refonte, seulement replacées dans la nouvelle disposition.
-  const recapContent = total > 0 && (
-    <div className="space-y-0.5">
-      {deliveryPrice > 0 && (
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Livraison ({selectedZone?.name})</span>
-          <span>+{formatPrice(deliveryPrice, shopCurrency)}</span>
-        </div>
-      )}
-      {promoAmount > 0 && (
-        <div className="flex items-center justify-between text-xs text-green-600 font-medium">
-          <span>Réduction ({promoDiscount}%)</span>
-          <span>-{formatPrice(promoAmount, shopCurrency)}</span>
-        </div>
-      )}
-      {hasDeposit && paymentType === 'online' ? (
-        <>
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Total commande</span>
-            <span>{formatPrice(total, shopCurrency)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-            <span>Acompte à payer maintenant</span>
-            <span>{formatPrice(deposit, shopCurrency)}</span>
-          </div>
-        </>
-      ) : (
-        <div className="flex items-center justify-between text-sm font-bold text-gray-900">
-          <span>Total commande</span>
-          <span>{formatPrice(total, shopCurrency)}</span>
-        </div>
-      )}
-    </div>
+  // ── Relevé (recap) — composant partagé §6 de la spec (lot B), réutilisé tel quel
+  // par la barre mobile et la colonne desktop, sans dupliquer son contenu.
+  const recapContent = itemsSubtotal > 0 && (
+    <OrderSummary
+      currency={shopCurrency}
+      itemCount={items.length}
+      itemsSubtotal={rawSubtotal}
+      qtyDiscountAmount={qtyDiscountAmount}
+      promoCode={promoStatus === 'valid' ? promoCode.trim().toUpperCase() : null}
+      promoDiscountPct={promoDiscount}
+      promoAmount={promoAmount}
+      promoInputValue={promoCode}
+      onPromoInputChange={v => {
+        setPromoCode(v)
+        if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoDiscount(0) }
+      }}
+      promoStatus={promoStatus}
+      promoError={promoError}
+      onApplyPromo={applyPromoCode}
+      onRemovePromo={() => {
+        setPromoCode('')
+        setPromoDiscount(0)
+        setPromoStatus('idle')
+        setPromoError('')
+      }}
+      deliveryAmount={deliveryPrice}
+      deliveryZoneName={selectedZone?.name}
+      total={total}
+      amountNow={amountNow}
+      amountLater={amountLater}
+      laterContext={isDigital ? null : deliveryType}
+    />
   )
 
   const ctaButton = (
@@ -848,15 +864,6 @@ export function OrderForm({
                 Ajouter un autre article
               </button>
             )}
-
-            {itemsSubtotal > 0 && (
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-sm font-medium text-gray-500">Sous-total</span>
-                <span className="text-base font-bold" style={{ color: primaryColor }}>
-                  {formatPrice(itemsSubtotal, shopCurrency)}
-                </span>
-              </div>
-            )}
           </section>
 
           <div className="border-t border-gray-100" />
@@ -1074,45 +1081,6 @@ export function OrderForm({
 
           <div className="border-t border-gray-100" />
 
-          {/* Code promo — reste ici tel quel ; son déplacement dans le relevé partagé est le lot B */}
-          <section>
-            <SectionTitle label="Code promo (optionnel)" />
-            <div className="flex gap-2">
-              <input
-                value={promoCode}
-                onChange={e => {
-                  setPromoCode(e.target.value.toUpperCase())
-                  if (promoStatus !== 'idle') { setPromoStatus('idle'); setPromoDiscount(0) }
-                }}
-                onKeyDown={e => e.key === 'Enter' && applyPromoCode()}
-                placeholder="Ex : SOLDES15"
-                maxLength={30}
-                className={`${inputCls} flex-1 font-mono uppercase ${
-                  promoStatus === 'valid'   ? 'border-green-400' :
-                  promoStatus === 'invalid' ? 'border-red-400'   : ''
-                }`}
-                autoCapitalize="characters"
-                spellCheck={false}
-              />
-              <button
-                type="button"
-                onClick={applyPromoCode}
-                disabled={!promoCode.trim() || promoStatus === 'checking'}
-                className="shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
-              >
-                {promoStatus === 'checking' ? '...' : 'Appliquer'}
-              </button>
-            </div>
-            {promoStatus === 'valid' && (
-              <p className="mt-1 text-xs text-green-600 font-medium">
-                Code valide — {promoDiscount}% de réduction ({formatPrice(promoAmount, shopCurrency)})
-              </p>
-            )}
-            {promoStatus === 'invalid' && (
-              <p className="mt-1 text-xs text-red-500">{promoError}</p>
-            )}
-          </section>
-
           {/* Hors sections : précision optionnelle, dépliée à la demande (§5) */}
           <div>
             <button
@@ -1158,7 +1126,7 @@ export function OrderForm({
           className="max-w-lg mx-auto space-y-2 px-4 pt-3"
           style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom))' }}
         >
-          {total > 0 && <div className="px-1">{recapContent}</div>}
+          {recapContent && <div className="px-1">{recapContent}</div>}
           {ctaButton}
         </div>
       </div>

@@ -11,6 +11,7 @@ import type { Shop, OrderItem, Product, ProductPhoto, ProductVariant } from '@/t
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
+import { OrderSummary } from '@/components/shop/OrderSummary'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -27,11 +28,12 @@ export default async function SuccessPage({ params, searchParams }: Props) {
 
   const supabase = createAdminClient()
 
-  const { data: orderData } = await supabase
-    .from('orders')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orderData } = await (supabase.from('orders') as any)
     .select(`
       id, status, delivery_type, delivery_address, delivery_date,
       payment_type, deposit_amount, total_price, notes, is_held,
+      delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
       clients(first_name, phone, whatsapp),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
       shops(id, name, slug, primary_color, phone_whatsapp, currency)
@@ -53,10 +55,29 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     total_price: number
     notes: string | null
     is_held: boolean
+    delivery_price: number | null
+    delivery_zone_name: string | null
+    promo_code: string | null
+    promo_discount_pct: number | null
+    discount_amount: number | null
     clients: { first_name: string; phone: string; whatsapp: string | null } | null
     order_items: OrderItem[]
     shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
   }
+
+  // Relevé (§6 de la spec) — décomposition depuis les colonnes déjà persistées à la
+  // création (api/orders/route.ts). Pas de ligne "remise sur quantité" ici : seul le
+  // prix déjà remisé est stocké par article, jamais le montant économisé ni le prix
+  // d'origine — voir REPRISE.md pour la décision et le chantier de migration séparé
+  // envisagé pour la persister à la source.
+  const itemsSubtotal = order.order_items.reduce((sum, it) => sum + it.line_total, 0)
+  const isOnlinePayment = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
+  const summaryAmountNow = isOnlinePayment
+    ? (order.payment_type === 'online_deposit' ? order.deposit_amount : order.total_price)
+    : 0
+  const summaryAmountLater = isOnlinePayment
+    ? (order.payment_type === 'online_deposit' ? order.total_price - order.deposit_amount : 0)
+    : order.total_price
 
   // Téléchargements digitaux — tokens créés par le webhook après confirmation paiement
   const { data: rawTokens } = await (supabase as any)
@@ -88,7 +109,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
   const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed' || hasDigitalProducts
 
   const shop     = order.shops
-  const color    = shop?.primary_color ?? '#0EA5E9'
+  const color    = 'var(--brand)'
   const currency = (shop?.currency ?? 'XOF') as ShopCurrency
 
   const basePath = await getShopBasePath(slug)
@@ -143,7 +164,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       {/* Icône succès */}
       <div
         className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${color}20` }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--brand) 12%, white)' }}
       >
         <CheckCircle2 className="h-10 w-10" style={{ color }} />
       </div>
@@ -161,11 +182,11 @@ export default async function SuccessPage({ params, searchParams }: Props) {
         {order.is_held
           ? 'Le vendeur va te contacter pour confirmer.'
           : isDigitalOrder && isPaid
-          ? 'Votre paiement a été reçu. Téléchargez votre fichier ci-dessous.'
+          ? 'Ton paiement a été reçu. Télécharge ton fichier ci-dessous.'
           : isOnline && isPaid
-          ? 'Votre paiement a été reçu. La boutique prépare votre commande.'
+          ? 'Ton paiement a été reçu. La boutique prépare ta commande.'
           : isOnline
-          ? 'Votre paiement mobile money est en cours de vérification.'
+          ? 'Ton paiement mobile money est en cours de vérification.'
           : 'Ta commande a bien été enregistrée.'}
         {order.is_held && heldWaLink && (
           <>
@@ -265,10 +286,6 @@ export default async function SuccessPage({ params, searchParams }: Props) {
               </div>
             ))}
           </div>
-          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-bold text-gray-900">Total</span>
-            <span className="text-base font-bold" style={{ color }}>{formatPrice(order.total_price, currency)}</span>
-          </div>
         </div>
 
         {/* Livraison — masqué pour commandes digitales */}
@@ -292,18 +309,26 @@ export default async function SuccessPage({ params, searchParams }: Props) {
         </div>
         )}
 
-        {/* Paiement */}
+        {/* Relevé — §6 de la spec, décomposition complète depuis les colonnes persistées */}
         <div className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Paiement</p>
-          {isOnline && isPaid ? (
-            <p className="text-sm text-green-600 font-medium">✓ Paiement reçu</p>
-          ) : isOnline ? (
-            <p className="text-sm text-amber-600">Paiement en attente de confirmation</p>
-          ) : order.payment_type === 'on_delivery' ? (
-            <p className="text-sm text-gray-700">À la livraison — {formatPrice(order.total_price, currency)}</p>
-          ) : (
-            <p className="text-sm text-gray-700">En boutique — {formatPrice(order.total_price, currency)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Ce que tu as payé</p>
+          {isOnline && !isPaid && (
+            <p className="mb-2 text-sm text-amber-600">Paiement en attente de confirmation</p>
           )}
+          <OrderSummary
+            currency={currency}
+            itemCount={order.order_items.length}
+            itemsSubtotal={itemsSubtotal}
+            promoCode={order.promo_code}
+            promoDiscountPct={order.promo_discount_pct}
+            promoAmount={order.discount_amount}
+            deliveryAmount={order.delivery_price}
+            deliveryZoneName={order.delivery_zone_name}
+            total={order.total_price}
+            amountNow={summaryAmountNow}
+            amountLater={summaryAmountLater}
+            laterContext={isDigitalOrder ? null : order.delivery_type}
+          />
         </div>
       </div>
 
@@ -347,7 +372,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       {upsellProducts.length > 0 && (
         <div className="mt-8 text-left">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-            Vous aimerez aussi
+            Tu aimeras aussi
           </p>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4">
             {upsellProducts.map(p => {

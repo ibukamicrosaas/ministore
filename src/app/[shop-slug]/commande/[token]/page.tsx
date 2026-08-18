@@ -6,6 +6,7 @@ import { Package, Truck, CheckCircle2, Clock, XCircle, MapPin, MessageCircle, St
 import type { Shop, OrderItem } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { OrderSummary } from '@/components/shop/OrderSummary'
 
 export const revalidate = 30
 
@@ -23,17 +24,6 @@ const STEPS = [
 
 const STATUS_STEP: Record<string, number> = {
   pending: 1, confirmed: 2, preparing: 3, ready: 4, delivered: 5, cancelled: 0,
-}
-
-const PAYMENT_LABELS: Record<string, string> = {
-  on_delivery:     'Paiement à la livraison',
-  in_store:        'Paiement en boutique',
-  online_full:     'Paiement en ligne (total)',
-  online_deposit:  'Paiement en ligne (acompte)',
-  wave:            'Wave',
-  orange_money:    'Orange Money',
-  free_money:      'Free Money',
-  mtn_momo:        'MTN MoMo',
 }
 
 function deliveryDateLabel(dateStr: string): string {
@@ -59,11 +49,12 @@ export default async function OrderTrackingPage({ params }: Props) {
 
   const supabase = createAdminClient()
 
-  const { data: orderData } = await supabase
-    .from('orders')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orderData } = await (supabase.from('orders') as any)
     .select(`
-      id, status, delivery_type, delivery_address, delivery_date, delivery_zone_name,
-      payment_type, total_price, notes, created_at,
+      id, status, delivery_type, delivery_address, delivery_date, delivery_zone_name, delivery_price,
+      payment_type, deposit_amount, total_price, notes, created_at,
+      promo_code, promo_discount_pct, discount_amount,
       clients(first_name, phone),
       order_items(product_name, variant_label, unit_price, quantity, line_total, customization_note),
       shops(name, slug, primary_color, phone_whatsapp, logo_url, currency)
@@ -80,10 +71,15 @@ export default async function OrderTrackingPage({ params }: Props) {
     delivery_address: string | null
     delivery_date: string | null
     delivery_zone_name: string | null
+    delivery_price: number | null
     payment_type: string
+    deposit_amount: number
     total_price: number
     notes: string | null
     created_at: string
+    promo_code: string | null
+    promo_discount_pct: number | null
+    discount_amount: number | null
     clients: { first_name: string; phone: string } | null
     order_items: (OrderItem & { customization_note?: string | null })[]
     shops: (Pick<Shop, 'name' | 'slug' | 'primary_color' | 'phone_whatsapp' | 'logo_url'> & { currency?: string | null }) | null
@@ -91,6 +87,17 @@ export default async function OrderTrackingPage({ params }: Props) {
 
   const shop = order.shops
   if (!shop || shop.slug !== slug) notFound()
+
+  // Relevé (§6 de la spec) — mêmes règles que success/page.tsx : pas de ligne
+  // "remise sur quantité", donnée non persistée (voir REPRISE.md).
+  const summaryItemsSubtotal = order.order_items.reduce((sum, it) => sum + it.line_total, 0)
+  const summaryIsOnline = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
+  const summaryAmountNow = summaryIsOnline
+    ? (order.payment_type === 'online_deposit' ? order.deposit_amount : order.total_price)
+    : 0
+  const summaryAmountLater = summaryIsOnline
+    ? (order.payment_type === 'online_deposit' ? order.total_price - order.deposit_amount : 0)
+    : order.total_price
 
   const color       = shop.primary_color ?? '#0EA5E9'
   const currency    = (shop.currency ?? 'XOF') as ShopCurrency
@@ -378,18 +385,26 @@ export default async function OrderTrackingPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Paiement */}
+        {/* Relevé — §6 de la spec */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <CreditCard className="h-4 w-4 text-gray-400" />
-            <p className="text-sm font-semibold text-gray-900">Paiement</p>
+            <p className="text-sm font-semibold text-gray-900">Ce que tu as payé</p>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">
-              {PAYMENT_LABELS[order.payment_type] ?? order.payment_type}
-            </span>
-            <span className="font-semibold text-gray-900">{formatPrice(order.total_price, currency)}</span>
-          </div>
+          <OrderSummary
+            currency={currency}
+            itemCount={order.order_items.length}
+            itemsSubtotal={summaryItemsSubtotal}
+            promoCode={order.promo_code}
+            promoDiscountPct={order.promo_discount_pct}
+            promoAmount={order.discount_amount}
+            deliveryAmount={order.delivery_price}
+            deliveryZoneName={order.delivery_zone_name}
+            total={order.total_price}
+            amountNow={summaryAmountNow}
+            amountLater={summaryAmountLater}
+            laterContext={isDigitalOrder ? null : order.delivery_type}
+          />
         </div>
 
         {/* Note client */}
