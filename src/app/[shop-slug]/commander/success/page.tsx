@@ -101,12 +101,21 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     .select('product_id, products(product_type)')
     .eq('order_id', order_id)
 
-  const hasDigitalProducts = ((rawOrderItems ?? []) as Array<{
+  const orderItemsWithType = (rawOrderItems ?? []) as Array<{
     product_id: string
     products: { product_type: string | null } | null
-  }>).some(item => item.products?.product_type === 'digital')
+  }>
 
-  const isDigitalOrder = downloadTokens.length > 0 || order.status === 'completed' || hasDigitalProducts
+  // hasDigitalItem (au moins un article digital) sert à décider si un bloc
+  // téléchargement doit exister sur l'écran — utile aussi sur un panier mixte.
+  // isDigitalOrder (tous les articles sont digitaux) sert à décider si les infos
+  // de livraison ont un sens à afficher — corrige un bug pré-existant, découvert
+  // en marge du lot D (REPRISE.md §32) : avant, une seule variable "au moins un"
+  // pilotait aussi ce second usage, masquant la vraie adresse/mode de livraison
+  // d'un panier mixte (physique + digital) qui en avait pourtant besoin.
+  const hasDigitalItem  = downloadTokens.length > 0 || order.status === 'completed' || orderItemsWithType.some(item => item.products?.product_type === 'digital')
+  const hasPhysicalItem = orderItemsWithType.some(item => item.products?.product_type !== 'digital')
+  const isDigitalOrder  = hasDigitalItem && !hasPhysicalItem
 
   const shop     = order.shops
   const color    = 'var(--brand)'
@@ -210,8 +219,8 @@ export default async function SuccessPage({ params, searchParams }: Props) {
         </span>
       </div>
 
-      {/* Section téléchargements — produits digitaux uniquement */}
-      {isDigitalOrder && (
+      {/* Section téléchargements — au moins un article digital, même sur un panier mixte */}
+      {hasDigitalItem && (
         downloadTokens.length > 0 ? (
           // Tokens déjà disponibles au chargement (webhook rapide ou retour sur la page)
           <div className="space-y-3 mb-6">
