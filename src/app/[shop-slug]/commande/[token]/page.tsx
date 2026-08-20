@@ -99,7 +99,7 @@ export default async function OrderTrackingPage({ params }: Props) {
     ? (order.payment_type === 'online_deposit' ? order.total_price - order.deposit_amount : 0)
     : order.total_price
 
-  const color       = shop.primary_color ?? '#0EA5E9'
+  const color       = 'var(--brand)'
   const currency    = (shop.currency ?? 'XOF') as ShopCurrency
   const isCancelled = order.status === 'cancelled'
   const isDelivered = order.status === 'delivered'
@@ -135,7 +135,7 @@ export default async function OrderTrackingPage({ params }: Props) {
   // téléchargement doit exister — utile aussi sur un panier mixte.
   // isDigitalOrder (tous les articles sont digitaux) sert à décider si les infos
   // de livraison ont un sens à afficher — corrige un bug pré-existant, découvert
-  // en marge du lot D (REPRISE.md §32) : avant, une seule variable "au moins un"
+  // en marge du lot D (REPRISE.md §33) : avant, une seule variable "au moins un"
   // pilotait aussi ce second usage, masquant la vraie adresse/mode de livraison
   // d'un panier mixte (physique + digital) qui en avait pourtant besoin.
   const hasDigitalItem  = downloadTokens.length > 0 || isCompleted || orderItemsWithType.some(item => item.products?.product_type === 'digital')
@@ -151,11 +151,11 @@ export default async function OrderTrackingPage({ params }: Props) {
   const heroMsg = isCancelled
     ? 'Commande annulée'
     : isCompleted && isDigitalOrder
-    ? '✓ Achat confirmé'
+    ? 'Achat confirmé'
     : isDelivered
-    ? '🎉 Commande livrée !'
+    ? 'Commande livrée !'
     : isDigitalOrder && (order.status === 'confirmed')
-    ? '✓ Paiement reçu'
+    ? 'Paiement reçu'
     : `En cours · ${STEPS.find(s => s.step === currentStep)?.label ?? 'Reçue'}`
 
   return (
@@ -188,7 +188,7 @@ export default async function OrderTrackingPage({ params }: Props) {
         >
           {order.clients?.first_name && (
             <p className="text-xs font-medium text-white/80 mb-0.5">
-              Bonjour {order.clients.first_name} 👋
+              Bonjour {order.clients.first_name}
             </p>
           )}
           <p className="text-lg font-bold leading-tight">{heroMsg}</p>
@@ -239,14 +239,12 @@ export default async function OrderTrackingPage({ params }: Props) {
                             ? 'border-transparent bg-[var(--brand)]'
                             : 'border-gray-200 bg-white'
                         }`}
-                        style={{ '--brand': color } as React.CSSProperties}
                       >
                         {done ? (
                           <CheckCircle2 className="h-5 w-5 text-white" />
                         ) : (
                           <Icon
                             className={`h-4 w-4 ${active ? 'text-[var(--brand)]' : 'text-gray-300'}`}
-                            style={{ color: active ? color : undefined }}
                           />
                         )}
                       </div>
@@ -312,7 +310,7 @@ export default async function OrderTrackingPage({ params }: Props) {
               <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
                 <p className="text-sm font-semibold text-amber-800 mb-1">Lien de téléchargement en cours de génération</p>
                 <p className="text-xs text-amber-700">
-                  Votre lien sera disponible ici dès confirmation du paiement. Vous le recevrez aussi par SMS/WhatsApp.
+                  Ton lien sera disponible ici dès confirmation du paiement. Tu le recevras aussi par SMS/WhatsApp.
                 </p>
               </div>
             )}
@@ -375,7 +373,7 @@ export default async function OrderTrackingPage({ params }: Props) {
                     )}
                     {item.customization_note && (
                       <p className="text-xs italic text-gray-500 mt-1 bg-gray-50 rounded-lg px-2 py-1">
-                        ✏️ {item.customization_note}
+                        {item.customization_note}
                       </p>
                     )}
                   </div>
@@ -419,7 +417,7 @@ export default async function OrderTrackingPage({ params }: Props) {
         {/* Note client */}
         {order.notes && (
           <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
-            <p className="text-xs font-semibold text-amber-700 mb-1">Votre note</p>
+            <p className="text-xs font-semibold text-amber-700 mb-1">Ta note</p>
             <p className="text-sm text-amber-900">"{order.notes}"</p>
           </div>
         )}

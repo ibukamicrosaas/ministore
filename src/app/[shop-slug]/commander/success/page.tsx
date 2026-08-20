@@ -18,7 +18,7 @@ type Props = {
   searchParams: Promise<{ order_id?: string; token?: string }>
 }
 
-export const metadata = { title: 'Commande confirmée ✓' }
+export const metadata = { title: 'Commande confirmée' }
 
 export default async function SuccessPage({ params, searchParams }: Props) {
   const { 'shop-slug': slug } = await params
@@ -110,7 +110,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
   // téléchargement doit exister sur l'écran — utile aussi sur un panier mixte.
   // isDigitalOrder (tous les articles sont digitaux) sert à décider si les infos
   // de livraison ont un sens à afficher — corrige un bug pré-existant, découvert
-  // en marge du lot D (REPRISE.md §32) : avant, une seule variable "au moins un"
+  // en marge du lot D (REPRISE.md §33) : avant, une seule variable "au moins un"
   // pilotait aussi ce second usage, masquant la vraie adresse/mode de livraison
   // d'un panier mixte (physique + digital) qui en avait pourtant besoin.
   const hasDigitalItem  = downloadTokens.length > 0 || order.status === 'completed' || orderItemsWithType.some(item => item.products?.product_type === 'digital')
@@ -182,9 +182,9 @@ export default async function SuccessPage({ params, searchParams }: Props) {
         {order.is_held
           ? 'Commande enregistrée'
           : isDigitalOrder && isPaid
-          ? 'Achat confirmé ✓'
+          ? 'Achat confirmé'
           : isOnline && isPaid
-          ? 'Paiement reçu ✓'
+          ? 'Paiement reçu'
           : 'Commande confirmée !'}
       </h1>
       <p className="text-sm text-gray-500 mb-3">
@@ -407,7 +407,9 @@ export default async function SuccessPage({ params, searchParams }: Props) {
                         quality={80}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ShoppingBag className="h-8 w-8 text-gray-300" />
+                      </div>
                     )}
                   </div>
                   <p className="mt-2 text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{p.name}</p>
