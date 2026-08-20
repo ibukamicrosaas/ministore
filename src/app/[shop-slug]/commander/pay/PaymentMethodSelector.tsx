@@ -106,7 +106,7 @@ export function PaymentMethodSelector({
       }
       window.location.href = data.url
     } catch {
-      setError('Erreur réseau. Vérifiez votre connexion et réessayez.')
+      setError('Erreur réseau. Vérifie ta connexion et réessaie.')
     } finally {
       setLoading(false)
     }
@@ -169,11 +169,10 @@ export function PaymentMethodSelector({
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-green-200 bg-green-50 p-6 text-center space-y-3">
-          <div className="text-4xl">📱</div>
           <h2 className="font-bold text-gray-900">Paiement en cours</h2>
           <p className="text-sm text-green-800 font-medium">{pendingMessage}</p>
           <p className="text-xs text-gray-500">
-            Validez le paiement sur votre téléphone. Votre commande sera confirmée automatiquement.
+            Valide le paiement sur ton téléphone. Ta commande sera confirmée automatiquement.
           </p>
         </div>
         <button
@@ -195,10 +194,9 @@ export function PaymentMethodSelector({
     if (!stripeConnectEnabled) {
       return (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 text-center space-y-3">
-          <div className="text-3xl">💳</div>
           <p className="text-sm font-semibold text-gray-900">Paiement par carte uniquement</p>
           <p className="text-xs text-gray-500">
-            La boutique n&apos;a pas encore activé le paiement en ligne. Contactez le vendeur pour finaliser votre commande.
+            La boutique n&apos;a pas encore activé le paiement en ligne. Contacte le vendeur pour finaliser ta commande.
           </p>
         </div>
       )
@@ -237,7 +235,7 @@ export function PaymentMethodSelector({
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-sm text-red-700">
-          Impossible de détecter votre pays. Veuillez contacter le vendeur.
+          Impossible de détecter ton pays. Contacte le vendeur.
         </p>
       </div>
     )
@@ -268,7 +266,7 @@ export function PaymentMethodSelector({
                 className="w-full text-left rounded-2xl border-2 p-4 transition-all"
                 style={
                   isSelected
-                    ? { borderColor: primaryColor, backgroundColor: `${primaryColor}0d` }
+                    ? { borderColor: primaryColor, backgroundColor: `color-mix(in srgb, ${primaryColor} 5%, white)` }
                     : { borderColor: '#e5e7eb', backgroundColor: '#ffffff' }
                 }
               >
@@ -306,7 +304,7 @@ export function PaymentMethodSelector({
               className="w-full text-left rounded-2xl border-2 p-4 transition-all"
               style={
                 isSelected
-                  ? { borderColor: primaryColor, backgroundColor: `${primaryColor}0d` }
+                  ? { borderColor: primaryColor, backgroundColor: `color-mix(in srgb, ${primaryColor} 5%, white)` }
                   : { borderColor: '#e5e7eb', backgroundColor: '#ffffff' }
               }
             >
@@ -369,7 +367,7 @@ export function PaymentMethodSelector({
       <p className="text-xs text-center text-gray-500">
         {selectedMethod === 'stripe_card'
           ? 'Paiement sécurisé par Stripe'
-          : 'Vos données sont sécurisées par Bictorys.'
+          : 'Tes données sont sécurisées par Bictorys.'
         }
       </p>
     </div>

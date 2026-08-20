@@ -1,4 +1,6 @@
 import { Resend } from 'resend'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -165,8 +167,21 @@ interface OrderConfirmationParams {
   shopSlug: string
   orderId: string
   clientToken: string
-  items: string        // texte préformaté "• Produit ×2 — 5 000 FCFA"
+  currency: ShopCurrency
+  items: string        // texte préformaté "• Produit ×2 — 5 000 FCFA", déjà formaté dans la devise du shop (currency ci-dessus)
+  itemsSubtotal: number
+  promoCode?: string | null
+  promoDiscountPct?: number | null
+  discountAmount?: number | null
+  deliveryPrice?: number | null
+  deliveryZoneName?: string | null
   totalPrice: number
+  /** Dû en ligne tout de suite (acompte ou total complet). 0 si rien n'est payé en ligne. */
+  amountNow: number
+  /** Dû à la réception, en espèces. 0 si tout est déjà réglé en ligne. */
+  amountLater: number
+  /** Panier 100% digital — masque toute mention de livraison/retrait (§8/§9 de SPEC-refonte-tunnel-commande.md). */
+  isDigitalOrder: boolean
   deliveryType: 'home_delivery' | 'store_pickup'
   deliveryDate?: string | null
   paymentType: string
@@ -176,8 +191,43 @@ interface OrderConfirmationParams {
 export async function sendOrderConfirmationEmail(params: OrderConfirmationParams): Promise<void> {
   if (!resend) return // silencieux si RESEND_API_KEY non configurée
 
+  const cur = params.currency
+
+  // Même décomposition et même ordre de lignes que components/shop/OrderSummary.tsx
+  // (sous-total, promo, livraison, total, puis "tu paies maintenant"/"à la livraison") —
+  // ce gabarit HTML statique ne peut pas consommer directement le composant React.
   const deliveryLabel = params.deliveryType === 'home_delivery' ? 'Livraison à domicile' : 'Retrait en boutique'
-  const dateLabel     = params.deliveryDate ?? ''
+  const dateLabel      = params.deliveryDate ?? ''
+  const laterLabel      = params.deliveryType === 'store_pickup' ? 'en boutique' : 'à la livraison'
+  const hasPromo         = !!params.promoCode && !!params.discountAmount && params.discountAmount > 0
+  const hasDeliveryPrice = !params.isDigitalOrder && !!params.deliveryPrice && params.deliveryPrice > 0
+
+  const deliveryMethodRow = params.isDigitalOrder ? '' : `
+        <tr>
+          <td style="padding:6px 0;color:#6b7280;">Livraison</td>
+          <td style="padding:6px 0;text-align:right;">${deliveryLabel}${dateLabel ? ' · ' + dateLabel : ''}</td>
+        </tr>`
+
+  const promoRow = !hasPromo ? '' : `
+        <tr>
+          <td style="padding:6px 0;color:#059669;">Réduction (${params.promoCode}${params.promoDiscountPct ? `, -${params.promoDiscountPct}%` : ''})</td>
+          <td style="padding:6px 0;text-align:right;color:#059669;">-${formatPrice(params.discountAmount!, cur)}</td>
+        </tr>`
+
+  const deliveryPriceRow = !hasDeliveryPrice ? '' : `
+        <tr>
+          <td style="padding:6px 0;color:#6b7280;">Livraison${params.deliveryZoneName ? ` (${params.deliveryZoneName})` : ''}</td>
+          <td style="padding:6px 0;text-align:right;">+${formatPrice(params.deliveryPrice!, cur)}</td>
+        </tr>`
+
+  const paidNowBlock = params.amountNow > 0
+    ? `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#111827;">
+         <span>Tu payes maintenant</span><span>${formatPrice(params.amountNow, cur)}</span>
+       </div>
+       ${params.amountLater > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Puis ${formatPrice(params.amountLater, cur)} ${laterLabel}</p>` : ''}`
+    : `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#111827;">
+         <span>En espèces ${laterLabel}</span><span>${formatPrice(params.amountLater || params.totalPrice, cur)}</span>
+       </div>`
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -187,7 +237,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
 
     <!-- En-tête -->
     <div style="background:#0ea5e9;padding:24px 28px;">
-      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;">Votre commande</p>
+      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;">Ta commande</p>
       <h1 style="margin:4px 0 0;color:#fff;font-size:22px;font-weight:700;">${params.shopName}</h1>
     </div>
 
@@ -195,7 +245,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
     <div style="padding:28px;">
       <p style="color:#374151;font-size:15px;margin:0 0 20px;">
         Bonjour <strong>${params.clientName}</strong>,<br>
-        Votre commande a bien été enregistrée 🎉
+        Ta commande a bien été enregistrée.
       </p>
 
       <!-- Articles -->
@@ -205,16 +255,21 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
       </div>
 
       <!-- Récap -->
-      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;margin-bottom:20px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;margin-bottom:12px;">${deliveryMethodRow}
         <tr>
-          <td style="padding:6px 0;color:#6b7280;">Livraison</td>
-          <td style="padding:6px 0;text-align:right;">${deliveryLabel}${dateLabel ? ' · ' + dateLabel : ''}</td>
-        </tr>
+          <td style="padding:6px 0;color:#6b7280;">Sous-total</td>
+          <td style="padding:6px 0;text-align:right;">${formatPrice(params.itemsSubtotal, cur)}</td>
+        </tr>${promoRow}${deliveryPriceRow}
         <tr style="border-top:1px solid #e5e7eb;">
           <td style="padding:10px 0 0;font-weight:700;">Total</td>
-          <td style="padding:10px 0 0;text-align:right;font-weight:700;font-size:16px;">${params.totalPrice.toLocaleString('fr-FR')} FCFA</td>
+          <td style="padding:10px 0 0;text-align:right;font-weight:700;font-size:16px;">${formatPrice(params.totalPrice, cur)}</td>
         </tr>
       </table>
+
+      <!-- Ce que tu payes -->
+      <div style="background:#f3f4f6;border-radius:8px;padding:12px 16px;margin-bottom:20px;">
+        ${paidNowBlock}
+      </div>
 
       <!-- CTA -->
       <a href="${params.orderUrl}"
@@ -223,14 +278,14 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
       </a>
 
       <p style="font-size:12px;color:#9ca3af;margin:0;text-align:center;">
-        Votre lien de suivi : <a href="${params.orderUrl}" style="color:#0ea5e9;">${params.orderUrl}</a>
+        Ton lien de suivi : <a href="${params.orderUrl}" style="color:#0ea5e9;">${params.orderUrl}</a>
       </p>
     </div>
 
     <!-- Pied de page -->
     <div style="border-top:1px solid #e5e7eb;padding:16px 28px;background:#f9fafb;">
       <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-        Cet e-mail vous a été envoyé car vous avez passé une commande sur la boutique <strong>${params.shopName}</strong>.
+        Cet e-mail t'a été envoyé car tu as passé une commande sur la boutique <strong>${params.shopName}</strong>.
       </p>
     </div>
   </div>

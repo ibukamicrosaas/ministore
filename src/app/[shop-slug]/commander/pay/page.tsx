@@ -2,8 +2,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { PaymentMethodSelector } from './PaymentMethodSelector'
 import { isEuCaCountry, formatPrice } from '@/lib/utils/country-groups'
-import type { Shop } from '@/types'
+import type { Shop, OrderItem } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { OrderSummary } from '@/components/shop/OrderSummary'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -27,10 +28,9 @@ export default async function PayPage({ params, searchParams }: Props) {
 
     return (
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <div className="text-4xl mb-4">😕</div>
         <h1 className="text-lg font-bold text-gray-900 mb-2">Paiement annulé</h1>
         <p className="text-sm text-gray-500 mb-6">
-          Votre commande est toujours en attente. Vous pouvez réessayer le paiement ou revenir à la boutique.
+          Ta commande est toujours en attente. Tu peux réessayer le paiement ou revenir à la boutique.
         </p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           {retryUrl && (
@@ -55,7 +55,12 @@ export default async function PayPage({ params, searchParams }: Props) {
   // Valider le client_token ET la correspondance shop-slug pour éviter l'IDOR
   const { data: orderData } = await supabase
     .from('orders')
-    .select('id, shop_id, total_price, deposit_amount, payment_type, status, client_token, clients(first_name, phone)')
+    .select(`
+      id, shop_id, total_price, deposit_amount, payment_type, status, client_token,
+      delivery_type, delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
+      clients(first_name, phone),
+      order_items(product_name, variant_label, unit_price, quantity, line_total, product_id, products(product_type))
+    `)
     .eq('id', order_id)
     .eq('client_token', token)
     .single()
@@ -70,7 +75,14 @@ export default async function PayPage({ params, searchParams }: Props) {
     payment_type: string
     status: string
     client_token: string
+    delivery_type: 'home_delivery' | 'store_pickup'
+    delivery_price: number | null
+    delivery_zone_name: string | null
+    promo_code: string | null
+    promo_discount_pct: number | null
+    discount_amount: number | null
     clients: { first_name: string; phone: string } | null
+    order_items: (OrderItem & { products: { product_type: string | null } | null })[]
   }
 
   const { data: shopData } = await supabase
@@ -89,7 +101,7 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   const isDeposit          = order.payment_type === 'online_deposit' && order.deposit_amount > 0
   const amount             = isDeposit ? order.deposit_amount : order.total_price
-  const color              = shop.primary_color ?? '#0EA5E9'
+  const color              = 'var(--brand)'
   const shopCountry        = shop.country ?? null
   const isEuCa             = isEuCaCountry(shopCountry)
   const currency           = (shop.currency ?? 'XOF') as ShopCurrency
@@ -97,6 +109,15 @@ export default async function PayPage({ params, searchParams }: Props) {
 
   // Les montants sont stockés en unités d'affichage (pas en centimes)
   const formattedAmount    = formatPrice(amount, currency)
+
+  // Relevé (§9 de la spec — décomposition à côté du montant à payer). Cette page
+  // n'est atteinte que pour un paiement en ligne (online_full/online_deposit,
+  // redirigé depuis api/orders/route.ts) : amountLater n'est donc jamais réglé en
+  // espèces ici, seulement reporté en cas d'acompte.
+  const isDigitalOrder  = order.order_items.length > 0 && order.order_items.every(it => it.products?.product_type === 'digital')
+  const itemsSubtotal   = order.order_items.reduce((sum, it) => sum + it.line_total, 0)
+  const summaryAmountNow   = amount
+  const summaryAmountLater = isDeposit ? order.total_price - order.deposit_amount : 0
 
   return (
     <div className="max-w-lg mx-auto min-h-screen px-4 pt-6 pb-10">
@@ -130,7 +151,7 @@ export default async function PayPage({ params, searchParams }: Props) {
             {shop.name[0]?.toUpperCase()}
           </div>
         )}
-        <h1 className="text-lg font-bold text-gray-900">Comment voulez-vous payer ?</h1>
+        <h1 className="text-lg font-bold text-gray-900">Comment veux-tu payer ?</h1>
         <p className="text-sm text-gray-500 mt-1">
           {isDeposit ? 'Acompte' : 'Paiement'} chez <span className="font-semibold">{shop.name}</span>
         </p>
@@ -140,6 +161,24 @@ export default async function PayPage({ params, searchParams }: Props) {
         >
           {formattedAmount}
         </div>
+      </div>
+
+      {/* Relevé — §9 de la spec : décomposition à côté du montant à payer */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-6">
+        <OrderSummary
+          currency={currency}
+          itemCount={order.order_items.length}
+          itemsSubtotal={itemsSubtotal}
+          promoCode={order.promo_code}
+          promoDiscountPct={order.promo_discount_pct}
+          promoAmount={order.discount_amount}
+          deliveryAmount={order.delivery_price}
+          deliveryZoneName={order.delivery_zone_name}
+          total={order.total_price}
+          amountNow={summaryAmountNow}
+          amountLater={summaryAmountLater}
+          laterContext={isDigitalOrder ? null : order.delivery_type}
+        />
       </div>
 
       <PaymentMethodSelector

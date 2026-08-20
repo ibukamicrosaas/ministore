@@ -13,6 +13,8 @@ import { activatePlan } from '@/lib/billing/activate-plan'
 import { sendOrderConfirmationEmail } from '@/lib/notifications/email'
 import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
@@ -364,9 +366,10 @@ async function handleOrderWebhook(
     .eq('status', 'pending')
     .select(`
       id, shop_id, total_price, deposit_amount, payment_type, delivery_type, delivery_date, client_token, is_held, released_at,
+      delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
       clients(first_name, last_name, whatsapp, phone, email),
-      order_items(product_name, quantity, line_total),
-      shops(name, phone_whatsapp, slug)
+      order_items(product_name, quantity, line_total, product_id, products(product_type)),
+      shops(name, phone_whatsapp, slug, currency)
     `)
     .single()
 
@@ -386,9 +389,14 @@ async function handleOrderWebhook(
     client_token: string
     is_held: boolean
     released_at: string | null
+    delivery_price: number | null
+    delivery_zone_name: string | null
+    promo_code: string | null
+    promo_discount_pct: number | null
+    discount_amount: number | null
     clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string; email: string | null } | null
-    order_items: { product_name: string; quantity: number; line_total: number }[]
-    shops: { name: string; phone_whatsapp: string | null; slug: string } | null
+    order_items: { product_name: string; quantity: number; line_total: number; product_id: string | null; products: { product_type: string | null } | null }[]
+    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null } | null
   }
 
   if (!o.clients || !o.shops) {
@@ -465,20 +473,36 @@ async function handleOrderWebhook(
     })
   }
 
-  // E-mail de confirmation client (si le client a fourni son email à la commande)
+  // E-mail de confirmation client (si le client a fourni son email à la commande).
+  // Seule cette version (itemsSummaryEmail) est formatée dans la devise réelle du shop —
+  // itemsSummary (SMS, ligne 405) et le message marchand restent en FCFA en dur,
+  // volontairement hors périmètre (REPRISE.md §31).
   if (o.clients.email) {
+    const shopCurrency = (o.shops.currency ?? 'XOF') as ShopCurrency
+    const isDigitalOrder = o.order_items.length > 0 && o.order_items.every(i => i.products?.product_type === 'digital')
+    const isDeposit = o.payment_type === 'online_deposit' && (o.deposit_amount ?? 0) > 0
     const itemsSummaryEmail = o.order_items
-      .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${i.line_total.toLocaleString('fr-FR')} FCFA`)
+      .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${formatPrice(i.line_total, shopCurrency)}`)
       .join('\n')
     void sendOrderConfirmationEmail({
-      toEmail:      o.clients.email,
-      clientName:   o.clients.first_name,
-      shopName:     o.shops.name,
-      shopSlug:     o.shops.slug,
-      orderId:      o.id,
-      clientToken:  o.client_token,
-      items:        itemsSummaryEmail,
-      totalPrice:   o.total_price,
+      toEmail:          o.clients.email,
+      clientName:       o.clients.first_name,
+      shopName:         o.shops.name,
+      shopSlug:         o.shops.slug,
+      orderId:          o.id,
+      clientToken:      o.client_token,
+      currency:         shopCurrency,
+      items:            itemsSummaryEmail,
+      itemsSubtotal:    o.order_items.reduce((sum, i) => sum + i.line_total, 0),
+      promoCode:        o.promo_code,
+      promoDiscountPct: o.promo_discount_pct,
+      discountAmount:   o.discount_amount,
+      deliveryPrice:    o.delivery_price,
+      deliveryZoneName: o.delivery_zone_name,
+      totalPrice:       o.total_price,
+      amountNow:        isDeposit ? o.deposit_amount : o.total_price,
+      amountLater:      isDeposit ? o.total_price - o.deposit_amount : 0,
+      isDigitalOrder,
       deliveryType: o.delivery_type,
       deliveryDate: o.delivery_date,
       paymentType:  o.payment_type,

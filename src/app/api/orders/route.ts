@@ -14,6 +14,8 @@ import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL, MAX_HELD_ORDERS } from '@/constants'
 import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
 import { getHeldPhysicalOrderCount } from '@/lib/orders/held-orders'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 
 interface OrderItemInput {
   product_id: string
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status, accept_online_payment, accept_cash_on_delivery')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status, accept_online_payment, accept_cash_on_delivery, currency')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
@@ -429,11 +431,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Construction commune orderUrl + itemsSummary — utilisés par email + WhatsApp
+  // Construction commune orderUrl + itemsSummary — utilisés par email marchand + WhatsApp
+  // client (tous deux hors périmètre du correctif FCFA, voir REPRISE.md §31 : le SMS
+  // reste en dur volontairement, 0 boutique non-XOF avec commande sur 30 jours au
+  // moment de la décision). itemsSummaryEmailClient est la seule version formatée
+  // dans la devise réelle du shop — n'alimente que l'e-mail de confirmation client.
   const orderUrl     = `${APP_URL}/${shop.slug}/commander/success?order_id=${order.id}&token=${order.client_token}`
   const itemsSummary = serverItems
     .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${(i.unit_price * i.quantity).toLocaleString('fr-FR')} FCFA`)
     .join('\n')
+  const shopCurrency = (shop.currency ?? 'XOF') as ShopCurrency
+  const itemsSummaryEmailClient = serverItems
+    .map(i => `• ${i.product_name}${i.variant_label ? ` (${i.variant_label})` : ''}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${formatPrice(i.unit_price * i.quantity, shopCurrency)}`)
+    .join('\n')
+  const isDigitalOrder = !hasPhysicalItem
 
   // Toute donnée client destinée au marchand passe par redactClient — voir
   // src/lib/orders/redact.ts. Ne jamais réutiliser client_first_name/client_phone
@@ -525,14 +536,24 @@ export async function POST(req: NextRequest) {
   const isOnlinePayment = payment_type === 'online_full' || payment_type === 'online_deposit'
   if (client_email && !isOnlinePayment) {
     void sendOrderConfirmationEmail({
-      toEmail:      client_email,
-      clientName:   client_first_name,
-      shopName:     shop.name,
-      shopSlug:     shop.slug,
-      orderId:      order.id,
-      clientToken:  order.client_token,
-      items:        itemsSummary,
-      totalPrice:   total_price,
+      toEmail:          client_email,
+      clientName:       client_first_name,
+      shopName:         shop.name,
+      shopSlug:         shop.slug,
+      orderId:          order.id,
+      clientToken:      order.client_token,
+      currency:         shopCurrency,
+      items:            itemsSummaryEmailClient,
+      itemsSubtotal:    itemsTotal,
+      promoCode:        appliedPromoCode,
+      promoDiscountPct: promoId ? discountPct : null,
+      discountAmount,
+      deliveryPrice:    serverDeliveryPrice,
+      deliveryZoneName: delivery_zone_name,
+      totalPrice:       total_price,
+      amountNow:        isOnlinePayment ? (payment_type === 'online_deposit' ? deposit_amount : total_price) : 0,
+      amountLater:      isOnlinePayment ? (payment_type === 'online_deposit' ? total_price - deposit_amount : 0) : total_price,
+      isDigitalOrder,
       deliveryType: delivery_type,
       deliveryDate: delivery_date,
       paymentType:  payment_type,
