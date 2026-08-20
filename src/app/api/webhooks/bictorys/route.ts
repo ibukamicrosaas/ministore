@@ -408,7 +408,7 @@ async function handleOrderWebhook(
 
   const clientWhatsapp = o.clients.whatsapp ?? o.clients.phone
   const clientName     = [o.clients.first_name, o.clients.last_name].filter(Boolean).join(' ')
-  const orderUrl       = `${APP_URL}/${o.shops.slug}/commande/${o.id}?token=${o.client_token}`
+  const orderUrl       = `${APP_URL}/${o.shops.slug}/commander/success?order_id=${o.id}&token=${o.client_token}`
 
   const itemsSummary = o.order_items
     .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${i.line_total.toLocaleString('fr-FR')} FCFA`)
