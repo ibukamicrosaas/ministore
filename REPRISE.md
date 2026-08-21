@@ -1293,3 +1293,35 @@ Quatrième et dernier lot des 4 (§13 de la spec). Plan envoyé et discuté avan
 4. **Résidu du fork Sheka** dans `src/lib/notifications/whatsapp.ts` (§30) — vocabulaire de réservation de salon de beauté étranger au domaine, non touché, signalé pour un nettoyage futur.
 
 **Chantier suivant dans la file** (§24) : lots 2 à 5 de la refonte des boutiques publiques (`SPEC-v2-refonte-boutiques-publiques.md`), puis la refonte du dashboard marchand.
+
+---
+
+## 36. Refonte des boutiques publiques (SPEC-v2) — plan des lots 2-5 validé, 2026-08-20 — deux chantiers sortis, un séquencement de risque acté
+
+**Exploration avant tout code, même méthode que le tunnel de commande** : spec lue en entier, code des surfaces concernées lu directement (`[shop-slug]/page.tsx`, `ShopBusinessLayout.tsx`, `produit/[id]/page.tsx`, `ProductGrid.tsx`, `plan-features.ts`), état réel de la base vérifié (migrations 086/087 appliquées, `product_variants` à 0 ligne, `verification_status` à `'none'` sur les 1614 boutiques — la requête de grandfathering des Pro n'a jamais tourné).
+
+**Écarts trouvés par rapport à ce que ce document affirmait déjà** :
+- **`--brand` : 3 occurrences restantes dans le périmètre de cette spec, pas 2.** En plus des deux déjà documentées (`[shop-slug]/page.tsx:71`, `ShopBusinessLayout.tsx:65,83`), un balayage complet de `src/` trouve **`produit/[id]/page.tsx:154`**, jamais signalé jusqu'ici.
+- **Route morte trouvée : `commander/checkout/page.tsx`** (+ `WaveCheckout.tsx`, `OrangeMoneyCheckout.tsx`, `BictorysCheckout.tsx` dans le même dossier) — son propre `primary_color ?? '#0EA5E9'`, zéro référence entrante dans tout le dépôt. Vérifié aussi profondément que possible avant de proposer quoi que ce soit : `git log --all -p --follow` sur `OrderForm.tsx` et `api/orders/route.ts` ne montre cette route liée à aucun moment de l'historique ; recherche plein texte sur `notification_logs` (tout SMS/WhatsApp jamais envoyé) : 0 résultat. Vraisemblablement un prototype de paiement antérieur à `commander/pay`, jamais raccordé au flux réel. **Décision en attente de l'utilisateur** (garder/supprimer) — non touché.
+- **Le lot 4 de cette spec ("Tunnel") chevauche fortement le chantier tunnel-de-commande tout juste clos (§26-§35).** Déjà faits par les lots A-D : disposition deux colonnes + relevé collant (§6.1), barre non recouvrante (§6.2), montant unique serveur (§6.4), tutoiement (§6.6, sauf le placeholder de note — voir plus bas). Restent réellement à faire pour le lot 4 : rupture de stock bloquante avec retrait/substitution (§6.3, vraie logique neuve), le placeholder de note encore au registre restauration (*"Allergies, instructions particulières..."*, `OrderForm.tsx:1185`, à remplacer par *"Une précision pour le vendeur ?"*), et une vérification croisée des moyens de paiement affichés (la fiche produit calcule sa propre liste indépendamment de celle d'`OrderForm.tsx`).
+- **Bugs 2.5 et 2.7 confirmés en lisant le code** : `ProductGrid.tsx` — badge NOUVEAU sur une fenêtre de 7 jours (la spec en demande 14) sans aucun plafond de 30 % du catalogue ; nom produit tronqué sur une seule ligne (`truncate`), pas encore 2 lignes.
+
+**Points déjà tranchés, pas à rouvrir** : Coups de cœur déjà universel dans le code (`is_featured` seul, aucune condition de plan — §5 de ce document) ; typographie déjà actée (Bricolage Grotesque + Inter, `AI_RULES.md`).
+
+**Décisions de l'utilisateur sur les points ouverts, 2026-08-20** :
+1. **Séquencement du badge de vérification** : lister les boutiques Pro concernées → les montrer → approbation → exécuter la requête de préservation (087, ligne commentée) → seulement ensuite basculer l'affichage sur `verification_status`. Aucune exception. `ShopBusinessLayout.tsx` affiche aujourd'hui le badge sans aucune condition de donnée — risque confirmé, pas théorique.
+2. **Système de variantes (§3) : sorti des lots 2-5, devient un chantier séparé et prérequis** — touche 3 surfaces (formulaire produit dashboard, sélecteur fiche produit, création de commande), hors du périmètre déclaré de cette spec (dashboard exclu sauf les 4 réglages du §9). Le lot 2 avance sans lui : tout ce qui est présentation pure (disposition, badges, bouton unique, retrait d'emojis) n'attend pas ce chantier. Plan séparé à proposer une fois les lots 2-5 lancés, pas avant.
+3. **Suggestion de regroupement de produits (§3) : sortie du lot 2, chantier séparé**, sans position dans la file pour l'instant.
+4. **Matrice des plans (§9, `coverImage`/`richDescription`) : ne pas toucher.** Réserve confirmée — attend l'ouverture de la page Tarifs (§5 de ce document).
+5. **`commander/checkout/page.tsx`** : décision différée, en attente du retour de l'utilisateur sur les éléments ci-dessus.
+6. **`ProductCtaButton`** (mort, `ProductPixelEvents.tsx`, jamais importé) : documenté, non touché, hors périmètre de ce chantier.
+
+**Plan retenu, lots 2 à 5** (variantes et suggestion de regroupement retirées) :
+- **Lot 2 — Page produit.** Présentation d'abord : séparation faits/mentions des badges (§5.6), seuil du compteur social relevé de 3 à 30 commandes (§5.7 — Glow Eternel affiche aujourd'hui « 3 personnes ont déjà commandé », le pire signal possible selon la spec elle-même), retrait des emojis (📄 🔥 ⚡ 📦), correctif `--brand` (ligne 154), unification du libellé d'action (« Je le prends » → un seul libellé, 3 endroits), un seul bouton d'achat (bug 2.1, à reproduire avant de corriger), vignette parasite (bug 2.10, cause à identifier d'abord). Le sélecteur de variantes reste sur l'ancien système JSONB tant que le chantier séparé n'est pas fait.
+- **Lot 3 — Page d'accueil.** Fusion des deux gabarits (`page.tsx` / `ShopBusinessLayout.tsx`) en un seul — cœur de la Règle A, corrige `--brand` de fait. Bande de faits (§4.4, nouveau). Badge de vérification avec le séquencement ci-dessus. Grille normalisée, badge NOUVEAU corrigé (14j + plafond 30%), noms 2 lignes, catégories non tronquées, retrait des emojis restants.
+- **Lot 4 — Tunnel, périmètre réduit** (voir écart ci-dessus) : rupture de stock bloquante, placeholder de note, vérification croisée des moyens de paiement.
+- **Lot 5 — Réglages marchand** : les 4 points du §9 v1 (carré/portrait remonté en réglage boutique, etc.), sans la suggestion de regroupement.
+
+**Chantiers sortis de cette spec, à reprendre séparément, sans position dans la file pour l'instant** : système de variantes produit (prérequis du lot 2 pour de vraies variantes, plan à soumettre une fois les lots 2-5 lancés) ; suggestion de regroupement de produits en variantes.
+
+---
