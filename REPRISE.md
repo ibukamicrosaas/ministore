@@ -1325,3 +1325,26 @@ Quatrième et dernier lot des 4 (§13 de la spec). Plan envoyé et discuté avan
 **Chantiers sortis de cette spec, à reprendre séparément, sans position dans la file pour l'instant** : système de variantes produit (prérequis du lot 2 pour de vraies variantes, plan à soumettre une fois les lots 2-5 lancés) ; suggestion de regroupement de produits en variantes.
 
 ---
+
+## 37. Refonte des boutiques publiques — Lot 2 (page produit), round 1 : présentation pure, 2026-08-20
+
+Premier round du lot 2 (§14 de `SPEC-v2-refonte-boutiques-publiques.md`), commit `2354891`. Sur décision explicite : tout ce qui est présentation pure avance sans attendre le système de variantes (chantier séparé, §36) — ce round ne touche donc pas au sélecteur de variantes lui-même, toujours sur l'ancien système JSONB.
+
+**Ce qui a changé** :
+- **`--brand`** corrigé sur `produit/[id]/page.tsx:154` (3ᵉ occurrence trouvée en marge du lot, voir §36) — 3 usages en alpha-hex convertis en `color-mix()` (compteur social, livraison estimée, lien « Voir → » des produits liés).
+- **Faits/mentions séparés (§5.6 de la spec)** : les mentions marchand (champ `badges` libre) passent en pastille neutre grise, sans coche ni couleur de validation, groupées sous « Le vendeur précise » — avant, rendu indifférenciable d'un fait plateforme vérifié.
+- **Seuil du compteur social relevé de 3 à 30 commandes (§5.7)** — le seuil de 3 était exactement le bug illustré par la spec elle-même (« 3 personnes ont déjà commandé », le pire signal possible).
+- **4 emojis retirés** de cette page : 📄 (badge produit digital), 🔥 (compteur social), ⚡ (stock faible), 📦 (produits liés sans photo, remplacé par l'icône `Package`, déjà la convention de repli ailleurs dans le code).
+- **Libellé d'action unifié (§6.6)** : « Je le prends » disparaît des 3 vrais points d'usage — `VariantSelectorCta.tsx` (bouton inline), `ProductStickyCtaManager.tsx` (bouton collant). Devient « Commander » (physique) / « Acheter » (digital, déjà le mot utilisé côté tunnel depuis le lot C de la refonte du tunnel de commande).
+
+**Trouvé et corrigé en cours de route, pas dans le plan initial** :
+- `ProductStickyCtaManager.tsx` ignorait `isDigital` avant même ce correctif — son libellé par défaut était toujours « Je le prends », y compris pour un produit digital dont le bouton inline dit « Acheter ». Prop `isDigital` ajoutée, propagée depuis `page.tsx`.
+- `VariantSelectorCta.tsx` avait la même astuce d'alpha hexadécimal que `PaymentMethodSelector.tsx` (chantier tunnel) sur les puces de variantes (`${color}0D`/`${color}30`) — cassée par construction dès que `color` devient la chaîne `var(--brand)`. Convertie en `color-mix()`, même schéma que le correctif tunnel.
+
+**Vérifié, pas seulement compilé** : `npx tsc --noEmit` et `npm run build` propres. Rendu visuel en local sur un produit réel avec variantes et mentions marchand (`ouze-collection`/Maillot Arsenal) — pastille neutre confirmée, bascule du libellé « Choisir une variante » → « Commander » au clic confirmée, couleurs `color-mix()` correctes. **Seuil ≥30 non vérifié visuellement** : les deux boutiques réelles trouvées avec 30+ ventes sur un même produit sont toutes les deux suspendues — vérifié par lecture de code (changement de constante `3`→`30`, aucune autre logique touchée), pas par capture d'écran inventée.
+
+**Deux bugs du §2 de la spec restent ouverts, explicitement non traités dans ce round — ni résolus, ni oubliés** :
+- **Bug 2.1 (bouton d'achat affiché deux fois)** : le mécanisme de bascule inline/collant (`IntersectionObserver` + événements `inline-cta-visibility`/`variant-selected` entre `VariantSelectorCta.tsx` et `ProductStickyCtaManager.tsx`) a été relu en détail et semble correct — le bouton collant ne s'affiche que quand le bouton inline sort du viewport, jamais les deux ensemble par construction du code. **Non confirmé en conditions réelles.** À vérifier visuellement (scroll réel sur mobile) avant de considérer ce bug clos ou de le corriger.
+- **Bug 2.10 (vignette parasite avec le logo de la boutique dans la galerie produit)** : aucun code trouvé nulle part dans le dépôt qui injecterait automatiquement le logo de la boutique dans les photos d'un produit (`ProductGallery.tsx` ne référence ni `logo` ni `shop.` du tout ; aucun chemin d'import CSV ou de création de produit n'y touche). Hypothèse la plus probable : artefact de donnée sur un produit précis de la boutique observée (Glow Eternel), pas un bug de code. **Non résolu** : la cause exacte reste à confirmer avant toute action (correctif de code s'il y en a un, ou nettoyage de donnée ciblé sinon) — pas d'investigation plus poussée dans ce round.
+
+**Prochaine étape** : round 2 du lot 2 (reproduction et traitement des bugs 2.1/2.10, disposition §5.1 si des écarts subsistent) ou passage au lot 3 (page d'accueil), à la décision de l'utilisateur.
