@@ -85,7 +85,9 @@ export function VariantSelectorCta({
     router.push(href)
   }
 
-  const ctaPrefix = isDigital ? 'Acheter' : 'Je le prends'
+  // Un seul libellé d'action de bout en bout (§6.6 de SPEC-v2) : « Commander »
+  // ici, sur la barre haute, et à l'ouverture du tunnel — « Je le prends » disparaît.
+  const ctaPrefix = isDigital ? 'Acheter' : 'Commander'
   const ctaLabel  = variants.length === 0 || selected ? ctaPrefix : 'Choisir une variante'
   const ctaDisabled = variants.length > 0 && !selected
 
@@ -110,7 +112,7 @@ export function VariantSelectorCta({
                   style={isSelected ? {
                     backgroundColor: color, borderColor: color, color: '#fff',
                   } : {
-                    backgroundColor: `${color}0D`, borderColor: `${color}30`, color: '#374151',
+                    backgroundColor: `color-mix(in srgb, ${color} 5%, white)`, borderColor: `color-mix(in srgb, ${color} 19%, white)`, color: '#374151',
                   }}
                 >
                   {v.label}

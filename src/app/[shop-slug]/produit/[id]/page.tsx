@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -151,7 +151,7 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   const soldOut       = product.stock_count === 0
-  const color         = shop.primary_color ?? '#0EA5E9'
+  const color         = 'var(--brand)'
   const currency      = (shop.currency ?? 'XOF') as ShopCurrency
   const deliveryDelay = (product as Product & { delivery_delay?: string | null }).delivery_delay ?? null
   const isDigital     = (product as Product & { product_type?: string | null }).product_type === 'digital'
@@ -323,7 +323,6 @@ export default async function ProductDetailPage({ params }: Props) {
         {/* Badge produit digital */}
         {isDigital && (
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 w-fit">
-            <span className="text-base">📄</span>
             <div>
               <p className="text-xs font-semibold text-violet-700">Produit digital</p>
               {digitalFileName && (
@@ -354,9 +353,10 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
-        {salesCount >= 3 && (
-          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: `${color}15`, color }}>
-            🔥 {salesCount} personnes ont déjà commandé
+        {/* Seuil à 30 (§5.7 de SPEC-v2) : en dessous, le signal joue contre le vendeur plutôt que pour lui. */}
+        {salesCount >= 30 && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: 'color-mix(in srgb, var(--brand) 8%, white)', color }}>
+            {salesCount} personnes ont déjà commandé
           </div>
         )}
 
@@ -372,28 +372,30 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Badges produit */}
+        {/* Mentions du vendeur — champs libres, jamais confondus avec un fait plateforme
+            vérifié (§5.6 de SPEC-v2) : pas de coche, pas de couleur de validation. */}
         {(() => {
           const b = (product as Product & { badges?: string[] | null }).badges ?? []
           const filled = b.filter(Boolean)
           return filled.length > 0 ? (
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
-              {filled.map((badge, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold"
-                  style={{ backgroundColor: `${color}12`, color }}
-                >
-                  <span className="text-[10px]">✓</span>
-                  {badge}
-                </div>
-              ))}
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Le vendeur précise</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {filled.map((badge, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600"
+                  >
+                    {badge}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null
         })()}
 
         {deliveryDelay && !isDigital && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}12` }}>
+          <div className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: 'color-mix(in srgb, var(--brand) 7%, white)' }}>
             <Clock className="h-4 w-4 shrink-0" style={{ color }} />
             <p className="text-sm font-medium text-gray-700">
               Livraison estimée : <span className="font-bold" style={{ color }}>{deliveryDelay}</span>
@@ -404,7 +406,7 @@ export default async function ProductDetailPage({ params }: Props) {
         {/* Indicateur de stock faible */}
         {!soldOut && product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 5 && (
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
-            ⚡ Plus que {product.stock_count} disponible{product.stock_count > 1 ? 's' : ''}
+            Plus que {product.stock_count} disponible{product.stock_count > 1 ? 's' : ''}
           </div>
         )}
 
@@ -519,12 +521,14 @@ export default async function ProductDetailPage({ params }: Props) {
                           quality={80}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📦</div>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-300" />
+                        </div>
                       )}
                     </div>
                     <p className="mt-2 text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{rp.name}</p>
                     <p className="mt-0.5 text-xs font-bold" style={{ color }}>{rpPrice}</p>
-                    <p className="mt-1 text-[10px] font-semibold" style={{ color: `${color}99` }}>Voir →</p>
+                    <p className="mt-1 text-[10px] font-semibold" style={{ color: 'color-mix(in srgb, var(--brand) 60%, white)' }}>Voir →</p>
                   </a>
                 )
               })}
@@ -554,6 +558,7 @@ export default async function ProductDetailPage({ params }: Props) {
           productName={product.name}
           price={product.price}
           displayPrice={displayPrice}
+          isDigital={isDigital}
         />
       )}
     </div>
