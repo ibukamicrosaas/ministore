@@ -4,15 +4,9 @@ import { redirect } from 'next/navigation'
 import { APP_URL } from '@/constants'
 import type { Profile } from '@/types'
 import { AffiliationClient } from './AffiliationClient'
+import { AFFILIATION_COMMISSIONS } from '@/lib/dashboard/affiliation-commissions'
 
 export const metadata = { title: 'Affiliation — TekkiShop' }
-
-// Commissions par plan (FCFA)
-export const AFFILIATION_COMMISSIONS: Record<string, number> = {
-  decouverte: 1000,
-  business:   2000,
-  pro:        4000,
-}
 
 export default async function AffiliationPage() {
   const supabase = await createServerClient()

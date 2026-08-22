@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { TrendingUp } from 'lucide-react'
-import type { RevenuePeriod } from '@/app/api/dashboard/revenue/route'
+import type { RevenuePeriod } from '@/lib/dashboard/date-range'
 
 const PERIODS: { key: RevenuePeriod; label: string }[] = [
   { key: 'today',    label: 'Auj.' },
