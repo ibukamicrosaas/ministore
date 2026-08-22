@@ -7,7 +7,12 @@ import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { LicenceSimulator } from './LicenceSimulator'
 import { LicenceForm } from './LicenceForm'
 
-export const revalidate = 3600
+// Aligné sur le rythme de la page d'accueil (compromis validé, pas une parité
+// stricte : la page d'accueil est intégralement dynamique — cookies() via
+// createServerClient() — sans lien avec son propre compteur de boutiques,
+// qui passe par createAdminClient() comme ici). 60 s garde une fraîcheur
+// commerciale utile sans recalculer à chaque requête.
+export const revalidate = 60
 
 export const metadata = {
   title: `Devenir licencié TEKKIShop — Lancez TEKKIShop dans votre pays — ${APP_NAME}`,
@@ -750,10 +755,11 @@ export default async function LicencePage() {
               <div className="lic-price-card">
                 <span className="lic-price-from">À partir de</span>
                 <div className="lic-price-top"><b>1 200 000 F</b><span>CFA · 12 mois</span></div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, margin: '8px 0 4px' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, alignItems: 'center', margin: '8px 0 4px' }}>
                   {['≈ 1 830 €', '≈ 2 000 $ US', '≈ 1 550 £'].map(c => (
                     <span key={c} style={{ fontFamily: 'monospace', fontSize: 12, background: '#f5f9ff', border: '1px solid #e3ecfa', borderRadius: 9, padding: '7px 11px' }}>{c}</span>
                   ))}
+                  <span style={{ fontSize: 11.5, color: '#697893' }}>taux indicatifs</span>
                 </div>
                 <p className="lic-price-sub">Montant plancher, applicable aux marchés à ouvrir. Payable en deux fois.</p>
                 <div className="lic-pay-split">
