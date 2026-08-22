@@ -10,9 +10,9 @@ import { LicenceForm } from './LicenceForm'
 // Aligné sur le rythme de la page d'accueil (compromis validé, pas une parité
 // stricte : la page d'accueil est intégralement dynamique — cookies() via
 // createServerClient() — sans lien avec son propre compteur de boutiques,
-// qui passe par createAdminClient() comme ici). 60 s garde une fraîcheur
+// qui passe par createAdminClient() comme ici). 90 s garde une fraîcheur
 // commerciale utile sans recalculer à chaque requête.
-export const revalidate = 60
+export const revalidate = 90
 
 export const metadata = {
   title: `Devenir licencié TEKKIShop — Lancez TEKKIShop dans votre pays — ${APP_NAME}`,
