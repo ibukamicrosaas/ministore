@@ -30,6 +30,43 @@ const Arrow = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 )
 
+type TerritoryStatus = 'libre' | 'reserve' | 'attribue' | 'dukka'
+
+interface Territory {
+  country_code: string
+  name: string
+  status: TerritoryStatus
+  merchant_count: number | null
+  position: number
+}
+
+type Section = 'disponible' | 'a-ouvrir' | 'en-cours' | 'ferme'
+
+// Emoji de drapeau — dérivé du code, jamais stocké en base (migration 095,
+// colonne non demandée dans le schéma).
+const FLAG_BY_CODE: Record<string, string> = {
+  BJ: '🇧🇯', ML: '🇲🇱', BK: '🇧🇫', NE: '🇳🇪', GN: '🇬🇳', CM: '🇨🇲', GA: '🇬🇦',
+  TG: '🇹🇬', SN: '🇸🇳', CI: '🇨🇮', DIASPORA: '🌍',
+}
+
+const STATUS_LABEL: Record<TerritoryStatus, string> = {
+  libre: 'libre', reserve: 'réservé', attribue: 'attribué', dukka: 'Dukka',
+}
+
+// Les 3 seuls pays avec des marchands réels à ce jour : la requête reste live
+// sur `shops` (jamais dupliquée dans licence_territories.merchant_count, qui
+// vaut NULL pour ces 3 codes — voir migration 095).
+const LIVE_COUNT_CODES = new Set(['BJ', 'ML', 'BK'])
+
+// Section déduite de status + nombre affiché — jamais une colonne séparée,
+// qui pourrait diverger du statut réel (validé avant implémentation, voir
+// REPRISE.md, chantier /licence).
+function sectionFor(t: Territory, count: number | null): Section {
+  if (t.status === 'reserve') return 'en-cours'
+  if (t.status === 'attribue' || t.status === 'dukka') return 'ferme'
+  return count !== null ? 'disponible' : 'a-ouvrir'
+}
+
 export default async function LicencePage() {
   const admin = createAdminClient()
   const { count: shopCount } = await admin
@@ -47,6 +84,32 @@ export default async function LicencePage() {
     admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'ML'),
     admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BK'),
   ])
+
+  const liveCountByCode: Record<string, number> = {
+    BJ: beninCount ?? 0,
+    ML: maliCount ?? 0,
+    BK: burkinaCount ?? 0,
+  }
+
+  // Statuts de territoire — modifiables sans redéploiement (migration 095).
+  const { data: territoriesRaw } = await admin
+    .from('licence_territories' as never)
+    .select('country_code, name, status, merchant_count, position')
+    .eq('is_visible', true)
+    .order('position')
+
+  const territories = (territoriesRaw ?? []) as unknown as Territory[]
+
+  function displayCount(t: Territory): number | null {
+    return LIVE_COUNT_CODES.has(t.country_code) ? liveCountByCode[t.country_code] : t.merchant_count
+  }
+
+  const bySection: Record<Section, Territory[]> = { disponible: [], 'a-ouvrir': [], 'en-cours': [], ferme: [] }
+  for (const t of territories) bySection[sectionFor(t, displayCount(t))].push(t)
+
+  // Pays éligibles à une candidature : libres ou réservés (le Togo,
+  // « en cours de finalisation », redevient sélectionnable — §1.1).
+  const applicableTerritories = territories.filter(t => t.status === 'libre' || t.status === 'reserve')
 
   return (
     <>
@@ -198,15 +261,17 @@ export default async function LicencePage() {
         .lic-sim-legal{margin:20px 0 0;font-size:12px;color:#7f96bb;line-height:1.6}
 
         /* ── Markets ───────────────────────────────────────── */
-        .lic-markets{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:44px}
+        .lic-markets{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:44px}
         .lic-mk{border-radius:20px;padding:24px 22px;border:1px solid;background:#fff}
         .lic-mk-open{border-color:#c4f0dd;background:#e6fbf2}
         .lic-mk-soon{border-color:#dfe7f3}
+        .lic-mk-reserved{border-color:#f7dfae;background:#fff8ec}
         .lic-mk-closed{border-color:#dfe7f3;background:#f8fafd}
         .lic-mk-tag{font-size:10px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;
           display:inline-block;padding:5px 10px;border-radius:999px;margin-bottom:14px}
         .lic-mk-open .lic-mk-tag{background:#c9f2df;color:#0a704d}
         .lic-mk-soon .lic-mk-tag{background:#eaf2ff;color:#0d54d8}
+        .lic-mk-reserved .lic-mk-tag{background:#fff1cf;color:#8a5b00}
         .lic-mk-closed .lic-mk-tag{background:#e9edf4;color:#6b7a93}
         .lic-mk > p{font-size:13.5px;color:#697893;margin:0 0 15px;line-height:1.55}
         .lic-mk ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
@@ -521,41 +586,66 @@ export default async function LicencePage() {
               <p className="lic-lead">Une licence par pays, et pas davantage. Lorsqu&apos;un territoire est attribué, il sort de la liste jusqu&apos;à la fin de l&apos;accord.</p>
             </div>
             <div className="lic-markets reveal">
-              <article className="lic-mk lic-mk-open">
-                <span className="lic-mk-tag">Disponible maintenant</span>
-                <h3 className="lic-h3">Marchands déjà actifs</h3>
-                <p>TEKKIShop compte déjà des utilisateurs dans ces pays. Vous ne démarrez pas d&apos;une page blanche.</p>
-                <ul>
-                  <li><i>🇧🇯</i> Bénin ({beninCount ?? 0} marchands) <em>libre</em></li>
-                  <li><i>🇲🇱</i> Mali ({maliCount ?? 0} marchands) <em>libre</em></li>
-                  <li><i>🇧🇫</i> Burkina Faso ({burkinaCount ?? 0} marchands) <em>libre</em></li>
-                </ul>
-                <p className="lic-mk-foot">Les marchands existants vous sont transférés au lancement.</p>
-              </article>
-              <article className="lic-mk lic-mk-soon">
-                <span className="lic-mk-tag">Ouvert sur dossier</span>
-                <h3 className="lic-h3">Marchés à ouvrir</h3>
-                <p>Aucun utilisateur pour l&apos;instant. À vous de construire le marché, avec notre appui technique.</p>
-                <ul>
-                  <li><i>🇳🇪</i> Niger <em>libre</em></li>
-                  <li><i>🇬🇳</i> Guinée <em>libre</em></li>
-                  <li><i>🇨🇲</i> Cameroun <em>libre</em></li>
-                  <li><i>🇬🇦</i> Gabon <em>libre</em></li>
-                </ul>
-                <p className="lic-mk-foot">Un autre pays vous intéresse ? Indiquez-le dans votre candidature.</p>
-              </article>
-              <article className="lic-mk lic-mk-closed">
-                <span className="lic-mk-tag">Non disponible</span>
-                <h3 className="lic-h3">Territoires fermés</h3>
-                <p>Déjà attribués, ou exploités directement par Dukka.</p>
-                <ul>
-                  <li><i>🇹🇬</i> Togo <em>attribué</em></li>
-                  <li><i>🇸🇳</i> Sénégal <em>Dukka</em></li>
-                  <li><i>🇨🇮</i> Côte d&apos;Ivoire <em>Dukka</em></li>
-                  <li><i>🌍</i> Diaspora <em>Dukka</em></li>
-                </ul>
-                <p className="lic-mk-foot">Le Sénégal, la Côte d&apos;Ivoire et les marchés de la diaspora restent exploités directement par Dukka.</p>
-              </article>
+              {bySection.disponible.length > 0 && (
+                <article className="lic-mk lic-mk-open">
+                  <span className="lic-mk-tag">Disponible maintenant</span>
+                  <h3 className="lic-h3">Marchands déjà actifs</h3>
+                  <p>TEKKIShop compte déjà des utilisateurs dans ces pays. Vous ne démarrez pas d&apos;une page blanche.</p>
+                  <ul>
+                    {bySection.disponible.map(t => (
+                      <li key={t.country_code}>
+                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} ({displayCount(t) ?? 0} marchands) <em>{STATUS_LABEL[t.status]}</em>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="lic-mk-foot">Les marchands existants vous sont transférés au lancement.</p>
+                </article>
+              )}
+              {bySection['a-ouvrir'].length > 0 && (
+                <article className="lic-mk lic-mk-soon">
+                  <span className="lic-mk-tag">Ouvert sur dossier</span>
+                  <h3 className="lic-h3">Marchés à ouvrir</h3>
+                  <p>Aucun utilisateur pour l&apos;instant. À vous de construire le marché, avec notre appui technique.</p>
+                  <ul>
+                    {bySection['a-ouvrir'].map(t => (
+                      <li key={t.country_code}>
+                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="lic-mk-foot">Un autre pays vous intéresse ? Indiquez-le dans votre candidature.</p>
+                </article>
+              )}
+              {bySection['en-cours'].length > 0 && (
+                <article className="lic-mk lic-mk-reserved">
+                  <span className="lic-mk-tag">En cours d&apos;attribution</span>
+                  <h3 className="lic-h3">Territoire en cours de finalisation</h3>
+                  <p>Une candidature peut encore être déposée sur ces territoires.</p>
+                  <ul>
+                    {bySection['en-cours'].map(t => (
+                      <li key={t.country_code}>
+                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="lic-mk-foot">Territoire en cours de finalisation. Une candidature peut encore être déposée.</p>
+                </article>
+              )}
+              {bySection.ferme.length > 0 && (
+                <article className="lic-mk lic-mk-closed">
+                  <span className="lic-mk-tag">Non disponible</span>
+                  <h3 className="lic-h3">Territoires fermés</h3>
+                  <p>Déjà attribués, ou exploités directement par Dukka.</p>
+                  <ul>
+                    {bySection.ferme.map(t => (
+                      <li key={t.country_code}>
+                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="lic-mk-foot">Le Sénégal, la Côte d&apos;Ivoire et les marchés de la diaspora restent exploités directement par Dukka.</p>
+                </article>
+              )}
             </div>
           </div>
         </section>
@@ -796,7 +886,13 @@ export default async function LicencePage() {
               </div>
             </div>
             <div className="reveal">
-              <LicenceForm />
+              <LicenceForm
+                territories={applicableTerritories.map(t => ({
+                  name: t.name,
+                  hasMerchants: displayCount(t) !== null,
+                  isReserved: t.status === 'reserve',
+                }))}
+              />
             </div>
           </div>
         </section>

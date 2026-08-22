@@ -2,18 +2,27 @@
 import { useState } from 'react'
 import { submitLicenceApplication } from '@/lib/actions/licence'
 
-const COUNTRIES = [
-  'Bénin — marchands déjà actifs',
-  'Mali — marchands déjà actifs',
-  'Burkina Faso — marchands déjà actifs',
-  'Niger',
-  'Guinée',
-  'Cameroun',
-  'Gabon',
-  'Autre pays (à préciser ci-dessous)',
-]
+interface TerritoryOption {
+  name: string
+  hasMerchants: boolean
+  isReserved: boolean
+}
 
-export function LicenceForm() {
+interface Props {
+  territories: TerritoryOption[]
+}
+
+// Libellé de l'option — dérivé de la donnée reçue de licence_territories
+// (page.tsx), jamais d'une liste dupliquée ici (§1.1 : le Togo redevient
+// sélectionnable dès que son statut passe à 'reserve' en base, sans qu'il y
+// ait de second endroit à mettre à jour).
+function optionLabel(t: TerritoryOption): string {
+  if (t.hasMerchants) return `${t.name} — marchands déjà actifs`
+  if (t.isReserved) return `${t.name} — en cours de finalisation`
+  return t.name
+}
+
+export function LicenceForm({ territories }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,7 +82,8 @@ export function LicenceForm() {
       <div className="lic-field">
         <label htmlFor="f-country">Pays que vous souhaitez ouvrir</label>
         <select id="f-country" name="country" required>
-          {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+          {territories.map(t => <option key={t.name}>{optionLabel(t)}</option>)}
+          <option>Autre pays (à préciser ci-dessous)</option>
         </select>
       </div>
       <div className="lic-frow">
