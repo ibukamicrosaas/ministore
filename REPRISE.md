@@ -1394,3 +1394,73 @@ Complément au lot 1 (§38), sur retour explicite de l'utilisateur après le pre
 **Vérifié, pas supposé** : `tsc`/`build` propres, valeurs de `Revalidate` confirmées dans la sortie de build avant/après (`1h`→`1m`), rendu réel capturé montrant `taux indicatifs` correctement positionné sans casser la mise en page.
 
 **Prochaine étape** : lot 2 (frais de paiement chiffrés, commission expliquée), en attente du retour de l'utilisateur sur la question Bictorys/Pro remontée en §38.
+
+## 40. Incident production — bouton « Activer ma boutique » sans effet, ~1209 boutiques bloquées — corrigé et déployé le 2026-08-22
+
+**Symptôme signalé** : une marchande (« Themaïs Africa ») ne pouvait pas activer son abonnement — le bouton « Activer ma boutique → » de l'écran de blocage « essai expiré » ne menait nulle part de nouveau, il rechargeait le même écran.
+
+**Cause réelle** : `src/app/dashboard/layout.tsx`, layout partagé de **toutes** les routes `/dashboard/*`, appliquait son blocage plein écran de façon inconditionnelle dès que l'essai était expiré — y compris sur `/dashboard/upgrade`, la seule page qui permet d'en sortir. Le bouton naviguait réellement, mais vers un layout qui se bloquait lui-même avant de laisser passer la vraie page.
+
+**Ampleur mesurée le 2026-08-22** (requête directe, pas une estimation) : **1209 boutiques** avec `plan='trial'`, `trial_model≠'free_orders'`, `trial_ends_at` dans le passé — dont 489 expirées dans les 30 derniers jours, 76 dans les 7 derniers jours. (Le compte inclut la boutique de test `incident-repro-test`, supprimée après vérification — voir plus bas.)
+
+**Deux tentatives de correctif abandonnées après test réel, pas juste lecture de code** :
+1. Passer le pathname courant du middleware au layout via un header `x-pathname` (`NextResponse.next({ request: { headers } })`, pattern documenté officiellement). Testé en dev, en build de production propre, avec Sentry désactivé, avec et sans code de rafraîchissement de cookies : le header n'atteint **jamais** le Server Component (seuls `x-forwarded-*` arrivent). Cause découverte ensuite (§41) : le fichier édité, `src/middleware.ts`, ne compile pas du tout dans ce build.
+2. Faire porter une redirection (`NextResponse.redirect()`, mécanisme jumeau du redirect `/login` déjà vérifié fiable) depuis le middleware vers un écran dédié `/essai-expire`. Même souci : le code ne s'exécutait jamais, prouvé par une redirection triviale et inconditionnelle (`if (pathname==='/dashboard') return redirect('/TRIVIAL-PROBE-XYZ123')`) absente de `.next/` après un build propre à froid, répété plusieurs fois.
+
+**Correctif retenu et déployé** — porté par un Server Component, jamais par le middleware cassé (voir §41, chantier séparé) :
+- Nouveau groupe de routes `src/app/dashboard/(protected)/` — toutes les pages dashboard sauf `upgrade/` (déplacées par `git mv`, historique git préservé, confirmé par `git status` avant commit : 31 fichiers en `R`, aucune suppression/recréation). `upgrade/` et `upgrade/checkout/` restent frères, hors de ce groupe — donc jamais concernés par le blocage, sans liste d'exceptions `startsWith` à maintenir. Les groupes de routes n'affectent pas l'URL (convention Next.js standard, confirmée dans `node_modules/next/dist/docs/.../route-groups.md` de ce fork) : aucune URL publique n'a changé.
+- `dashboard/(protected)/layout.tsx` (nouveau) : seul point qui décide du blocage, via `redirect('/essai-expire')` — mécanisme `redirect()` de Server Component, vérifié fiable toute la session (déjà utilisé pour `/login` et `/onboarding`).
+- `src/app/essai-expire/page.tsx` (nouveau) : l'écran de blocage lui-même (logo, `primary_color`, message, CTA), JSX déplacé tel quel depuis `dashboard/layout.tsx` — délibérément **hors** de `app/dashboard/`, pour ne pas hériter du chrome `DashboardShell` (nav/sidebar) que cet écran n'a jamais eu.
+- `src/lib/trial-status.ts` (nouveau) : calcul `computeTrialStatus()` partagé entre `dashboard/layout.tsx` (bannières), `dashboard/(protected)/layout.tsx` (blocage) et `essai-expire/page.tsx` (garde anti accès direct), pour éviter que ces trois calculs divergent.
+- `dashboard/layout.tsx` (modifié) : perd le blocage inconditionnel — bug retrouvé une seconde fois en cours de route (le blocage y était resté après un premier `git checkout HEAD` de nettoyage, catchant `/dashboard/upgrade` avant même d'atteindre le nouveau groupe ; corrigé avant le build final). Garde l'auth, le fetch profil/boutique, les bannières de renouvellement.
+
+**Détail de comportement noté en testant, sans conséquence sur le correctif** : une redirection `redirect()` déclenchée depuis un layout **imbriqué** (pas le plus haut de l'arbre) ne produit pas toujours un 307 HTTP visible pour une requête `curl` brute sans JS — parfois un 200 avec le contenu cible rendu directement sous l'URL d'origine. Confirmé sans impact réel : en navigateur (avec hydratation), l'URL affichée se corrige bien vers `/essai-expire`, et la navigation `/dashboard/upgrade` (route sœur, pas de redirect imbriqué) donne systématiquement un vrai changement d'URL propre.
+
+**Test réel effectué, pas une lecture de code** — build de production (`next build && next start`), compte `Incident Repro Test` (créé par le vrai parcours `/start`, essai forcé expiré en base via `trial_model='legacy'`, `trial_ends_at` dans le passé, répliquant exactement l'état constaté du compte de Themaïs Africa), connexion réelle par le vrai formulaire téléphone+PIN, cookies navigateur effacés avant le test pour forcer un login authentique :
+- Clic sur « Activer ma boutique → » → arrivée confirmée sur la vraie page « Choisir un plan » (`Découverte` / `Business` / `Pro`), URL `/dashboard/upgrade`.
+- Navigation directe vers `/dashboard/products` (autre page dashboard) → redirection confirmée vers `/essai-expire`, même écran de blocage.
+
+**Déployé** : commit `fd480ad`, poussé sur `main` le 2026-08-22, sans repasser par validation supplémentaire — autorisation explicite donnée pour cet incident une fois les 3 points de vérification confirmés. `tsc --noEmit` et `npm run build` propres avant déploiement.
+
+**Compte de test supprimé** après confirmation du correctif — voir fin de session.
+
+## 41. Deux fichiers middleware, un seul actif — chantier critique ouvert, distinct, pas commencé
+
+**Découverte** en tentant de corriger l'incident §40 : deux fichiers `middleware.ts` coexistent dans ce dépôt, et Next.js n'en exécute qu'un seul, **silencieusement**, sans erreur ni avertissement de conflit.
+
+- **`/middleware.ts`** (racine) — dernier commit `52aae20`, **21 juin 2026**. C'est celui qui tourne réellement, confirmé empiriquement (redirection triviale et inconditionnelle absente de `src/middleware.ts` compilé, présente en comportement observé pour la racine) et au niveau code : `node_modules/next/dist/build/index.js:622-639` scanne les fichiers `middleware`/`proxy` à la racine **et** dans `src/` (les deux sont des emplacements valides), puis réaffecte `middlewareFilePath` sans garde à chaque candidat trouvé — le dernier trouvé dans le scan écrase silencieusement l'autre. Un conflit `middleware.ts` + `proxy.ts` lève une erreur bloquante explicite (même fichier, lignes 640-650) ; aucun contrôle équivalent n'existe pour `middleware.ts` (racine) + `middleware.ts` (`src/`).
+- **`src/middleware.ts`** — dernier commit `bf8dc7b`, **13 juillet 2026**. Mort depuis sa création, jamais exécuté.
+
+**Chronologie git (pas un problème introduit cette session)** :
+| Date | Fichier | Commit |
+|---|---|---|
+| 2026-05-02/04 | racine | fork initial + refonte TekkiShop |
+| **2026-05-09** | **`src/` créé** | premier commit — point de bascule du doublon |
+| 2026-05-15 | `src/` seul | pentest — 15 CVE corrigés, dont **CVE-14 : « Middleware : /api/payouts ajouté au matcher »** |
+| 2026-06-04 | racine | domaine perso + hide_branding — quelqu'un croyait encore la racine à jour |
+| 2026-06-07→07-13 | `src/` seul | 4 correctifs domaine personnalisé (vérif A record, rewrite au lieu de redirect, anti-double-slash, 404→page de suspension) |
+| 2026-06-21 | racine, dernier commit | onboarding + PIN masqué + session 30j — **version en production aujourd'hui** |
+
+Deux mois de correctifs committés en croyant qu'ils partaient en production ne l'ont jamais fait.
+
+**Inventaire responsabilité par responsabilité** (racine = actif ; vérifié par lecture de code, pas supposé) :
+
+| Responsabilité (racine) | Doublée ailleurs ? | Verdict |
+|---|---|---|
+| Rate limiting `/api/orders`, `/api/payments` | Non | OK, actif |
+| Routing domaine personnalisé | Non, mais version ancienne | **Régression silencieuse probable** — double-slash URL et écran 404 au lieu de suspension, jamais livrés |
+| `/api/cron/*` — secret obligatoire | Seulement 2/16 routes (`process-pending-payouts`, `verify-subscription-payments`) | OK aujourd'hui, mais **14/16 routes sans défense propre** |
+| Refresh session (cookie 30j) | N/A | OK |
+| `/api/admin/*` — auth + `role==='owner'` | Oui, 5 routes via allowlist `ADMIN_USER_IDS` (mécanisme différent, pas la même règle) | OK aujourd'hui, peut diverger |
+| `/api/payouts/*` | Racine : **aucune protection** (CVE-14 jamais livré). Seule route existante (`payouts/request`) a sa propre vérif complète | Pas exploitable aujourd'hui, mais fragile pour une future route copiée sans sa propre garde |
+| `/dashboard/*` — auth + (owner && (!shop_id \|\| !onboarding_completed)) | `dashboard/layout.tsx` (avant §40) ne vérifiait que `shop_id`, jamais `onboarding_completed` | Partiellement redondant |
+| `/admin` (page) | Racine : aucune gestion. `admin/layout.tsx` fait tout (allowlist) | OK, seule garde mais présente |
+| `/login` → redirect si connecté | Aucune vérif indépendante | Zéro redondance (cosmétique, pas un risque) |
+| `/onboarding` → redirect si complété | Oui, `onboarding/page.tsx` | OK, redondant |
+| En-têtes sécurité (CSP, HSTS…) | `next.config.ts` `headers()`, aucun des deux middleware | OK, non affecté |
+
+**Pas de porte grande ouverte trouvée** — chaque route sensible a soit sa propre garde, soit hérite de la racine qui tourne réellement. Le risque réel : des correctifs crus livrés ne le sont jamais (domaine personnalisé, CVE-14), et plusieurs surfaces (14 routes cron, page login, `dashboard/layout.tsx` avant §40) n'ont aucune redondance — elles fonctionnent aujourd'hui uniquement parce que la racine fait le travail, sans filet.
+
+**Question ouverte, à mesurer quand ce chantier démarrera, pas maintenant** : la régression du domaine personnalisé (404 au lieu de la page de suspension, double-slash) est-elle réellement active en production ? Si oui, de vrais marchands avec domaine personnalisé pourraient être affectés en ce moment.
+
+**Ne pas commencer sans plan dédié** — fusionner les deux fichiers touche au rate-limiting, au secret des crons et au routing de domaine personnalisé en même temps, sur une base en production. Décision explicite de l'utilisateur : chantier séparé, traité après le déblocage des boutiques (§40), pas dans la précipitation d'un incident. Recommandation à valider le moment venu : garder la racine comme source de vérité (plus complète), y fusionner les correctifs utiles de `src/middleware.ts` (domaine personnalisé, ajout `/api/payouts` au matcher), supprimer le doublon, rebuild + test réel avant de considérer le sujet clos.
