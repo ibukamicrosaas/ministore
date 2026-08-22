@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, CheckCircle2 } from 'lucide-react'
-import { pollShopActivation, verifySubscriptionPayment } from '../upgrade/actions'
+import { pollShopActivation, verifySubscriptionPayment } from '../../upgrade/actions'
 
 export function ActivationChecker() {
   const router = useRouter()
