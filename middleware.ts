@@ -44,6 +44,12 @@ const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tekki.shop')
   .replace(/https?:\/\//, '')
   .replace(/\/$/, '')
 
+// Même allowlist que src/app/admin/layout.tsx et src/app/dashboard/layout.tsx —
+// profiles.role vaut 'owner' pour 100 % des marchands en prod (vérifié), donc
+// role==='owner' ne protège rien de plus qu'« être connecté ». L'allowlist est
+// la vraie garde.
+const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+
 async function handleCustomDomain(request: NextRequest): Promise<NextResponse | null> {
   const hostname = request.headers.get('host') ?? ''
   const pathname = request.nextUrl.pathname
@@ -62,7 +68,9 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/manifest') ||
-    pathname.match(/\.(png|jpg|jpeg|svg|ico|webp|gif|css|js|woff2?)$/)
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.match(/\.(png|jpg|jpeg|svg|ico|webp|gif|css|js|woff2?|txt|xml)$/)
   ) return null
 
   // Lookup du slug via l'API REST Supabase (pas de cookies requis)
@@ -90,7 +98,9 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
   }
 
   // Si le chemin commence déjà par /{slug} (liens internes de la boutique), ne pas re-préfixer
-  if (pathname.startsWith(`/${slug}`)) {
+  // — comparaison sur la frontière du segment, pas un simple startsWith : sinon un
+  // slug 'viens' matcherait le chemin d'une autre boutique '/viens-autre-boutique/...'
+  if (pathname === `/${slug}` || pathname.startsWith(`/${slug}/`)) {
     return NextResponse.next({ request })
   }
 
@@ -169,20 +179,27 @@ export async function middleware(request: NextRequest) {
   // Rafraîchir la session (obligatoire pour SSR avec Supabase SSR)
   const { data: { user } } = await supabase.auth.getUser()
 
-  // ── Routes API admin : authentification + rôle owner requis ──────────────
+  // ── Routes API admin : authentification + allowlist requises ─────────────
+  // role==='owner' ne protège rien (100 % des profils en prod ont ce rôle,
+  // vérifié) — l'allowlist est la vraie garde, même mécanisme que
+  // src/app/admin/layout.tsx et les 5 routes qui la vérifiaient déjà elles-mêmes.
   if (pathname.startsWith('/api/admin')) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    const profile = profileData as { role: string } | null
-    if (!profile || profile.role !== 'owner') {
+    if (!ADMIN_USER_IDS.includes(user.id)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    return response
+  }
+
+  // ── Routes API payouts : authentification requise ─────────────────────────
+  // CVE-14 (pentest de mai) : jamais protégé par la racine — la seule route
+  // réelle (payouts/request) a sa propre vérif complète, mais rien n'empêchait
+  // une future route copiée sans sa propre garde d'être ouverte.
+  if (pathname.startsWith('/api/payouts')) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return response
   }
