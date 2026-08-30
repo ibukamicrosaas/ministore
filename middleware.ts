@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/database'
+import { APP_URL } from '@/constants'
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 // In-memory, per-instance (Vercel Edge). Sufficient for early-stage traffic.
@@ -40,9 +41,16 @@ function maybeCleanup() {
 }
 
 // ── Custom domain routing ─────────────────────────────────────────────────────
-const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tekki.shop')
-  .replace(/https?:\/\//, '')
-  .replace(/\/$/, '')
+// Dérivé d'APP_URL (source unique, src/constants/index.ts) plutôt que recalculé
+// ici depuis process.env avec un défaut différent (tekki.shop vs www.tekki.shop
+// pour APP_URL) — les deux calculs indépendants pouvaient diverger silencieusement
+// selon lequel des deux défauts finissait utilisé. Voir REPRISE.md §42 : nettoyage
+// de dette, pas un correctif d'incident confirmé — la cause exacte de l'incident
+// (pas de confirmation après paiement Wave) n'a jamais été établie avec certitude.
+const APP_HOSTNAME      = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')
+// Forme sans www, pour reconnaître les deux formes réelles du domaine principal
+// sans supposer laquelle des deux APP_URL utilise.
+const APP_HOSTNAME_BARE = APP_HOSTNAME.replace(/^www\./, '')
 
 // Même allowlist que src/app/admin/layout.tsx et src/app/dashboard/layout.tsx —
 // profiles.role vaut 'owner' pour 100 % des marchands en prod (vérifié), donc
@@ -56,8 +64,8 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
 
   // Ignorer le domaine principal, localhost et Vercel previews
   if (
-    hostname === APP_DOMAIN ||
-    hostname === `www.${APP_DOMAIN}` ||
+    hostname === APP_HOSTNAME_BARE ||
+    hostname === `www.${APP_HOSTNAME_BARE}` ||
     hostname.includes('localhost') ||
     hostname.includes('.vercel.app')
   ) return null
@@ -94,7 +102,7 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
 
   if (!slug) {
     // Domaine inconnu → redirection vers le site principal
-    return NextResponse.redirect(new URL('/', `https://${APP_DOMAIN}`))
+    return NextResponse.redirect(new URL('/', APP_URL))
   }
 
   // Si le chemin commence déjà par /{slug} (liens internes de la boutique), ne pas re-préfixer
