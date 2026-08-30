@@ -155,6 +155,34 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // ── Session Supabase : uniquement pour les routes qui en ont besoin ───────
+  // Avant : supabase.auth.getUser() s'exécutait sur CHAQUE requête (page
+  // d'accueil, pages boutiques publiques...), pas seulement les routes
+  // authentifiées — un aller-retour Supabase Auth inutile sur chaque vue
+  // publique du site.
+  //
+  // /preview, /country-admin et /essai-expire sont inclus alors qu'ils ne lisent
+  // jamais `user` dans CE fichier : ce sont des Server Components qui vérifient
+  // leur propre auth via createServerClient() (src/lib/supabase/server.ts), dont
+  // le rafraîchissement de cookie échoue TOUJOURS silencieusement dans ce contexte
+  // (Next.js interdit l'écriture de cookies pendant le rendu d'un Server
+  // Component — le setAll de ce wrapper avale l'erreur, voir son commentaire).
+  // Seul CE middleware peut réellement rafraîchir leur cookie de session.
+  const needsSession =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api/admin') ||
+    pathname.startsWith('/api/payouts') ||
+    pathname.startsWith('/preview') ||
+    pathname.startsWith('/country-admin') ||
+    pathname === '/essai-expire' ||
+    pathname === '/login' ||
+    pathname === '/onboarding'
+
+  if (!needsSession) {
+    return response
+  }
+
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
