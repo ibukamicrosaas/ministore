@@ -182,6 +182,12 @@ La plateforme a l'air de garantir tout cela. Deux traitements visuels **distinct
 - **Faits plateforme** (stock, livraison, paiement, échange) : puce colorée avec coche, calculés depuis la configuration.
 - **Mentions du marchand** (les quatre champs libres) : puce neutre, sans coche, sans couleur de validation, regroupées sous `Le vendeur précise`.
 
+### 5.6bis Badges de réassurance dynamiques — ajouté 2026-08-30, remonté par l'utilisateur
+Livraison gratuite, paiement à la livraison, délai — **dérivés des vrais réglages de la boutique, jamais en dur**. Distinct des §5.6 « faits plateforme » existants (stock, échange) qui viennent déjà de la configuration — celui-ci couvre les trois badges de réassurance qui manquent encore à ce traitement. À faire au Lot 2, aucune investigation ni implémentation commencée.
+
+### 5.6ter Support de GIFs animés — ajouté 2026-08-30, remonté par l'utilisateur
+Sur la fiche produit. **À vérifier en premier, avant toute décision** : le pipeline d'images actuel (upload, stockage, redimensionnement) préserve-t-il l'animation d'un GIF, ou l'aplatit-il silencieusement en image statique ? Aucune investigation faite — l'ordre de travail est explicitement : vérifier le pipeline d'abord, décider ensuite. Lot 2.
+
 ### 5.7 Compteur social
 `N personnes ont déjà commandé` ne s'affiche qu'à partir de **30 commandes** sur le produit. En dessous : rien.
 
@@ -201,6 +207,8 @@ Deux colonnes à partir de 900 px — formulaire à gauche, **récapitulatif col
 ### 6.2 La barre collante ne recouvre plus le contenu
 Même correction qu'au §5.5, appliquée aux trois étapes. Le bouton « Continuer » recouvre aujourd'hui le champ e-mail ; la barre de total recouvre l'option « Payer maintenant ».
 
+**Réapparition constatée le 2026-08-30, captures à l'appui** : sur mobile, la barre récapitulative collante recouvre le bas du formulaire de commande. Hypothèse non vérifiée : un padding fixe qui ne suit pas la hauteur variable du contenu du relevé. Aucune investigation faite — à confirmer avant de corriger, ne pas supposer que c'est exactement le même défaut que ci-dessus sans l'avoir vérifié sur le code actuel (le Lot D du tunnel a déjà été livré depuis, §33/§35 — ce pourrait être une régression distincte).
+
 ### 6.3 Rupture de stock bloquante
 Un article en rupture doit désactiver « Continuer », proposer « Retirer cet article » et « Choisir une autre {variant_label} », et **revalider le stock au moment de la confirmation**, pas seulement à l'affichage.
 
@@ -218,6 +226,9 @@ La liste affichée est générée depuis les moyens réellement disponibles pour
 
 ### 6.7 Articulation avec les commandes retenues
 Boutique `expired` → le tunnel se termine normalement et affiche le message neutre défini dans `SPEC-3-commandes-offertes.md`. **Aucune mention du statut d'abonnement du marchand côté acheteur, à aucune étape.**
+
+### 6.8 Absence de champs Pays/Ville — ajouté 2026-08-30, remonté par l'utilisateur
+Le formulaire de commande n'a pas de champs Pays/Ville explicites — le pays est aujourd'hui déduit du seul indicatif téléphonique de l'acheteur. **À investiguer avant toute décision de solution** : comment cette détection fonctionne réellement aujourd'hui (quel code, quelle logique exacte), et ce qui se passe concrètement si l'acheteur est dans un pays différent de celui de la boutique (livraison transfrontalière, frais, moyens de paiement affichés). Aucune investigation faite.
 
 ---
 
