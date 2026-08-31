@@ -31,7 +31,7 @@ Ces défauts sont observables aujourd'hui sur des boutiques réelles. Reproduis 
 
 | # | Constat | Où |
 |---|---|---|
-| 2.1 | **Le bouton d'achat est affiché deux fois** sur la fiche produit mobile | ABI&CO et Glow Eternel |
+| 2.1 | **Le bouton d'achat est affiché deux fois** sur la fiche produit mobile — **non-reproduit dans les conditions testées, voir note ci-dessous, à revérifier une fois le chantier variantes construit** | ABI&CO et Glow Eternel |
 | 2.2 | La barre d'achat collante **recouvre le bloc « Livraison estimée »** | ABI&CO mobile |
 | 2.3 | **Le prix ne semble pas affiché** dans la colonne d'achat mobile | Glow Eternel mobile — à vérifier |
 | 2.4 | Le libellé de l'action change en cours de route : « Commander » en barre haute, **« Je le prends »** sur la fiche | Les deux boutiques |
@@ -40,11 +40,13 @@ Ces défauts sont observables aujourd'hui sur des boutiques réelles. Reproduis 
 | 2.7 | Noms produits **en capitales et tronqués** : `BANDOULIÈRE VERSSE BLEU …` | ABI&CO |
 | 2.8 | **Grille en dents de scie** : hauteurs de cartes très inégales selon le format des photos | Glow Eternel |
 | 2.9 | **Vide considérable** sous la colonne d'achat desktop, et sous la colonne d'identité de l'accueil | Les deux |
-| 2.10 | La galerie produit contient une **vignette parasite** portant le logo de la boutique | Glow Eternel |
+| ~~2.10~~ | ~~La galerie produit contient une **vignette parasite** portant le logo de la boutique~~ — **clos, non-bug, voir note ci-dessous** | Glow Eternel |
 
 **Sur 2.5** — le badge « Nouveau » doit obéir à deux conditions cumulatives : produit publié depuis moins de 14 jours, **et** moins de 30 % du catalogue concerné. Au-delà, le badge disparaît pour tout le monde : un signal porté par tous ne distingue personne.
 
-**Sur 2.10** — identifie d'où vient cette vignette avant de la retirer. Si elle est générée automatiquement, la génération est le bug.
+**Sur 2.10** — ~~identifie d'où vient cette vignette avant de la retirer. Si elle est générée automatiquement, la génération est le bug.~~ **Clos, 2026-08-31 : ce n'est pas un bug.** Vérifié en base (aucune URL de logo dupliquée dans les photos d'aucun produit) et en rendu réel (le logo boutique n'apparaît jamais dans `ProductGallery.tsx`, uniquement dans une barre de navigation desktop distincte, invisible sur mobile). La « vignette » est un filigrane que le marchand Glow Eternel a lui-même ajouté à ses photos produit pour se protéger du vol d'images — une vraie photo uploadée volontairement, pas un artefact technique ni un défaut de la plateforme.
+
+**Sur 2.1** — **non-reproduit dans les conditions testées, 2026-08-31 — à distinguer d'un « non-bug » confirmé.** Testé en conditions réelles (défilement mobile réel sur un vrai produit d'ABI&CO/Glow Eternel, la description la plus longue des deux boutiques, échantillonné tous les 25px dans la zone de transition) : un seul bouton visible à chaque position échantillonnée, bascule nette entre bouton inline et bouton collant, sans chevauchement ni trou. Confirme la lecture de code du round 1. **Mais on n'a aucune explication de pourquoi le bug signalé initialement ne se produit plus** — seulement l'absence d'observation malgré un test sérieux, pas une cause identifiée. Ni ABI&CO ni Glow Eternel n'ont aujourd'hui de produit avec variantes (`variant_label` et `variants` vides sur les deux boutiques) — **piste à revérifier une fois le chantier des variantes construit** : un sélecteur de variantes actif pourrait recréer les conditions du bug initial. Investigation arrêtée ici, rendement décroissant.
 
 ---
 
