@@ -1591,3 +1591,13 @@ Documentation seule, trackée (commit `f6473e5`) — **rien exploré, rien comme
 Colonnes `seller_stage`/`selling_channel`/`pain_point` (écrites à l'inscription depuis longtemps, jamais relues nulle part dans le code — REPRISE.md §21) : pertinentes à la fois pour la personnalisation Assistant IA déjà notée et, maintenant, pour l'onboarding.
 
 **Aucune position de file tranchée pour ces trois sujets dans cette session** — le document lui-même fixe la modération devant les Lots 2-5, le reste sans position précise.
+
+## 46. Bug — bouton sticky mobile `/inscription` corrigé vers `/start` — 2026-08-31
+
+Signalé §8 de `CROISSANCE-MODERATION-A-CREUSER.md`, corrigé commit `8a80833`. `DemoModal.tsx:90` — la barre d'action mobile (sticky, apparaît au scroll après le hero, cachée à la section CTA finale) pointait vers `/inscription`, route inexistante, au lieu de `/start`.
+
+**Portée** : composant partagé par **5 pages** — `/`, `/benin`, `/burkina-faso`, `/mali`, `/togo` — un seul fichier à corriger pour les cinq.
+
+**Vérifié avant de conclure que c'était le seul cas** : les 16 autres occurrences de bouton « Créer ma boutique » trouvées dans le code (page.tsx, CountryLandingV6.tsx, LandingNav.tsx, not-found.tsx, europe-canada, produits-digitaux, pourquoi-pas-shopify, FAQv6.tsx, SiteHeader.tsx, FinalCTA.tsx) pointaient déjà correctement vers `/start` — confirmé un par un, pas supposé depuis un seul grep global.
+
+`tsc`/build propres. HTML rendu vérifié en conditions réelles (user-agent mobile) : `href="/start"` confirmé sur la barre sticky, plus aucune trace de `/inscription` sur la page.
