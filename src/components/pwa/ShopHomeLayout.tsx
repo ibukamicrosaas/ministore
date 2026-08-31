@@ -1,12 +1,13 @@
 'use client'
 
-import { Phone, MessageCircle, Clock, ShoppingBag, MapPin } from 'lucide-react'
+import { Phone, MessageCircle, Clock, ShoppingBag, MapPin, Truck, Wallet } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getPlanFeatures } from '@/lib/plan-features'
+import { PAYMENT_METHODS_BY_COUNTRY, type BictorysCountry } from '@/lib/payments/payment-methods'
 
 // Champs boutique pas encore présents dans les types Supabase générés
 // (database.ts n'a pas été régénéré depuis leur ajout en base) — même
@@ -19,6 +20,8 @@ interface ShopExtras {
   opening_hours?: string | null
   product_layout?: 'list' | 'grid' | null
 }
+
+interface DeliveryZone { id: string; name: string; price: number }
 
 interface Props {
   shop: Shop & ShopExtras
@@ -115,6 +118,35 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
     { icon: Phone,         label: 'Appeler', href: `tel:${whatsappNumber}`, show: !!whatsappNumber },
     { icon: MessageCircle, label: 'Écrire',  href: waLink ?? '#', target: '_blank', show: !!waLink },
   ]
+
+  // ── Bande de faits (§4.4) — Retour/échange non construite, aucun champ de
+  // réglage n'existe encore pour une politique marchand (voir REPRISE.md §51).
+  const deliveryZones = Array.isArray(shop.delivery_zones) ? (shop.delivery_zones as unknown as DeliveryZone[]) : []
+  const hasDelivery   = deliveryZones.length > 0
+
+  const shopCountry    = shop.country as BictorysCountry | undefined
+  const onlineMethods  = shopCountry ? (PAYMENT_METHODS_BY_COUNTRY[shopCountry] ?? []) : []
+  const acceptsCash    = shop.accept_cash_on_delivery ?? true
+  const hasOnlineCard  = onlineMethods.length > 0 || !!shop.bictorys_secret_key || !!shop.stripe_connect_enabled
+  const hasPayment     = hasOnlineCard || acceptsCash
+  const paymentLabel   = [
+    ...onlineMethods.map(m => m.label),
+    ...(onlineMethods.length === 0 && hasOnlineCard ? ['Carte bancaire'] : []),
+    ...(acceptsCash ? ['Paiement à la livraison'] : []),
+  ].join(', ')
+
+  const facts = [
+    hasDelivery && {
+      icon: Truck,
+      title: cityOrAddress ? `Livraison à ${cityOrAddress}` : 'Livraison',
+      sub: 'Tarif calculé selon ta zone, affiché avant de payer',
+    },
+    hasPayment && {
+      icon: Wallet,
+      title: 'Paiement',
+      sub: paymentLabel,
+    },
+  ].filter(Boolean) as { icon: typeof Truck; title: string; sub: string }[]
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -367,6 +399,21 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 </a>
               )}
             </div>
+
+            {/* Bande de faits (§4.4) — disparaît entièrement si rien à montrer */}
+            {facts.length > 0 && (
+              <div className="px-4 pb-4 lg:px-0 space-y-2">
+                {facts.map(f => (
+                  <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                    <f.icon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-700">{f.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{f.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── Catalogue ── */}

@@ -111,7 +111,7 @@ Trois cartes maximum, chacune conditionnelle :
 
 1. **Livraison** — si au moins une zone configurée. `Livraison à {ville}` · `Tarif calculé selon ta zone, affiché avant de payer`
 2. **Paiement** — si mobile money ou paiement à la livraison actif. **Liste les moyens réellement activés**, jamais une liste générique.
-3. **Retour / échange** — uniquement si le marchand a renseigné une politique (§9).
+3. **Retour / échange** — uniquement si le marchand a renseigné une politique. ~~(§9)~~ **Référence obsolète, corrigée 2026-08-31** : §9 est aujourd'hui la matrice des drapeaux par plan, pas une section de réglages — aucun renvoi valide n'existe dans ce document pour ce champ. Vérifié en base et dans le code (2026-08-31) : **aucune colonne, aucun champ de formulaire n'existe pour une politique de retour/échange**, nulle part dans le produit actuel. Chantier séparé à planifier (nouvelle colonne, ex. `return_policy`, + UI dans les réglages boutique) avant de pouvoir construire cette carte — voir REPRISE.md §51.
 
 Zéro fait renseigné → la bande entière disparaît.
 
