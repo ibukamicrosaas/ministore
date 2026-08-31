@@ -34,7 +34,6 @@ export function LandingFooter() {
             <Link href="/pourquoi-pas-shopify">Pourquoi pas Shopify&nbsp;?</Link>
             <Link href="/produits-digitaux">Vendre des produits digitaux</Link>
             <Link href="/europe-canada">Vendre depuis la Diaspora</Link>
-            <Link href="/licence">Devenir licencié TEKKIShop</Link>
           </div>
           <div className="foot-col">
             <h4>Aide</h4>

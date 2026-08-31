@@ -56,7 +56,7 @@ export const AFRICA_PLANS: Plan[] = [
     currency:     'XOF',
     features: [
       'Tout du plan Business',
-      '0% de commission avec tes propres clés Bictorys',
+      'Connecte ton propre compte Bictorys pour recevoir tes paiements directement',
       'Domaine personnalisé (tonsite.com)',
       'Section "À propos" avec photo de boutique',
       'Statistiques avancées & analyses',

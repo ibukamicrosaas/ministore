@@ -467,16 +467,6 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
                 </>
               )}
             </div>
-
-            <div className={styles.sep}>ou</div>
-
-            <div className={`${styles.altbox} ${styles.altboxLicence}`}>
-              <h4>Tu veux lancer TekkiShop dans ton pays&nbsp;?</h4>
-              <p>Une licence d&apos;exploitation nationale permet à un entrepreneur d&apos;ouvrir et de gérer TekkiShop sur son territoire, en exclusivité.</p>
-              <Link href="/licence" className={`${styles.btn} ${styles.btnGh}`}>
-                Découvrir la licence <ArrowRight size={19} />
-              </Link>
-            </div>
           </>
         )}
 
