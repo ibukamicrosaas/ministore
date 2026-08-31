@@ -87,7 +87,7 @@ export function DemoModal() {
 
       {/* Mobile action bar */}
       <div className={`mobile-bar${barShow ? ' show' : ''}`} aria-hidden={!barShow}>
-        <Link href="/inscription" className="btn btn-primary">Créer ma boutique gratuitement</Link>
+        <Link href="/start" className="btn btn-primary">Créer ma boutique gratuitement</Link>
         <a className="wa-btn" href={WA_HREF} aria-label="Nous écrire sur WhatsApp">
           {WA_SVG}
         </a>
