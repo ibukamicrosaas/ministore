@@ -85,10 +85,17 @@ async function handleCustomDomain(request: NextRequest): Promise<NextResponse | 
   const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseKey  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+  // Pas de filtre is_active ici : la RLS shops_public_read (migration 055, déjà
+  // en prod) fait déjà ce filtrage correctement — is_active=true OU plan<>'trial'.
+  // Avec le filtre explicite ci-dessous (retiré), une boutique Pro suspendue à
+  // domaine personnalisé ne remontait jamais ici : redirection vers tekki.shop/
+  // au lieu d'atteindre [shop-slug]/layout.tsx, qui affiche pourtant déjà la
+  // vraie page de suspension pour ce même cas sans domaine personnalisé — voir
+  // REPRISE.md §41/§42 (Vague 3).
   let slug: string | null = null
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/shops?custom_domain=eq.${encodeURIComponent(hostname)}&is_active=eq.true&select=slug&limit=1`,
+      `${supabaseUrl}/rest/v1/shops?custom_domain=eq.${encodeURIComponent(hostname)}&select=slug&limit=1`,
       { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
     )
     if (res.ok) {
