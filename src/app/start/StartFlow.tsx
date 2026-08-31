@@ -586,7 +586,7 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
           <>
             <h2 className={styles.h2}>Ton premier produit</h2>
             <p className={styles.sub}>Une photo, un nom, un prix. C&apos;est tout — tu pourras en ajouter d&apos;autres après.</p>
-            <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden onChange={e => void handlePhotoChange(e)} />
+            <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={e => void handlePhotoChange(e)} />
             {s.photos.length > 0 ? (
               <div className={styles.thumbs}>
                 <i style={{ backgroundImage: `url(${s.photos[0].url})` }} />
@@ -716,13 +716,16 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
           </>
         )}
         {s.step === 10 && (
-          <button
-            className={`${styles.btn} ${styles.btnBl} ${(!prodOk || submitting) ? styles.off : ''}`}
-            disabled={!prodOk || submitting}
-            onClick={() => void handleProductSubmit()}
-          >
-            {submitting ? 'Publication…' : 'Publier et mettre ma boutique en ligne'}
-          </button>
+          <>
+            <button
+              className={`${styles.btn} ${styles.btnBl} ${(!prodOk || submitting) ? styles.off : ''}`}
+              disabled={!prodOk || submitting}
+              onClick={() => void handleProductSubmit()}
+            >
+              {submitting ? 'Publication…' : 'Publier et mettre ma boutique en ligne'}
+            </button>
+            <Link href="/dashboard" className={styles.linkish}>Passer cette étape</Link>
+          </>
         )}
         {s.step === 11 && (
           <Link href="/dashboard" className={`${styles.btn} ${styles.btnBl}`}>
