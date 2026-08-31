@@ -1676,3 +1676,16 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 **Vérifié en conditions réelles** : `tsc`/build (Turbopack + webpack) propres. ABI&CO (Pro) et Glow Eternel (Business) comparés en direct sur la vraie prod — carte Livraison identique (« Livraison à Abidjan »), carte Paiement qui s'adapte réellement : ABI&CO affiche « Paiement à la livraison » (accepte le cash), Glow Eternel ne l'affiche pas — confirme que rien n'est codé en dur. **Non vérifiable en conditions réelles** : le cas « zéro fait renseigné → bande absente », aucune des deux boutiques testées n'est dans ce cas — vérifié par lecture de la condition, pas par un rendu réel.
 
 **Prochaine étape** : Vague 3 — badge de vérification. Liste de grandfathering déjà validée (ABI&CO, Viens on s'connaît, les 13 Pro suspendues explicitement exclues). Montrer la requête 087 avant exécution, puis basculer l'affichage sur `verification_status` seulement après.
+
+## 52. Lot 3 — Vague 3 : badge de vérification sur donnée réelle, commit `9749cef` — 2026-08-31
+
+**Migration `096_verification_grandfathering.sql` appliquée** (`supabase db push --linked`), montrée avant exécution comme convenu. Ciblage par `id` explicite (ABI&CO, Viens on s'connaît) plutôt que `plan='pro'` (suggéré par le commentaire de la migration 087) ou `is_active=true` — une condition dynamique aurait grandfatherée aussi toute future boutique Pro active, ce qui n'était pas l'intention. **Vérifié en base après application** : les deux lignes à `verification_status='verified'`, `verified_at IS NULL` (invariant du grandfathering, distinct d'une vérification humaine future qui posera `verified_at = now()`) ; total `verified` = 2 exactement, aucune autre des 1692 boutiques touchée.
+
+**Affichage basculé** : `showVerifiedBadge` passe de `shop.plan === 'pro'` (rendu inconditionnel par plan, le bug d'origine) à `shop.verification_status === 'verified'` (donnée réelle). `verification_status` ajouté aux requêtes de `page.tsx` et `preview/[slug]/page.tsx`.
+
+**Testé en conditions réelles, trois cas, pas seulement les deux évidents** :
+1. ABI&CO et Viens on s'connaît (grandfatherées) — badge présent, 2 occurrences chacune (nav desktop + carte d'identité) sur la vraie prod.
+2. Glow Eternel (Business, jamais concernée) — 0 occurrence, inchangé.
+3. **Cas négatif Pro-non-vérifié, construit plutôt que supposé absent** : aucune 3ᵉ boutique Pro active n'existait pour ce test. Compte réel créé via `/start`, `plan` basculé à `'pro'` en base (`verification_status` resté `'none'`, sans grandfathering), rendu vérifié via `/preview/[slug]` (authentifié, même session) → badge absent, 0 occurrence. Confirme la bascule dans les deux sens, pas seulement dans le sens déjà connu. Compte de test supprimé après validation.
+
+**Prochaine étape** : Vague 4 — grille produits (badge NOUVEAU 14j + plafond 30 %, noms sur 2 lignes, breakpoints 2/3/4, migration du cadrage carré/portrait vers un réglage boutique). Plan détaillé à produire et valider avant tout code, en particulier le plan de migration du cadrage — rien lancé sans validation séparée.
