@@ -1601,3 +1601,23 @@ Signalé §8 de `CROISSANCE-MODERATION-A-CREUSER.md`, corrigé commit `8a80833`.
 **Vérifié avant de conclure que c'était le seul cas** : les 16 autres occurrences de bouton « Créer ma boutique » trouvées dans le code (page.tsx, CountryLandingV6.tsx, LandingNav.tsx, not-found.tsx, europe-canada, produits-digitaux, pourquoi-pas-shopify, FAQv6.tsx, SiteHeader.tsx, FinalCTA.tsx) pointaient déjà correctement vers `/start` — confirmé un par un, pas supposé depuis un seul grep global.
 
 `tsc`/build propres. HTML rendu vérifié en conditions réelles (user-agent mobile) : `href="/start"` confirmé sur la barre sticky, plus aucune trace de `/inscription` sur la page.
+
+## 47. Page `/licence` — Lot 2 (reformulation 0% commission, masquage des liens) — clos, 2026-08-31
+
+Commit `7cf6007`. Chantier `/licence` désormais entièrement clos (lots 1-2 faits, lots 3-4 jamais spécifiés — voir §38, à réévaluer si ce chantier remonte un jour).
+
+**Reformulation, feu vert donné sur la formulation validée** — 3 surfaces, mais 2 seulement en code grâce au partage de composant : `src/lib/billing/plans.ts` alimente à la fois `/dashboard/upgrade` et l'écran « 3 commandes offertes » (Case A de `TrialEndScreen.tsx`), qui partagent tous deux `UpgradePlans.tsx`. Un seul bullet corrigé là couvre les deux surfaces. La grille tarifaire de la landing (`PricingV6.tsx`) duplique son propre texte indépendamment — 3 occurrences (Découverte/Business en teaser verrouillé, Pro en réel) + le tableau comparatif dépliable.
+
+Textes exacts appliqués :
+- **Bullet** (4 occurrences au total : `plans.ts` + 3× `PricingV6.tsx`) : *« 0% de commission avec tes propres clés Bictorys »* → **« Connecte ton propre compte Bictorys pour recevoir tes paiements directement »**.
+- **Cellule du tableau comparatif** (`PricingV6.tsx`) : `0%*` → **`Compte propre*`**.
+- **Footnote** (`PricingV6.tsx`, texte validé par l'utilisateur, pas improvisé) : *« * En connectant ton propre compte Bictorys, tes paiements sont versés directement chez toi. Tu prends alors en charge les frais Bictorys et opérateur toi-même, au lieu qu'ils soient reversés via TEKKIShop. »*
+
+**Masquage des liens vers `/licence`, page laissée intacte et accessible par son URL directe** — recherche exhaustive faite avant tout code (élargie après un premier passage limité à `src/app`, qui ratait les usages sous `src/components`) :
+- `LandingFooter.tsx` — composant partagé par **9 pages** (`/`, `/europe-canada`, `/produits-digitaux`, `/pourquoi-pas-shopify`, `/licence` elle-même, + les 4 pages pays via `CountryLandingV6.tsx`) — lien retiré, un seul endroit à corriger pour les neuf.
+- `StartFlow.tsx` — **encart entier retiré, pas seulement le lien** (titre, paragraphe et séparateur « ou » inclus) : ce bloc n'existait que pour mener vers `/licence`, un texte d'accroche sans bouton aurait été pire qu'une absence totale. Jugement fait avant codage, validé par l'utilisateur après coup.
+- `sitemap.ts` — entrée `/licence` retirée (garder l'entrée aurait activement invité les moteurs de recherche à l'indexer, contraire à l'objectif).
+
+**Vérifié en conditions réelles, pas seulement compilé** : `tsc`/build propres. `/licence` en accès direct → toujours `200`. Page d'accueil → plus aucune trace de `/licence` dans le HTML rendu, nouveau texte du bullet confirmé présent. `sitemap.xml` → entrée retirée, confirmé. **Limite explicite** : le retrait du bloc `StartFlow.tsx` n'a pas pu être vérifié par une requête HTTP directe — son contenu n'apparaît que côté client, après une interaction utilisateur (clic sur « Je ne vois pas mon pays »). Confirmé par lecture directe du JSX retiré, pas par un test de rendu réel.
+
+**Prochaine étape** : reprise des Lots 2-5 boutiques publiques (§36-§37) — round 2 du Lot 2 (bugs 2.1 et 2.10 toujours ouverts) d'abord, puis Lot 3 (page d'accueil boutique). Plan à valider avant tout code, rien commencé sans feu vert explicite.
