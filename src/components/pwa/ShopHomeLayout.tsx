@@ -1,16 +1,33 @@
 'use client'
 
-import { Phone, MessageCircle, Clock, ShoppingBag } from 'lucide-react'
+import { Phone, MessageCircle, Clock, ShoppingBag, MapPin } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { getPlanFeatures } from '@/lib/plan-features'
+
+// Champs boutique pas encore présents dans les types Supabase générés
+// (database.ts n'a pas été régénéré depuis leur ajout en base) — même
+// limitation pré-existante que le reste du code boutique publique.
+interface ShopExtras {
+  badges?: string[] | null
+  social_links?: Record<string, string> | null
+  business_category?: string | null
+  cover_image_url?: string | null
+  opening_hours?: string | null
+  product_layout?: 'list' | 'grid' | null
+}
 
 interface Props {
-  shop: Shop
+  shop: Shop & ShopExtras
   products: Product[]
   shopSlug: string
+  basePath: string
+  /** Mode prévisualisation marchand : le bouton Commander est visible mais inerte,
+   * la boutique n'étant pas forcément activée/publique. */
+  previewMode?: boolean
 }
 
 // Badge "compte vérifié" bleu, style Instagram/X
@@ -69,27 +86,63 @@ function ShopLogo({ shop, size = 'md' }: { shop: Shop; size?: 'sm' | 'md' | 'lg'
   )
 }
 
-export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
-  const shopAny        = shop as unknown as Record<string, unknown>
-  const badges         = Array.isArray(shopAny.badges) ? (shopAny.badges as string[]) : []
-  const socialLinks    = shopAny.social_links && typeof shopAny.social_links === 'object'
-    ? (shopAny.social_links as Record<string, string>)
-    : {}
-  const businessCategory = typeof shopAny.business_category === 'string' ? shopAny.business_category : null
-  const coverImageUrl    = typeof shopAny.cover_image_url === 'string' ? shopAny.cover_image_url : null
-  const openingHours     = typeof shopAny.opening_hours === 'string' ? shopAny.opening_hours : null
+export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode = false }: Props) {
+  const badges         = Array.isArray(shop.badges) ? shop.badges : []
+  const socialLinks    = shop.social_links ?? {}
+  const businessCategory = shop.business_category ?? null
+  const coverImageUrl    = shop.cover_image_url ?? null
+  const openingHours     = shop.opening_hours ?? null
   const whatsappNumber   = shop.phone_whatsapp?.replace(/\D/g, '')
   const hasSocial        = Object.values(socialLinks).some(Boolean)
   const color            = shop.primary_color ?? '#0EA5E9'
   const currency         = (shop as unknown as { currency?: string }).currency as ShopCurrency | undefined
+  const cityOrAddress    = shop.city?.trim() || shop.address?.trim() || null
+  const contextLine      = [businessCategory, cityOrAddress].filter(Boolean).join(' · ') || null
+  const waLink           = whatsappNumber ? `https://wa.me/${whatsappNumber}` : null
+  const commanderHref    = `${basePath}/commander`
+
+  // La couverture est un drapeau de plan (Pro aujourd'hui) ET une donnée réelle
+  // du marchand — les deux conditions cumulatives. Donnée absente → la page
+  // démarre directement sur la carte d'identité, sans espace résiduel (§4.2).
+  const hasCover = getPlanFeatures(shop.plan).coverImage && !!coverImageUrl
+
+  // Provisoire : affiché uniquement pour les boutiques Pro actuellement en
+  // ligne (ABI&CO, Viens on s'connaît), en attendant la Vague 3 (bascule sur
+  // verification_status après grandfathering) — voir REPRISE.md §36/§49.
+  const showVerifiedBadge = shop.plan === 'pro'
 
   const actionButtons = [
-    { icon: Phone,         label: 'Appeler', href: `tel:${whatsappNumber}`,           show: !!whatsappNumber },
-    { icon: MessageCircle, label: 'Écrire',  href: `https://wa.me/${whatsappNumber}`, target: '_blank', show: !!whatsappNumber },
+    { icon: Phone,         label: 'Appeler', href: `tel:${whatsappNumber}`, show: !!whatsappNumber },
+    { icon: MessageCircle, label: 'Écrire',  href: waLink ?? '#', target: '_blank', show: !!waLink },
   ]
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: shop.name,
+    description: shop.description ?? undefined,
+    url: `${APP_URL}/${shopSlug}`,
+    logo: shop.logo_url ?? undefined,
+    image: shop.logo_url ?? undefined,
+    telephone: shop.phone_whatsapp ?? undefined,
+    address: shop.address ? {
+      '@type': 'PostalAddress',
+      streetAddress: shop.address,
+      addressLocality: shop.city ?? undefined,
+    } : undefined,
+    hasOfferCatalog: products.length > 0 ? {
+      '@type': 'OfferCatalog',
+      name: `Produits ${shop.name}`,
+      numberOfItems: products.length,
+    } : undefined,
+  }
 
   return (
     <div className="max-w-lg mx-auto lg:max-w-none min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── Desktop sticky nav ── */}
       <div className="hidden lg:flex sticky top-0 z-50 items-center bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -99,7 +152,7 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
               <ShopLogo shop={shop} size="sm" />
             </div>
             <span className="font-bold text-sm text-gray-900 truncate max-w-[180px]">{shop.name}</span>
-            <VerifiedBadge />
+            {showVerifiedBadge && <VerifiedBadge />}
           </div>
           <div className="flex-1" />
           {/* Social icons dans le nav desktop */}
@@ -121,57 +174,58 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
               <FacebookIcon className="h-4 w-4" />
             </a>
           )}
-          {whatsappNumber && (
-            <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer"
+          {waLink && (
+            <a href={waLink} target="_blank" rel="noopener noreferrer"
                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors shrink-0">
               <MessageCircle className="h-4 w-4" />
               Contact
             </a>
           )}
-          <a
-            href={`/${shopSlug}/commander`}
-            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 transition-opacity hover:opacity-90"
-            style={{ backgroundColor: color }}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            Commander
-          </a>
+          {previewMode ? (
+            <span
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 opacity-80 cursor-not-allowed"
+              style={{ backgroundColor: color }}
+              title="Disponible une fois le site activé"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Commander
+            </span>
+          ) : (
+            <a
+              href={commanderHref}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 transition-opacity hover:opacity-90"
+              style={{ backgroundColor: color }}
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Commander
+            </a>
+          )}
         </div>
       </div>
 
-      {/* ── Cover ── */}
-      <div className="relative">
-        <div className="relative w-full aspect-video lg:aspect-auto lg:h-64 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
-          {coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverImageUrl} alt={shop.name} className="w-full h-full object-cover" />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ backgroundColor: color }}
-            >
-              <span className="text-white/20 text-6xl font-bold select-none">
-                {shop.name[0]?.toUpperCase()}
-              </span>
+      {/* ── Cover — conditionnelle (plan + donnée réelle), voir hasCover ── */}
+      {hasCover && (
+        <div className="relative">
+          <div className="relative w-full aspect-video lg:aspect-auto lg:h-64 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverImageUrl!} alt={shop.name} className="w-full h-full object-cover" />
+          </div>
+          {/* Logo rond — mobile uniquement, chevauche la couverture */}
+          <div className="absolute -bottom-8 left-4 lg:hidden">
+            <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center">
+              <ShopLogo shop={shop} size="md" />
             </div>
-          )}
-        </div>
-        {/* Logo rond — mobile uniquement */}
-        <div className="absolute -bottom-8 left-4 lg:hidden">
-          <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center">
-            <ShopLogo shop={shop} size="md" />
+          </div>
+          <div className="absolute top-3 right-3 z-10">
+            <ShareButton
+              url={`${APP_URL}/${shopSlug}`}
+              title={shop.name}
+              text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
+              primaryColor={color}
+            />
           </div>
         </div>
-        {/* ShareButton */}
-        <div className="absolute top-3 right-3 z-10">
-          <ShareButton
-            url={`${APP_URL}/${shopSlug}`}
-            title={shop.name}
-            text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
-            primaryColor={color}
-          />
-        </div>
-      </div>
+      )}
 
       {/* ── Contenu principal ── */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
@@ -187,43 +241,52 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
               </div>
             </div>
 
+            {/* Logo mobile en-tête — seulement si pas de couverture (sinon il chevauche la couverture ci-dessus) */}
+            {!hasCover && (
+              <div className="px-4 pt-4 lg:hidden">
+                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100">
+                  <ShopLogo shop={shop} size="md" />
+                </div>
+              </div>
+            )}
+
             {/* Infos principales */}
-            <div className="px-4 pt-12 pb-4 lg:px-0 lg:pt-0 space-y-2.5">
+            <div className={`px-4 ${hasCover ? 'pt-12' : 'pt-3'} pb-4 lg:px-0 lg:pt-0 space-y-2.5`}>
               <div className="flex items-start justify-between gap-2 lg:block lg:space-y-1">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <h1 className="text-2xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
-                    <VerifiedBadge />
+                    {showVerifiedBadge && <VerifiedBadge />}
                   </div>
-                  {businessCategory && (
-                    <p className="text-sm text-gray-500 mt-0.5">{businessCategory}</p>
+                  {contextLine && (
+                    <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
+                      {!businessCategory && <MapPin className="h-3.5 w-3.5 shrink-0" />}
+                      {contextLine}
+                    </p>
                   )}
                   {shop.description && (
                     <p className="text-sm text-gray-600 leading-relaxed mt-1">{shop.description}</p>
                   )}
                 </div>
-                {/* ShareButton mobile uniquement (desktop est dans le cover) */}
-                <div className="lg:hidden">
+                {/* ShareButton — seulement si pas de couverture (sinon il est déjà dans la couverture) */}
+                {!hasCover && (
                   <ShareButton
                     url={`${APP_URL}/${shopSlug}`}
                     title={shop.name}
                     text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
                     primaryColor={color}
                   />
-                </div>
+                )}
               </div>
 
-              {/* Badges de confiance */}
+              {/* Mentions du marchand — données libres, tous plans */}
               {badges.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {badges.map((badge, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
                     >
-                      <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" fill="currentColor">
-                        <path d="M10.5 3L4.5 9 1.5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                      </svg>
                       {badge}
                     </span>
                   ))}
@@ -239,39 +302,39 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
               )}
             </div>
 
-            {/* Réseaux sociaux + boutons d'action */}
-            {(hasSocial || actionButtons.some(b => b.show)) && (
-              <div className="px-4 pb-4 lg:px-0 space-y-3 border-t border-gray-100 pt-3">
-                {hasSocial && (
-                  <div className="flex flex-wrap gap-2">
-                    {socialLinks.instagram && (
-                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
-                         className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-pink-100 px-3 py-2 text-xs font-semibold text-pink-600 hover:from-purple-100 hover:to-pink-100 transition-colors">
-                        <InstagramIcon className="h-4 w-4" />
-                        Instagram
-                      </a>
-                    )}
-                    {socialLinks.tiktok && (
-                      <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer"
-                         className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black transition-colors">
-                        <TikTokIcon className="h-4 w-4" />
-                        TikTok
-                      </a>
-                    )}
-                    {socialLinks.facebook && (
-                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer"
-                         className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
-                        <FacebookIcon className="h-4 w-4" />
-                        Facebook
-                      </a>
-                    )}
-                  </div>
-                )}
+            {/* Réseaux sociaux + boutons d'action — tous plans */}
+            <div className="px-4 pb-4 lg:px-0 space-y-3 border-t border-gray-100 pt-3">
+              {hasSocial && (
+                <div className="flex flex-wrap gap-2">
+                  {socialLinks.instagram && (
+                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-pink-100 px-3 py-2 text-xs font-semibold text-pink-600 hover:from-purple-100 hover:to-pink-100 transition-colors">
+                      <InstagramIcon className="h-4 w-4" />
+                      Instagram
+                    </a>
+                  )}
+                  {socialLinks.tiktok && (
+                    <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black transition-colors">
+                      <TikTokIcon className="h-4 w-4" />
+                      TikTok
+                    </a>
+                  )}
+                  {socialLinks.facebook && (
+                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
+                      <FacebookIcon className="h-4 w-4" />
+                      Facebook
+                    </a>
+                  )}
+                </div>
+              )}
+              {actionButtons.some(b => b.show) && (
                 <div className="grid grid-cols-2 gap-2">
                   {actionButtons.filter(b => b.show).map((btn) => (
                     <a
                       key={btn.label}
-                      href={btn.href || '#'}
+                      href={btn.href}
                       target={(btn as { target?: string }).target}
                       rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
                       className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
@@ -281,42 +344,58 @@ export function ShopBusinessLayout({ shop, products, shopSlug }: Props) {
                     </a>
                   ))}
                 </div>
+              )}
 
-                {/* Commander — dans la sidebar desktop */}
-                <a
-                  href={`/${shopSlug}/commander`}
-                  className="hidden lg:flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              {/* Commander — visible sur mobile ET desktop, un seul rendu */}
+              {previewMode ? (
+                <span
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white opacity-80 cursor-not-allowed"
                   style={{ backgroundColor: color }}
+                  title="Disponible une fois le site activé"
                 >
                   <ShoppingBag className="h-4 w-4" />
                   Commander
-                </a>
-              </div>
-            )}
-
-            {/* Commander si pas de boutons d'action */}
-            {!(hasSocial || actionButtons.some(b => b.show)) && (
-              <div className="hidden lg:block px-0 pb-4 pt-3 border-t border-gray-100">
+                </span>
+              ) : (
                 <a
-                  href={`/${shopSlug}/commander`}
+                  href={commanderHref}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
                   style={{ backgroundColor: color }}
                 >
                   <ShoppingBag className="h-4 w-4" />
                   Commander
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* ── Catalogue ── */}
           <div className="border-t border-gray-100 lg:border-t-0 lg:border-l lg:flex-1 lg:min-w-0">
-            <ProductGrid
-              products={products}
-              shopSlug={shopSlug}
-              primaryColor={color}
-              currency={currency}
-            />
+            {products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                <ShoppingBag className="h-10 w-10 text-gray-300 mb-3" />
+                <p className="text-sm font-medium text-gray-500">Aucun produit disponible pour le moment.</p>
+                {waLink && (
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 flex items-center gap-1.5 text-sm font-medium text-[#25D366]"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Nous contacter
+                  </a>
+                )}
+              </div>
+            ) : (
+              <ProductGrid
+                products={products}
+                shopSlug={shopSlug}
+                primaryColor={color}
+                currency={currency}
+                defaultView={shop.product_layout ?? 'list'}
+              />
+            )}
           </div>
 
         </div>

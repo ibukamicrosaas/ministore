@@ -416,7 +416,13 @@ export async function updateBusinessDesign(
     .eq('id', profile.shop_id)
     .single()
 
-  if (shop?.plan !== 'pro') return { error: 'Cette fonctionnalité est réservée au plan Pro.' }
+  // Catégorie, horaires, mentions et réseaux sociaux passent sur tous les plans
+  // (SPEC-v2 §4.3) — seules la bannière et la photo « À propos » restent
+  // réservées au Pro, déjà protégées indépendamment par uploadCoverImage/
+  // uploadAboutPhoto. On ne bloque donc ici que si l'appelant tente de les
+  // faire passer par ce chemin-ci.
+  const touchesProOnlyFields = data.cover_image_url !== undefined || data.about_photo_url !== undefined
+  if (touchesProOnlyFields && shop?.plan !== 'pro') return { error: 'Cette fonctionnalité est réservée au plan Pro.' }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await admin

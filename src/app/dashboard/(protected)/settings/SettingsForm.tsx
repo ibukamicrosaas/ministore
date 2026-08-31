@@ -1147,9 +1147,10 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
 
     {/* ── CONTENU ──────────────────────────────────────────────────────── */}
     <div className={section !== 'contenu' ? 'hidden' : 'space-y-5 mt-4'}>
-    {/* ── Plan Business — Design Avancé ────────────────────────────────── */}
-    {isProPlan ? (
-      <div className="mt-5 space-y-5">
+    {/* ── Design Avancé — bannière/photo restent Pro, le reste passe sur tous les plans (§4.3) ── */}
+    <div className="mt-5 space-y-5">
+      {isProPlan ? (
+      <>
         {/* Image de couverture */}
         <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -1245,6 +1246,25 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
             onChange={handleAboutPhotoChange}
           />
         </div>
+      </>
+      ) : (
+        /* Teaser — seules la bannière et la photo « À propos » restent Pro */
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-sm font-semibold text-gray-700">Bannière et photo « À propos »</p>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Personnalise ta page d&apos;accueil avec une bannière et une photo — disponible avec le plan Pro.
+          </p>
+          <a
+            href="/dashboard/upgrade"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+          >
+            <Sparkles className="h-3 w-3" /> Découvrir le plan Pro
+          </a>
+        </div>
+      )}
 
         {/* Catégorie métier */}
         <div className="rounded-xl border border-gray-200 p-4 space-y-3">
@@ -1373,25 +1393,7 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
         >
           {savingBusiness ? 'Enregistrement...' : 'Enregistrer le design personnalisé'}
         </button>
-      </div>
-    ) : (
-      /* Teaser pour les plans inférieurs */
-      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-          <p className="text-sm font-semibold text-gray-700">Fonctionnalités Pro</p>
-        </div>
-        <p className="text-xs text-gray-500 mb-3">
-          Le plan Pro te permet de personnaliser ton shop avec une bannière, des badges, tes liens sociaux, et un domaine personnalisé.
-        </p>
-        <a
-          href="/dashboard/upgrade"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
-        >
-          <Sparkles className="h-3 w-3" /> Passer au plan Pro
-        </a>
-      </div>
-    )}
+    </div>
 
     {/* URL du site — section séparée (hors du form principal) */}
     <div className="mt-5 rounded-xl border border-gray-200 p-4 space-y-3">
