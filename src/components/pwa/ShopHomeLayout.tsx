@@ -19,6 +19,7 @@ interface ShopExtras {
   cover_image_url?: string | null
   opening_hours?: string | null
   product_layout?: 'list' | 'grid' | null
+  verification_status?: string | null
 }
 
 interface DeliveryZone { id: string; name: string; price: number }
@@ -109,10 +110,10 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
   // démarre directement sur la carte d'identité, sans espace résiduel (§4.2).
   const hasCover = getPlanFeatures(shop.plan).coverImage && !!coverImageUrl
 
-  // Provisoire : affiché uniquement pour les boutiques Pro actuellement en
-  // ligne (ABI&CO, Viens on s'connaît), en attendant la Vague 3 (bascule sur
-  // verification_status après grandfathering) — voir REPRISE.md §36/§49.
-  const showVerifiedBadge = shop.plan === 'pro'
+  // Bascule Vague 3 (§36/§49/§51) : donnée réelle, plus un rendu inconditionnel
+  // par plan. Grandfathering déjà exécuté (migration 096) pour les boutiques
+  // Pro qui affichaient déjà ce badge avant qu'il ne devienne conditionnel.
+  const showVerifiedBadge = shop.verification_status === 'verified'
 
   const actionButtons = [
     { icon: Phone,         label: 'Appeler', href: `tel:${whatsappNumber}`, show: !!whatsappNumber },

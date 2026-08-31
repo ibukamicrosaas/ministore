@@ -28,7 +28,7 @@ export default async function PreviewPage({ params }: Props) {
   // Cast as any pour éviter les erreurs de type sur les colonnes ajoutées après génération des types
   const { data: rawShop } = await (supabase as any)
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, is_active, trial_ends_at')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, is_active, trial_ends_at, verification_status')
     .eq('slug', slug)
     .single() as {
       data: (Shop & {
