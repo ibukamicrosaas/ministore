@@ -1747,3 +1747,21 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 **Note en marge, non corrigée, hors scope de ce diff** : `/login` et `/login/reset-pin` ont leur propre référence `font-family:"Inter"` codée en dur dans un `<style>` inline, indépendante de mon changement (confirmé par `grep`, préexistante) — la landing affiche aussi une classe `.lead` dont la police calculée démarre par « Inter » sans définition trouvée dans le code source du projet, probablement un comportement préexistant lié à l'environnement de test plutôt qu'à une règle du produit. Aucun des deux n'est lié à `.shop-scope` ni à ce commit — signalé pour ne pas être source de confusion plus tard, pas traité ici.
 
 **Prochaine étape** : point 3 — aperçu de partage WhatsApp (Open Graph), plan déjà validé.
+
+## 57. Aperçu de partage WhatsApp/Open Graph — priorité image + prix garanti, commit `b240ec7` — 2026-09-01
+
+**État vérifié avant de coder** : les métadonnées Open Graph existaient déjà sur les deux pages (pas absentes, contrairement à ce que la note de cadrage aurait pu laisser croire) — mais avec deux écarts précis par rapport à SPEC-v2 §10.2 : la page boutique utilisait le logo (carré, 400×400) avant toute tentative de couverture, avec un repli statique générique (`og-ministore.png`) identique pour toutes les boutiques sans logo ; la fiche produit ne garantissait le prix dans `og:description` que si le marchand n'avait rien renseigné (rarement le cas en pratique).
+
+**Correctif** :
+- Page boutique (`[shop-slug]/page.tsx`) : priorité `cover_image_url` → `logo_url` → repli généré (`/api/share/shop-card?slug=...`, infrastructure déjà existante, réutilisée telle quelle). Twitter card ajustée en conséquence (`summary` seulement pour le cas logo-seul, `summary_large_image` sinon).
+- Fiche produit (`produit/[id]/page.tsx`) : `og:description` = prix formaté + nom de la boutique, garanti sauf `meta_description` explicite du marchand (respectée telle quelle, override délibéré). Repli image sur `/api/share/product-card?id=...` si aucune photo produit.
+
+**Vérifié en conditions réelles, les trois cas de repli, sur la vraie prod** :
+- ABI&CO (couverture réelle) → `og:image` = la couverture (1200×630), plus le logo.
+- Glow Eternel (logo seul, pas de couverture) → repli logo (400×400) inchangé.
+- ÉLITE DIGITAL FREELANCE (boutique active réelle sans logo ni couverture) → repli complet sur `/api/share/shop-card`, image 1080×1080 confirmée générée (vérifiée avec `file` sur le fichier téléchargé).
+- Fiche produit (PORTEFEUILLE ORANGE VERSSE, sans `meta_description`) → `og:description = "8 000 FCFA — Disponible chez ABI&CO"`.
+
+**Limite signalée à l'utilisateur** : test fait par inspection HTTP directe des balises `<meta>`, pas via le débogueur de partage Facebook (exige une URL publique, indisponible en local). **Suite demandée** : repasser l'URL d'ABI&CO dans `developers.facebook.com/tools/debug` une fois déployé, pour confirmer le rendu réel et pas seulement le contenu des balises.
+
+**Avec ce commit, les trois points de clarification (badge de vérification, typographie, aperçu de partage) sont fermés.** Prochaine étape : l'utilisateur tranche la suite du chantier boutiques publiques (nouveau chantier structuré pour l'habillage visuel complet, ou attente en file) — rien commencé tant que la décision n'est pas donnée.
