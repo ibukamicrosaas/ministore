@@ -1705,3 +1705,15 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 - **Non vérifié visuellement** : le rendu 2-lignes et le passage effectif à 4 colonnes à 1000px — confirmé par la classe présente dans le HTML, pas par une capture d'écran à cette largeur précise.
 
 **Prochaine étape** : Vague 4d — migration du cadrage carré/portrait vers un réglage boutique, seuil de backfill ≥3 produits actifs déjà tranché (voir discussion : 21 des 32 boutiques candidates à la majorité brute n'avaient qu'un seul produit actif, signal jugé trop faible). Migration à montrer avant exécution.
+
+## 54. Lot 3 — Vague 4d : cadrage en réglage boutique, commit `751a7f0` — 2026-09-01
+
+**Migration `097_shops_grid_image_ratio.sql` appliquée**, montrée avant exécution. Colonne `shops.grid_image_ratio` (défaut `'square'`). Backfill à majorité stricte, seuil ≥3 produits actifs (validé §53) : **7 boutiques basculées en `'portrait'`** — AEA Cosmetics, Chez Trésor U-novateur, My Bio-Farma Shop, Noah Collection, Rhema, Ton Mentor, Zoustore221 — vérifiées une par une après application. 1687 boutiques restantes au défaut `'square'`. `products.image_ratio` conservée, plus lue ni écrite.
+
+**Consommateurs mis à jour** : `ProductGrid.tsx` (grille + Coups de cœur), `produit/[id]/page.tsx` (galerie) — dérivent désormais `shop.grid_image_ratio` au lieu de `product.image_ratio`. `ProductForm.tsx` : toggle par produit retiré entièrement. `SettingsForm.tsx` : nouveau réglage boutique (onglet Boutique, tous plans), sauvegarde immédiate au clic — nouvelle action `updateGridImageRatio`.
+
+**Détail technique** : requête `shops` de `produit/[id]/page.tsx` castée en `as any` — `grid_image_ratio` n'existe pas dans les types Supabase générés (`database.ts` jamais régénéré depuis l'ajout de plusieurs colonnes, dette déjà notée depuis la Vague 1).
+
+**Vérifié en conditions réelles, sur la vraie prod** : AEA Cosmetics (basculée) — grille et fiche produit en `aspect-[3/4]`, cohérentes entre elles. ABI&CO (restée au carré) — `aspect-square` aux deux endroits. **Repli sûr confirmé** : défaut colonne `'square'` + défaut composant `'square'`, round-trip complet testé sur un compte réel non-Pro créé via `/start` (clic Portrait → toast succès → vérifié en base) — compte supprimé après validation.
+
+**Avec cette vague, les 5 vagues du Lot 3 (page d'accueil boutique) sont closes.** Prochaine étape à confirmer par l'utilisateur avant tout code : clarification demandée sur l'écart entre l'apparence réelle des boutiques (ABI&CO) et les maquettes de référence (`tekkishop-boutique-accueil.html`/`tekkishop-boutique-produit.html`) citées par `NOTE-cadrage-refonte-boutiques.md` — vérification en cours, aucun code engagé tant que la réponse n'est pas donnée.
