@@ -638,6 +638,36 @@ export async function updateProductLayout(layout: 'list' | 'grid'): Promise<{ er
   return {}
 }
 
+// Cadrage carré/portrait de la grille produits — réglage boutique, tous
+// plans (SPEC-v2 §4.7). Remplace l'ancien choix par produit (products.image_ratio,
+// colonne conservée mais plus lue ni écrite).
+export async function updateGridImageRatio(ratio: 'square' | 'portrait'): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: ratioError } = await supabase
+    .from('shops')
+    .update({ grid_image_ratio: ratio, updated_at: new Date().toISOString() } as any)
+    .eq('id', profile.shop_id)
+
+  if (ratioError) return { error: 'Impossible de sauvegarder.' }
+
+  const { data: shopMeta2 } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta2?.slug) revalidatePath(`/${shopMeta2.slug}`)
+  return {}
+}
+
 export async function updateShopCurrency(currency: string): Promise<{ error?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -20,6 +20,7 @@ interface ShopExtras {
   opening_hours?: string | null
   product_layout?: 'list' | 'grid' | null
   verification_status?: string | null
+  grid_image_ratio?: 'square' | 'portrait' | null
 }
 
 interface DeliveryZone { id: string; name: string; price: number }
@@ -442,6 +443,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 primaryColor={color}
                 currency={currency}
                 defaultView={shop.product_layout ?? 'list'}
+                imageRatio={shop.grid_image_ratio ?? 'square'}
               />
             )}
           </div>

@@ -32,9 +32,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 async function fetchShopAndProduct(shopSlug: string, id: string) {
   const supabase = await createServerClient()
 
-  const shopRes = await supabase
-    .from('shops')
-    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shopRes = await (supabase.from('shops') as any)
+    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio')
     .eq('slug', shopSlug)
     .single()
 
@@ -142,6 +142,7 @@ export default async function ProductDetailPage({ params }: Props) {
     accept_cash_on_delivery?: boolean | null
     bictorys_secret_key?: string | null
     stripe_connect_enabled?: boolean | null
+    grid_image_ratio?: 'square' | 'portrait' | null
   }
   const product = productData as Product & { slug?: string | null }
 
@@ -170,7 +171,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const variants     = product.variants as ProductVariant[] | null
   const videoUrl     = (product as Product & { video_url?: string | null }).video_url ?? null
   const embedUrl     = videoUrl ? getVideoEmbedUrl(videoUrl) : null
-  const isPortrait   = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
+  const isPortrait   = shop.grid_image_ratio === 'portrait'
 
   const displayPrice = variants && variants.length > 0
     ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`

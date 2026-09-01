@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout, updateGridImageRatio } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
@@ -134,6 +134,8 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
   const aboutInputRef                           = useRef<HTMLInputElement>(null)
   const [productLayout, setProductLayout]       = useState<'list' | 'grid'>((shopAny.product_layout as 'list' | 'grid' | null) ?? 'list')
   const [savingLayout, setSavingLayout]         = useState(false)
+  const [gridImageRatio, setGridImageRatio]     = useState<'square' | 'portrait'>((shopAny.grid_image_ratio as 'square' | 'portrait' | null) ?? 'square')
+  const [savingImageRatio, setSavingImageRatio] = useState(false)
 
   const [country, setCountry] = useState(shop.country ?? '')
 
@@ -735,6 +737,63 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
           })}
         </div>
         {savingLayout && (
+          <p className="text-xs text-gray-400">Sauvegarde en cours…</p>
+        )}
+      </div>
+
+      {/* Cadrage des photos produit — réglage boutique, un seul cadrage pour tout le catalogue */}
+      <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Cadrage des photos produit</p>
+          <p className="text-xs text-gray-500 mt-0.5">S&apos;applique à tous tes produits — plus de choix au cas par cas.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            { value: 'square',   label: 'Carré',    hint: '1:1', preview: 'aspect-square' },
+            { value: 'portrait', label: 'Portrait', hint: '3:4', preview: 'aspect-[3/4]' },
+          ] as const).map(({ value, label, hint, preview }) => {
+            const isActive = gridImageRatio === value
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={async () => {
+                  if (isActive || savingImageRatio) return
+                  setSavingImageRatio(true)
+                  const previous = gridImageRatio
+                  setGridImageRatio(value)
+                  const res = await updateGridImageRatio(value)
+                  if (res.error) {
+                    toast.error(res.error)
+                    setGridImageRatio(previous)
+                  } else {
+                    toast.success('Cadrage mis à jour.')
+                  }
+                  setSavingImageRatio(false)
+                }}
+                className={`relative rounded-xl border-2 p-3 text-left transition-all ${
+                  isActive
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+                style={{ '--color-primary': primaryColor } as React.CSSProperties}
+              >
+                {isActive && (
+                  <span
+                    className="absolute top-2 right-2 h-4 w-4 rounded-full flex items-center justify-center text-white text-[10px]"
+                    style={{ backgroundColor: primaryColor }}
+                  >✓</span>
+                )}
+                <div className={`mb-2 w-10 rounded bg-gray-200 pointer-events-none ${preview}`} />
+                <p className={`text-xs font-semibold ${isActive ? '' : 'text-gray-600'}`} style={isActive ? { color: primaryColor } : {}}>
+                  {label}
+                </p>
+                <p className="text-[10px] text-gray-400">{hint}</p>
+              </button>
+            )
+          })}
+        </div>
+        {savingImageRatio && (
           <p className="text-xs text-gray-400">Sauvegarde en cours…</p>
         )}
       </div>

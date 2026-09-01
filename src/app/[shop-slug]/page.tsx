@@ -57,7 +57,7 @@ export default async function ShopPage({ params }: Props) {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, trial_model, verification_status')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, trial_model, verification_status, grid_image_ratio')
     .eq('slug', slug)
     .neq('status', 'draft')
     .single()

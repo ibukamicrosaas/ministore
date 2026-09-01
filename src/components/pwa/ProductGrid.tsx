@@ -14,6 +14,9 @@ interface ProductGridProps {
   primaryColor: string
   currency?: ShopCurrency
   defaultView?: 'list' | 'grid'
+  /** Réglage boutique (§4.7) — plus un choix par produit. Repli 'square' tant
+   * que le marchand n'a pas encore modifié ce réglage (défaut colonne DB). */
+  imageRatio?: 'square' | 'portrait'
 }
 
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000
@@ -56,10 +59,10 @@ function getPrice(product: Product, currency: ShopCurrency): string {
   return formatPrice(product.price, currency)
 }
 
-function FeaturedCard({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
+function FeaturedCard({ product, shopSlug, primaryColor, currency, showNewBadge, imageRatio }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean; imageRatio: 'square' | 'portrait' }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
-  const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
+  const isPortrait = imageRatio === 'portrait'
   const soldOut = product.stock_count === 0
   const newProduct = showNewBadge && isNew(product)
 
@@ -173,11 +176,10 @@ function ProductCardList({ product, shopSlug, primaryColor, currency, showNewBad
   )
 }
 
-function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
+function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBadge, imageRatio }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean; imageRatio: 'square' | 'portrait' }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
-  const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
-  const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
+  const aspectClass = imageRatio === 'portrait' ? 'aspect-[3/4]' : 'aspect-square'
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
   const newProduct = showNewBadge && isNew(product)
@@ -222,7 +224,7 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBad
   )
 }
 
-export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF', defaultView = 'list' }: ProductGridProps) {
+export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF', defaultView = 'list', imageRatio = 'square' }: ProductGridProps) {
   const [view, setView] = useState<'list' | 'grid'>(defaultView)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -285,7 +287,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
             {featured.map(p => (
-              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
+              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} imageRatio={imageRatio} />
             ))}
           </div>
         </div>
@@ -390,7 +392,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 min-[1000px]:grid-cols-4 gap-3">
                 {byCategory[category].map(p => (
-                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
+                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} imageRatio={imageRatio} />
                 ))}
               </div>
             )}
