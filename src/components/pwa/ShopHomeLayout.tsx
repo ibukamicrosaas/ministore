@@ -244,12 +244,6 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={coverImageUrl!} alt={shop.name} className="w-full h-full object-cover" />
           </div>
-          {/* Logo rond — mobile uniquement, chevauche la couverture */}
-          <div className="absolute -bottom-8 left-4 lg:hidden">
-            <div className="relative w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center">
-              <ShopLogo shop={shop} size="md" />
-            </div>
-          </div>
           <div className="absolute top-3 right-3 z-10">
             <ShareButton
               url={`${APP_URL}/${shopSlug}`}
@@ -275,7 +269,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               </div>
             </div>
 
-            {/* Logo mobile en-tête — seulement si pas de couverture (sinon il chevauche la couverture ci-dessus) */}
+            {/* Logo mobile en-tête — seulement si pas de couverture (sinon il vit dans la carte d'identité ci-dessous, qui chevauche la couverture) */}
             {!hasCover && (
               <div className="px-4 pt-4 lg:hidden">
                 <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100">
@@ -284,8 +278,13 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               </div>
             )}
 
-            {/* Infos principales */}
-            <div className={`px-4 ${hasCover ? 'pt-12' : 'pt-3'} pb-4 lg:px-0 lg:pt-0 space-y-2.5`}>
+            {/* Infos principales — carte qui chevauche la couverture sur mobile (§4.3 de la maquette) */}
+            <div className={`${hasCover ? '-mt-8 mx-4 mb-2 rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 px-4 pt-4' : 'px-4 pt-3'} pb-4 lg:mx-0 lg:mt-0 lg:rounded-none lg:bg-transparent lg:shadow-none lg:border-0 lg:px-0 lg:pt-0 space-y-2.5`}>
+              {hasCover && (
+                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 lg:hidden mb-2">
+                  <ShopLogo shop={shop} size="md" />
+                </div>
+              )}
               <div className="flex items-start justify-between gap-2 lg:block lg:space-y-1">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">

@@ -35,7 +35,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shopRes = await (supabase.from('shops') as any)
-    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones')
+    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones, phone_whatsapp')
     .eq('slug', shopSlug)
     .single()
 
@@ -140,7 +140,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!shopData || !productData) notFound()
 
-  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url' | 'city' | 'address'> & {
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url' | 'city' | 'address' | 'phone_whatsapp'> & {
     plan?: string; currency?: string | null
     country?: string | null
     accept_cash_on_delivery?: boolean | null
@@ -387,6 +387,22 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
+        {/* Puces d'état — stock, livraison (§5.2 point 3). "Prix fixe" de la
+            maquette non repris : aucun champ en base pour cette notion, pas
+            inventé. */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {!soldOut && (
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              En stock
+            </span>
+          )}
+          {deliveryDelay && !isDigital && (
+            <span className="inline-flex items-center rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">
+              Livrée sous {deliveryDelay}
+            </span>
+          )}
+        </div>
+
         {/* Mentions du vendeur — champs libres, jamais confondus avec un fait plateforme
             vérifié (§5.6 de SPEC-v2) : pas de coche, pas de couleur de validation. */}
         {(() => {
@@ -474,6 +490,21 @@ export default async function ProductDetailPage({ params }: Props) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Poser une question — WhatsApp direct au marchand, distinct du partage */}
+        {shop.phone_whatsapp && (
+          <a
+            href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ce produit : ${product.name} — ${publicUrl}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-gray-200 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Poser une question sur ce produit
+          </a>
         )}
 
         {/* Partage WhatsApp — visible sous le CTA */}
