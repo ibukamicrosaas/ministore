@@ -2,32 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { Download, X, Share2 } from 'lucide-react'
-
-type DeviceType = 'ios' | 'android-chrome' | 'desktop-chrome' | null
+import { type DeviceType, detectDevice, isAlreadyInstalled } from '@/lib/utils/pwa'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-function detectDevice(): DeviceType {
-  if (typeof window === 'undefined') return null
-  const ua = navigator.userAgent
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream
-  const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor)
-  const isAndroid = /Android/.test(ua)
-  if (isIOS) return 'ios'
-  if (isChrome && isAndroid) return 'android-chrome'
-  if (isChrome) return 'desktop-chrome'
-  return null
-}
-
-function isAlreadyInstalled(): boolean {
-  if (typeof window === 'undefined') return false
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  )
 }
 
 export function PWAInstallButton() {

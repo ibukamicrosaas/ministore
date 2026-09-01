@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { BellRing } from 'lucide-react'
 import { requestPushPermission } from './PushNotificationManager'
+import { detectDevice, isAlreadyInstalled } from '@/lib/utils/pwa'
 
 export function PushEnableButton() {
   const [visible, setVisible]   = useState(false)
@@ -15,6 +16,10 @@ export function PushEnableButton() {
       !('serviceWorker' in navigator) ||
       !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
     ) return
+
+    // iOS Safari : Web Push exige l'ajout à l'écran d'accueil, sinon la
+    // demande de permission n'aboutit à rien d'utilisable — voir pwa.ts.
+    if (detectDevice() === 'ios' && !isAlreadyInstalled()) return
 
     // Afficher le bouton uniquement si la permission n'a pas encore été demandée
     if (Notification.permission === 'default') setVisible(true)

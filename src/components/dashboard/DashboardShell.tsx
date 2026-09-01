@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { PushNotificationManager } from './PushNotificationManager'
+import { PushPermissionPrompt } from './PushPermissionPrompt'
 import { ChatWidget } from '@/components/ai/ChatWidget'
 import { ChatAssistantContext } from './ChatAssistantContext'
 import type { Shop, Profile } from '@/types'
@@ -71,6 +72,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
             </Link>
           </div>
         )}
+        <PushPermissionPrompt />
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">
           {children}
         </main>
