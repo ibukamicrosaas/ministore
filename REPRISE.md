@@ -1689,3 +1689,19 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 3. **Cas négatif Pro-non-vérifié, construit plutôt que supposé absent** : aucune 3ᵉ boutique Pro active n'existait pour ce test. Compte réel créé via `/start`, `plan` basculé à `'pro'` en base (`verification_status` resté `'none'`, sans grandfathering), rendu vérifié via `/preview/[slug]` (authentifié, même session) → badge absent, 0 occurrence. Confirme la bascule dans les deux sens, pas seulement dans le sens déjà connu. Compte de test supprimé après validation.
 
 **Prochaine étape** : Vague 4 — grille produits (badge NOUVEAU 14j + plafond 30 %, noms sur 2 lignes, breakpoints 2/3/4, migration du cadrage carré/portrait vers un réglage boutique). Plan détaillé à produire et valider avant tout code, en particulier le plan de migration du cadrage — rien lancé sans validation séparée.
+
+## 53. Lot 3 — Vague 4a-c : grille produits (badge, casse, breakpoints), commit `19360c8` — 2026-09-01
+
+**Trois changements, `ProductGrid.tsx` seul** :
+- **Badge NOUVEAU** : fenêtre 7→14 jours, plus un plafond cumulatif de 30 % du catalogue actif — au-delà, disparaît pour tout le monde, pas seulement pour les produits en trop. Calculé sur le catalogue complet passé au composant (`products`, déjà scopé à la boutique), pas sur la liste filtrée/affichée.
+- **Casse normalisée + 2 lignes** (bug 2.7) : nom intégralement en capitales et >3 lettres → casse de phrase à l'affichage (`displayName()`, donnée en base inchangée) ; `truncate` (1 ligne) → `line-clamp-2` sur les 3 cartes (vedette, liste, grille).
+- **Breakpoints** : `grid-cols-2 lg:grid-cols-3` → `grid-cols-2 sm:grid-cols-3 min-[1000px]:grid-cols-4` — 640px/1000px exacts de la spec, pas les breakpoints Tailwind par défaut (`lg:` est à 1024px). Syntaxe déjà utilisée ailleurs dans le code (`OrderForm.tsx`), rien à changer côté config.
+
+**Vérifié en conditions réelles, sur la vraie prod** :
+- Casse : ABI&CO, « BANDOULIÈRE VERSSE ROSE » → « Bandoulière versse rose », confirmé sur plusieurs produits.
+- Plafond 30 %, cas simple : ABI&CO (1/25 produits <14j, 4 %) → badge affiché.
+- **Plafond 30 %, cas qui prouve vraiment le mécanisme** : Bamako.Sanifere, boutique active réelle trouvée avec 8 produits sur 10 à moins de 14 jours (80 %) → **badge absent partout**, y compris sur des produits individuellement récents. Sans ce test, le plafond n'aurait été vérifié qu'en théorie.
+- Classe de grille confirmée présente dans le HTML réellement servi.
+- **Non vérifié visuellement** : le rendu 2-lignes et le passage effectif à 4 colonnes à 1000px — confirmé par la classe présente dans le HTML, pas par une capture d'écran à cette largeur précise.
+
+**Prochaine étape** : Vague 4d — migration du cadrage carré/portrait vers un réglage boutique, seuil de backfill ≥3 produits actifs déjà tranché (voir discussion : 21 des 32 boutiques candidates à la majorité brute n'avaient qu'un seul produit actif, signal jugé trop faible). Migration à montrer avant exécution.
