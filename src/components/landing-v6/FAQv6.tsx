@@ -3,6 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+// Résumé volontairement écrit à la main, pas dérivé de AFRICA_PLANS
+// (src/lib/billing/plans.ts) : ses listes de fonctionnalités sont complètes
+// (5 à 9 items par plan), pas des phrases courtes adaptées à une FAQ. Dette
+// de duplication connue et acceptée — si prix/fonctionnalités changent,
+// penser à revérifier ce texte à la main (voir CORRECTIFS-LANDING-PAGE
+// point 1, REPRISE.md §64).
 const FAQS = [
   {
     q: 'Puis-je vraiment créer ma boutique avec mon téléphone ?',
@@ -18,7 +24,11 @@ const FAQS = [
   },
   {
     q: 'Quelle est la différence entre les 3 plans ?',
-    a: 'Le plan Découverte (2 900 FCFA/mois) donne accès à 10 produits et aux paiements de base. Le plan Business (4 900 FCFA/mois) ajoute les produits illimités, les notifications SMS automatiques et les codes promo. Le plan Pro (9 900 FCFA/mois) va plus loin : 0 % de commission avec tes propres clés Bictorys, ton propre nom de domaine, et la marque TEKKIShop masquée.',
+    a: 'Le plan Découverte (2 900 FCFA/mois) donne accès à 10 produits et aux paiements de base. Le plan Business (4 900 FCFA/mois) ajoute les produits illimités et les codes promo. Le plan Pro (9 900 FCFA/mois) va plus loin : connecte ton propre compte Bictorys pour recevoir tes paiements directement, ton propre nom de domaine, et la marque TEKKIShop masquée.',
+  },
+  {
+    q: 'Est-ce que TEKKIShop m\'apporte des clients ?',
+    a: 'Non. TEKKIShop te permet de créer facilement ta boutique en ligne, gérer tes produits et encaisser tes paiements — mais trouver et attirer tes clients reste ton travail : réseaux sociaux, bouche-à-oreille, publicité, etc. Cela dit, nous travaillons activement à t\'accompagner pour trouver tes premiers clients, notamment via ton Assistant IA et d\'autres outils à venir.',
   },
   {
     q: 'Faut-il choisir un plan pour pouvoir vendre ?',

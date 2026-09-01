@@ -1858,3 +1858,20 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 - **LP-04 — Programme de fidélité clients.** Vérifié non fait. Idée de backlog : points par FCFA dépensé, réduction sur commande suivante, vue "clients fidèles" côté marchand.
 
 Aucune des deux n'est un chantier ouvert — simples pointeurs préservés, à réévaluer seulement si l'utilisateur les remonte explicitement.
+
+## 64. Correctifs landing page — point 1 (FAQ), `CORRECTIFS-LANDING-PAGE-A-DONNER.md`, 2026-09-01
+
+**Nouveau chantier, traité point par point.** Fichier source à la racine du dépôt, jamais suivi par git (statut délibéré — instructions destinées à Claude Code, pas une spec produit).
+
+**Texte localisé avant tout code, pas supposé** : les deux affirmations obsolètes (FAQ) vivent dans un seul composant, `src/components/landing-v6/FAQv6.tsx`, partagé par `/` et par toutes les pages pays via `CountryLandingV6.tsx` (déjà "partagée" par construction, un seul fichier à corriger). Vérifié qu'aucune autre FAQ du site (`europe-canada`, `produits-digitaux`, `pourquoi-pas-shopify`, `licence`, chacune avec son propre tableau `FAQS` local) ne répète ces deux affirmations — déjà correctement formulées ou hors sujet.
+
+**Consolidation avec `AFRICA_PLANS` évaluée, non retenue** : ses listes de fonctionnalités par plan sont complètes (5 à 9 items), pas des résumés d'une phrase — une dérivation dynamique produirait une énumération plus lourde que le texte actuel, sans supprimer le besoin de curation manuelle. Dette de duplication documentée en commentaire dans `FAQv6.tsx` plutôt que résolue de force.
+
+**Corrections faites** :
+- Retrait de « les notifications SMS automatiques » de la description du plan Business (fonctionnalité déjà retirée ailleurs cette session, `PricingV6.tsx`/`AFRICA_PLANS.business.features`).
+- « 0 % de commission avec tes propres clés Bictorys » → « connecte ton propre compte Bictorys pour recevoir tes paiements directement » — alignée sur la reformulation `/licence` et sur `AFRICA_PLANS.pro.features`. **Correction de l'utilisateur avant code** : pas de parenthèse « (0 % de commission) » ajoutée — exactement l'ambiguïté éliminée ailleurs (laisser penser « gratuit » sans voir que des frais existent, payés autrement).
+- Nouvelle entrée FAQ : « Est-ce que TEKKIShop m'apporte des clients ? » — réponse honnête (non, mais accompagnement à venir), insérée juste après la question sur les 3 plans. Décision : FAQ seule, pas de remontée dans la section "Le vrai problème" du hero — vérifié que cette section ne prétend nulle part apporter des clients (elle parle de charge de travail WhatsApp), donc rien à corriger là, seulement une clarification préventive suffisamment servie par la FAQ.
+
+**Testé en conditions réelles** : serveur de dev réel, Chrome headless piloté par CDP, chaque item de FAQ cliqué et son texte rendu lu dans le DOM (pas une relecture du code seul). Confirmé : aucune trace de « notifications SMS automatiques » ni de « 0 % de commission avec tes propres clés », présence de la formulation Bictorys correcte sans parenthèse commission, présence de la nouvelle question. `tsc --noEmit`, build Turbopack et build webpack tous propres.
+
+**Prochains points de ce chantier, non commencés** : point 3 (vitrine de 3-4 vraies boutiques, structure du composant à construire sans les ID réels — liste à fournir séparément par l'utilisateur) ; point 4 (vidéo de démonstration, bloqué sur le tournage, aucune tâche de code tant que le fichier n'existe pas).
