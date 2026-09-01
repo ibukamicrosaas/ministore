@@ -1784,3 +1784,40 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 - **2.9 (vide desktop sous la colonne collante) — vérifié réel et mesuré (accueil ABI&CO : ~3363px de défilement sans contenu sous la carte d'identité ; fiche produit : ~400px), mais accepté comme comportement standard des barres latérales collantes sur décision explicite de l'utilisateur.** Aucun code.
 
 **Prochaine étape** : Lot B — filtres curatés (§4.6), bloc « Avant de commander » (§5.4), étiquette « Dernières pièces ». « Le plus commandé » explicitement exclu et documenté comme dépendant du chantier variantes (compter des ventes par couleur d'un même sac serait un signal trompeur). Plan à produire et valider avant tout code, en particulier la définition de « disponible tout de suite » et les seuils de prix par devise.
+
+## 59. Lot B — filtres curatés, avant de commander, dernières pièces, commit `030ec47` — 2026-09-01
+
+**Décision produit prise en cours de route, pas juste technique** : le filtre « Disponible tout de suite » ne pouvait jamais s'activer — la requête de la page d'accueil excluait déjà tous les produits en rupture avant qu'ils n'atteignent la grille (aucune boutique active n'avait de produit en rupture au moment du test, vérifié en base). Signalé à l'utilisateur avant de coder ; décision explicite : **les produits en rupture sont désormais visibles sur la vitrine publique**, avec la pastille RUPTURE et le CTA de remplacement (`StockAlertForm`) déjà entièrement codés au préalable — rien à construire de ce côté, juste à laisser les produits atteindre la grille. `/preview/[slug]/page.tsx` avait sa propre requête, avec la même exclusion, non demandée explicitement mais corrigée en cours de route pour que la prévisualisation reste fidèle à ce que voit un vrai visiteur.
+
+**Filtres curatés (§4.6)** : « Disponible tout de suite » (inverse de rupture, masqué si aucun produit en rupture — Règle B) et « Petit budget » — **seuil dynamique par percentile (33ᵉ) du catalogue actif propre à chaque boutique, jamais un chiffre fixe** : validé avec l'utilisateur avant codage, précisément pour éviter qu'un seuil pensé pour le FCFA (« 10 000 F » dans la maquette) devienne absurde pour une boutique en EUR/CAD. Masqué si moins de 5 produits actifs, ou si le seuil calculé ne sépare rien de rien.
+
+**Bloc « Avant de commander » (§5.4)**, deux lignes sur trois (retour/échange absent, aucun champ en base, chantier séparé déjà documenté) : livraison avec les vraies zones et tarifs listés (pas un texte générique), paiement réutilisant le calcul déjà existant sur la fiche produit au lieu d'un troisième calcul indépendant — referme un écart déjà noté dans `REPRISE.md` §36.
+
+**Étiquette « Dernières pièces »** sur la grille — réutilise le seuil déjà existant ailleurs dans le code (stock ≤ 3), pas un nouveau chiffre inventé.
+
+**« Le plus commandé » exclu et documenté dans `SPEC-v2-refonte-boutiques-publiques.md` §4.7** comme dépendant du chantier variantes.
+
+**Vérifications faites avant de coder le changement de visibilité, sur demande explicite** : pastille RUPTURE et CTA de remplacement déjà codés dans les 3 types de cartes ; aucun compteur « X produits » n'existe dans le vrai code (seulement dans la maquette) ; effet de bord réel sur le plafond du badge NOUVEAU identifié (base de calcul élargie aux produits en rupture actifs) et jugé correct, même définition de « catalogue actif » que `is_active`.
+
+**Testé en conditions réelles, cas construit puisqu'aucune boutique active n'avait de produit en rupture** : compte réel créé via `/start`, deux produits insérés directement (un en rupture, un disponible), consultés via `/preview` authentifié — sans filtre, les deux visibles avec la pastille RUPTURE au bon endroit ; filtre cliqué → un seul produit restant, le bon. Filtres curatés confirmés aussi sur ABI&CO (25 produits réels) : « Petit budget » apparaît, « Disponible tout de suite » correctement absent (0 rupture chez eux). « Dernières pièces » : 14 occurrences, exactement le nombre de produits à stock 1-3 en base. Compte et données de test supprimés après validation.
+
+**Avec ce commit, le Lot B est clos — et avec lui le chantier boutiques publiques dans son périmètre technique initial (Lots 1 à 4, plus les trois clarifications badge/typographie/Open Graph).**
+
+## 60. État des lieux final — chantier boutiques publiques, périmètre technique initial clos, 2026-09-01
+
+**Vérifié en base, fraîchement, au moment de clore ce chantier** :
+- `product_variants` : toujours **0 ligne**. Le prérequis variantes reste entièrement à construire — aucune vague de ce chantier n'y a touché, par décision explicite dès le départ (§36).
+- `verification_status` : 2 boutiques `verified` (grandfathering ponctuel), 1693 à `none`. Aucun mécanisme — admin, UI, cron — n'existe pour faire évoluer ce statut au-delà de la migration ponctuelle déjà appliquée.
+- `grid_image_ratio` : 7 boutiques `portrait`, le reste au défaut `square`.
+
+**Ouvert, non traité par ce chantier, à reprendre séparément** :
+- **Système de variantes produit** — prérequis explicitement sorti du périmètre dès le §36. Sans lui, ABI&CO continue de vendre 9 couleurs d'un même sac comme 9 produits distincts, et le badge « Le plus commandé » (documenté mais non construit, §4.7) reste bloqué derrière ce chantier.
+- **Badge de vérification sans processus réel** — intention KYC documentée (§55, garde-fous : table à part verrouillée, revue humaine, vigilance RGPD confirmée pertinente — 8 boutiques déjà en France), rattachée au futur dashboard marchand/admin, non démarrée.
+- **Route morte `commander/checkout/page.tsx`** (+ 3 fichiers checkout associés) — décision garder/supprimer toujours en attente.
+- **ABI&CO** — anomalie de désactivation groupée de 15 produits jamais élucidée (dette ouverte, sans lien avec ce chantier).
+- **Lot 4 (tunnel, périmètre réduit)** et **Lot 5 (réglages marchand)** de `SPEC-v2` — non commencés. Un point du Lot 5 (cadrage carré/portrait) a déjà été livré en avance via la Vague 4d du Lot 3.
+- **§5.6bis (badges de réassurance dynamiques) et §5.6ter (support GIF)** — toujours « aucune investigation ni implémentation commencée ».
+- **Habillage visuel complet vers les maquettes de référence** (typographie mise à part, déjà faite) — variantes/pastilles, filtres 100% curatés sans repli catégorie brute, réglages fins de layout — décision de l'utilisateur en attente : nouveau chantier structuré ou file d'attente.
+- **Trois fichiers `.md` non commités** dans l'arbre de travail, dont `CORRECTIFS-LANDING-PAGE-A-DONNER.md` (ouvert par l'utilisateur dans l'IDE, prochain chantier annoncé, contenu non exploré sur instruction explicite) et `PLAN-MARQUES-IA-PRODUIT-A-CREUSER.md`.
+
+**Chantier boutiques publiques (Lots 1-4 + clarifications) considéré clos dans son périmètre technique initial. En attente du prochain chantier (correctifs landing page), à transmettre séparément.**
