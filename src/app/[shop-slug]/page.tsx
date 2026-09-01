@@ -78,12 +78,16 @@ export default async function ShopPage({ params }: Props) {
     opening_hours?: string | null
   }
 
+  // Les produits en rupture (stock_count = 0) restent sur la vitrine — décision
+  // produit explicite (Lot B, 2026-09-01) — plutôt qu'invisibles comme avant.
+  // Chaque carte gère déjà l'affichage rupture (pastille, CTA remplacé par le
+  // formulaire d'alerte sur la fiche produit) ; seul le filtre "Disponible
+  // tout de suite" en dépendait pour avoir un effet réel.
   const { data: productsData } = await supabase
     .from('products')
     .select('*')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
-    .or('stock_count.is.null,stock_count.gt.0')
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true })
 

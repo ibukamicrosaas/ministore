@@ -49,12 +49,14 @@ export default async function PreviewPage({ params }: Props) {
 
   const shop = rawShop
 
+  // Même requête que la page publique réelle (Lot B, 2026-09-01) — la
+  // prévisualisation doit montrer exactement ce qu'un visiteur voit,
+  // ruptures de stock incluses.
   const { data: productsData } = await supabase
     .from('products')
     .select('*')
     .eq('shop_id', shop.id)
     .eq('is_active', true)
-    .or('stock_count.is.null,stock_count.gt.0')
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true })
 

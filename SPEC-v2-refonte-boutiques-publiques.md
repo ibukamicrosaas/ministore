@@ -120,7 +120,9 @@ Zéro fait renseigné → la bande entière disparaît.
 > ⚠️ **La v1 disait « Pro uniquement ». C'est faux :** Glow Eternel est en Business et affiche « Coups de cœur ». Ne te fie pas à la matrice de la v1. **Établis la matrice réelle depuis le code**, présente-la-moi, et on décide ensuite.
 
 ### 4.6 Recherche et filtres
-Recherche toujours présente. Puis, dans cet ordre de repli : filtres d'intention si définis (§9) → catégories existantes → rien.
+Recherche toujours présente. Puis, dans cet ordre de repli : filtres d'intention si définis ~~(§9)~~ → catégories existantes → rien.
+
+**Référence obsolète, corrigée 2026-09-01** : comme pour §4.4 point 3, §9 est aujourd'hui la matrice des drapeaux par plan, pas une section de réglages marchand — aucun champ de configuration de filtres personnalisés n'existe. **Construit au Lot B avec deux filtres calculés côté plateforme plutôt que définis par le marchand** : « Disponible tout de suite » (inverse de la rupture de stock, déjà calculé partout ailleurs) et « Petit budget » (percentile du catalogue actif propre à chaque boutique, jamais un seuil de prix fixe — un chiffre en dur n'a aucun sens dès qu'une boutique facture en EUR/CAD au lieu de FCFA — masqué si le catalogue est trop petit pour qu'un percentile ait un sens). Coexistent avec les puces de catégorie existantes, pas un remplacement.
 
 Supprime les puces vides et les libellés tronqués (2.6). Une puce dont le libellé ne tient pas est raccourcie proprement, jamais coupée au milieu d'un mot.
 
@@ -129,6 +131,8 @@ Supprime les puces vides et les libellés tronqués (2.6). Une puce dont le libe
 - **Cadrage carré imposé côté plateforme**, fond neutre, `object-fit: contain`. Le réglage « Carré / Portrait » par produit disparaît du formulaire et remonte en réglage de boutique (§9). C'est la cause de 2.8.
 - Nom sur **2 lignes maximum**, jamais tronqué sur une seule. Casse normalisée à l'affichage : nom intégralement en capitales et de plus de 3 caractères → rendu en casse de phrase. **La donnée en base n'est pas modifiée.**
 - Prix, puce de stock, pastilles de variantes (5 maximum + « +N couleurs »), bouton « Commander ».
+
+**Étiquettes contextuelles — statut, 2026-09-01.** « Dernières pièces » (basée sur le niveau de stock, `stock_count ≤ 3`) construite au Lot B. **« Le plus commandé » explicitement exclu, dépendant du chantier variantes** : ce badge se base sur un compte de ventes par produit — tant que les variantes n'existent pas (`product_variants` toujours à 0 ligne), une boutique comme ABI&CO qui vend le même sac en neuf couleurs comme neuf produits distincts afficherait ce badge sur une seule couleur plutôt que sur le sac dans son ensemble, un signal trompeur. À reprendre une fois le chantier variantes construit, pas avant.
 
 ### 4.8 Pied de page
 Bloc de réassurance, puis `Boutique propulsée par TEKKIShop`, masquable en Pro. Le lien porte un paramètre traçable par boutique.
@@ -168,6 +172,8 @@ Changer de variante met à jour : image principale, prix, puce de stock, barre d
 
 ### 5.4 Bloc « Avant de commander »
 Trois lignes conditionnelles, mêmes sources qu'au §4.4 mais détaillées : zones et tarifs réels, moyens de paiement, politique d'échange. Aucune ligne renseignée → le bloc disparaît.
+
+**Construit au Lot B, 2026-09-01 — deux lignes sur trois.** Livraison (zones et tarifs réels listés, pas un texte générique) et paiement (réutilise le calcul déjà existant sur la fiche produit au lieu d'un troisième calcul indépendant — referme l'écart noté dans `REPRISE.md` §36). **Retour/échange absent, comme pour la bande de faits de l'accueil (§4.4)** : aucun champ en base pour cette politique marchand, chantier séparé déjà documenté (`REPRISE.md` §51/§55).
 
 ### 5.5 Barre d'achat mobile
 Prix et état de stock à gauche, « Commander » au centre, WhatsApp à droite. Elle apparaît au défilement, **et le bouton en ligne se masque quand elle est visible** — les deux ne coexistent jamais.

@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package, Truck, Wallet } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -35,7 +35,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shopRes = await (supabase.from('shops') as any)
-    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio')
+    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones')
     .eq('slug', shopSlug)
     .single()
 
@@ -140,13 +140,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!shopData || !productData) notFound()
 
-  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url'> & {
+  const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url' | 'city' | 'address'> & {
     plan?: string; currency?: string | null
     country?: string | null
     accept_cash_on_delivery?: boolean | null
     bictorys_secret_key?: string | null
     stripe_connect_enabled?: boolean | null
     grid_image_ratio?: 'square' | 'portrait' | null
+    delivery_zones?: unknown
   }
   const product = productData as Product & { slug?: string | null }
 
@@ -222,6 +223,15 @@ export default async function ProductDetailPage({ params }: Props) {
     : []
   const hasOnlinePayment = onlineMethods.length > 0 || shop.bictorys_secret_key || shop.stripe_connect_enabled
   const acceptCash = shop.accept_cash_on_delivery ?? true
+
+  // Bloc « Avant de commander » (§5.4) — mêmes sources que la bande de faits
+  // de la page d'accueil, mais détaillées : les vraies zones et tarifs, pas
+  // juste « tarif calculé selon ta zone ». Retour/échange absent, aucun champ
+  // en base pour cette politique (voir REPRISE.md §51/§54).
+  const deliveryZones = Array.isArray(shop.delivery_zones)
+    ? (shop.delivery_zones as { id: string; name: string; price: number }[])
+    : []
+  const hasBeforeOrderBlock = deliveryZones.length > 0 || hasOnlinePayment || acceptCash
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
@@ -479,6 +489,42 @@ export default async function ProductDetailPage({ params }: Props) {
             </svg>
             Partager ce produit
           </a>
+        )}
+
+        {/* Avant de commander (§5.4) — mêmes sources que la bande de faits de
+            l'accueil, détaillées : zones et tarifs réels, moyens de paiement
+            déjà calculés plus haut sur cette page. Disparaît entièrement si
+            rien à montrer (Règle B). */}
+        {hasBeforeOrderBlock && (
+          <div className="mt-5 pt-5 border-t border-gray-100 space-y-2.5">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Avant de commander</p>
+            {deliveryZones.length > 0 && (
+              <div className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                <Truck className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-700">Livraison</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {deliveryZones.map(z => `${z.name.trim()} — ${formatPrice(z.price, currency)}`).join(' · ')}
+                  </p>
+                </div>
+              </div>
+            )}
+            {(hasOnlinePayment || acceptCash) && (
+              <div className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                <Wallet className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-700">Paiement</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {[
+                      ...onlineMethods.map(m => m.label),
+                      ...(onlineMethods.length === 0 && hasOnlinePayment ? ['Carte bancaire'] : []),
+                      ...(acceptCash ? ['Paiement à la livraison'] : []),
+                    ].join(', ')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {product.description && (

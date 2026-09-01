@@ -204,6 +204,11 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBad
               NOUVEAU
             </span>
           )}
+          {lowStock && (
+            <span className="absolute top-1.5 right-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+              Dernières pièces
+            </span>
+          )}
         </div>
         <div className="p-2.5">
           <p className="text-sm font-semibold text-gray-900 line-clamp-2">{displayName(product.name)}</p>
@@ -217,10 +222,20 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBad
   )
 }
 
+// Filtres curatés (§4.6) — clés internes, jamais affichées, ne peuvent pas
+// entrer en collision avec un nom de catégorie réel.
+const FILTER_DISPO   = '__dispo__'
+const FILTER_BUDGET  = '__budget__'
+// Part la plus basse du catalogue considérée "petit budget" — dérivée du
+// catalogue de CHAQUE boutique, jamais d'un seuil en dur : un chiffre fixe
+// (ex. "10 000 FCFA") n'a aucun sens dès qu'une boutique facture en EUR/CAD.
+const BUDGET_PERCENTILE = 0.33
+const BUDGET_MIN_PRODUCTS = 5
+
 export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF', defaultView = 'list', imageRatio = 'square' }: ProductGridProps) {
   const [view, setView] = useState<'list' | 'grid'>(defaultView)
   const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
 
   const featured = useMemo(
     () => products.filter(p => (p as Product & { is_featured?: boolean | null }).is_featured),
@@ -232,9 +247,32 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
     return cats
   }, [products])
 
+  // "Disponible tout de suite" — n'apparaît que s'il existe au moins un
+  // produit en rupture, sinon le filtre ne distinguerait jamais rien (Règle B).
+  const hasSoldOut = useMemo(() => products.some(p => p.stock_count === 0), [products])
+
+  // "Petit budget" — percentile du catalogue actif de cette boutique précise,
+  // masqué si le catalogue est trop petit pour qu'un percentile ait un sens,
+  // ou si le seuil calculé ne sépare rien de rien (tous au-dessus ou en dessous).
+  const budgetThreshold = useMemo(() => {
+    if (products.length < BUDGET_MIN_PRODUCTS) return null
+    const prices = products.map(p => p.price).filter(p => p > 0).sort((a, b) => a - b)
+    if (prices.length < BUDGET_MIN_PRODUCTS) return null
+    const threshold = prices[Math.floor(prices.length * BUDGET_PERCENTILE)]
+    const below = products.filter(p => p.price > 0 && p.price <= threshold).length
+    if (below === 0 || below === prices.length) return null
+    return threshold
+  }, [products])
+
   const filtered = useMemo(() => {
     let result = products
-    if (activeCategory) result = result.filter(p => p.category === activeCategory)
+    if (activeFilter === FILTER_DISPO) {
+      result = result.filter(p => p.stock_count === null || p.stock_count > 0)
+    } else if (activeFilter === FILTER_BUDGET && budgetThreshold !== null) {
+      result = result.filter(p => p.price > 0 && p.price <= budgetThreshold)
+    } else if (activeFilter) {
+      result = result.filter(p => p.category === activeFilter)
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       result = result.filter(p =>
@@ -244,7 +282,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
       )
     }
     return result
-  }, [products, activeCategory, search])
+  }, [products, activeFilter, budgetThreshold, search])
 
   const byCategory = useMemo(() => {
     return filtered.reduce<Record<string, Product[]>>((acc, p) => {
@@ -258,7 +296,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
   const catKeys = Object.keys(byCategory)
   const hasCategories = catKeys.length > 1 || (catKeys.length === 1 && catKeys[0] !== '')
 
-  const isFiltered = search.trim() !== '' || activeCategory !== null
+  const isFiltered = search.trim() !== '' || activeFilter !== null
 
   // Badge NOUVEAU : deux conditions cumulatives — produit <14j (isNew) ET part
   // du catalogue actif "récent" sous le plafond, sinon il ne distingue plus
@@ -307,29 +345,55 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
 
       {/* Filtres catégories + toggle vue */}
       <div className="flex items-center gap-2 px-4 py-2">
-        {categories.length > 0 && (
+        {(categories.length > 0 || hasSoldOut || budgetThreshold !== null) && (
           <div className="flex gap-2 overflow-x-auto flex-1 scrollbar-hide pb-0.5">
             <button
-              onClick={() => setActiveCategory(null)}
+              onClick={() => setActiveFilter(null)}
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                activeCategory === null
+                activeFilter === null
                   ? 'text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
-              style={activeCategory === null ? { backgroundColor: primaryColor } : {}}
+              style={activeFilter === null ? { backgroundColor: primaryColor } : {}}
             >
               Tout
             </button>
-            {categories.map(cat => (
+            {hasSoldOut && (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                onClick={() => setActiveFilter(activeFilter === FILTER_DISPO ? null : FILTER_DISPO)}
                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                  activeCategory === cat
+                  activeFilter === FILTER_DISPO
                     ? 'text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
-                style={activeCategory === cat ? { backgroundColor: primaryColor } : {}}
+                style={activeFilter === FILTER_DISPO ? { backgroundColor: primaryColor } : {}}
+              >
+                Disponible tout de suite
+              </button>
+            )}
+            {budgetThreshold !== null && (
+              <button
+                onClick={() => setActiveFilter(activeFilter === FILTER_BUDGET ? null : FILTER_BUDGET)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  activeFilter === FILTER_BUDGET
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={activeFilter === FILTER_BUDGET ? { backgroundColor: primaryColor } : {}}
+              >
+                Petit budget
+              </button>
+            )}
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(activeFilter === cat ? null : cat)}
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  activeFilter === cat
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={activeFilter === cat ? { backgroundColor: primaryColor } : {}}
               >
                 {displayName(cat)}
               </button>
