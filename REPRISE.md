@@ -1730,3 +1730,20 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 3. **Vérifier l'exposition RGPD avant de dimensionner quoi que ce soit.** Vérifié à l'instant : **8 boutiques ont `country = 'FR'`** en base aujourd'hui (sur 1695, avant même le Canada ou d'autres marchés UE potentiels) — la conformité RGPD n'est donc pas hypothétique, elle doit être pensée dès la conception de la table d'identité si ce chantier avance, pas ajoutée après coup.
 
 **Aucun code, aucune migration engagée sur ce point.**
+
+## 56. Typographie boutiques publiques — décision ancienne enfin appliquée, commit `1c777d5` — 2026-09-01
+
+**Contexte vérifié avant de coder** : `AI_RULES.md` documente « Bricolage Grotesque + Inter » comme décision pour les boutiques publiques et la landing, avec la mention explicite « décision prise lors de la refonte des boutiques publiques ». Vérifié par `git log -S "Instrument Sans" -- AI_RULES.md` : cette ligne date du **10-12 août**, avant même le Lot 1 (13 août) — une vraie décision utilisateur déjà actée, pas une nouvelle question de design. Vérifié dans le code (`[shop-slug]/layout.tsx`, `globals.css`) avant de toucher quoi que ce soit : **jamais appliquée**. Les boutiques tournaient en réalité sur le défaut global de l'app (Outfit + DM Sans), un troisième appariement distinct des deux que la note de cadrage citait (Bricolage Grotesque + Inter documenté, Bricolage Grotesque + Instrument Sans dans les maquettes).
+
+**Correctif** : nouveau scope CSS `.shop-scope` (`globals.css`), appliqué sur les deux écrans de `[shop-slug]/layout.tsx` (boutique active et boutique suspendue). Police `Inter` chargée via `next/font/google` dans `layout.tsx` racine ; `Bricolage Grotesque` réutilisée depuis son chargement déjà existant pour la landing v6 (`--lv6-display`), pas un second chargement du même fichier.
+
+**Piège technique trouvé en testant, pas en lisant le code** : redéfinir uniquement les variables CSS (`--font-sans`/`--font-display`) sur `.shop-scope` **n'avait aucun effet** — vérifié par capture de `getComputedStyle` avant correction, toujours DM Sans. Cause : aucun composant boutique (`ShopHomeLayout.tsx`, `ProductGrid.tsx`, fiche produit) n'utilise de classe `font-sans`/`font-display` explicite — tout hérite du `font-family` déjà résolu et figé depuis `<body>`, que la redéfinition d'une variable CSS plus bas dans l'arbre ne modifie pas rétroactivement. Corrigé en ajoutant une déclaration `font-family` explicite directement sur `.shop-scope` (texte courant → Inter) et une règle ciblée `h1,h2,h3` (titres → Bricolage Grotesque).
+
+**Vérifié en conditions réelles, avant/après, sur la vraie prod** :
+- ABI&CO : `h1` → `"Bricolage Grotesque"`, texte courant → `"Inter"`.
+- Glow Eternel : même résultat, scope et texte courant en Inter.
+- **Zones confirmées non affectées** : landing (`/`) et dashboard (`/login`) — `.shop-scope` absent de ces pages, aucune classe trouvée, pas de régression de police en dehors des boutiques publiques.
+
+**Note en marge, non corrigée, hors scope de ce diff** : `/login` et `/login/reset-pin` ont leur propre référence `font-family:"Inter"` codée en dur dans un `<style>` inline, indépendante de mon changement (confirmé par `grep`, préexistante) — la landing affiche aussi une classe `.lead` dont la police calculée démarre par « Inter » sans définition trouvée dans le code source du projet, probablement un comportement préexistant lié à l'environnement de test plutôt qu'à une règle du produit. Aucun des deux n'est lié à `.shop-scope` ni à ce commit — signalé pour ne pas être source de confusion plus tard, pas traité ici.
+
+**Prochaine étape** : point 3 — aperçu de partage WhatsApp (Open Graph), plan déjà validé.
