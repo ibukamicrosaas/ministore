@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
@@ -29,6 +29,9 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
   const [disabled, setDisabled] = useState(false)
   const router = useRouter()
 
+  const barRef = useRef<HTMLDivElement>(null)
+  const [barHeight, setBarHeight] = useState(0)
+
   useEffect(() => {
     function onVisibility(e: Event) {
       const detail = (e as CustomEvent<{ visible: boolean }>).detail
@@ -49,6 +52,18 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
     }
   }, [displayPrice, defaultLabel])
 
+  // Hauteur réelle mesurée, pas devinée (SPEC-v2 §5.5) — au montage, au
+  // redimensionnement, et à chaque changement de libellé (une variante
+  // sélectionnée peut l'allonger jusqu'à passer sur deux lignes).
+  useLayoutEffect(() => {
+    function measure() {
+      if (barRef.current) setBarHeight(barRef.current.offsetHeight)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [ctaLabel])
+
   function handleClick() {
     if (disabled) return
     trackMetaEvent('AddToCart', {
@@ -61,20 +76,29 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
     router.push(ctaHref)
   }
 
-  if (!visible) return null
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto lg:hidden">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={disabled}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ backgroundColor: color }}
+    <>
+      <div
+        ref={barRef}
+        aria-hidden={!visible}
+        className={`fixed bottom-0 left-0 right-0 px-4 pt-4 bg-gradient-to-t from-white via-white to-transparent max-w-lg mx-auto lg:hidden transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
       >
-        <ShoppingBag className="h-5 w-5" />
-        {ctaLabel}
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={disabled}
+          tabIndex={visible ? undefined : -1}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: color }}
+        >
+          <ShoppingBag className="h-5 w-5" />
+          {ctaLabel}
+        </button>
+      </div>
+      {/* Réserve la place de la barre dans le flux normal — évite qu'elle
+          recouvre le contenu en dessous d'elle une fois affichée (bug 2.2). */}
+      <div className="lg:hidden" style={{ height: barHeight }} aria-hidden="true" />
+    </>
   )
 }

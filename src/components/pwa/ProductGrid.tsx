@@ -7,6 +7,7 @@ import { LayoutList, LayoutGrid, Search, Package, Star, Tag, X } from 'lucide-re
 import type { Product, ProductPhoto, ProductVariant } from '@/types'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { displayName } from '@/lib/utils/display-name'
 
 interface ProductGridProps {
   products: Product[]
@@ -30,14 +31,6 @@ function isNew(product: Product): boolean {
   return Date.now() - new Date(createdAt).getTime() < FOURTEEN_DAYS_MS
 }
 
-// Nom intégralement en capitales et de plus de 3 lettres → casse de phrase à
-// l'affichage. La donnée en base n'est jamais modifiée.
-function displayName(name: string): string {
-  const letters = name.replace(/[^\p{L}]/gu, '')
-  const isAllCaps = letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase()
-  if (!isAllCaps) return name
-  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
-}
 
 function getPrimaryPhoto(product: Product): string | null {
   if (Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0) {
@@ -338,7 +331,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
                 }`}
                 style={activeCategory === cat ? { backgroundColor: primaryColor } : {}}
               >
-                {cat}
+                {displayName(cat)}
               </button>
             ))}
           </div>
@@ -380,7 +373,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
             {hasCategories && category && (
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="h-3 w-3 text-gray-400" />
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{category}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{displayName(category)}</p>
               </div>
             )}
             {view === 'list' ? (

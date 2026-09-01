@@ -18,6 +18,7 @@ import { getShopBasePath } from '@/lib/utils/custom-domain'
 import { PAYMENT_METHODS_BY_COUNTRY } from '@/lib/payments/payment-methods'
 import type { BictorysCountry } from '@/lib/payments/payment-methods'
 import { hasRichDescription } from '@/lib/plan-features'
+import { displayName } from '@/lib/utils/display-name'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -322,7 +323,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
           {/* ── Colonne droite : infos produit ── */}
           <div className="bg-white px-5 pt-5 pb-24 lg:flex-1 lg:px-0 lg:pt-2 lg:pb-12 lg:min-w-0">
-        <h1 className="text-2xl font-bold text-gray-900 leading-snug">{product.name}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 leading-snug">{displayName(product.name)}</h1>
 
         {/* Badge produit digital */}
         {isDigital && (
