@@ -1717,3 +1717,16 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 **Vérifié en conditions réelles, sur la vraie prod** : AEA Cosmetics (basculée) — grille et fiche produit en `aspect-[3/4]`, cohérentes entre elles. ABI&CO (restée au carré) — `aspect-square` aux deux endroits. **Repli sûr confirmé** : défaut colonne `'square'` + défaut composant `'square'`, round-trip complet testé sur un compte réel non-Pro créé via `/start` (clic Portrait → toast succès → vérifié en base) — compte supprimé après validation.
 
 **Avec cette vague, les 5 vagues du Lot 3 (page d'accueil boutique) sont closes.** Prochaine étape à confirmer par l'utilisateur avant tout code : clarification demandée sur l'écart entre l'apparence réelle des boutiques (ABI&CO) et les maquettes de référence (`tekkishop-boutique-accueil.html`/`tekkishop-boutique-produit.html`) citées par `NOTE-cadrage-refonte-boutiques.md` — vérification en cours, aucun code engagé tant que la réponse n'est pas donnée.
+
+## 55. Badge de vérification — intention réelle documentée, chantier non démarré — 2026-09-01
+
+**Constat vérifié** (§54) : `verification_status` n'a aucun processus de mise à jour dans le produit actuel — ni action admin, ni UI, ni cron. Seule la migration 096 (grandfathering, une fois) l'a jamais écrit.
+
+**Intention réelle, actée par l'utilisateur, 2026-09-01** : le critère visé n'est **pas** un seuil automatique basé sur l'activité (ancienneté, volume de ventes, etc.) — c'est une **vérification KYC du propriétaire de la boutique** : identité, adresse, téléphone. Pas encore défini techniquement, mais tranché sur le fond. Rattaché au futur chantier dashboard marchand/admin — **pas démarré maintenant**, ce paragraphe documente l'intention pour qu'une future session ne parte pas d'une page blanche ni ne réinvente un critère automatique erroné.
+
+**Trois garde-fous à respecter quand ce chantier sera lancé, pas à traiter aujourd'hui** :
+1. **Les données d'identité vivent dans une table à part, verrouillée** (RLS fermée, accès admin uniquement) — jamais en clair dans `shops`, qui est lisible publiquement (RLS `shops_public_read`, migration 055).
+2. **Une vraie interface de revue humaine est nécessaire** (validation manuelle par un admin) — pas un statut qui bascule automatiquement sur un critère technique.
+3. **Vérifier l'exposition RGPD avant de dimensionner quoi que ce soit.** Vérifié à l'instant : **8 boutiques ont `country = 'FR'`** en base aujourd'hui (sur 1695, avant même le Canada ou d'autres marchés UE potentiels) — la conformité RGPD n'est donc pas hypothétique, elle doit être pensée dès la conception de la table d'identité si ce chantier avance, pas ajoutée après coup.
+
+**Aucun code, aucune migration engagée sur ce point.**
