@@ -8,6 +8,7 @@ import { PricingV6 } from '@/components/landing-v6/PricingV6'
 import { FAQv6 } from '@/components/landing-v6/FAQv6'
 import { DemoModal } from '@/components/landing-v6/DemoModal'
 import { ShopMockup } from '@/components/landing-v6/ShopMockup'
+import { RealShopsShowcase } from '@/components/landing-v6/RealShopsShowcase'
 import { IC } from '@/components/landing-v6/icons'
 import '@/app/landing-v6.css'
 import type { CountryConfig } from '@/data/country-configs'
@@ -552,27 +553,14 @@ export async function CountryLandingV6({ config: cfg }: { config: CountryConfig 
         </div>
       </section>
 
-      {/* ── Témoignages — locaux au pays ────────────────────────────── */}
+      {/* ── Vraies boutiques — locaux au pays ────────────────────────── */}
       <section className="section testi-sec">
         <div className="container">
-          <div className="section-head center reveal">
-            <span className="label">{cfg.testimonialSection.eyebrow}</span>
-            <h2>{cfg.testimonialSection.headline}</h2>
-            <p className="lead">Des vendeurs qui ont arrêté de gérer leurs commandes dans une discussion WhatsApp.</p>
-          </div>
-          <div className="testi-grid reveal">
-            {cfg.testimonials.map((t) => (
-              <article key={t.name} className="testi">
-                <div className="stars">★★★★★</div>
-                <p>{t.quote}</p>
-                <div className="testi-who">
-                  <i style={{ background: t.color }}>{t.initial}</i>
-                  <div><b>{t.name}</b><small>{t.role}</small></div>
-                </div>
-              </article>
-            ))}
-          </div>
-          <p className="swipe-hint">← Fais glisser pour lire la suite →</p>
+          <RealShopsShowcase
+            shopIds={[]}
+            eyebrow={cfg.testimonialSection.eyebrow}
+            headline={cfg.testimonialSection.headline}
+          />
 
           {shops.length > 0 && (
             <div className="merchants reveal">

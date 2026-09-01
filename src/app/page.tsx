@@ -9,6 +9,7 @@ import { DemoModal }     from '@/components/landing-v6/DemoModal'
 import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { ShopMockup }    from '@/components/landing-v6/ShopMockup'
 import { LandingFooter } from '@/components/landing-v6/LandingFooter'
+import { RealShopsShowcase } from '@/components/landing-v6/RealShopsShowcase'
 import { IC }            from '@/components/landing-v6/icons'
 import './landing-v6.css'
 
@@ -610,34 +611,14 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Témoignages ──────────────────────────────────────────── */}
+      {/* ── Vraies boutiques ─────────────────────────────────────── */}
       <section className="section testi-sec">
         <div className="container">
-          <div className="section-head center reveal">
-            <span className="label">Ils l&rsquo;ont fait avant toi</span>
-            <h2>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></h2>
-            <p className="lead">Des vendeurs qui ont arrêté de gérer leurs commandes dans une discussion WhatsApp.</p>
-          </div>
-          <div className="testi-grid reveal">
-            {[
-              { stars: '★★★★★', text: 'J\'ai créé ma boutique un dimanche soir. Le lundi matin, j\'avais déjà deux ventes payées sans avoir répondu à un seul message.', name: 'Aminata S.', role: 'Mode féminine · Dakar', initials: 'AS', bg: 'linear-gradient(145deg,#ff955b,#e4572e)' },
-              { stars: '★★★★★', text: 'Avant, je passais mes soirées à renvoyer les mêmes photos et les mêmes prix. Maintenant j\'envoie un lien et je m\'occupe de mes livraisons.', name: 'Fatou K.', role: 'Cosmétiques naturels · Abidjan', initials: 'FK', bg: 'linear-gradient(145deg,#6e78ff,#4039c9)' },
-              { stars: '★★★★★', text: 'Je vends des formations. Orange Money marche directement et mes clients téléchargent tout de suite. C\'est ça qui manquait ici.', name: 'Marie N.', role: 'Formations en ligne · Cotonou', initials: 'MN', bg: 'linear-gradient(145deg,#23c78c,#078959)' },
-              { stars: '★★★★★', text: 'Ce qui m\'a convaincue, c\'est que tout se fait au téléphone. Je n\'ai pas d\'ordinateur et je n\'en ai jamais eu besoin.', name: 'Rokhaya D.', role: 'Artisanat · Thiès', initials: 'RD', bg: 'linear-gradient(145deg,#ffca57,#de8c00)' },
-              { stars: '★★★★★', text: 'Mes commandes ne se perdent plus. Je vois qui a payé, qui attend, ce qu\'il me reste. Avant je notais tout dans un cahier.', name: 'Ibrahim T.', role: 'Électronique · Ouagadougou', initials: 'IT', bg: 'linear-gradient(145deg,#4fb0ff,#1160c4)' },
-              { stars: '★★★★★', text: 'Mes clientes en France commandent maintenant elles aussi. Une boutique, un lien, et je vends des deux côtés.', name: 'Khadija M.', role: 'Épicerie fine · Bamako', initials: 'KM', bg: 'linear-gradient(145deg,#4fc3d9,#1a7f96)' },
-            ].map((t) => (
-              <article key={t.name} className="testi">
-                <div className="stars">{t.stars}</div>
-                <p>{t.text}</p>
-                <div className="testi-who">
-                  <i style={{ background: t.bg }}>{t.initials}</i>
-                  <div><b>{t.name}</b><small>{t.role}</small></div>
-                </div>
-              </article>
-            ))}
-          </div>
-          <p className="swipe-hint">← Fais glisser pour lire la suite →</p>
+          <RealShopsShowcase
+            shopIds={[]}
+            eyebrow="Ils l'ont fait avant toi"
+            headline={<>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></>}
+          />
 
           {shops.length > 0 && (
             <div className="merchants reveal">

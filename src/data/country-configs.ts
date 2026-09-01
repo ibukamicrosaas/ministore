@@ -21,14 +21,6 @@ export type OrderFlowConfig = {
   delivererPhone: string
 }
 
-export type Testimonial = {
-  quote: string
-  name: string
-  role: string
-  initial: string
-  color: string
-}
-
 // ── Full country config (pour CountryLandingV6, une entrée par page pays) ──
 
 export interface CountryConfig {
@@ -83,8 +75,6 @@ export interface CountryConfig {
     title: string
     description: string
   }
-
-  testimonials: Testimonial[]
 
   testimonialSection: {
     eyebrow: string
@@ -211,33 +201,6 @@ export const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
         "Les paiements mobiles togolais sont déjà disponibles. Tes clients paient par Flooz (Moov) ou T-Money (Togocel), et tu retires ton argent instantanément.",
     },
 
-    testimonials: [
-      {
-        quote: "Avant TEKKIShop, je prenais les commandes sur WhatsApp et je perdais la moitié. Maintenant mes clients commandent sur mon lien et je vois tout en temps réel.",
-        name: 'Abla K.', role: 'Mode & Pagnes wax, Lomé', initial: 'A', color: '#0EA5E9',
-      },
-      {
-        quote: "J'ai partagé mon lien dans mon groupe WhatsApp à Kara. En 2 jours j'avais 8 commandes. TEKKIShop a changé ma façon de vendre.",
-        name: 'Koffi A.', role: 'Épicerie Koffi, Kara', initial: 'K', color: '#D97706',
-      },
-      {
-        quote: "Le paiement Flooz à la commande, c'est révolutionnaire. Fini les retards et les impayés. Mes clients paient avant même que je prépare leur colis.",
-        name: 'Mawuli D.', role: 'Cosmétiques naturels, Lomé', initial: 'M', color: '#7C3AED',
-      },
-      {
-        quote: "Je vends mes pagnes depuis Sokodé. Mes clientes commandent la veille et je prépare les colis le matin. Simple, efficace, et tout depuis mon téléphone.",
-        name: 'Afi M.', role: 'Tissu & Pagne, Sokodé', initial: 'A', color: '#059669',
-      },
-      {
-        quote: "J'ai configuré ma boutique en 10 minutes. Mes clients me disent que c'est beau et professionnel — ils ont confiance pour commander et payer en ligne.",
-        name: 'Koami B.', role: 'Artisanat Togo, Lomé', initial: 'K', color: '#DB2777',
-      },
-      {
-        quote: "Les notifications WhatsApp automatiques, c'est la meilleure fonctionnalité. Mes clients reçoivent leur récap de commande et ça évite 100 questions.",
-        name: 'Yawa E.', role: 'Pâtisserie maison, Lomé', initial: 'Y', color: '#2563EB',
-      },
-    ],
-
     testimonialSection: {
       eyebrow:  'Les marchands togolais en parlent mieux',
       headline: "Vendre en ligne au Togo n'a jamais été aussi simple",
@@ -363,33 +326,6 @@ export const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
         "Les paiements mobiles maliens sont déjà disponibles. Tes clients paient par Wave ou Orange Money, et tu retires ton argent instantanément.",
     },
 
-    testimonials: [
-      {
-        quote: "Avant TEKKIShop, je prenais les commandes sur WhatsApp et je perdais la moitié. Maintenant mes clients commandent sur mon lien et je vois tout en temps réel.",
-        name: 'Aminata C.', role: 'Mode & Bazin, Bamako', initial: 'A', color: '#0EA5E9',
-      },
-      {
-        quote: "J'ai partagé mon lien dans mon groupe WhatsApp à Ségou. En 2 jours j'avais 8 commandes. TEKKIShop a changé ma façon de vendre.",
-        name: 'Modibo T.', role: 'Épicerie Modibo, Ségou', initial: 'M', color: '#D97706',
-      },
-      {
-        quote: "Le paiement Wave à la commande, c'est révolutionnaire. Fini les retards et les impayés. Mes clients paient avant même que je prépare leur colis.",
-        name: 'Kadiatou S.', role: 'Cosmétiques naturels, Bamako', initial: 'K', color: '#7C3AED',
-      },
-      {
-        quote: "Je vends mes tissus depuis Mopti. Mes clientes commandent la veille et je prépare les colis le matin. Simple, efficace, et tout depuis mon téléphone.",
-        name: 'Oumou D.', role: 'Tissu & Bazin, Mopti', initial: 'O', color: '#059669',
-      },
-      {
-        quote: "J'ai configuré ma boutique en 10 minutes. Mes clients me disent que c'est beau et professionnel — ils ont confiance pour commander et payer en ligne.",
-        name: 'Ibrahim K.', role: 'Artisanat Mali, Bamako', initial: 'I', color: '#DB2777',
-      },
-      {
-        quote: "Les notifications WhatsApp automatiques, c'est la meilleure fonctionnalité. Mes clients reçoivent leur récap de commande et ça évite 100 questions.",
-        name: 'Awa B.', role: 'Pâtisserie maison, Bamako', initial: 'A', color: '#2563EB',
-      },
-    ],
-
     testimonialSection: {
       eyebrow:  'Les marchands maliens en parlent mieux',
       headline: "Vendre en ligne au Mali n'a jamais été aussi simple",
@@ -514,33 +450,6 @@ export const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
       description:
         "Les paiements mobiles béninois sont déjà disponibles. Tes clients paient par MTN Money ou Moov Money, et tu retires ton argent instantanément.",
     },
-
-    testimonials: [
-      {
-        quote: "Avant TEKKIShop, je prenais les commandes sur WhatsApp et je perdais la moitié. Maintenant mes clients commandent sur mon lien et je vois tout en temps réel.",
-        name: 'Chimène A.', role: 'Mode & Pagnes, Cotonou', initial: 'C', color: '#0EA5E9',
-      },
-      {
-        quote: "J'ai partagé mon lien dans mon groupe WhatsApp à Porto-Novo. En 2 jours j'avais 8 commandes. TEKKIShop a changé ma façon de vendre.",
-        name: 'Roméo H.', role: 'Épicerie Roméo, Porto-Novo', initial: 'R', color: '#D97706',
-      },
-      {
-        quote: "Le paiement MTN Money à la commande, c'est révolutionnaire. Fini les retards et les impayés. Mes clients paient avant même que je prépare leur colis.",
-        name: 'Bernadette K.', role: 'Cosmétiques naturels, Cotonou', initial: 'B', color: '#7C3AED',
-      },
-      {
-        quote: "Je vends mes tissus depuis Parakou. Mes clientes commandent la veille et je prépare les colis le matin. Simple, efficace, et tout depuis mon téléphone.",
-        name: 'Fadilatou M.', role: 'Tissu & Wax, Parakou', initial: 'F', color: '#059669',
-      },
-      {
-        quote: "J'ai configuré ma boutique en 10 minutes. Mes clients me disent que c'est beau et professionnel — ils ont confiance pour commander et payer en ligne.",
-        name: 'Gilchrist A.', role: 'Artisanat Bénin, Cotonou', initial: 'G', color: '#DB2777',
-      },
-      {
-        quote: "Les notifications WhatsApp automatiques, c'est la meilleure fonctionnalité. Mes clients reçoivent leur récap de commande et ça évite 100 questions.",
-        name: 'Nadège E.', role: 'Pâtisserie maison, Cotonou', initial: 'N', color: '#2563EB',
-      },
-    ],
 
     testimonialSection: {
       eyebrow:  'Les marchands béninois en parlent mieux',
@@ -671,33 +580,6 @@ export const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
       description:
         "Les paiements mobiles burkinabè sont déjà disponibles. Tes clients paient par Wave, Orange Money ou Moov Money, et tu retires ton argent instantanément.",
     },
-
-    testimonials: [
-      {
-        quote: "Avant TEKKIShop, je prenais les commandes sur WhatsApp et je perdais la moitié. Maintenant mes clients commandent sur mon lien et je vois tout en temps réel.",
-        name: 'Awa O.', role: 'Mode & Boubous, Ouagadougou', initial: 'A', color: '#0EA5E9',
-      },
-      {
-        quote: "J'ai partagé mon lien dans mon groupe WhatsApp à Bobo-Dioulasso. En 2 jours j'avais 8 commandes. TEKKIShop a changé ma façon de vendre.",
-        name: 'Boureima S.', role: 'Épicerie Boureima, Bobo-Dioulasso', initial: 'B', color: '#D97706',
-      },
-      {
-        quote: "Le paiement Orange Money à la commande, c'est révolutionnaire. Fini les retards et les impayés. Mes clients paient avant même que je prépare leur colis.",
-        name: 'Salimata K.', role: 'Cosmétiques naturels, Ouagadougou', initial: 'S', color: '#7C3AED',
-      },
-      {
-        quote: "Je vends mes tissus depuis Koudougou. Mes clientes commandent la veille et je prépare les colis le matin. Simple, efficace, et tout depuis mon téléphone.",
-        name: 'Aïcha T.', role: 'Tissu & Faso Dan Fani, Koudougou', initial: 'A', color: '#059669',
-      },
-      {
-        quote: "J'ai configuré ma boutique en 10 minutes. Mes clients me disent que c'est beau et professionnel — ils ont confiance pour commander et payer en ligne.",
-        name: 'Issa Z.', role: 'Artisanat Burkina, Ouagadougou', initial: 'I', color: '#DB2777',
-      },
-      {
-        quote: "Les notifications WhatsApp automatiques, c'est la meilleure fonctionnalité. Mes clients reçoivent leur récap de commande et ça évite 100 questions.",
-        name: 'Mariam D.', role: 'Pâtisserie maison, Ouagadougou', initial: 'M', color: '#2563EB',
-      },
-    ],
 
     testimonialSection: {
       eyebrow:  'Les marchands burkinabè en parlent mieux',
