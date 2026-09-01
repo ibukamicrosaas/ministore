@@ -14,21 +14,26 @@ type Props = { params: Promise<{ 'shop-slug': string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { 'shop-slug': slug } = await params
   const supabase = await createServerClient()
-  const { data } = await supabase
-    .from('shops')
-    .select('name, description, logo_url')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('shops') as any)
+    .select('name, description, logo_url, cover_image_url')
     .eq('slug', slug)
     .eq('is_active', true)
     .neq('status', 'draft')
     .single()
   if (!data) return {}
 
-  const shop = data as Pick<Shop, 'name' | 'description' | 'logo_url'>
+  const shop = data as Pick<Shop, 'name' | 'description' | 'logo_url'> & { cover_image_url?: string | null }
   const url  = `${APP_URL}/${slug}`
   const desc = shop.description ?? `Boutique ${shop.name} — commandez en ligne`
-  const ogImage = shop.logo_url
+  // Couverture d'abord, à défaut le logo, à défaut une image générée avec le
+  // nom de la boutique (SPEC-v2 §10.2) — plus un repli statique générique
+  // identique pour toutes les boutiques sans logo ni couverture.
+  const ogImage = shop.cover_image_url
+    ? { url: shop.cover_image_url, width: 1200, height: 630, alt: shop.name }
+    : shop.logo_url
     ? { url: shop.logo_url, width: 400, height: 400, alt: shop.name }
-    : { url: `${APP_URL}/og-ministore.png`, width: 1200, height: 630, alt: shop.name }
+    : { url: `${APP_URL}/api/share/shop-card?slug=${slug}`, width: 1080, height: 1080, alt: shop.name }
 
   return {
     title: shop.name,
@@ -43,7 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
     },
     twitter: {
-      card: shop.logo_url ? 'summary' : 'summary_large_image',
+      // Petite carte seulement pour le cas logo-seul (carré 400×400) — couverture et repli généré sont des images larges.
+      card: (!shop.cover_image_url && shop.logo_url) ? 'summary' : 'summary_large_image',
       title: shop.name,
       description: desc,
       images: [ogImage.url],

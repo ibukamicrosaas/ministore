@@ -63,10 +63,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const primary   = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? p.photo_url ?? null
   const canonical = `${APP_URL}/${shopSlug}/produit/${p.slug ?? id}`
   const title     = p.meta_title || p.name
-  const desc      = p.meta_description || p.description || `${p.name} — ${shop.name}`
+  // Prix et boutique garantis dans l'aperçu de partage (SPEC-v2 §10.2) — sauf
+  // si le marchand a explicitement défini un meta_description, respecté tel quel.
+  const priceLabel = formatPrice(p.price, (shop.currency ?? 'XOF') as ShopCurrency)
+  const desc      = p.meta_description || `${priceLabel} — Disponible chez ${shop.name}`
   const ogImage   = primary
     ? { url: primary, width: 800, height: 800, alt: p.name }
-    : { url: `${APP_URL}/og-ministore.png`, width: 1200, height: 630, alt: p.name }
+    : { url: `${APP_URL}/api/share/product-card?id=${p.id}`, width: 1080, height: 1080, alt: p.name }
 
   return {
     title,
