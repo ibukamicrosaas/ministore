@@ -1834,7 +1834,7 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 
 **L'infrastructure push existait déjà et fonctionnait** — voir §61 : envoi (`sendPushToShop`, appelé à la création de commande et à la confirmation de livraison), service worker (réception + clic), réabonnement silencieux (`PushNotificationManager`). Le vrai manque, confirmé par le plan validé avant tout code : aucun flux ne demandait jamais explicitement la permission de façon adaptée au device, en particulier sur iOS Safari où Web Push exige que le site soit installé sur l'écran d'accueil (mode standalone) — une demande de permission dans un onglet Safari classique n'aboutit à rien d'utilisable, même si `Notification.requestPermission()` semble réussir.
 
-**Ce qui a été construit, commit `<à compléter après commit>`** :
+**Ce qui a été construit, commit `56cdebb`** :
 - `src/lib/utils/pwa.ts` (nouveau) : `detectDevice()`/`isAlreadyInstalled()` extraits de `PWAInstallButton.tsx`, désormais partagés entre les composants PWA et push.
 - `PWAInstallButton.tsx` : importe ces fonctions au lieu de ses copies locales — aucun changement de comportement.
 - `PushEnableButton.tsx` (cloche du TopBar) : ne s'affiche plus sur iOS tant que l'app n'est pas installée sur l'écran d'accueil — corrige exactement l'affordance cassée décrite au §61.
