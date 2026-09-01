@@ -534,7 +534,7 @@ Budget visé au §10.1 de `AI_RULES.md` : **2,5 s**. Les deux boutiques sont don
 
 **Règles critiques dupliquées.** `AI_RULES.md` reproduit intégralement le contenu de `NOTE_MASQUAGE_COMMANDES.md` (§4) et de `NOTE_ERREURS_SUPABASE_NON_VERIFIEES.md` (§3, "Vérification des erreurs"), au lieu d'y renvoyer. Deux copies d'une même règle divergent tôt ou tard. À trancher : une source unique (probablement les `NOTE_*.md`, plus détaillées, avec le contexte et l'exemple) et un renvoi depuis `AI_RULES.md`, pas l'inverse — mais c'est une décision à prendre, pas à exécuter seul.
 
-**`IMPROVEMENTS.md` chevauche `REPRISE.md`.** Statuts ✅🔄⬜🚫 sur bugs/UX/fonctionnalités, plus ancien format, fonction proche de ce que `REPRISE.md` fait maintenant plus précisément (avec dates, fichiers, lignes). À fusionner — probablement absorber ce qui est encore pertinent dans `REPRISE.md` et retirer `IMPROVEMENTS.md`, mais non vérifié ligne à ligne, donc non tranché ici. Fichier laissé non suivi en attendant (voir §1).
+**`IMPROVEMENTS.md` chevauche `REPRISE.md`.** ~~Statuts ✅🔄⬜🚫 sur bugs/UX/fonctionnalités, plus ancien format, fonction proche de ce que `REPRISE.md` fait maintenant plus précisément (avec dates, fichiers, lignes). À fusionner — probablement absorber ce qui est encore pertinent dans `REPRISE.md` et retirer `IMPROVEMENTS.md`, mais non vérifié ligne à ligne, donc non tranché ici. Fichier laissé non suivi en attendant (voir §1).~~ **Clos le 2026-09-01, voir §63** : contenu vérifié ligne à ligne, très majoritairement obsolète ou déjà fait — pas de fusion, archivage simple.
 
 **`README.md` reste le boilerplate `create-next-app`** — aucune information sur TEKKIShop, aucune instruction spécifique au projet. Suivi tel quel (§1) pour qu'il ne redisparaisse pas, mais son contenu est à réécrire entièrement : ce que fait le projet, comment le lancer avec les variables d'environnement réelles (voir `AI_RULES.md` §10), où trouver `AI_RULES.md`/`REPRISE.md`.
 
@@ -1846,3 +1846,15 @@ Plan validé en 5 vagues (§4 de la spec). Vague 1 : `page.tsx` (Découverte/Bus
 3. **iOS installé** (UA Safari iPhone, `navigator.standalone=true` forcé) → bascule confirmée sur le bandeau éligible standard, comme prévu par le plan.
 
 `tsc --noEmit`, build Turbopack et build webpack tous propres avant validation. Boutique et compte de test supprimés de la base après le test (cascade sur `profiles`), Chrome headless et serveur de dev arrêtés.
+
+## 63. `IMPROVEMENTS.md` — clôture du point ouvert au §8, archivé sans fusion, 2026-09-01
+
+**Décision de l'utilisateur** : même traitement que `BACKLOG.md`/`NEXT_STEPS.md`/etc. (§1, commit `a113dcf`) — déplacé vers `docs/archive/IMPROVEMENTS.md`, toujours suivi par git (un document clos garde sa valeur d'historique), pas fusionné dans `REPRISE.md`.
+
+**Contenu vérifié ligne à ligne avant clôture, pas juste relu** : la quasi-totalité des items ✅ sont réellement faits. Deux items marqués ⬜ dans le fichier sont en réalité déjà faits, vérifié contre le code actuel : **MP-07 (Sentry)** — `SENTRY_DSN` posée, `Sentry.captureException` réellement appelé dans une dizaine de fichiers (paiements, payouts, activation de plan). **LP-03 (PWA installable)** — construit de longue date (`PWAInstallButton.tsx`) et retravaillé cette session même (§62). **LP-01 (migration WhatsApp Business API)** a une prémisse déjà périmée : le texte suppose encore Twilio SMS, alors que le fournisseur réel aujourd'hui est Lafricamobile — à reformuler entièrement si jamais repris, pas réutilisable tel quel.
+
+**Deux idées encore pertinentes, aucune décision engagée dessus — à retrouver ici si une future session en a besoin, pas dans le fichier archivé** :
+- **LP-02 — Multi-boutique (1 compte → N boutiques).** Vérifié non fait : `profiles.shop_id` reste une relation 1-1, aucune table `shop_memberships`. Idée de backlog pour les marchands avec plusieurs activités (ex. vêtements + alimentation).
+- **LP-04 — Programme de fidélité clients.** Vérifié non fait. Idée de backlog : points par FCFA dépensé, réduction sur commande suivante, vue "clients fidèles" côté marchand.
+
+Aucune des deux n'est un chantier ouvert — simples pointeurs préservés, à réévaluer seulement si l'utilisateur les remonte explicitement.
