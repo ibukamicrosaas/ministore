@@ -52,7 +52,7 @@ export default async function ShopLayout({
       : null
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6 text-center">
+      <div className="shop-scope min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6 text-center">
         {/* Logo ou initiale */}
         {shop.logo_url ? (
           <img
@@ -112,7 +112,7 @@ export default async function ShopLayout({
 
   return (
     <div
-      className="min-h-screen bg-white"
+      className="shop-scope min-h-screen bg-white"
       style={{ '--brand': shop.primary_color ?? '#0EA5E9' } as React.CSSProperties}
     >
       {shop.meta_pixel_id && <MetaPixelProvider pixelId={shop.meta_pixel_id} />}

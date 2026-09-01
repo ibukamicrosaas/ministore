@@ -5,6 +5,7 @@ import { Space_Grotesk } from 'next/font/google'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Bricolage_Grotesque } from 'next/font/google'
 import { IBM_Plex_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 import { APP_NAME, APP_URL } from '@/constants'
@@ -46,6 +47,16 @@ const ibmPlexMono = IBM_Plex_Mono({
   variable: '--lv6-mono',
   subsets:  ['latin'],
   weight:   ['500', '600'],
+})
+
+// Boutiques publiques (scope ".shop-scope" — voir globals.css) : Bricolage
+// Grotesque + Inter, décision AI_RULES.md antérieure à ce chantier, jamais
+// codée jusqu'ici. Bricolage Grotesque réutilise la police déjà chargée pour
+// la landing v6 (--lv6-display), pas un second chargement du même fichier.
+const inter = Inter({
+  variable: '--font-boutique-sans',
+  subsets:  ['latin'],
+  weight:   ['400', '500', '600', '700'],
 })
 
 const description = 'Créez votre boutique en ligne en quelques minutes. Vos clients commandent, paient par Wave ou Orange Money, reçoivent une confirmation WhatsApp. Tout depuis votre téléphone.'
@@ -105,7 +116,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className={`${outfit.variable} ${dmSans.variable} ${spaceGrotesk.variable} ${plusJakartaSans.variable} ${bricolageGrotesque.variable} ${ibmPlexMono.variable} h-full antialiased`}>
+    <html lang="fr" className={`${outfit.variable} ${dmSans.variable} ${spaceGrotesk.variable} ${plusJakartaSans.variable} ${bricolageGrotesque.variable} ${ibmPlexMono.variable} ${inter.variable} h-full antialiased`}>
       <body className="h-full bg-gray-50 text-gray-900 font-sans">
         {children}
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />

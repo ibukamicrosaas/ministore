@@ -31,6 +31,21 @@
   --color-navy: #0B1B32;
 }
 
+/* Scope dédié aux boutiques publiques (accueil boutique + fiche produit) —
+   décision AI_RULES.md antérieure à ce chantier (Bricolage Grotesque + Inter),
+   jamais codée jusqu'ici. N'affecte jamais le dashboard ni la landing.
+   Déclaration font-family explicite nécessaire : redéfinir seulement les
+   variables --font-sans/--font-display ne change rien, rien ne les
+   réévalue dans le sous-arbre (hérité déjà résolu depuis <body>). */
+.shop-scope {
+  --font-sans: var(--font-boutique-sans), 'Inter', system-ui, sans-serif;
+  --font-display: var(--lv6-display), 'Bricolage Grotesque', sans-serif;
+  font-family: var(--font-sans);
+}
+.shop-scope h1, .shop-scope h2, .shop-scope h3 {
+  font-family: var(--font-display);
+}
+
 /* Désactiver le dark mode automatique — design light-only pour ce produit */
 @media (prefers-color-scheme: dark) {
   :root {
