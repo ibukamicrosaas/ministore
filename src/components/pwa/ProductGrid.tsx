@@ -16,12 +16,24 @@ interface ProductGridProps {
   defaultView?: 'list' | 'grid'
 }
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000
+// Au-delà de 30 % du catalogue actif "récent", le badge ne distingue plus
+// personne — il disparaît pour tout le monde plutôt que de perdre son sens.
+const NEW_BADGE_MAX_SHARE = 0.3
 
 function isNew(product: Product): boolean {
   const createdAt = (product as Product & { created_at?: string }).created_at
   if (!createdAt) return false
-  return Date.now() - new Date(createdAt).getTime() < SEVEN_DAYS_MS
+  return Date.now() - new Date(createdAt).getTime() < FOURTEEN_DAYS_MS
+}
+
+// Nom intégralement en capitales et de plus de 3 lettres → casse de phrase à
+// l'affichage. La donnée en base n'est jamais modifiée.
+function displayName(name: string): string {
+  const letters = name.replace(/[^\p{L}]/gu, '')
+  const isAllCaps = letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase()
+  if (!isAllCaps) return name
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
 }
 
 function getPrimaryPhoto(product: Product): string | null {
@@ -44,12 +56,12 @@ function getPrice(product: Product, currency: ShopCurrency): string {
   return formatPrice(product.price, currency)
 }
 
-function FeaturedCard({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
+function FeaturedCard({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const soldOut = product.stock_count === 0
-  const newProduct = isNew(product)
+  const newProduct = showNewBadge && isNew(product)
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className={`shrink-0 w-44 group ${soldOut ? 'opacity-60' : ''}`}>
@@ -82,7 +94,7 @@ function FeaturedCard({ product, shopSlug, primaryColor, currency }: { product: 
           )}
         </div>
         <div className="p-2.5">
-          <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
+          <p className="text-xs font-semibold text-gray-900 line-clamp-2">{displayName(product.name)}</p>
           <p className={`mt-0.5 text-xs font-bold truncate ${soldOut ? 'text-gray-400' : ''}`} style={soldOut ? {} : { color: primaryColor }}>{soldOut ? 'Rupture de stock' : price}</p>
         </div>
       </div>
@@ -90,12 +102,12 @@ function FeaturedCard({ product, shopSlug, primaryColor, currency }: { product: 
   )
 }
 
-function ProductCardList({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
+function ProductCardList({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
-  const newProduct = isNew(product)
+  const newProduct = showNewBadge && isNew(product)
 
   return (
     <Link
@@ -130,7 +142,7 @@ function ProductCardList({ product, shopSlug, primaryColor, currency }: { produc
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
+        <p className="text-sm font-semibold text-gray-900 line-clamp-2">{displayName(product.name)}</p>
         {product.description && (
           <p className="mt-0.5 text-xs text-gray-500 line-clamp-2 leading-relaxed">
             {product.description.replace(/!\[[^\]]*\]\([^)]+\)\s*/g, '').trim()}
@@ -161,14 +173,14 @@ function ProductCardList({ product, shopSlug, primaryColor, currency }: { produc
   )
 }
 
-function ProductCardGrid({ product, shopSlug, primaryColor, currency }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency }) {
+function ProductCardGrid({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
   const isPortrait = (product as Product & { image_ratio?: string | null }).image_ratio === 'portrait'
   const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
-  const newProduct = isNew(product)
+  const newProduct = showNewBadge && isNew(product)
 
   return (
     <Link href={`/${shopSlug}/produit/${product.id}`} className={`group ${soldOut ? 'opacity-60' : ''}`}>
@@ -199,7 +211,7 @@ function ProductCardGrid({ product, shopSlug, primaryColor, currency }: { produc
           )}
         </div>
         <div className="p-2.5">
-          <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
+          <p className="text-sm font-semibold text-gray-900 line-clamp-2">{displayName(product.name)}</p>
           <p className={`mt-0.5 text-xs font-bold truncate ${soldOut ? 'text-gray-400' : ''}`} style={soldOut ? {} : { color: primaryColor }}>{soldOut ? 'Rupture de stock' : price}</p>
           {lowStock && (
             <p className="text-[10px] text-amber-500 font-medium">Plus que {product.stock_count} dispo</p>
@@ -253,6 +265,15 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
 
   const isFiltered = search.trim() !== '' || activeCategory !== null
 
+  // Badge NOUVEAU : deux conditions cumulatives — produit <14j (isNew) ET part
+  // du catalogue actif "récent" sous le plafond, sinon il ne distingue plus
+  // personne et disparaît pour tout le monde.
+  const showNewBadge = useMemo(() => {
+    if (products.length === 0) return false
+    const newCount = products.filter(isNew).length
+    return newCount / products.length <= NEW_BADGE_MAX_SHARE
+  }, [products])
+
   return (
     <div>
       {/* Produits en vedette */}
@@ -264,7 +285,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
             {featured.map(p => (
-              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
+              <FeaturedCard key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
             ))}
           </div>
         </div>
@@ -363,13 +384,13 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
             {view === 'list' ? (
               <div className="space-y-2.5">
                 {byCategory[category].map(p => (
-                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
+                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 min-[1000px]:grid-cols-4 gap-3">
                 {byCategory[category].map(p => (
-                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} />
+                  <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
                 ))}
               </div>
             )}
