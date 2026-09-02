@@ -2004,7 +2004,7 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 
 **Chantier « habillage visuel desktop » (accueil §69 + fiche produit §70) clos.**
 
-## 71. Carte d'identité desktop — vraie erreur du Lot 2 corrigée, commit `<à compléter>`
+## 71. Carte d'identité desktop — vraie erreur du Lot 2 corrigée, commit `83e62f2`
 
 **Trouvée par comparaison visuelle directe avec la maquette, pas par relecture de code** : l'utilisateur a comparé une capture réelle de `abi-co` desktop à `tekkishop-boutique-accueil.html` et a vu une différence nette — la carte d'identité n'avait plus ni fond, ni bordure, ni ombre, ni chevauchement sur la couverture en desktop.
 
