@@ -1988,7 +1988,7 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 
 **Prochaine étape** : même chantier pour la fiche produit desktop — deux colonnes réelles cette fois (galerie/infos, proportions exactes de la maquette), pas une colonne unique.
 
-## 70. Fiche produit desktop — grille aux proportions maquette, carte Commander collante, commit `<à compléter>`
+## 70. Fiche produit desktop — grille aux proportions maquette, carte Commander collante, commit `7550ba5`
 
 **Contrairement à l'accueil, la fiche produit avait déjà une architecture à deux colonnes desktop** — le travail était un ajustement de proportions (`lg:flex` largeur fixe 480px → `lg:grid grid-cols-[minmax(0,1.05fr)_minmax(400px,0.95fr)] gap-[38px]`, proportions exactes de `tekkishop-boutique-produit.html`), pas une reconstruction.
 
