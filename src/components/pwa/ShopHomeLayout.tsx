@@ -218,7 +218,13 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
         </a>
       </div>
 
-      {/* ── Desktop sticky nav ── */}
+      {/* ── Desktop sticky nav — logo+nom à gauche, recherche+Écrire+Appeler+
+          Commander à droite (maquette). Commander gardé ici alors que la
+          maquette n'en a pas dans son en-tête desktop : déviation assumée,
+          validée par l'utilisateur — c'est le seul CTA global vers /commander
+          sur desktop, sans équivalent dans la maquette (qui ne modélise que
+          la commande par produit). Réseaux sociaux déplacés dans la carte
+          d'identité, cohérent avec le mobile. ── */}
       <div className="hidden lg:flex sticky top-0 z-50 items-center bg-white/95 backdrop-blur-sm border-b border-gray-100">
         <div className="w-full max-w-6xl mx-auto px-12 h-14 flex items-center gap-4">
           <div className="flex items-center gap-2.5 shrink-0">
@@ -229,32 +235,25 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
             {showVerifiedBadge && <VerifiedBadge />}
           </div>
           <div className="flex-1" />
-          {/* Social icons dans le nav desktop */}
-          {socialLinks.instagram && (
-            <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
-               className="text-pink-500 hover:text-pink-600 transition-colors">
-              <InstagramIcon className="h-4 w-4" />
+          <a
+            href="#product-search"
+            aria-label="Rechercher un produit"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 shrink-0 hover:border-gray-300 hover:text-gray-700 transition-colors"
+          >
+            <Search className="h-4 w-4" />
+          </a>
+          {actionButtons.some(b => b.show) && actionButtons.filter(b => b.show).map((btn) => (
+            <a
+              key={btn.label}
+              href={btn.href}
+              target={(btn as { target?: string }).target}
+              rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shrink-0"
+            >
+              <btn.icon className="h-3.5 w-3.5" />
+              {btn.label}
             </a>
-          )}
-          {socialLinks.tiktok && (
-            <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer"
-               className="text-gray-900 hover:text-black transition-colors">
-              <TikTokIcon className="h-4 w-4" />
-            </a>
-          )}
-          {socialLinks.facebook && (
-            <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer"
-               className="text-blue-600 hover:text-blue-700 transition-colors">
-              <FacebookIcon className="h-4 w-4" />
-            </a>
-          )}
-          {waLink && (
-            <a href={waLink} target="_blank" rel="noopener noreferrer"
-               className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors shrink-0">
-              <MessageCircle className="h-4 w-4" />
-              Contact
-            </a>
-          )}
+          ))}
           {previewMode ? (
             <span
               className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 opacity-80 cursor-not-allowed"
@@ -304,14 +303,17 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
         </div>
       )}
 
-      {/* ── Contenu principal ── */}
+      {/* ── Contenu principal — colonne unique à toutes les largeurs, y compris
+          desktop (§ maquette vérifié : tekkishop-boutique-accueil.html reste
+          en colonne unique centrée, max-width 1180px, jusqu'à 1920px testé —
+          aucun panneau latéral séparé). L'ancienne architecture à deux
+          colonnes (sidebar collante + catalogue) est retirée. ── */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
-        <div className="lg:flex lg:gap-8 lg:items-start">
 
-          {/* ── Sidebar desktop / Info mobile ── */}
-          <div className="lg:w-72 lg:shrink-0 lg:sticky lg:top-20">
-
-            {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture sur mobile (§4.3 de la maquette) */}
+            {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture sur mobile (§4.3 de la maquette).
+                Empilement vertical pleine largeur conservé sur desktop pour ce lot — la maquette épingle les réseaux
+                sociaux à droite dès 760px (sous-agencement horizontal séparé des boutons), non répliqué ici,
+                raffinement possible plus tard sur demande explicite. */}
             <div className={`${hasCover ? '-mt-8 mx-4 mb-2 rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 px-4 pt-4' : 'px-4 pt-4'} pb-4 lg:mx-0 lg:mt-0 lg:rounded-none lg:bg-transparent lg:shadow-none lg:border-0 lg:px-0 lg:pt-0 space-y-3`}>
               <div className="flex items-start gap-3">
                 <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 shrink-0">
@@ -408,10 +410,11 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 produit — vérifié qu'un seul Commander existe à tout moment). */}
 
             {/* Bande de faits (§4.4) — défilement horizontal sur mobile (maquette),
-                empilement vertical conservé sur desktop (colonne latérale étroite,
-                une grille 3 colonnes n'y tiendrait pas) — disparaît si rien à montrer */}
+                grille 3 colonnes sur desktop (maquette, ≥1024px) maintenant que
+                le panneau latéral étroit qui l'empêchait a été retiré —
+                disparaît si rien à montrer */}
             {facts.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-4 lg:flex-col lg:overflow-visible lg:px-0">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0 lg:mt-4">
                 {facts.map(f => (
                   <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 shrink-0 w-[220px] lg:w-full">
                     <f.icon className="h-4 w-4 shrink-0 mt-0.5" style={{ color }} />
@@ -423,10 +426,9 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 ))}
               </div>
             )}
-          </div>
 
-          {/* ── Catalogue ── */}
-          <div className="border-t border-gray-100 lg:border-t-0 lg:border-l lg:flex-1 lg:min-w-0">
+          {/* ── Catalogue — même colonne que la carte d'identité, plus de panneau séparé ── */}
+          <div className="border-t border-gray-100 lg:mt-6 lg:pt-6">
             {products.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                 <ShoppingBag className="h-10 w-10 text-gray-300 mb-3" />
@@ -455,7 +457,6 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
             )}
           </div>
 
-        </div>
       </div>
 
       {/* ── Espaceur mobile — réserve la hauteur réelle de la barre collante

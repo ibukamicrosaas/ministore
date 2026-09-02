@@ -455,7 +455,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 min-[1000px]:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {byCategory[category].map(p => (
                   <ProductCardGrid key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} imageRatio={imageRatio} />
                 ))}
