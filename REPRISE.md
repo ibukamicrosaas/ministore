@@ -1918,7 +1918,7 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 
 **Chantier distinct de la refonte boutiques publiques déjà close (§58-60)** — rapprochement visuel vers la maquette de référence, indépendant du système de variantes, déclenché par des captures de production (ABI&CO, L'atelier Sarene) comparées à la maquette. Plan en 4 lots, validé avant tout code : (1) zone de couverture, (2) carte d'identité, (3) bande de faits, (4) catalogue (en-tête + barre supérieure fixe mobile). Un seul fichier touché par ce lot : `src/components/pwa/ShopHomeLayout.tsx`.
 
-**Lot 1 — zone de couverture, commit `<à compléter>`.** Deux changements dans le même bloc :
+**Lot 1 — zone de couverture, commit `d61d937`.** Deux changements dans le même bloc :
 - **Bande de dégradé `--brand`** pour les plans sans la fonctionnalité couverture (Découverte/Business/essai aujourd'hui) — remplace l'absence totale de zone de couverture par un vrai dégradé radial+linéaire (`color-mix`) utilisant la couleur réellement choisie par le marchand, fidèle à la maquette. **Condition pilotée par `getPlanFeatures(shop.plan).coverImage`, jamais par la présence de `cover_image_url`** — décision explicite de l'utilisateur pour éviter qu'un `cover_image_url` orphelin (changement de plan) ne fasse réapparaître une vraie photo sur un plan qui n'y a plus droit, et pour ne pas réouvrir Règle B (Vague 1) : un Pro sans photo uploadée garde l'état actuel (rien affiché), seul le traitement des plans structurellement sans cette fonctionnalité change.
 - **Hauteur réduite** : 104px mobile / 168px desktop (au lieu de `aspect-video`/`256px`), correspondant aux proportions exactes de la maquette, appliqué aux deux breakpoints (pas seulement mobile).
 
