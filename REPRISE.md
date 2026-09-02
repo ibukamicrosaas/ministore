@@ -1969,7 +1969,7 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 
 **Chantier « habillage visuel page d'accueil boutique vers `tekkishop-boutique-accueil.html` » (§68, 5 lots) clos.**
 
-## 69. Page d'accueil boutique — desktop en colonne unique, commit `<à compléter>`
+## 69. Page d'accueil boutique — desktop en colonne unique, commit `9073a61`
 
 **Vérification faite avant plan, pas assumée** : signalement d'un écart avec la maquette sur `viensonsconnait` desktop, remonté par l'utilisateur. Chargé en direct sur `www.tekki.shop` à 1280px : le Lot 2 était bien déployé et correct (logo à côté du nom, fond transparent, aucune ombre). L'écart signalé venait d'un cache de build local (`.next`) périmé chez l'utilisateur, pas d'une régression — confirmé après arrêt du serveur, suppression du cache, redémarrage propre.
 
