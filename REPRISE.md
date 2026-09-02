@@ -2016,7 +2016,7 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 
 **Leçon retenue pour la suite** : la lecture du CSS de la maquette au moment du Lot 2 n'avait vérifié que les ajouts du `@media(min-width:760px)`, pas confirmé l'absence de toute règle de base contradictoire — d'où l'erreur. Une comparaison visuelle directe (capture réelle vs maquette réellement rendue) reste nécessaire même après une lecture de CSS qui semblait suffisante.
 
-## 72. Carte d'identité desktop — 5 derniers écarts visuels, commit `<à compléter>`
+## 72. Carte d'identité desktop — 5 derniers écarts visuels, commit `79f3eaf`
 
 **Dernier tour de comparaison visuelle directe** (capture réelle vs maquette) avant de considérer le chantier vraiment clos. Cinq écarts remontés par l'utilisateur, tous vérifiés avant correction :
 
