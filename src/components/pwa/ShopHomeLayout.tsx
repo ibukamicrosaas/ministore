@@ -285,33 +285,15 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
           {/* ── Sidebar desktop / Info mobile ── */}
           <div className="lg:w-72 lg:shrink-0 lg:sticky lg:top-20">
 
-            {/* Logo desktop (dans la sidebar) */}
-            <div className="hidden lg:flex lg:justify-start lg:mb-4">
-              <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100">
-                <ShopLogo shop={shop} size="md" />
-              </div>
-            </div>
-
-            {/* Logo mobile en-tête — seulement si pas de couverture (sinon il vit dans la carte d'identité ci-dessous, qui chevauche la couverture) */}
-            {!hasCover && (
-              <div className="px-4 pt-4 lg:hidden">
-                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100">
+            {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture sur mobile (§4.3 de la maquette) */}
+            <div className={`${hasCover ? '-mt-8 mx-4 mb-2 rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 px-4 pt-4' : 'px-4 pt-4'} pb-4 lg:mx-0 lg:mt-0 lg:rounded-none lg:bg-transparent lg:shadow-none lg:border-0 lg:px-0 lg:pt-0 space-y-3`}>
+              <div className="flex items-start gap-3">
+                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 shrink-0">
                   <ShopLogo shop={shop} size="md" />
                 </div>
-              </div>
-            )}
-
-            {/* Infos principales — carte qui chevauche la couverture sur mobile (§4.3 de la maquette) */}
-            <div className={`${hasCover ? '-mt-8 mx-4 mb-2 rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 px-4 pt-4' : 'px-4 pt-3'} pb-4 lg:mx-0 lg:mt-0 lg:rounded-none lg:bg-transparent lg:shadow-none lg:border-0 lg:px-0 lg:pt-0 space-y-2.5`}>
-              {hasCover && (
-                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 lg:hidden mb-2">
-                  <ShopLogo shop={shop} size="md" />
-                </div>
-              )}
-              <div className="flex items-start justify-between gap-2 lg:block lg:space-y-1">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 pt-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
+                    <h1 className="text-xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
                     {showVerifiedBadge && <VerifiedBadge />}
                   </div>
                   {contextLine && (
@@ -319,9 +301,6 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                       {!businessCategory && <MapPin className="h-3.5 w-3.5 shrink-0" />}
                       {contextLine}
                     </p>
-                  )}
-                  {shop.description && (
-                    <p className="text-sm text-gray-600 leading-relaxed mt-1">{shop.description}</p>
                   )}
                 </div>
                 {/* ShareButton — seulement si pas de couverture (sinon il est déjà dans la couverture) */}
@@ -335,9 +314,54 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 )}
               </div>
 
+              {shop.description && (
+                <p className="text-sm text-gray-600 leading-relaxed">{shop.description}</p>
+              )}
+
+              {actionButtons.some(b => b.show) && (
+                <div className="grid grid-cols-2 gap-2">
+                  {actionButtons.filter(b => b.show).map((btn) => (
+                    <a
+                      key={btn.label}
+                      href={btn.href}
+                      target={(btn as { target?: string }).target}
+                      rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <btn.icon className="h-4 w-4" />
+                      {btn.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* Réseaux sociaux — icônes seules, pas de libellé (§ maquette) */}
+              {hasSocial && (
+                <div className="flex gap-2">
+                  {socialLinks.instagram && (
+                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <InstagramIcon className="h-[18px] w-[18px]" />
+                    </a>
+                  )}
+                  {socialLinks.tiktok && (
+                    <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
+                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <TikTokIcon className="h-[18px] w-[18px]" />
+                    </a>
+                  )}
+                  {socialLinks.facebook && (
+                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                      <FacebookIcon className="h-[18px] w-[18px]" />
+                    </a>
+                  )}
+                </div>
+              )}
+
               {/* Mentions du marchand — données libres, tous plans */}
               {badges.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                <div className="flex flex-wrap gap-1.5">
                   {badges.map((badge, idx) => (
                     <span
                       key={idx}
@@ -358,51 +382,8 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               )}
             </div>
 
-            {/* Réseaux sociaux + boutons d'action — tous plans */}
-            <div className="px-4 pb-4 lg:px-0 space-y-3 border-t border-gray-100 pt-3">
-              {hasSocial && (
-                <div className="flex flex-wrap gap-2">
-                  {socialLinks.instagram && (
-                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-pink-100 px-3 py-2 text-xs font-semibold text-pink-600 hover:from-purple-100 hover:to-pink-100 transition-colors">
-                      <InstagramIcon className="h-4 w-4" />
-                      Instagram
-                    </a>
-                  )}
-                  {socialLinks.tiktok && (
-                    <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black transition-colors">
-                      <TikTokIcon className="h-4 w-4" />
-                      TikTok
-                    </a>
-                  )}
-                  {socialLinks.facebook && (
-                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
-                      <FacebookIcon className="h-4 w-4" />
-                      Facebook
-                    </a>
-                  )}
-                </div>
-              )}
-              {actionButtons.some(b => b.show) && (
-                <div className="grid grid-cols-2 gap-2">
-                  {actionButtons.filter(b => b.show).map((btn) => (
-                    <a
-                      key={btn.label}
-                      href={btn.href}
-                      target={(btn as { target?: string }).target}
-                      rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <btn.icon className="h-4 w-4" />
-                      {btn.label}
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {/* Commander — visible sur mobile ET desktop, un seul rendu */}
+            {/* Commander — visible sur mobile ET desktop, un seul rendu */}
+            <div className="px-4 pb-4 lg:px-0">
               {previewMode ? (
                 <span
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white opacity-80 cursor-not-allowed"

@@ -1925,3 +1925,11 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 **Testé en conditions réelles**, deux largeurs de viewport (390px et 1280px) sur trois boutiques réelles : ABI&CO (Pro, photo réelle inchangée, hauteurs correctes) ; Chez Diarra (Découverte, `#0EA5E9`) et Elischa boutique (Business, `#7C3AED`) — dégradé confirmé dynamique aux deux couleurs de marque réelles, pas de couleur codée en dur. `tsc`, build Turbopack, build webpack tous propres.
 
 **Prochaine étape** : Lot 2 (carte d'identité — logo à côté du nom/catégorie, reclassement description → boutons → réseaux sociaux, fusion des blocs mobile/desktop dupliqués).
+
+**Lot 2 — carte d'identité, commit `<à compléter>`.** Les deux blocs logo dupliqués (un pour mobile, un pour desktop, historiquement séparés) fusionnés en un seul, logo à côté du nom/catégorie (`flex items-start gap-3`) au lieu d'empilé au-dessus, appliqué aux deux breakpoints. Reclassement dans cet ordre : description → boutons Écrire/Appeler → réseaux sociaux (icônes seules, sans libellé texte, 40×40) → mentions du marchand (badges) → horaires. Le bouton Commander garde sa position en fin de colonne, hors de la carte d'identité elle-même.
+
+**Style des icônes sociales — précision demandée par l'utilisateur avant validation** : approximation Tailwind (`rounded-xl`, `border-gray-200`, `text-gray-500`) inspirée de la classe `.social` de la maquette mais pas une reproduction pixel-près (maquette : rayon 9px et hex précis `#E4E8EC`/`#5A6873`, contre 12px et palette Tailwind ici) — écart mineur, gardé tel quel sur décision explicite de l'utilisateur après clarification.
+
+**Testé en conditions réelles**, mobile 390px et desktop 1280px : ABI&CO (Pro) — logo confirmé dans la même ligne que le nom aux deux largeurs, 3 icônes sociales sans libellé, ordre vérifié par position Y (description < boutons < réseaux, correct). Chez Diarra (Découverte, sans réseaux sociaux configurés) — logo à côté du nom confirmé, section réseaux absente proprement (donnée manquante), pas de bloc cassé. `tsc`, build Turbopack, build webpack tous propres.
+
+**Prochaine étape** : Lot 3 (bande de faits — défilement horizontal sur mobile, empilement vertical conservé sur desktop dans la colonne latérale étroite).
