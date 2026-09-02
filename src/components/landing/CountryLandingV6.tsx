@@ -16,19 +16,12 @@ import type { CountryConfig } from '@/data/country-configs'
 export async function CountryLandingV6({ config: cfg }: { config: CountryConfig }) {
   const admin = createAdminClient()
 
-  const [{ count: shopsCount }, { data: shopsData }] = await Promise.all([
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', cfg.code),
-    admin
-      .from('shops')
-      .select('id, name, slug')
-      .eq('country', cfg.code)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(10),
-  ])
+  const { count: shopsCount } = await admin
+    .from('shops')
+    .select('id', { count: 'exact', head: true })
+    .eq('country', cfg.code)
 
   const count = shopsCount ?? 0
-  const shops = shopsData ?? []
   const city = cfg.orderFlow.address.split(',').pop()?.trim() ?? cfg.name
 
   return (
@@ -561,12 +554,6 @@ export async function CountryLandingV6({ config: cfg }: { config: CountryConfig 
             eyebrow={cfg.testimonialSection.eyebrow}
             headline={cfg.testimonialSection.headline}
           />
-
-          {shops.length > 0 && (
-            <div className="merchants reveal">
-              {shops.map(s => <span key={s.id}>{s.name}</span>)}
-            </div>
-          )}
 
           <div className="stats-bar reveal">
             {cfg.testimonialSection.stats.map((s, i) => (

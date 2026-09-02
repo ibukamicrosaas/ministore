@@ -1891,3 +1891,15 @@ Aucune des deux n'est un chantier ouvert — simples pointeurs préservés, à r
 **Testé en conditions réelles avec de vraies boutiques** (ID temporaires utilisés uniquement pour le test, jamais commités — remis à `shopIds={[]}` avant le diff final) : une boutique avec logo réel, une sans logo (repli initiales confirmé, "ÉL" pour "ÉLITE DIGITAL FREELANCE"), une inactive — **la boutique inactive disparaît silencieusement du rendu**, les deux actives s'affichent avec le bon nom, la bonne catégorie et le bon lien. Testé aussi l'état final (`shopIds=[]`) sur `/` et `/togo` : aucune carte, aucun texte fictif résiduel, bande marchands et stats-bar toujours présentes. `tsc --noEmit`, build Turbopack et build webpack tous propres.
 
 **En attente** : les listes d'ID réelles par page (`/`, `/benin`, `/burkina-faso`, `/mali`, `/togo`), à fournir séparément par l'utilisateur.
+
+## 66. Bande « marchands » — mesurée en détail, retirée des 4 pages pays, 2026-09-02
+
+**Mesuré en direct avant toute décision** (lecture seule, requêtes exactes du code, pas devinées) :
+- **`/` (racine)** : filtre `plan IN ('pro','business')` — 15 boutiques éligibles, 8 affichées, Pro puis Business. Filtre payant déjà en place.
+- **Les 4 pages pays** (`CountryLandingV6.tsx`) : **aucun filtre de plan**, juste `country = code AND is_active = true`. Mesuré : Bénin 8 essai + 2 Découverte sur 10 affichées ; Burkina Faso 10 essai sur 10 ; Mali 7 essai + 1 Découverte sur 8 ; Togo 9 essai + 1 Découverte sur 10. **Zéro boutique Pro/Business sur les 4 pays** — n'importe quelle boutique active, y compris créée le jour même, sans engagement payant, pouvait apparaître.
+
+**Décision de l'utilisateur** : risque confirmé actif, pas théorique. Bande retirée entièrement des 4 pages pays (requête `shopsData`/`shops` + rendu `.merchants` supprimés de `CountryLandingV6.tsx`, la requête de comptage `shopsCount` pour le hero conservée) — devenue redondante une fois la vitrine `RealShopsShowcase` en place. **Laissée telle quelle sur `/`** pour l'instant (filtre payant déjà présent, moins urgent) — à revoir séparément plus tard.
+
+**Testé en conditions réelles** : `/` conserve `.merchants` + `.stats-bar` ; les 4 pages pays n'ont plus que `.stats-bar`, `.merchants` absent. `tsc --noEmit`, build Turbopack et build webpack tous propres.
+
+**Suite** : listes de candidats par page (5 pages, triées Pro > Business > Découverte, jusqu'à 6-8 par page) préparées séparément pour que l'utilisateur choisisse — pas encore de décision finale, pas d'ID committé.
