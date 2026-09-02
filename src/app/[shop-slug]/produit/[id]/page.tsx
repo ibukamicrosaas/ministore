@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package, Truck, Wallet } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package, Truck, Wallet, MessageCircle } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
 import { PixelViewContent } from './ProductPixelEvents'
@@ -269,7 +269,9 @@ export default async function ProductDetailPage({ params }: Props) {
         price={product.price}
       />
 
-      {/* ── Desktop sticky nav ── */}
+      {/* ── Desktop sticky nav — Écrire à la boutique (maquette), pas Commander :
+          Commander reste accessible en permanence via la carte collante dans
+          la colonne galerie ci-dessous, plus besoin de le dupliquer ici. ── */}
       <div className="hidden lg:flex sticky top-0 z-50 items-center bg-white/95 backdrop-blur-sm border-b border-gray-100">
         <div className="w-full max-w-6xl mx-auto px-12 h-14 flex items-center gap-2">
           <Link href={basePath || '/'} className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
@@ -285,23 +287,28 @@ export default async function ProductDetailPage({ params }: Props) {
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-gray-400 shrink-0" />
           <span className="text-sm text-gray-500 truncate flex-1">{product.name}</span>
-          <a
-            href={`${basePath}/commander?product=${product.id}`}
-            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shrink-0 transition-opacity hover:opacity-90"
-            style={{ backgroundColor: color }}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            Commander
-          </a>
+          {shop.phone_whatsapp && (
+            <a
+              href={`https://wa.me/${shop.phone_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ce produit : ${product.name} — ${publicUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shrink-0 hover:bg-gray-50 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Écrire à {shop.name}
+            </a>
+          )}
         </div>
       </div>
 
-      {/* ── Contenu : 2 colonnes sur desktop ── */}
+      {/* ── Contenu : 2 colonnes sur desktop, proportions de la maquette
+          (1.05fr / min 400px, 0.95fr, gap 38px) — au lieu d'une largeur
+          fixe pour la galerie. ── */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
-        <div className="lg:flex lg:gap-10 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(400px,0.95fr)] lg:gap-[38px] lg:items-start">
 
           {/* ── Colonne gauche : galerie ── */}
-          <div className="lg:w-[480px] lg:shrink-0 lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-20">
             <div className="relative">
               <ProductGallery
                 photos={photos}
@@ -329,10 +336,28 @@ export default async function ProductDetailPage({ params }: Props) {
                 />
               </div>
             </div>
+
+            {/* Carte Commander collante desktop — même état que la barre
+                mobile (ProductStickyCta), voir ProductStickyCtaManager.tsx.
+                Vit dans cette colonne sticky : reste visible en permanence
+                une fois affichée, contrairement au bouton inline qui défile
+                avec la colonne infos. */}
+            {!soldOut && (
+              <ProductStickyCta
+                variant="desktop"
+                href={`${basePath}/commander?product=${product.id}`}
+                color={color}
+                productId={product.id}
+                productName={product.name}
+                price={product.price}
+                displayPrice={displayPrice}
+                isDigital={isDigital}
+              />
+            )}
           </div>
 
           {/* ── Colonne droite : infos produit ── */}
-          <div className="bg-white px-5 pt-5 pb-24 lg:flex-1 lg:px-0 lg:pt-2 lg:pb-12 lg:min-w-0">
+          <div className="bg-white px-5 pt-5 pb-24 lg:px-0 lg:pt-2 lg:pb-12 lg:min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 leading-snug">{displayName(product.name)}</h1>
 
         {/* Badge produit digital */}

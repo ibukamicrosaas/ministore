@@ -13,12 +13,19 @@ interface Props {
   price: number
   displayPrice: string
   isDigital?: boolean
+  /** 'mobile' (défaut) : barre fixe pleine largeur en bas d'écran, lg:hidden.
+   * 'desktop' : carte compacte destinée à la colonne galerie sticky (fiche
+   * produit desktop, voir REPRISE.md §70) — même état, mêmes événements,
+   * seul le rendu change. Sans elle, Commander n'était accessible sur
+   * desktop que via le bouton inline, perdu dès qu'on scrolle la colonne
+   * infos au-delà — contrairement à mobile qui a toujours eu son repli. */
+  variant?: 'mobile' | 'desktop'
 }
 
 type VariantEvent = { label: string | null; price: number; href: string; disabled: boolean }
 
 /** Bouton sticky — n'apparaît que quand le bouton inline (VariantSelectorCta) est hors du viewport */
-export function ProductStickyCta({ href: initialHref, color, productId, productName, price, displayPrice, isDigital = false }: Props) {
+export function ProductStickyCta({ href: initialHref, color, productId, productName, price, displayPrice, isDigital = false, variant = 'mobile' }: Props) {
   // Un seul libellé d'action de bout en bout (§6.6 de SPEC-v2) — même mot que
   // le bouton inline (VariantSelectorCta) et la barre haute : « Je le prends » disparaît.
   const defaultLabel = isDigital ? 'Acheter' : 'Commander'
@@ -74,6 +81,30 @@ export function ProductStickyCta({ href: initialHref, color, productId, productN
       currency:     'XOF',
     })
     router.push(ctaHref)
+  }
+
+  // Carte compacte desktop — même état/événements que la barre mobile,
+  // rendu différent. Pas de spacer : elle vit dans le flux normal de la
+  // colonne galerie sticky, pas en position fixed.
+  if (variant === 'desktop') {
+    return (
+      <div
+        aria-hidden={!visible}
+        className={`hidden lg:block mt-4 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={disabled}
+          tabIndex={visible ? undefined : -1}
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: color }}
+        >
+          <ShoppingBag className="h-4 w-4" />
+          {ctaLabel}
+        </button>
+      </div>
+    )
   }
 
   return (
