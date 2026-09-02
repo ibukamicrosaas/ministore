@@ -2015,3 +2015,17 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 **Testé en conditions réelles** : desktop 1280px — carte confirmée blanche (`rgb(255,255,255)`), bordée (1px), ombrée, rayon 16px, nom à 30px exact, réseaux sociaux visibles et positionnés au bord droit de la carte (dernière icône à 989px, bord de carte à 1150px), version mobile des réseaux correctement masquée. Mobile 390px — nom à 24px exact, carte toujours blanche/ombrée, réseaux toujours empilés avec le reste, rien d'autre changé. Capture desktop comparée visuellement à la maquette, correspondance confirmée. `tsc`, build Turbopack, build webpack tous propres.
 
 **Leçon retenue pour la suite** : la lecture du CSS de la maquette au moment du Lot 2 n'avait vérifié que les ajouts du `@media(min-width:760px)`, pas confirmé l'absence de toute règle de base contradictoire — d'où l'erreur. Une comparaison visuelle directe (capture réelle vs maquette réellement rendue) reste nécessaire même après une lecture de CSS qui semblait suffisante.
+
+## 72. Carte d'identité desktop — 5 derniers écarts visuels, commit `<à compléter>`
+
+**Dernier tour de comparaison visuelle directe** (capture réelle vs maquette) avant de considérer le chantier vraiment clos. Cinq écarts remontés par l'utilisateur, tous vérifiés avant correction :
+
+1. **Chevauchement quasi invisible malgré le `-mt-8` du §71** — cause réelle trouvée, pas une valeur CSS à retoucher : le conteneur parent (`lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8`) avait un `lg:py-8` (32px de padding-top) qui annulait exactement le `-mt-8` (32px) de la carte juste en dessous — les deux se neutralisaient très précisément, chevauchement net ≈0px en pratique. Corrigé en `lg:pb-8` seul (padding-top retiré du conteneur, rien touché à la carte elle-même).
+2. **Boutons Écrire/Appeler étirés en pleine largeur** (`grid grid-cols-2`) au lieu d'une largeur au contenu comme la maquette (`.ident__actions{display:flex}` avec des `.btn--sm` de taille fixe) — passés à `lg:flex lg:flex-wrap` sur desktop uniquement, mobile non touché (pas signalé comme faux, resté au comportement existant par prudence).
+3. **Description sans largeur maximale** — la maquette contraint `.ident__bio` à `max-width:62ch`, jamais repris. Ajouté `lg:max-w-[62ch]`.
+4. **Badge vérifié trop grand** — `VerifiedBadge` rendu configurable (`size` prop, défaut 20px inchangé partout ailleurs), 19px appliqué spécifiquement dans la carte d'identité (valeur exacte de l'attribut inline de la maquette pour ce contexte précis).
+5. **Cartes de faits en gris uni sans bordure** (`bg-gray-50`) au lieu de blanc/bordé comme `.fact` de la maquette (`background:var(--paper);border:1px solid var(--line)`) — corrigé en `bg-white border border-gray-100`, appliqué aux deux largeurs (la règle maquette est elle-même inconditionnelle).
+
+**Testé en conditions réelles** : desktop 1280px — chevauchement mesuré à 32px exact (contre ~0px avant), badge à 19px exact, boutons à 104px/92px (au contenu), description contrainte à 547px (62ch), cartes de faits confirmées blanches/bordées (1px). Capture desktop comparée visuellement à la maquette, correspondance confirmée bien plus proche. Mobile 390px — boutons toujours à 158px/158px (grid-cols-2 inchangé, non touché comme prévu), cartes de faits blanches/bordées aussi (bonus cohérent, la règle maquette ne distingue pas par largeur). `tsc`, build Turbopack, build webpack tous propres.
+
+**Chantier « habillage visuel desktop » (accueil §69, fiche produit §70, corrections carte d'identité §71-72) considéré clos.**

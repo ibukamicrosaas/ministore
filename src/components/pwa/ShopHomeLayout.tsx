@@ -36,9 +36,9 @@ interface Props {
 }
 
 // Badge "compte vérifié" bleu, style Instagram/X
-function VerifiedBadge() {
+function VerifiedBadge({ size = 20 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none">
+    <svg viewBox="0 0 24 24" className="shrink-0" style={{ width: size, height: size }} fill="none">
       <circle cx="12" cy="12" r="12" fill="#1D9BF0" />
       <path
         d="M10.5 17L5.5 12L6.92 10.58L10.5 14.17L17.08 7.58L18.5 9L10.5 17Z"
@@ -315,7 +315,11 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
           en colonne unique centrée, max-width 1180px, jusqu'à 1920px testé —
           aucun panneau latéral séparé). L'ancienne architecture à deux
           colonnes (sidebar collante + catalogue) est retirée. ── */}
-      <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
+      {/* lg:pb-8 seulement, pas lg:pt-8 : un padding-top ici annulerait le
+          -mt-8 de la carte d'identité juste en dessous (les deux se
+          neutralisaient exactement, chevauchement invisible en pratique —
+          trouvé par comparaison visuelle avec la maquette, pas deviné). */}
+      <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:pb-8">
 
             {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture (§4.3 de la
                 maquette). Correction du Lot 2 : la maquette garde fond/bordure/ombre/chevauchement
@@ -333,7 +337,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                   <div className="min-w-0 flex-1 pt-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
-                      {showVerifiedBadge && <VerifiedBadge />}
+                      {showVerifiedBadge && <VerifiedBadge size={19} />}
                     </div>
                     {contextLine && (
                       <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
@@ -354,18 +358,18 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                 </div>
 
                 {shop.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed">{shop.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed lg:max-w-[62ch]">{shop.description}</p>
                 )}
 
                 {actionButtons.some(b => b.show) && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap">
                     {actionButtons.filter(b => b.show).map((btn) => (
                       <a
                         key={btn.label}
                         href={btn.href}
                         target={(btn as { target?: string }).target}
                         rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors lg:px-4"
                       >
                         <btn.icon className="h-4 w-4" />
                         {btn.label}
@@ -430,7 +434,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
             {facts.length > 0 && (
               <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0 lg:mt-4">
                 {facts.map(f => (
-                  <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 shrink-0 w-[220px] lg:w-full">
+                  <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-white border border-gray-100 px-3 py-2.5 shrink-0 w-[220px] lg:w-full">
                     <f.icon className="h-4 w-4 shrink-0 mt-0.5" style={{ color }} />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-700">{f.title}</p>
