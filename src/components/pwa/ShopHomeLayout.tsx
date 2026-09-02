@@ -99,6 +99,13 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
   const openingHours     = shop.opening_hours ?? null
   const whatsappNumber   = shop.phone_whatsapp?.replace(/\D/g, '')
   const hasSocial        = Object.values(socialLinks).some(Boolean)
+  // Rendue deux fois (mobile empilé, desktop épinglé à droite) — une seule
+  // source pour éviter de dupliquer les trois blocs à la main.
+  const socialLinksList = [
+    socialLinks.instagram && { key: 'instagram', href: socialLinks.instagram, label: 'Instagram', Icon: InstagramIcon },
+    socialLinks.tiktok    && { key: 'tiktok',     href: socialLinks.tiktok,    label: 'TikTok',     Icon: TikTokIcon },
+    socialLinks.facebook  && { key: 'facebook',   href: socialLinks.facebook,  label: 'Facebook',   Icon: FacebookIcon },
+  ].filter((s): s is { key: string; href: string; label: string; Icon: typeof InstagramIcon } => Boolean(s))
   const color            = shop.primary_color ?? '#0EA5E9'
   const currency         = (shop as unknown as { currency?: string }).currency as ShopCurrency | undefined
   const cityOrAddress    = shop.city?.trim() || shop.address?.trim() || null
@@ -310,93 +317,100 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
           colonnes (sidebar collante + catalogue) est retirée. ── */}
       <div className="lg:max-w-6xl lg:mx-auto lg:px-12 lg:py-8">
 
-            {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture sur mobile (§4.3 de la maquette).
-                Empilement vertical pleine largeur conservé sur desktop pour ce lot — la maquette épingle les réseaux
-                sociaux à droite dès 760px (sous-agencement horizontal séparé des boutons), non répliqué ici,
-                raffinement possible plus tard sur demande explicite. */}
-            <div className={`${hasCover ? '-mt-8 mx-4 mb-2 rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 px-4 pt-4' : 'px-4 pt-4'} pb-4 lg:mx-0 lg:mt-0 lg:rounded-none lg:bg-transparent lg:shadow-none lg:border-0 lg:px-0 lg:pt-0 space-y-3`}>
-              <div className="flex items-start gap-3">
-                <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 shrink-0">
-                  <ShopLogo shop={shop} size="md" />
-                </div>
-                <div className="min-w-0 flex-1 pt-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h1 className="text-xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
-                    {showVerifiedBadge && <VerifiedBadge />}
+            {/* Carte d'identité — logo à côté du nom/catégorie, chevauche la couverture (§4.3 de la
+                maquette). Correction du Lot 2 : la maquette garde fond/bordure/ombre/chevauchement
+                à TOUTES les largeurs (.ident__card et .ident n'ont aucune remise à zéro desktop dans
+                son CSS) — seule la disposition interne change (flex horizontal dès 760px, réseaux
+                sociaux épinglés à droite via une place à part, pas empilés avec le reste). Le Lot 2
+                avait ajouté à tort des resets lg:bg-transparent/lg:shadow-none/lg:border-0/lg:mt-0,
+                jamais dans la maquette — retirés ici. */}
+            <div className={`${hasCover ? '-mt-8 mx-4 mb-2' : 'mx-4 mt-4 mb-2'} rounded-2xl bg-white shadow-lg border border-gray-100 relative z-10 p-4 lg:p-6 lg:flex lg:gap-6 lg:items-start space-y-3 lg:space-y-0`}>
+              <div className="lg:flex-1 lg:min-w-0 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center ring-1 ring-gray-100 shrink-0">
+                    <ShopLogo shop={shop} size="md" />
                   </div>
-                  {contextLine && (
-                    <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
-                      {!businessCategory && <MapPin className="h-3.5 w-3.5 shrink-0" />}
-                      {contextLine}
-                    </p>
+                  <div className="min-w-0 flex-1 pt-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">{shop.name}</h1>
+                      {showVerifiedBadge && <VerifiedBadge />}
+                    </div>
+                    {contextLine && (
+                      <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
+                        {!businessCategory && <MapPin className="h-3.5 w-3.5 shrink-0" />}
+                        {contextLine}
+                      </p>
+                    )}
+                  </div>
+                  {/* ShareButton — seulement si pas de couverture (sinon il est déjà dans la couverture) */}
+                  {!hasCover && (
+                    <ShareButton
+                      url={`${APP_URL}/${shopSlug}`}
+                      title={shop.name}
+                      text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
+                      primaryColor={color}
+                    />
                   )}
                 </div>
-                {/* ShareButton — seulement si pas de couverture (sinon il est déjà dans la couverture) */}
-                {!hasCover && (
-                  <ShareButton
-                    url={`${APP_URL}/${shopSlug}`}
-                    title={shop.name}
-                    text={shop.description ?? `Découvrez ${shop.name} — commandez en ligne`}
-                    primaryColor={color}
-                  />
+
+                {shop.description && (
+                  <p className="text-sm text-gray-600 leading-relaxed">{shop.description}</p>
+                )}
+
+                {actionButtons.some(b => b.show) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {actionButtons.filter(b => b.show).map((btn) => (
+                      <a
+                        key={btn.label}
+                        href={btn.href}
+                        target={(btn as { target?: string }).target}
+                        rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <btn.icon className="h-4 w-4" />
+                        {btn.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {/* Réseaux sociaux — mobile seulement ici (empilés avec le reste comme
+                    avant) ; version desktop épinglée à droite plus bas, hors de cette
+                    colonne qui grandit (maquette : .ident__socials, margin-left:auto). */}
+                {hasSocial && (
+                  <div className="flex gap-2 lg:hidden">
+                    {socialLinksList.map(({ key, href, label, Icon }) => (
+                      <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+                        <Icon className="h-[18px] w-[18px]" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mentions du marchand — données libres, tous plans */}
+                {badges.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {badges.map((badge, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {shop.description && (
-                <p className="text-sm text-gray-600 leading-relaxed">{shop.description}</p>
-              )}
-
-              {actionButtons.some(b => b.show) && (
-                <div className="grid grid-cols-2 gap-2">
-                  {actionButtons.filter(b => b.show).map((btn) => (
-                    <a
-                      key={btn.label}
-                      href={btn.href}
-                      target={(btn as { target?: string }).target}
-                      rel={(btn as { target?: string }).target === '_blank' ? 'noopener noreferrer' : undefined}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <btn.icon className="h-4 w-4" />
-                      {btn.label}
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {/* Réseaux sociaux — icônes seules, pas de libellé (§ maquette) */}
+              {/* Réseaux sociaux — desktop uniquement, épinglés à droite de la carte (maquette) */}
               {hasSocial && (
-                <div className="flex gap-2">
-                  {socialLinks.instagram && (
-                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+                <div className="hidden lg:flex gap-2 shrink-0">
+                  {socialLinksList.map(({ key, href, label, Icon }) => (
+                    <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
-                      <InstagramIcon className="h-[18px] w-[18px]" />
+                      <Icon className="h-[18px] w-[18px]" />
                     </a>
-                  )}
-                  {socialLinks.tiktok && (
-                    <a href={socialLinks.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
-                      <TikTokIcon className="h-[18px] w-[18px]" />
-                    </a>
-                  )}
-                  {socialLinks.facebook && (
-                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-                       className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
-                      <FacebookIcon className="h-[18px] w-[18px]" />
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* Mentions du marchand — données libres, tous plans */}
-              {badges.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {badges.map((badge, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600"
-                    >
-                      {badge}
-                    </span>
                   ))}
                 </div>
               )}
