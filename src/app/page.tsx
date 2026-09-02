@@ -615,7 +615,12 @@ export default async function LandingPage() {
       <section className="section testi-sec">
         <div className="container">
           <RealShopsShowcase
-            shopIds={[]}
+            shopIds={[
+              'e98a25ce-8258-41f6-93c6-6fae9656d303', // abi-co
+              '12d6a93e-cf8a-41b5-aad0-4256a11725e7', // viensonsconnait
+              '0b08d0ab-038d-434a-83ff-96f422ce6855', // brico-shop
+              '139ca97a-7f35-40aa-873f-da15d649629d', // lateliersarene — encore en essai, exception délibérée (passage au plan payant prévu)
+            ]}
             eyebrow="Ils l'ont fait avant toi"
             headline={<>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></>}
           />

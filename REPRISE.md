@@ -1903,3 +1903,13 @@ Aucune des deux n'est un chantier ouvert — simples pointeurs préservés, à r
 **Testé en conditions réelles** : `/` conserve `.merchants` + `.stats-bar` ; les 4 pages pays n'ont plus que `.stats-bar`, `.merchants` absent. `tsc --noEmit`, build Turbopack et build webpack tous propres.
 
 **Suite** : listes de candidats par page (5 pages, triées Pro > Business > Découverte, jusqu'à 6-8 par page) préparées séparément pour que l'utilisateur choisisse — pas encore de décision finale, pas d'ID committé.
+
+## 67. Vitrine de vraies boutiques — sélection finale appliquée, 2026-09-02
+
+**Décision de l'utilisateur** : mêmes 4 boutiques partout (`/`, `/benin`, `/burkina-faso`, `/mali`, `/togo`), pas de liste par pays malgré la structure qui le permettait — `abi-co`, `viensonsconnait`, `brico-shop`, `lateliersarene`. **Exception délibérée** : `lateliersarene` est encore en plan `trial` (essai, non payant) — la propriétaire doit passer au plan payant sous peu, décision assumée explicitement par l'utilisateur, pas une erreur de filtre.
+
+ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs fournis, câblés dans les deux points de montage (`src/app/page.tsx`, `src/components/landing/CountryLandingV6.tsx` — un seul tableau chacun, partagé par les 4 pages pays via le composant commun).
+
+**Testé en conditions réelles sur les 5 pages** : les 4 cartes s'affichent identiquement partout, dans l'ordre exact, chaque lien pointe vers la bonne boutique. Bande marchands présente sur `/` uniquement (décision antérieure, §66), absente des 4 pages pays. `tsc`, build Turbopack, build webpack tous propres.
+
+**Effet de bord positif, non prévu** : la recherche de candidats pour cette vitrine a fait remonter un cas de modération distinct (boutique "Campus France 🇫🇷", ex-`roller.shop`) — usurpation probable du nom de l'organisme officiel français, signalé à l'utilisateur, qui l'a documenté lui-même dans `CROISSANCE-MODERATION-A-CREUSER.md` et engagé une vérification directe. Fichier non touché par cette session au-delà du signalement initial.
