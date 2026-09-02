@@ -97,6 +97,16 @@
   border-radius: 2px;
 }
 
+/* Utilitaire déjà référencé à 3 endroits (ProductGrid, ProductGallery, orders/page)
+   sans jamais avoir été défini — sans effet réel jusqu'ici. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Focus visible pour l'accessibilité */
 *:focus-visible {
   outline: 2px solid var(--color-primary);

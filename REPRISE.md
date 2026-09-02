@@ -1933,3 +1933,11 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 **Testé en conditions réelles**, mobile 390px et desktop 1280px : ABI&CO (Pro) — logo confirmé dans la même ligne que le nom aux deux largeurs, 3 icônes sociales sans libellé, ordre vérifié par position Y (description < boutons < réseaux, correct). Chez Diarra (Découverte, sans réseaux sociaux configurés) — logo à côté du nom confirmé, section réseaux absente proprement (donnée manquante), pas de bloc cassé. `tsc`, build Turbopack, build webpack tous propres.
 
 **Prochaine étape** : Lot 3 (bande de faits — défilement horizontal sur mobile, empilement vertical conservé sur desktop dans la colonne latérale étroite).
+
+**Lot 3 — bande de faits, commit `<à compléter>`.** Défilement horizontal sur mobile (`flex overflow-x-auto`, cartes largeur fixe 220px), empilement vertical conservé sur desktop (`lg:flex-col lg:overflow-visible`, cartes pleine largeur) — la colonne latérale desktop (288px) ne peut pas accueillir une grille 3 colonnes comme la maquette, qui suppose une page pleine largeur.
+
+**Trouvaille en cours de route, corrigée sans déborder du périmètre** : `.scrollbar-hide` était déjà référencée à 3 endroits du code (`ProductGrid.tsx`, `ProductGallery.tsx`, `dashboard/orders/page.tsx`) mais **jamais définie** — sans aucun effet réel jusqu'ici, ces 3 zones affichaient donc toujours la scrollbar fine globale (4px) au lieu d'être masquées comme prévu. Vraie définition ajoutée dans `globals.css` (`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`), bénéfice incident pour les 3 usages préexistants en plus de ce lot.
+
+**Testé en conditions réelles** (ABI&CO, 390px et 1280px) : mobile → `flexDirection: row`, `overflowX: auto`, largeur de contenu (480px) supérieure au conteneur (390px), défilement confirmé possible. Desktop → `flexDirection: column`, `overflowX: visible`, cartes empilées, aucun débordement. `tsc`, build Turbopack, build webpack tous propres.
+
+**Prochaine étape** : Lot 4 (catalogue — en-tête + barre supérieure fixe + icônes de faits en `--brand` + horaires en 3ᵉ carte de faits), puis Lot 5 (bouton Commander collant, plan requis avant code vu le risque de duplication).

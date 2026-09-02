@@ -405,11 +405,13 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               )}
             </div>
 
-            {/* Bande de faits (§4.4) — disparaît entièrement si rien à montrer */}
+            {/* Bande de faits (§4.4) — défilement horizontal sur mobile (maquette),
+                empilement vertical conservé sur desktop (colonne latérale étroite,
+                une grille 3 colonnes n'y tiendrait pas) — disparaît si rien à montrer */}
             {facts.length > 0 && (
-              <div className="px-4 pb-4 lg:px-0 space-y-2">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-4 lg:flex-col lg:overflow-visible lg:px-0">
                 {facts.map(f => (
-                  <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                  <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 shrink-0 w-[220px] lg:w-full">
                     <f.icon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-700">{f.title}</p>
