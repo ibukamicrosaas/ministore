@@ -1942,7 +1942,7 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 
 **Prochaine étape** : Lot 4 (catalogue — en-tête + barre supérieure fixe + icônes de faits en `--brand` + horaires en 3ᵉ carte de faits), puis Lot 5 (bouton Commander collant, plan requis avant code vu le risque de duplication).
 
-**Lot 4 — catalogue, regroupé et étendu par l'utilisateur, commit `<à compléter>`.** Quatre points en un lot (périmètre jugé assez clair pour diff direct, pas de plan séparé) :
+**Lot 4 — catalogue, regroupé et étendu par l'utilisateur, commit `812c5d1`.** Quatre points en un lot (périmètre jugé assez clair pour diff direct, pas de plan séparé) :
 - En-tête « Le catalogue · X produits » avant la recherche (`ProductGrid.tsx`).
 - `id="product-search"` + `scroll-mt-14` sur le champ de recherche — ancre de la nouvelle barre supérieure fixe mobile.
 - Nouvelle barre supérieure fixe mobile (`ShopHomeLayout.tsx`) : logo + nom + badge vérifié + bouton recherche, sur **tous les plans** (pas seulement Pro comme la nav desktop équivalente). Bouton recherche = simple ancre, pas de gestion de focus — prévu pour être remplacé par un menu hamburger plus tard, commentaire dans le code, aucune vraie bascule construite.
