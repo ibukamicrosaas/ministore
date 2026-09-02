@@ -400,28 +400,12 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               )}
             </div>
 
-            {/* Commander — visible sur mobile ET desktop, un seul rendu */}
-            <div className="px-4 pb-4 lg:px-0">
-              {previewMode ? (
-                <span
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white opacity-80 cursor-not-allowed"
-                  style={{ backgroundColor: color }}
-                  title="Disponible une fois le site activé"
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  Commander
-                </span>
-              ) : (
-                <a
-                  href={commanderHref}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: color }}
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  Commander
-                </a>
-              )}
-            </div>
+            {/* Pas de bouton Commander ici — desktop le porte déjà dans la nav sticky
+                du haut (ci-dessus) ; mobile le porte dans la barre collante en bas
+                (voir fin de fichier). Un bloc inline existait ici avant, sans
+                distinction de breakpoint : doublon avec la nav desktop, supprimé
+                entièrement plutôt que masqué (bug analogue au 2.1 de la fiche
+                produit — vérifié qu'un seul Commander existe à tout moment). */}
 
             {/* Bande de faits (§4.4) — défilement horizontal sur mobile (maquette),
                 empilement vertical conservé sur desktop (colonne latérale étroite,
@@ -472,6 +456,56 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
           </div>
 
         </div>
+      </div>
+
+      {/* ── Espaceur mobile — réserve la hauteur réelle de la barre collante
+          ci-dessous (73px mesurés en conditions réelles, safe-area=0, +4px de
+          marge trouvée nécessaire au test — chevauchement sous-pixel de
+          1,25px mesuré à 73px exactement, page courte scrollée en bas —
+          plus l'inset dynamique du device réel via calc/env), pour que le
+          dernier produit ou le footer TekkiShop (ShopBranding, rendu après ce
+          composant dans layout.tsx) ne passe jamais dessous. Même principe
+          que ProductStickyCtaManager.tsx (bug 2.2) mais mesure statique ici,
+          pas de useLayoutEffect : le contenu de la barre ne varie jamais. ── */}
+      <div className="h-[calc(77px+env(safe-area-inset-bottom))] lg:hidden" aria-hidden />
+
+      {/* ── Barre collante mobile — Commander + WhatsApp (icône seule). Seul
+          bouton Commander sur mobile (desktop garde celui de la nav du haut) —
+          voir le commentaire plus haut sur la suppression du bloc inline. ── */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        {previewMode ? (
+          <span
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white opacity-80 cursor-not-allowed"
+            style={{ backgroundColor: color }}
+            title="Disponible une fois le site activé"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            Commander
+          </span>
+        ) : (
+          <a
+            href={commanderHref}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: color }}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            Commander
+          </a>
+        )}
+        {/* Bouton WhatsApp — structure prévue pour être remplacée par un chat IA
+            plus tard (plan Marques), pas construit maintenant : pas de logique
+            de bascule, juste ce commentaire pour la prochaine session. */}
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Écrire sur WhatsApp"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </a>
+        )}
       </div>
 
     </div>

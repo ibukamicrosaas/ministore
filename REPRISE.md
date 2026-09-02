@@ -1952,3 +1952,19 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 **Testé en conditions réelles** (ABI&CO, 390px et 1280px) : bouton recherche mobile présent et ancré ; en-tête catalogue confirmé avant la recherche par position ; 3 icônes de faits toutes colorées à la vraie couleur de la boutique ; horaires réelles multi-lignes (« Lundi-vendredi... / Samedi... / Dimanche : fermé ») rendues avec sauts de ligne préservés, en 3ᵉ carte. **Clic réel sur le bouton recherche** : scroll confirmé, le champ atterrit exactement à 56px du haut de l'écran — la hauteur de la barre fixe, rien de cassé dessous. `tsc`, build Turbopack, build webpack tous propres.
 
 **Prochaine étape** : Lot 5 (bouton Commander collant en bas + bouton WhatsApp, retrait de l'ancien bouton inline — plan requis avant code, risque de duplication identifié par l'utilisateur).
+
+**Lot 5 — bouton Commander collant, commit `<à compléter>`.** Plan exigé avant code vu le risque de duplication — vérification faite avant tout code, pas supposée : **découverte d'un doublon desktop préexistant**, sans lien avec ce chantier — `ShopHomeLayout.tsx` rendait déjà "Commander" à la fois dans la nav desktop sticky ET dans un bloc inline sous la carte d'identité, ce dernier sans distinction de breakpoint (visible mobile ET desktop). Corrigé par suppression entière du bloc inline (pas masquage) : desktop garde son unique bouton de nav, mobile bascule sur la nouvelle barre collante.
+
+**Nouvelle barre collante mobile** : Commander (`flex-1`) + bouton WhatsApp icône seule (masqué si `waLink` absent — Règle B, pas de bouton vers nulle part), `previewMode` géré à l'identique de l'existant (span inerte). Commentaire de prévision chat IA sur le bouton WhatsApp (plan Marques), aucune logique de bascule construite.
+
+**Bug réel trouvé en testant, pas en lisant le code** : l'espaceur ajouté dans `ShopHomeLayout.tsx` (73px mesurés + marge, technique de bug 2.2) ne protégeait pas le footer `ShopBranding.tsx`, rendu *après* `ShopHomeLayout` dans `layout.tsx` — sur une page courte scrollée tout en bas, ce footer passait sous la barre. Corrigé dans `ShopBranding.tsx` lui-même (déjà `usePathname`-aware pour se masquer sur `/commander`/`/avis/`), marge dédiée ajoutée uniquement sur la page d'accueil boutique. Chevauchement sous-pixel (1,25px) trouvé en testant à la valeur mesurée exacte (73px) — corrigé par une marge de sécurité (+4px) plutôt qu'une égalité fragile.
+
+**Les 4 vérifications demandées, toutes en conditions réelles** :
+1. Catalogue court (`agrivolaille-togo`, 1 produit, free_orders) — 1 seul bouton visible, 390px et 1280px.
+2. Catalogue long (ABI&CO, 31 produits) scrollé tout en bas — 1 seul bouton visible aux deux largeurs.
+3. Mode prévisualisation — compte de test réel créé/loggé/supprimé après coup, 1 seul élément visible, `<span>` inerte confirmé (pas un lien).
+4. Vérification négative — 2 éléments "Commander" au total dans le DOM (nav desktop + barre mobile), jamais 3.
+
+Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier test, en réalité un essai legacy jamais activé (comportement correct et documenté) — mauvaise boutique de test, pas un bug. `tsc`, build Turbopack, build webpack tous propres.
+
+**Chantier « habillage visuel page d'accueil boutique vers `tekkishop-boutique-accueil.html` » (§68, 5 lots) clos.**
