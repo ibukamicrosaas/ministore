@@ -106,10 +106,24 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
   const waLink           = whatsappNumber ? `https://wa.me/${whatsappNumber}` : null
   const commanderHref    = `${basePath}/commander`
 
-  // La couverture est un drapeau de plan (Pro aujourd'hui) ET une donnée réelle
-  // du marchand — les deux conditions cumulatives. Donnée absente → la page
+  // Photo de couverture réelle : un drapeau de plan (Pro aujourd'hui) ET une
+  // donnée réelle du marchand — les deux conditions cumulatives.
+  const hasRealCoverPhoto = getPlanFeatures(shop.plan).coverImage && !!coverImageUrl
+
+  // Bande de couleur --brand pour les plans sans la fonctionnalité couverture
+  // (Découverte/Business aujourd'hui) — pilotée par le plan, jamais par la
+  // présence de cover_image_url (structurellement absent pour ces plans,
+  // aucune UI d'upload n'existe) : ce n'est pas un repli sur donnée
+  // manquante, c'est le traitement normal de ces plans. Une vraie couleur du
+  // marchand affichée différemment, pas un contenu inventé (Règle B interdit
+  // un faux fond photographique, pas une couleur réelle).
+  const showColorBand = !getPlanFeatures(shop.plan).coverImage
+
+  // Zone de couverture présente, quelle que soit sa nature (photo ou
+  // dégradé) — pilote le chevauchement de la carte d'identité et la position
+  // du bouton de partage. Donnée/plan absents des deux côtés → la page
   // démarre directement sur la carte d'identité, sans espace résiduel (§4.2).
-  const hasCover = getPlanFeatures(shop.plan).coverImage && !!coverImageUrl
+  const hasCover = hasRealCoverPhoto || showColorBand
 
   // Bascule Vague 3 (§36/§49/§51) : donnée réelle, plus un rendu inconditionnel
   // par plan. Grandfathering déjà exécuté (migration 096) pour les boutiques
@@ -237,12 +251,21 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
         </div>
       </div>
 
-      {/* ── Cover — conditionnelle (plan + donnée réelle), voir hasCover ── */}
+      {/* ── Cover — photo réelle (Pro) ou dégradé --brand (autres plans), voir hasCover ── */}
       {hasCover && (
         <div className="relative">
-          <div className="relative w-full aspect-video lg:aspect-auto lg:h-64 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverImageUrl!} alt={shop.name} className="w-full h-full object-cover" />
+          <div className="relative w-full h-[104px] lg:h-[168px] overflow-hidden">
+            {hasRealCoverPhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverImageUrl!} alt={shop.name} className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full"
+                style={{
+                  background: `radial-gradient(120% 160% at 20% 0%, color-mix(in srgb, ${color} 24%, #fff) 0%, transparent 60%), linear-gradient(105deg, color-mix(in srgb, ${color} 14%, #fff), transparent 70%)`,
+                }}
+              />
+            )}
           </div>
           <div className="absolute top-3 right-3 z-10">
             <ShareButton
