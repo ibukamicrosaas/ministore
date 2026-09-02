@@ -1,6 +1,6 @@
 'use client'
 
-import { Phone, MessageCircle, Clock, ShoppingBag, MapPin, Truck, Wallet } from 'lucide-react'
+import { Phone, MessageCircle, Clock, ShoppingBag, MapPin, Truck, Wallet, Search } from 'lucide-react'
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
@@ -162,6 +162,11 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
       title: 'Paiement',
       sub: paymentLabel,
     },
+    openingHours && {
+      icon: Clock,
+      title: 'Horaires',
+      sub: openingHours,
+    },
   ].filter(Boolean) as { icon: typeof Truck; title: string; sub: string }[]
 
   const jsonLd = {
@@ -191,6 +196,27 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {/* ── Barre supérieure fixe mobile — logo + recherche (maquette). Le bouton
+          recherche est une simple ancre vers le champ existant dans ProductGrid ;
+          prévu pour tous les plans, pas seulement Pro. À terme, ce bouton pourra
+          être remplacé par un menu hamburger — pas construit maintenant. ── */}
+      <div className="lg:hidden sticky top-0 z-50 flex items-center bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 h-14 gap-3">
+        <div className="w-7 h-7 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-white shrink-0">
+          <ShopLogo shop={shop} size="sm" />
+        </div>
+        <span className="font-bold text-sm text-gray-900 truncate flex-1 min-w-0 flex items-center gap-1">
+          {shop.name}
+          {showVerifiedBadge && <VerifiedBadge />}
+        </span>
+        <a
+          href="#product-search"
+          aria-label="Rechercher un produit"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 shrink-0"
+        >
+          <Search className="h-4 w-4" />
+        </a>
+      </div>
 
       {/* ── Desktop sticky nav ── */}
       <div className="hidden lg:flex sticky top-0 z-50 items-center bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -372,14 +398,6 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                   ))}
                 </div>
               )}
-
-              {/* Horaires */}
-              {openingHours && (
-                <div className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
-                  <Clock className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{openingHours}</p>
-                </div>
-              )}
             </div>
 
             {/* Commander — visible sur mobile ET desktop, un seul rendu */}
@@ -412,10 +430,10 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
               <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-4 lg:flex-col lg:overflow-visible lg:px-0">
                 {facts.map(f => (
                   <div key={f.title} className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5 shrink-0 w-[220px] lg:w-full">
-                    <f.icon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                    <f.icon className="h-4 w-4 shrink-0 mt-0.5" style={{ color }} />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-700">{f.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{f.sub}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 whitespace-pre-line">{f.sub}</p>
                     </div>
                   </div>
                 ))}

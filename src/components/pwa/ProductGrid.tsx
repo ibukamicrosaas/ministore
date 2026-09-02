@@ -324,8 +324,16 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
         </div>
       )}
 
-      {/* Barre de recherche */}
-      <div className="px-4 pt-3 pb-2">
+      {/* En-tête catalogue (maquette) — nombre de produits, avant la recherche */}
+      <div className="flex items-baseline gap-3 px-4 pt-4">
+        <h2 className="text-lg font-bold text-gray-900">Le catalogue</h2>
+        <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">
+          {products.length} produit{products.length > 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* Barre de recherche — ancre de la barre supérieure fixe mobile (scroll-mt pour ne pas passer sous elle) */}
+      <div id="product-search" className="px-4 pt-3 pb-2 scroll-mt-14">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <input

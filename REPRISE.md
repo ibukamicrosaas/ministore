@@ -1941,3 +1941,14 @@ ID résolus par requête directe sur `shops` (lecture seule) à partir des slugs
 **Testé en conditions réelles** (ABI&CO, 390px et 1280px) : mobile → `flexDirection: row`, `overflowX: auto`, largeur de contenu (480px) supérieure au conteneur (390px), défilement confirmé possible. Desktop → `flexDirection: column`, `overflowX: visible`, cartes empilées, aucun débordement. `tsc`, build Turbopack, build webpack tous propres.
 
 **Prochaine étape** : Lot 4 (catalogue — en-tête + barre supérieure fixe + icônes de faits en `--brand` + horaires en 3ᵉ carte de faits), puis Lot 5 (bouton Commander collant, plan requis avant code vu le risque de duplication).
+
+**Lot 4 — catalogue, regroupé et étendu par l'utilisateur, commit `<à compléter>`.** Quatre points en un lot (périmètre jugé assez clair pour diff direct, pas de plan séparé) :
+- En-tête « Le catalogue · X produits » avant la recherche (`ProductGrid.tsx`).
+- `id="product-search"` + `scroll-mt-14` sur le champ de recherche — ancre de la nouvelle barre supérieure fixe mobile.
+- Nouvelle barre supérieure fixe mobile (`ShopHomeLayout.tsx`) : logo + nom + badge vérifié + bouton recherche, sur **tous les plans** (pas seulement Pro comme la nav desktop équivalente). Bouton recherche = simple ancre, pas de gestion de focus — prévu pour être remplacé par un menu hamburger plus tard, commentaire dans le code, aucune vraie bascule construite.
+- Icônes des cartes de faits colorées en `--brand` (texte/titre restent gris) — seule modification demandée sur ce point précis.
+- Horaires devenues 3ᵉ carte de faits (même style, même défilement horizontal du Lot 3) au lieu d'un bloc autonome séparé — `whitespace-pre-line` ajouté au `sub` partagé pour préserver les sauts de ligne (horaires multi-lignes réelles).
+
+**Testé en conditions réelles** (ABI&CO, 390px et 1280px) : bouton recherche mobile présent et ancré ; en-tête catalogue confirmé avant la recherche par position ; 3 icônes de faits toutes colorées à la vraie couleur de la boutique ; horaires réelles multi-lignes (« Lundi-vendredi... / Samedi... / Dimanche : fermé ») rendues avec sauts de ligne préservés, en 3ᵉ carte. **Clic réel sur le bouton recherche** : scroll confirmé, le champ atterrit exactement à 56px du haut de l'écran — la hauteur de la barre fixe, rien de cassé dessous. `tsc`, build Turbopack, build webpack tous propres.
+
+**Prochaine étape** : Lot 5 (bouton Commander collant en bas + bouton WhatsApp, retrait de l'ancien bouton inline — plan requis avant code, risque de duplication identifié par l'utilisateur).
