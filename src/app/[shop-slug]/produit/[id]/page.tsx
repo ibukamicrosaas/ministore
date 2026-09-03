@@ -211,9 +211,15 @@ export default async function ProductDetailPage({ params }: Props) {
   // (système A) — même règle pour le produit principal et les produits similaires.
   const [productWithVariants, ...relatedProducts] = await withEffectiveVariants(admin, [product, ...rawRelatedProducts])
   const variants = productWithVariants.variants as ProductVariant[] | null
+  // Prix à 0 exclus du minimum affiché — un montant pas encore renseigné par
+  // le marchand pour cette variante n'est pas un vrai prix de vente (sinon
+  // "À partir de 0 FCFA" s'affiche, un bug pré-existant à cette bascule,
+  // repéré lors du Lot 3 — REPRISE.md §79). Même règle déjà appliquée dans
+  // ProductGrid.tsx (getPrice), reprise ici pour cohérence entre grille et fiche.
+  const nonZeroVariantPrices = variants?.map(v => v.price).filter(p => p > 0) ?? []
 
-  const displayPrice = variants && variants.length > 0
-    ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
+  const displayPrice = nonZeroVariantPrices.length > 0
+    ? `À partir de ${formatPrice(Math.min(...nonZeroVariantPrices), currency)}`
     : formatPrice(product.price, currency)
 
   const reviews     = reviewsResult.data ?? []
@@ -242,7 +248,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
   // JSON-LD : Product schema pour le SEO Google Shopping
-  const minPrice = variants?.length ? Math.min(...variants.map(v => v.price)) : product.price
+  const minPrice = nonZeroVariantPrices.length > 0 ? Math.min(...nonZeroVariantPrices) : product.price
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -616,8 +622,9 @@ export default async function ProductDetailPage({ params }: Props) {
                   : rp.photo_url ? [{ url: rp.photo_url, is_primary: true }] : []
                 const rpPhoto    = rpPhotos.find(p => p.is_primary)?.url ?? rpPhotos[0]?.url ?? null
                 const rpVariants = rp.variants as ProductVariant[] | null
-                const rpPrice    = rpVariants?.length
-                  ? `À partir de ${formatPrice(Math.min(...rpVariants.map(v => v.price)), currency)}`
+                const rpNonZeroPrices = rpVariants?.map(v => v.price).filter(p => p > 0) ?? []
+                const rpPrice    = rpNonZeroPrices.length > 0
+                  ? `À partir de ${formatPrice(Math.min(...rpNonZeroPrices), currency)}`
                   : formatPrice(rp.price, currency)
                 const rpSlug = (rp as Product & { slug?: string | null }).slug
                 const rpHref = `${basePath}/produit/${rpSlug ?? rp.id}`

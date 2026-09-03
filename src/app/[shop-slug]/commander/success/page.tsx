@@ -395,8 +395,9 @@ export default async function SuccessPage({ params, searchParams }: Props) {
                 : p.photo_url ? [{ url: p.photo_url, is_primary: true }] : []
               const photo    = photos.find(ph => ph.is_primary)?.url ?? photos[0]?.url ?? null
               const variants = p.variants as ProductVariant[] | null
-              const price    = variants?.length
-                ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
+              const nonZeroPrices = variants?.map(v => v.price).filter(pr => pr > 0) ?? []
+              const price    = nonZeroPrices.length > 0
+                ? `À partir de ${formatPrice(Math.min(...nonZeroPrices), currency)}`
                 : formatPrice(p.price, currency)
               const href = `${basePath}/produit/${(p as Product & { slug?: string | null }).slug ?? p.id}`
               return (
