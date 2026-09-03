@@ -2081,3 +2081,28 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 - **Confirmation structurelle, pas juste une mesure** : `order_items.variant_label` est une colonne texte simple (`string | null`), **sans clé étrangère vers quoi que ce soit** — ni vers le JSONB `products.variants`, ni vers `product_variants`. Elle est figée au moment de la commande et jamais revalidée après coup (contrairement à `variant_id`, qui lui est une FK nullable `ON DELETE SET NULL` explicitement conçue pour ne jamais bloquer la suppression d'une variante déjà commandée). **Aucune migration côté `products`/`product_variants` ne touche donc, structurellement, l'historique des `order_items` déjà écrits** — une bascule système A→B ne peut porter que sur les produits actuellement actifs, jamais sur les commandes déjà réglées.
 
 Plan complet à poser ensuite, découpé bascule/migration d'un côté et les trois surfaces applicatives de l'autre, pour validation indépendante. **Rien codé avant ce plan et le feu vert explicite de l'utilisateur.**
+
+## 77. Bascule variantes — audit des consommateurs oubliés, puis Lot 1 (migration `098`) appliqué et vérifié
+
+**Vérification demandée avant tout lancement de lot** : chercher, au-delà des trois surfaces déjà identifiées (`ProductForm.tsx`, `VariantSelectorCta.tsx`, `api/orders/route.ts`), tout autre lecteur de `products.variants` (JSONB) qui continuerait de lire une donnée devenue périmée après la bascule.
+
+**5 consommateurs réels trouvés, non couverts par le plan initial** :
+1. `[shop-slug]/commander/page.tsx` + `OrderForm.tsx` — sélecteur de variante **propre** au tunnel de commande (panier multi-articles), distinct de `VariantSelectorCta.tsx`.
+2. `[shop-slug]/commander/success/page.tsx` — affichage "à partir de {prix min}".
+3. `[shop-slug]/produit/[id]/page.tsx` — la logique de prix vit ici, pas dans `VariantSelectorCta.tsx` ; calcule aussi le prix des produits similaires (`rp.variants`).
+4. `dashboard/(protected)/products/ProductOrderList.tsx` — badge "{N} variantes" dans le dashboard.
+5. `components/pwa/ProductGrid.tsx` — même affichage "à partir de..." sur la grille d'accueil.
+
+**Confirmé sans risque, pas supposé** : tous les lecteurs de `order_items.variant_label` (commande, livraison, dashboard, export CSV) — colonne figée sans clé étrangère, immunisée par construction. `ProductStickyCtaManager.tsx` ne lit que l'événement émis par `VariantSelectorCta.tsx`, suit automatiquement le Lot 3. `lib/ai/system-prompt.ts`/`aide/page.tsx` — texte descriptif seulement, pas un lecteur de données.
+
+**Lots recalés en conséquence** : Lot 3 étendu (`VariantSelectorCta.tsx` + `produit/[id]/page.tsx` + `commander/success/page.tsx` + `ProductGrid.tsx`, même changement de source de prix répété à quatre endroits) ; nouveau Lot 3bis (`commander/page.tsx` + `OrderForm.tsx`, tunnel de commande, traité à part) ; Lot 4 étendu (`ProductForm.tsx` + `ProductOrderList.tsx`).
+
+**Lot 1 — migration `098_backfill_product_variants.sql`, appliquée (`supabase db push --linked`) et vérifiée sur 4 dimensions** :
+- Comptage global : 162 produits source, **714/714** entrées JSONB vs lignes `product_variants` créées.
+- Fidélité ligne à ligne : **0** décompte divergent, **0** valeur (label/prix) divergente.
+- `variant_label` : **162/162** produits migrés sur `'Format'`, 0 avec une valeur inattendue.
+- `order_items` inchangé : **676 lignes / 61 avec `variant_label`**, identique à la mesure de référence prise avant la migration (§76) — confirme qu'aucune commande n'a été touchée.
+
+**Limite d'outillage découverte, à connaître pour toute future migration testée dans cet environnement** : `supabase db query` (mode agent, celui disponible ici) ne restitue pas les messages `RAISE NOTICE`/`WARNING`/`EXCEPTION` d'un bloc `DO $$...$$` — seul le résultat d'une requête `SELECT` est visible (et seulement celui de la **dernière** requête si le fichier en contient plusieurs, il faut les exécuter une par une). Le script canonique `scripts/check-variants-migration-invariant.sql` reste écrit sous forme de bloc `DO` avec `RAISE` (convention du dépôt, exécutable via `psql` ou une session interactive qui affiche les `NOTICE`) — mais dans **cet** environnement, sa vérification a dû être rejouée sous forme de requêtes `SELECT` ad-hoc équivalentes pour obtenir un résultat visible. Ne pas conclure d'un `supabase db query -f script.sql --linked` sans sortie visible que le script "a tourné sans rien trouver" — il a pu tourner sans que son verdict soit affiché du tout.
+
+**Prochaine étape** : Lot 2 (`api/orders/route.ts`, compatibilité double `variant_id`/`variant_label`).
