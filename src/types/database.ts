@@ -340,6 +340,45 @@ export type Database = {
         }
       Relationships: []
       }
+      product_variants: {
+        Row: {
+          id: string
+          product_id: string
+          name: string
+          price: number | null
+          compare_at: number | null
+          stock: number | null
+          image_url: string | null
+          position: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          name: string
+          price?: number | null
+          compare_at?: number | null
+          stock?: number | null
+          image_url?: string | null
+          position?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          name?: string
+          price?: number | null
+          compare_at?: number | null
+          stock?: number | null
+          image_url?: string | null
+          position?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       download_tokens: {
         Row: {
           id: string
@@ -539,6 +578,7 @@ export type Database = {
           product_id: string | null
           product_name: string
           variant_label: string | null
+          variant_id: string | null
           unit_price: number
           quantity: number
           quantity_discount_pct: number | null
@@ -551,6 +591,7 @@ export type Database = {
           product_id?: string | null
           product_name: string
           variant_label?: string | null
+          variant_id?: string | null
           unit_price: number
           quantity?: number
           quantity_discount_pct?: number | null
@@ -563,6 +604,7 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           variant_label?: string | null
+          variant_id?: string | null
           unit_price?: number
           quantity?: number
           quantity_discount_pct?: number | null
@@ -934,6 +976,20 @@ export type Database = {
           p_product_id: string
           p_shop_id: string
           p_variant_label: string
+          p_quantity: number
+        }
+        Returns: undefined
+      }
+      decrement_variant_stock_v2: {
+        Args: {
+          p_variant_id: string
+          p_quantity: number
+        }
+        Returns: boolean
+      }
+      increment_variant_stock_v2: {
+        Args: {
+          p_variant_id: string
           p_quantity: number
         }
         Returns: undefined

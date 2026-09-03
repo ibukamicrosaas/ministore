@@ -21,6 +21,7 @@ interface OrderItemInput {
   product_id: string
   product_name: string
   variant_label: string | null
+  variant_id?: string | null
   unit_price: number
   quantity: number
   customization_note?: string | null
@@ -139,8 +140,20 @@ export async function POST(req: NextRequest) {
   type DbProduct = { id: string; name: string; price: number; variants: unknown; deposit_percentage: number | null; stock_count: number | null; quantity_discounts: { min_qty: number; discount_pct: number }[] | null; product_type: string | null }
   const productMap = new Map(dbProducts.map(p => [p.id, p as DbProduct]))
 
+  // Système B (product_variants) — chargé en plus du JSONB legacy, utilisé
+  // seulement quand un item envoie variant_id (voir plus bas). Lot 2 de la
+  // bascule (REPRISE.md §76/§77) : les deux systèmes coexistent tant que les
+  // surfaces publiques (Lots 3/3bis) n'ont pas toutes basculé.
+  const { data: dbVariants } = await supabase
+    .from('product_variants')
+    .select('id, product_id, name, price, stock, is_active')
+    .in('product_id', productIds)
+
+  type DbVariant = { id: string; product_id: string; name: string; price: number | null; stock: number | null; is_active: boolean }
+  const variantMap = new Map((dbVariants ?? []).map(v => [v.id, v as DbVariant]))
+
   // Stock check + calcul des prix serveur
-  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; unit_price: number; quantity: number; customization_note: string | null; quantity_discount_pct: number | null }
+  type ServerItem = { product_id: string; product_name: string; variant_label: string | null; variant_id: string | null; unit_price: number; quantity: number; customization_note: string | null; quantity_discount_pct: number | null }
   const serverItems: ServerItem[] = []
 
   for (const it of items) {
@@ -158,9 +171,30 @@ export async function POST(req: NextRequest) {
     }
     // Prix réel depuis la DB — ignorer it.unit_price envoyé par le client
     let unit_price = p.price
-    if (it.variant_label && Array.isArray(p.variants)) {
+    let matchedVariantId: string | null = null
+    let matchedVariantLabel: string | null = null
+
+    if (it.variant_id) {
+      // Système B — prioritaire si présent
+      const variant = variantMap.get(it.variant_id)
+      if (variant && variant.product_id === it.product_id && variant.is_active) {
+        matchedVariantId = variant.id
+        matchedVariantLabel = variant.name
+        unit_price = variant.price ?? p.price // NULL = hérite du produit
+        if (variant.stock !== null) {
+          if (variant.stock === 0) {
+            return NextResponse.json({ error: `La variante "${variant.name}" de ${p.name} est en rupture de stock.` }, { status: 400 })
+          }
+          if (it.quantity > variant.stock) {
+            return NextResponse.json({ error: `Stock insuffisant pour ${p.name} – ${variant.name} (${variant.stock} disponible(s)).` }, { status: 400 })
+          }
+        }
+      }
+    } else if (it.variant_label && Array.isArray(p.variants)) {
+      // Système A (JSONB), legacy — inchangé, pour les surfaces pas encore basculées
       const variant = (p.variants as { label: string; price: number; stock_count?: number | null }[]).find(v => v.label === it.variant_label)
       if (variant) {
+        matchedVariantLabel = variant.label
         unit_price = variant.price
         if (variant.stock_count !== null && variant.stock_count !== undefined) {
           if (variant.stock_count === 0) {
@@ -184,7 +218,7 @@ export async function POST(req: NextRequest) {
         quantityDiscountPct = discountPct
       }
     }
-    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: it.variant_label, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null, quantity_discount_pct: quantityDiscountPct })
+    serverItems.push({ product_id: it.product_id, product_name: p.name, variant_label: matchedVariantLabel, variant_id: matchedVariantId, unit_price, quantity: it.quantity, customization_note: it.customization_note?.trim() || null, quantity_discount_pct: quantityDiscountPct })
   }
 
   // On ne prend l'argent du client que si on peut le livrer sans le marchand
@@ -303,12 +337,17 @@ export async function POST(req: NextRequest) {
   // Pour les produits avec variants : décrémente le stock dans le JSONB.
   // Pour les produits sans variant  : décrémente products.stock_count.
   // Si l'un échoue, rollback des précédents → zéro survente possible.
-  type DecrementedItem = { product_id: string; variant_label: string | null; quantity: number }
+  type DecrementedItem = { product_id: string; variant_label: string | null; variant_id: string | null; quantity: number }
   const decrementedItems: DecrementedItem[] = []
 
   async function rollbackStock() {
     for (const prev of decrementedItems) {
-      if (prev.variant_label) {
+      if (prev.variant_id) {
+        await supabase.rpc('increment_variant_stock_v2', {
+          p_variant_id: prev.variant_id,
+          p_quantity:   prev.quantity,
+        })
+      } else if (prev.variant_label) {
         await supabase.rpc('increment_variant_stock', {
           p_product_id:    prev.product_id,
           p_shop_id:       shopId,
@@ -330,8 +369,22 @@ export async function POST(req: NextRequest) {
     if (!it.product_id) continue
     const p = productMap.get(it.product_id)
 
-    if (it.variant_label) {
-      // Variante : décrémente dans le JSONB (gère le cas stock null = illimité)
+    if (it.variant_id) {
+      // Système B : décrémente product_variants.stock directement (verrou FOR UPDATE)
+      const { data: ok } = await supabase.rpc('decrement_variant_stock_v2', {
+        p_variant_id: it.variant_id,
+        p_quantity:   it.quantity,
+      })
+      if (!ok) {
+        await rollbackStock()
+        return NextResponse.json(
+          { error: `Stock insuffisant pour ${p?.name ?? it.product_id} – ${it.variant_label}. Veuillez actualiser.` },
+          { status: 409 }
+        )
+      }
+      decrementedItems.push({ product_id: it.product_id, variant_label: it.variant_label, variant_id: it.variant_id, quantity: it.quantity })
+    } else if (it.variant_label) {
+      // Système A, legacy : décrémente dans le JSONB (gère le cas stock null = illimité)
       const { data: ok } = await supabase.rpc('decrement_variant_stock', {
         p_product_id:    it.product_id,
         p_shop_id:       shopId,
@@ -345,7 +398,7 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         )
       }
-      decrementedItems.push({ product_id: it.product_id, variant_label: it.variant_label, quantity: it.quantity })
+      decrementedItems.push({ product_id: it.product_id, variant_label: it.variant_label, variant_id: null, quantity: it.quantity })
     } else {
       // Produit sans variante : décrémente products.stock_count
       if (p?.stock_count === null) continue  // stock illimité, rien à décrémenter
@@ -362,7 +415,7 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         )
       }
-      decrementedItems.push({ product_id: it.product_id, variant_label: null, quantity: it.quantity })
+      decrementedItems.push({ product_id: it.product_id, variant_label: null, variant_id: null, quantity: it.quantity })
     }
   }
 
@@ -493,6 +546,7 @@ export async function POST(req: NextRequest) {
       product_id:         it.product_id || null,
       product_name:       it.product_name,
       variant_label:      it.variant_label,
+      variant_id:         it.variant_id,
       unit_price:         it.unit_price,
       quantity:           it.quantity,
       line_total:         it.unit_price * it.quantity,
