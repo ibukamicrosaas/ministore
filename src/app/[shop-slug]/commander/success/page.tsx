@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
 import { OrderSummary } from '@/components/shop/OrderSummary'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -136,9 +137,13 @@ export default async function SuccessPage({ params, searchParams }: Props) {
         .limit(8)
     : { data: [] }
 
-  const upsellProducts = ((upsellData ?? []) as unknown as (Product & { slug?: string | null })[])
+  const rawUpsellProducts = ((upsellData ?? []) as unknown as (Product & { slug?: string | null })[])
     .filter(p => !orderedNames.has(p.name))
     .slice(0, 3)
+
+  // Variantes effectives (Lot 3 de la bascule, REPRISE.md §76-79) — voir
+  // produit/[id]/page.tsx pour la même règle appliquée au produit principal.
+  const upsellProducts = await withEffectiveVariants(supabase, rawUpsellProducts)
 
   const isOnline   = order.payment_type === 'online_full' || order.payment_type === 'online_deposit'
   const isPaid     = order.status === 'confirmed' || order.status === 'completed'

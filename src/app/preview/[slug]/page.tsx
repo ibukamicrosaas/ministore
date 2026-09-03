@@ -4,6 +4,7 @@ import { Eye, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ShopHomeLayout } from '@/components/pwa/ShopHomeLayout'
 import type { Shop, Product } from '@/types'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +61,9 @@ export default async function PreviewPage({ params }: Props) {
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true })
 
-  const products = (productsData ?? []) as Product[]
+  // Variantes effectives (Lot 3 de la bascule, REPRISE.md §76-79) — même règle
+  // que la page publique réelle.
+  const products = await withEffectiveVariants(supabase, (productsData ?? []) as Product[])
 
   return (
     <div className="min-h-screen bg-gray-50">

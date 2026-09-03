@@ -5,6 +5,7 @@ import type { Shop, Product } from '@/types'
 import { APP_URL } from '@/constants'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
 import { VisitBeacon } from './VisitBeacon'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -91,7 +92,10 @@ export default async function ShopPage({ params }: Props) {
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true })
 
-  const products = (productsData ?? []) as Product[]
+  // Variantes effectives (Lot 3 de la bascule, REPRISE.md §76-79) — même règle
+  // que produit/[id]/page.tsx : product_variants (système B) si présent, sinon
+  // repli sur le JSONB (système A).
+  const products = await withEffectiveVariants(supabase, (productsData ?? []) as Product[])
   const basePath = await getShopBasePath(slug)
 
   return (

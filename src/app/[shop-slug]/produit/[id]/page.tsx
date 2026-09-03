@@ -19,6 +19,7 @@ import { PAYMENT_METHODS_BY_COUNTRY } from '@/lib/payments/payment-methods'
 import type { BictorysCountry } from '@/lib/payments/payment-methods'
 import { hasRichDescription } from '@/lib/plan-features'
 import { displayName } from '@/lib/utils/display-name'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 export const revalidate = 60
 import type { Metadata } from 'next'
@@ -173,14 +174,9 @@ export default async function ProductDetailPage({ params }: Props) {
   const photos = [...rawPhotos].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 
   const primaryPhoto = photos.find(p => p.is_primary)?.url ?? photos[0]?.url ?? null
-  const variants     = product.variants as ProductVariant[] | null
   const videoUrl     = (product as Product & { video_url?: string | null }).video_url ?? null
   const embedUrl     = videoUrl ? getVideoEmbedUrl(videoUrl) : null
   const isPortrait   = shop.grid_image_ratio === 'portrait'
-
-  const displayPrice = variants && variants.length > 0
-    ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
-    : formatPrice(product.price, currency)
 
   const basePath = await getShopBasePath(shopSlug)
 
@@ -207,8 +203,18 @@ export default async function ProductDetailPage({ params }: Props) {
       .eq('product_id', product.id)
       .order('created_at', { ascending: false }) as unknown as Promise<{ data: { id: string; rating: number; comment: string | null; client_name: string; created_at: string }[] | null }>,
   ])
-  const salesCount      = rawSalesCount ?? 0
-  const relatedProducts = (relatedResult.data ?? []) as Product[]
+  const salesCount        = rawSalesCount ?? 0
+  const rawRelatedProducts = (relatedResult.data ?? []) as Product[]
+
+  // Variantes effectives (Lot 3 de la bascule, REPRISE.md §76-79) : product_variants
+  // (système B) si des lignes existent pour ce produit, sinon repli sur le JSONB
+  // (système A) — même règle pour le produit principal et les produits similaires.
+  const [productWithVariants, ...relatedProducts] = await withEffectiveVariants(admin, [product, ...rawRelatedProducts])
+  const variants = productWithVariants.variants as ProductVariant[] | null
+
+  const displayPrice = variants && variants.length > 0
+    ? `À partir de ${formatPrice(Math.min(...variants.map(v => v.price)), currency)}`
+    : formatPrice(product.price, currency)
 
   const reviews     = reviewsResult.data ?? []
   const reviewCount = reviews.length
