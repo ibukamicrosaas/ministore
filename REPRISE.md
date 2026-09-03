@@ -2132,3 +2132,15 @@ Plan complet à poser ensuite, découpé bascule/migration d'un côté et les tr
 **Correctif** (`25ee733`) : filtre `p > 0` ajouté aux trois endroits qui répétaient la formule sans lui — produit principal et produits similaires (`produit/[id]/page.tsx`), upsell (`commander/success/page.tsx`, même règle que `ProductGrid.tsx`, non modifiée, déjà correcte). Testé en conditions réelles sur le même produit `2asimarket` : la fiche affiche désormais "18 000 FCFA", identique à la grille. `tsc`, build propres.
 
 **Prochaine étape** : Lot 3bis (`commander/page.tsx` + `OrderForm.tsx`, tunnel de commande — sélecteur de variante propre à ce flux, distinct de `VariantSelectorCta.tsx`).
+
+## 80. Lot 3bis — `variant_id` dans le tunnel de commande, commit `e6d4d99`
+
+**Principe d'économie appliqué** : le `<select>` d'`OrderForm.tsx` (sélecteur de variante propre au tunnel, indexé par `variant_label`, distinct de `VariantSelectorCta.tsx`) **n'a pas été réécrit**. Un seul point ajouté, au moment de construire le corps de la requête POST : résolution de `variant_id` depuis la variante déjà retrouvée par label — portée par `ProductVariant.id` (nouveau champ optionnel), lui-même renseigné par `withEffectiveVariants` (réutilisé tel quel depuis le Lot 3, une ligne ajoutée à son mapping). `commander/page.tsx` fusionne désormais les variantes effectives avant de les passer à `OrderForm`, même schéma que les 4 surfaces du Lot 3. Explicitement inchangés, comme prévu au plan : le paramètre d'URL `?variant=label`, le format du panier `localStorage` (référence par `product_id`+`variant_label` texte), le calcul d'affichage du prix côté client.
+
+**Testé en conditions réelles via le vrai tunnel** (navigateur réel, préremplissage du panier par URL `?product=X&variant=Y&qty=1`, clic sur le vrai bouton de soumission, vrai `POST /api/orders`) — boutique et deux produits de test dédiés, supprimés après coup :
+- **Système B** (produit avec une ligne `product_variants` réelle) : `order_items.variant_id` correctement renseigné, `variant_label` toujours présent pour l'affichage. **Stock `product_variants` décrémenté 5→4, JSONB resté figé à 5** — preuve directe qu'aucun double décrément ne s'est produit.
+- **Non-régression, système A pur** (produit sans aucune ligne `product_variants`) : `variant_id` correctement `null`, décrément JSONB inchangé (3→2), comportement identique à avant ce lot.
+
+`tsc`, build propres.
+
+**Prochaine étape** : Lot 4, dernier de ce chantier — `ProductForm.tsx` (dashboard) + `ProductOrderList.tsx` (badge nombre de variantes). C'est ce lot qui matérialise la garantie posée dès le diagnostic initial (§76) pour les 58 boutiques déjà sur le système A : aucune perte silencieuse de leurs variantes existantes.
