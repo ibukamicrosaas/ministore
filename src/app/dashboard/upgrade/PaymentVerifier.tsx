@@ -42,10 +42,18 @@ export function PaymentVerifier({ activatedPlan, shopIsActive, serverTxn }: Paym
     attemptsRef.current = 0
     pollRef.current = setInterval(async () => {
       attemptsRef.current += 1
-      const { isActive } = await pollShopActivation()
-      if (isActive) {
-        onActivated()
-        return
+      try {
+        const { isActive } = await pollShopActivation()
+        if (isActive) {
+          onActivated()
+          return
+        }
+      } catch (e) {
+        // Panne réseau ponctuelle (ex. reprise après mise en arrière-plan) —
+        // ne pas laisser une exception non gérée court-circuiter le test de
+        // borne ci-dessous, sans quoi le sondage tourne indéfiniment sans
+        // jamais atteindre l'état 'pending'.
+        console.error('[PaymentVerifier] Erreur de sondage:', e instanceof Error ? e.message : e)
       }
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         stopPolling()
@@ -78,13 +86,18 @@ export function PaymentVerifier({ activatedPlan, shopIsActive, serverTxn }: Paym
     setStatus('verifying')
 
     if (txn && plan === activatedPlan) {
-      verifySubscriptionPayment(txn, activatedPlan).then(result => {
-        if (result.success) {
-          onActivated()
-          return
-        }
-        startPolling()
-      })
+      verifySubscriptionPayment(txn, activatedPlan)
+        .then(result => {
+          if (result.success) {
+            onActivated()
+            return
+          }
+          startPolling()
+        })
+        .catch(e => {
+          console.error('[PaymentVerifier] Erreur de vérification initiale:', e instanceof Error ? e.message : e)
+          startPolling()
+        })
       return
     }
 

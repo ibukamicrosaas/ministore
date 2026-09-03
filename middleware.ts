@@ -250,7 +250,15 @@ export async function middleware(request: NextRequest) {
   // ── Routes dashboard : authentification requise ───────────────────────────
   if (pathname.startsWith('/dashboard')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      // Reporter ?success=1 sur /login : cas d'un retour de paiement (ex.
+      // abonnement via /dashboard/upgrade) où la session n'est plus reconnue
+      // dans ce contexte (ex. PWA iOS → Safari, stockage isolé). Le paiement
+      // a pu réussir côté serveur malgré tout — voir REPRISE.md, incident
+      // rouvert après §42/§43.
+      const loginUrl = new URL('/login', request.url)
+      const success = request.nextUrl.searchParams.get('success')
+      if (success) loginUrl.searchParams.set('success', success)
+      return NextResponse.redirect(loginUrl)
     }
 
     const { data: profileData2 } = await supabase

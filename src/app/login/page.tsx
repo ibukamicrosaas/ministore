@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { CheckCircle2 } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -51,10 +52,17 @@ const BENEFITS = [
 
 const STAR = <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 14, height: 14, color: '#f59e0b' }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string }>
+}) {
   const admin = createAdminClient()
   const { count: totalShopsCount } = await admin.from('shops').select('id', { count: 'exact', head: true })
   const shopsCount = totalShopsCount ?? 0
+
+  const { success } = await searchParams
+  const paymentReceived = success === '1'
 
   return (
     <>
@@ -210,6 +218,16 @@ export default async function LoginPage() {
                 <h1 className="lp-h2">Heureux de te revoir</h1>
                 <p className="lp-sub2">Connecte-toi avec ton numéro WhatsApp et ton code PIN.</p>
               </div>
+
+              {paymentReceived && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-start gap-3 mb-5">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-700">Ton paiement a bien été reçu.</p>
+                    <p className="text-xs text-green-600 mt-0.5">Connecte-toi pour voir ton compte activé.</p>
+                  </div>
+                </div>
+              )}
 
               <LoginForm />
 
