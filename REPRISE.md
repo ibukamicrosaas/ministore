@@ -2030,7 +2030,7 @@ Faux positif écarté en route : `deby-shop` semblait "introuvable" au premier t
 
 **Chantier « habillage visuel desktop » (accueil §69, fiche produit §70, corrections carte d'identité §71-72) considéré clos.**
 
-## 73. Incident réel — blocage indéfini PaymentVerifier + /login non reconnu après paiement, commit à renseigner
+## 73. Incident réel — blocage indéfini PaymentVerifier + /login non reconnu après paiement, commit `c4ed33e`
 
 **Investigation rouverte** sur un incident réel : renouvellement d'abonnement via MaxIt depuis la PWA TEKKIShop installée sur écran d'accueil iPhone — après validation du paiement, atterrissage dans Safari sur `/login` (session non reconnue), et blocage en chargement indéfini en retournant dans l'app installée. Le plan Business était bien réactivé après reconnexion manuelle (webhook + activation serveur ont fonctionné, seule l'expérience de retour était cassée). §42/§43 (nettoyage APP_URL/APP_DOMAIN, commit `8b9d1a8`) avait explicitement prévu ce cas : « si ça se reproduit, repartir sur une nouvelle piste, pas considérer clos par ce nettoyage seul. »
 
