@@ -19,7 +19,7 @@ export async function withEffectiveVariants<T extends WithVariants>(
 
   const { data: rows } = await supabase
     .from('product_variants')
-    .select('product_id, name, price, stock, is_active')
+    .select('id, product_id, name, price, stock, is_active')
     .in('product_id', products.map(p => p.id))
     .eq('is_active', true)
     .order('position', { ascending: true })
@@ -37,6 +37,7 @@ export async function withEffectiveVariants<T extends WithVariants>(
     const rowsForProduct = byProduct.get(p.id)
     if (!rowsForProduct) return p
     const variants: ProductVariant[] = rowsForProduct.map(r => ({
+      id: r.id,
       label: r.name,
       price: r.price ?? p.price, // NULL = hérite du produit
       stock_count: r.stock,

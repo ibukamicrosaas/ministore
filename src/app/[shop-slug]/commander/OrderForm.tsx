@@ -546,14 +546,23 @@ export function OrderForm({
       items: items.map((it) => {
         const p = getProduct(it.product_id)!
         let price = p.price
+        let variantId: string | null = null
         if (it.variant_label && p.variants) {
           const v = p.variants.find((v) => v.label === it.variant_label)
-          if (v) price = v.price
+          if (v) {
+            price = v.price
+            // Renseigné seulement si la variante vient de product_variants
+            // (système B) — undefined/null pour une variante encore servie
+            // depuis le JSONB (système A), auquel cas le serveur retombe sur
+            // variant_label seul (Lot 2, REPRISE.md §78).
+            variantId = v.id ?? null
+          }
         }
         return {
           product_id: it.product_id,
           product_name: p.name,
           variant_label: it.variant_label ?? null,
+          variant_id: variantId,
           unit_price: price,
           quantity: it.quantity,
           customization_note: it.customization_note.trim() || null,

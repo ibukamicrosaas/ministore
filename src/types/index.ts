@@ -25,6 +25,12 @@ export interface ProductVariant {
   label: string
   price: number
   stock_count?: number | null
+  // Renseigné uniquement quand la variante vient de product_variants (système
+  // B) via withEffectiveVariants — absent/null pour une variante encore
+  // servie depuis le JSONB (système A). Permet au tunnel de commande de
+  // référencer la ligne précise sans changer le sélecteur, qui reste indexé
+  // par label (Lot 3bis, REPRISE.md §76-80).
+  id?: string | null
 }
 
 export interface QuantityDiscount {

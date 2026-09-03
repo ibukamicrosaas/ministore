@@ -7,6 +7,7 @@ import { getHeldPhysicalOrderCount } from '@/lib/orders/held-orders'
 import { MAX_HELD_ORDERS } from '@/constants'
 import type { Shop, Product, ProductVariant, ProductPhoto, DeliveryZone, QuantityDiscount } from '@/types'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 type Props = {
   params: Promise<{ 'shop-slug': string }>
@@ -73,9 +74,17 @@ export default async function CommanderPage({ params, searchParams }: Props) {
     .eq('is_active', true)
     .order('display_order', { ascending: true })
 
-  const products = (productsData ?? []) as unknown as (Pick<Product,
+  const rawProducts = (productsData ?? []) as unknown as (Pick<Product,
     'id' | 'name' | 'price' | 'photos' | 'photo_url' | 'variants' | 'deposit_percentage' | 'category' | 'stock_count'
   > & { customization_enabled?: boolean; customization_label?: string | null; quantity_discounts?: QuantityDiscount[] | null; product_type?: string | null })[]
+
+  // Variantes effectives (Lot 3bis de la bascule, REPRISE.md §76-80) : même
+  // règle que produit/[id]/page.tsx et la grille d'accueil — product_variants
+  // (système B) si des lignes existent pour ce produit, sinon repli sur le
+  // JSONB (système A). Ici, chaque variante porte aussi son `id` (product_
+  // variants.id) pour que le sélecteur du tunnel puisse le transmettre au
+  // moment de la commande, sans changer sa logique de sélection par label.
+  const products = await withEffectiveVariants(supabase, rawProducts)
 
   const deliveryOptions = (shop.delivery_options ?? { home_delivery: true, store_pickup: true }) as {
     home_delivery: boolean
