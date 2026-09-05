@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-08-17.
+> Dernière mise à jour : 2026-09-05.
 
 ---
 
@@ -2208,3 +2208,17 @@ Plan complet à poser ensuite, découpé bascule/migration d'un côté et les tr
 **Corrigé** : `showDeliveryCard`/`showCashOnDelivery` ajoutent `!isDigital` (déjà disponible sur cette page, utilisée à 7 autres endroits). La carte "Paiement" elle-même reste affichée dans les deux cas — seule la mention "Paiement à la livraison" en dépend.
 
 **Testé en conditions réelles**, boutique de test dédiée (zones de livraison + paiement à la livraison + paiement en ligne configurés) avec un produit physique et un produit digital : livraison et mention "à la livraison" disparaissent uniquement sur le digital ; carte Paiement inchangée dans les deux cas (Wave, MaxIt toujours affichés). Nettoyage par identifiants précis, vérifié propre.
+
+## 85. Moyens de paiement affichés selon les marchés ciblés (`target_countries`), commit `876b376`
+
+**Signalement initial** : sur `tekki.shop/ibukandjoli`, seuls les moyens de paiement du Sénégal s'affichaient alors que la boutique cible plusieurs pays — question posée avec prudence explicite, argent réel en jeu.
+
+**Investigation, avant tout code** : `shops.target_countries` est un champ réel, déjà configurable par le marchand ("Marchés cibles" dans `SettingsForm.tsx`), déjà utilisé pour filtrer l'indicatif téléphonique du tunnel de commande — mais pas par les deux affichages de moyens de paiement (`produit/[id]/page.tsx`, `ShopHomeLayout.tsx`), qui ne lisaient que `shop.country`. **Le vrai mécanisme de paiement n'était pas affecté** : `PaymentMethodSelector.tsx` (sélecteur réel au checkout) et `api/payments/bictorys/create/route.ts` (création de la charge) dérivent déjà le pays depuis le **téléphone de l'acheteur**, avec repli sur `shop.country` seulement si absent — confirmé par un commentaire explicite dans le code ("source de vérité"). Le bug n'a donc jamais atteint de l'argent réel : un problème d'affichage/réassurance en amont du checkout, pas de fonctionnement du paiement. Non spécifique aux produits digitaux — la question se pose autant pour un produit physique avec livraison multi-pays ; le bon critère est `target_countries`, pas le type de produit.
+
+**Règle d'agrégation confirmée avant code** : `getPaymentMethodsForTargetCountries(shopCountry, targetCountries)` (nouvelle fonction, `src/lib/payments/payment-methods.ts`) — pays de la boutique en premier (s'il est un pays Bictorys valide), puis le reste de `target_countries` dans son ordre stocké (pays hors Bictorys silencieusement ignorés — FR/BE/CH/LU/CA notamment), dédupliqué par id de méthode en gardant le libellé/description du **premier** pays rencontré. Justifié par une divergence réelle trouvée en base : "Orange Money" a 3 textes d'instruction OTP différents selon CI/BK/ML, et "Moov Money" s'appelle "Flooz" au Togo — fusionner ces variantes silencieusement aurait été un choix arbitraire, pas neutre. Sans `target_countries` (ou vide), comportement strictement inchangé (repli sur `shop.country` seul).
+
+**Câblé** dans `produit/[id]/page.tsx` et `ShopHomeLayout.tsx`, plus `target_countries` ajouté aux requêtes `.select()` de ces deux pages et de `preview/[slug]/page.tsx` (même composant `ShopHomeLayout`, identifié sans qu'on ait eu à le demander).
+
+**Testé en conditions réelles** :
+- `ibukandjoli` (SN, cible SN/CI/BJ/TG/ML/BK/FR/BE/CH/LU/CA) : fiche produit et accueil affichent 7 méthodes uniques, ordre vérifié par position d'octet dans le HTML rendu (pas seulement visuellement) — Wave/MaxIt (SN) puis Orange Money/MTN Money/Moov Money (CI) puis T-Money (TG) puis Mobicash (ML). Aucun doublon : "Flooz" n'apparaît jamais (Moov Money vu en premier via CI l'emporte) ; FR/BE/CH/LU/CA absents.
+- Non-régression, boutique mono-pays réelle (`2asimarket`, CI, `target_countries: ["CI"]`) — le premier candidat choisi (`la-bonita-store`) s'est révélé être une boutique suspendue en réalité (sans rapport avec ce correctif), écarté au profit d'une boutique authentiquement active : sortie strictement identique à `PAYMENT_METHODS_BY_COUNTRY['CI']`, sur la fiche produit et l'accueil.
