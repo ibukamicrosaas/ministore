@@ -2184,3 +2184,19 @@ Plan complet à poser ensuite, découpé bascule/migration d'un côté et les tr
 - **Nettoyage** : première application de la nouvelle règle — identifiants précis uniquement (id de boutique pour le dossier storage, email exact pour `login_attempts`, ids exacts partout ailleurs), aucun caractère générique. Vérifié propre sur les 7 dimensions après coup.
 
 **Chantier de bascule variantes (Lots 1 à 4, plus 3bis) considéré clos — état des lieux vérifié séparément.**
+
+## 83. Cadrage des images (`grid_image_ratio`) — audit exhaustif, deux correctifs sur `ProductGallery.tsx`, commit `8339b68`
+
+**Signalement initial** : sur une boutique en cadrage "Portrait — 3:4", seule la grille d'accueil respecte le réglage — fiche produit et suggestions restent carrées.
+
+**Audit exhaustif** (même méthode que les 5 consommateurs JSONB oubliés du chantier variantes) : 6 emplacements réels d'affichage d'image produit recensés. Trois respectent déjà le réglage (`ProductCardGrid`, `FeaturedCard` sur l'accueil, et — après vérification — le hero de `ProductGallery.tsx`). Trois ne le respectent pas : **`ProductCardList`** (vue liste de l'accueil, dimension `72×72` fixe — c'est la vue par **défaut** tant qu'un marchand n'a pas explicitement choisi la grille ; mesuré en base, 7 boutiques actives en Portrait, dont 4 avec la vue liste par défaut, donc affectées même sur leur propre accueil), **bande de vignettes de `ProductGallery.tsx`** (`56×56` fixe), et les sections **"Vous aimerez aussi"** (`produit/[id]/page.tsx`) et **"Tu aimeras aussi"** (`commander/success/page.tsx`) — toutes deux en dimension fixe, aucune référence au réglage.
+
+**Auto-correction en cours d'audit, sur remise en question explicite de l'utilisateur** : l'affirmation initiale "le hero de `ProductGallery.tsx` respecte déjà le réglage" reposait sur la seule présence de la classe `aspect-[3/4]` dans le code source — pas une mesure réelle. Une capture d'écran réelle a montré une image principale carrée malgré un cadrage Portrait actif. Remesuré en conditions réelles sur une vraie boutique (`grid_image_ratio: 'portrait'` confirmé en base) : la classe était bien présente et calculée, mais **neutralisée par `maxHeight: 480`** combiné à `w-full` sur un écran large — le conteneur se rendait à 534×480px (ratio 1.11), pas du tout 3:4, malgré une classe CSS techniquement correcte. Leçon retenue : la présence d'une classe CSS dans le code source ne garantit pas le ratio réellement rendu — les mesures de dimensions réelles restent nécessaires même quand la logique semble correcte à la lecture.
+
+**Corrigé** :
+- Bande de vignettes : largeur dérivée de `isPortrait` (42px portrait / 56px carré), hauteur fixe à 56 pour aligner la bande.
+- Image principale : `maxHeight` remplacé par `maxWidth` dérivé du même ratio (360 portrait / 480 carré) — contraint la dimension dont `aspect-ratio` dérive l'autre, au lieu de deux contraintes orthogonales en conflit.
+
+**Testé en conditions réelles, mesure du ratio rendu (pas la présence de la classe)**, desktop 1780px et mobile 390px, sur une vraie boutique en Portrait : hero et vignette à l'exact **0.75** (3:4) aux deux largeurs après correctif, contre 1.11 (hero, desktop) et 1.0 (vignette, carré fixe) avant.
+
+**Restent à traiter séparément, ordre déjà fixé par l'utilisateur** : `ProductCardList` (vue liste accueil) ; "Vous aimerez aussi"/"Tu aimeras aussi" (plan à soumettre avant code, vérifier d'abord si `shop.grid_image_ratio` est accessible dans le périmètre de données de ces deux pages).
