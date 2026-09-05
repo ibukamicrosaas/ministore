@@ -9,6 +9,7 @@ import { CsvImportButton } from './CsvImportButton'
 import { ProductOrderList } from './ProductOrderList'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Product, Profile } from '@/types'
+import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 export const metadata = { title: 'Produits — TekkiShop' }
 
@@ -51,7 +52,11 @@ export default async function ProductsPage() {
 
   if (error) return <ErrorState message="Impossible de charger les produits." />
 
-  const products = (data ?? []) as Product[]
+  // Variantes effectives (Lot 4 de la bascule, REPRISE.md §76-81) : même règle
+  // que les autres surfaces — product_variants (système B) si des lignes
+  // existent pour ce produit, sinon repli sur le JSONB. Le badge "N variantes"
+  // de ProductOrderList.tsx lit product.variants.length sans changement.
+  const products = await withEffectiveVariants(supabase, (data ?? []) as Product[])
 
   // Agrégation des ventes par produit
   const salesMap: Record<string, number> = {}

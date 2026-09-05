@@ -44,7 +44,31 @@ export default async function EditProductPage({
 
   if (productRes.error || !productRes.data) notFound()
 
-  const product   = productRes.data as Product
+  // Lot 4 de la bascule variantes (REPRISE.md §76-81) : product_variants
+  // (système B) fusionné dans product.variants avant de passer au
+  // formulaire — ProductForm.tsx n'a pas besoin de savoir d'où viennent les
+  // données, il lit product.variants comme avant. Toutes les lignes (pas
+  // seulement actives) ne sont pas nécessaires ici : une variante désactivée
+  // depuis le dashboard ne doit plus apparaître dans le formulaire.
+  const { data: variantRows } = await supabase
+    .from('product_variants')
+    .select('id, name, price, stock, image_url')
+    .eq('product_id', id)
+    .eq('is_active', true)
+    .order('position', { ascending: true })
+
+  const product = {
+    ...(productRes.data as Product),
+    variants: (variantRows && variantRows.length > 0)
+      ? variantRows.map(v => ({
+          id: v.id,
+          label: v.name,
+          price: v.price ?? (productRes.data as Product).price,
+          stock_count: v.stock,
+          image_url: v.image_url,
+        }))
+      : (productRes.data as Product).variants,
+  } as Product
   const shopData      = shopRes.data as { slug?: string; plan?: string; currency?: string | null } | null
   const shopSlug      = shopData?.slug
   const shopPlan      = shopData?.plan

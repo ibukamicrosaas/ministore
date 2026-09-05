@@ -31,6 +31,10 @@ export interface ProductVariant {
   // référencer la ligne précise sans changer le sélecteur, qui reste indexé
   // par label (Lot 3bis, REPRISE.md §76-80).
   id?: string | null
+  // Champs propres au système B (product_variants), écrits par le formulaire
+  // produit du dashboard (Lot 4) — absents pour une variante encore servie
+  // depuis le JSONB.
+  image_url?: string | null
 }
 
 export interface QuantityDiscount {
@@ -94,7 +98,10 @@ export interface CreateProductInput {
   video_url?: string | null
   image_ratio?: 'square' | 'portrait' | null
   deposit_percentage?: number | null
-  variants?: ProductVariant[] | null
+  // Les variantes elles-mêmes ne passent plus par ici depuis le Lot 4 (voir
+  // syncProductVariants, product_variants) — variant_label reste un champ
+  // produit simple (le nom de la catégorie, ex. « Couleur »).
+  variant_label?: string | null
   stock_count?: number | null
   display_order?: number
   is_featured?: boolean | null

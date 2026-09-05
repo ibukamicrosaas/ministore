@@ -8,8 +8,9 @@ import {
   updateProduct,
   deleteProduct,
   uploadProductPhoto,
+  syncProductVariants,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload, Percent } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload, Percent, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto, QuantityDiscount } from '@/types'
@@ -72,6 +73,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [variants, setVariants]         = useState<ProductVariant[]>(
     initialVariants.length > 0 ? initialVariants : [{ label: '', price: 0, stock_count: null }]
   )
+  const [variantCategoryLabel, setVariantCategoryLabel] = useState(product?.variant_label ?? '')
+  const [uploadingVariantImage, setUploadingVariantImage] = useState<number | null>(null)
 
   // Vidéo
   const [videoUrl, setVideoUrl] = useState((product as Product & { video_url?: string | null })?.video_url ?? '')
@@ -227,8 +230,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
     { icon: '💎', label: 'Qualité',     values: ['Standard', 'Premium', 'Deluxe'] },
   ]
 
-  function applyPreset(values: string[]) {
+  function applyPreset(categoryLabel: string, values: string[]) {
     setVariants(values.map(v => ({ label: v, price: 0, stock_count: null })))
+    setVariantCategoryLabel(categoryLabel)
     setUseVariants(true)
   }
 
@@ -242,6 +246,35 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
   function removeVariant(index: number) {
     setVariants(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Avertissement seulement — aucune contrainte d'unicité (product_id, name)
+  // n'existe en base, ni ici, ni côté serveur (REPRISE.md §81).
+  const duplicateVariantLabels = (() => {
+    const seen = new Map<string, number>()
+    for (const v of variants) {
+      const key = v.label.trim().toLowerCase()
+      if (!key) continue
+      seen.set(key, (seen.get(key) ?? 0) + 1)
+    }
+    return new Set(
+      variants
+        .map(v => v.label.trim())
+        .filter(label => label && (seen.get(label.toLowerCase()) ?? 0) > 1)
+    )
+  })()
+
+  async function uploadVariantImage(index: number, file: File) {
+    setUploadingVariantImage(index)
+    const fd = new FormData()
+    fd.set('photo', file)
+    const result = await uploadProductPhoto(fd)
+    if (result.error) {
+      toast.error(result.error)
+    } else if (result.url) {
+      updateVariant(index, 'image_url', result.url)
+    }
+    setUploadingVariantImage(null)
   }
 
   async function uploadDigitalFile(file: File) {
@@ -296,7 +329,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       photos,
       video_url: videoUrl.trim() || null,
       deposit_percentage: productType === 'digital' ? null : (useDeposit ? depositPct : null),
-      variants: productType === 'digital' ? null : (validVariants.length > 0 ? validVariants : null),
+      variant_label: productType === 'digital' ? null : (useVariants ? (variantCategoryLabel.trim() || null) : null),
       stock_count: productType === 'digital' ? null : (fd.get('stock') ? parseInt(fd.get('stock') as string, 10) || null : null),
       is_featured: isFeatured,
       customization_enabled: productType === 'digital' ? false : customizationEnabled,
@@ -318,7 +351,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       ),
     }
 
-    let result
+    let result: { error?: string; success?: boolean; id?: string }
     if (product) {
       result = await updateProduct(product.id, payload)
     } else {
@@ -327,10 +360,22 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
     if (result.error) {
       toast.error(result.error)
-    } else {
-      toast.success(product ? 'Produit mis à jour ✓' : 'Produit créé ✓')
-      router.push('/dashboard/products')
+      setLoading(false)
+      return
     }
+
+    // Lot 4 de la bascule variantes (REPRISE.md §76-81) : product_variants
+    // (système B) synchronisé séparément — plus jamais écrit dans
+    // products.variants (JSONB) par ce formulaire. Le produit digital n'a
+    // jamais de variantes (validVariants est vide dans ce cas).
+    const productId = product ? product.id : result.id
+    if (productId) {
+      const syncResult = await syncProductVariants(productId, validVariants)
+      if (syncResult.error) toast.error(syncResult.error)
+    }
+
+    toast.success(product ? 'Produit mis à jour ✓' : 'Produit créé ✓')
+    router.push('/dashboard/products')
     setLoading(false)
   }
 
@@ -825,7 +870,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                     <button
                       key={preset.label}
                       type="button"
-                      onClick={() => applyPreset(preset.values)}
+                      onClick={() => applyPreset(preset.label, preset.values)}
                       className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-sky-50 transition-colors"
                     >
                       <span>{preset.icon}</span>
@@ -835,9 +880,23 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                 </div>
               </div>
 
+              {/* Nom de la catégorie de variantes — jamais câblé avant ce lot
+                  (products.variant_label restait à 0 ligne renseignée, vérifié
+                  REPRISE.md §76) malgré son existence de longue date. */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Nom de la catégorie</label>
+                <input
+                  value={variantCategoryLabel}
+                  onChange={e => setVariantCategoryLabel(e.target.value)}
+                  placeholder="Ex : Couleur, Taille, Format…"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
+                />
+              </div>
+
               {/* Variantes personnalisées */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-6 mb-1">
+                  <span className="w-9 shrink-0" />
                   <span className="flex-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider">Variante</span>
                   <span className="w-24 text-[10px] font-medium text-gray-400 uppercase tracking-wider text-right shrink-0">Prix</span>
                   <span className="w-20 text-[10px] font-medium text-gray-400 uppercase tracking-wider text-right shrink-0">Stock</span>
@@ -846,6 +905,32 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                 {variants.map((v, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
+                    <label className="relative h-9 w-9 shrink-0 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer">
+                      {v.image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={v.image_url} alt="" className="h-full w-full object-cover" />
+                      )}
+                      {uploadingVariantImage === i ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                        </div>
+                      ) : !v.image_url && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Camera className="h-3.5 w-3.5 text-gray-300" />
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) uploadVariantImage(i, file)
+                          e.target.value = ''
+                        }}
+                        disabled={uploadingVariantImage === i}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </label>
                     <input
                       value={v.label}
                       onChange={e => updateVariant(i, 'label', e.target.value)}
@@ -879,6 +964,18 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                     </button>
                   </div>
                 ))}
+                {/* Avertissement, pas un blocage — aucune contrainte d'unicité n'existe en
+                    base sur (product_id, name) ; un marchand peut créer ce piège sans le
+                    savoir, la variante en trop devenant inaccessible par libellé sur le
+                    chemin système A (REPRISE.md §81). Normalisé espaces/casse. */}
+                {duplicateVariantLabels.size > 0 && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      Deux variantes ou plus portent le même nom ({Array.from(duplicateVariantLabels).join(', ')}) — vérifie que ce n&apos;est pas une erreur.
+                    </span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={addVariant}

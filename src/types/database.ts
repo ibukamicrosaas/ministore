@@ -276,6 +276,7 @@ export type Database = {
           display_order: number
           deposit_percentage: number | null
           variants: Json | null
+          variant_label?: string | null
           stock_count: number | null
           created_at: string
           updated_at: string
@@ -302,6 +303,7 @@ export type Database = {
           display_order?: number
           deposit_percentage?: number | null
           variants?: Json | null
+          variant_label?: string | null
           stock_count?: number | null
           created_at?: string
           updated_at?: string
@@ -328,6 +330,7 @@ export type Database = {
           display_order?: number
           deposit_percentage?: number | null
           variants?: Json | null
+          variant_label?: string | null
           stock_count?: number | null
           created_at?: string
           updated_at?: string

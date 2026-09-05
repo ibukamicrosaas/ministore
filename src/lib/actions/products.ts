@@ -3,7 +3,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import type { CreateProductInput, UpdateProductInput, ProductPhoto } from '@/types'
+import type { CreateProductInput, UpdateProductInput, ProductPhoto, ProductVariant } from '@/types'
 import { slugify } from '@/lib/utils/slugify'
 import { sendSMS, buildStockBackMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
@@ -93,7 +93,7 @@ export async function createProduct(input: CreateProductInput) {
     video_url:          input.video_url ?? null,
     image_ratio:        input.image_ratio ?? 'square',
     deposit_percentage: input.deposit_percentage ?? null,
-    variants:           input.variants?.length ? input.variants : null,
+    variant_label:      input.variant_label?.trim() || null,
     stock_count:        input.stock_count ?? null,
     display_order:      (maxOrder?.display_order ?? 0) + 1,
     is_active:             true,
@@ -195,7 +195,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.video_url !== undefined)          updates.video_url          = input.video_url ?? null
   if (input.image_ratio !== undefined)        updates.image_ratio        = input.image_ratio ?? 'square'
   if (input.deposit_percentage !== undefined) updates.deposit_percentage = input.deposit_percentage
-  if (input.variants !== undefined)           updates.variants           = input.variants?.length ? input.variants : null
+  if (input.variant_label !== undefined)      updates.variant_label      = input.variant_label?.trim() || null
   if (input.stock_count !== undefined)        updates.stock_count        = input.stock_count
   if (input.is_active !== undefined) {
     if (input.is_active) {
@@ -275,6 +275,73 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
       void notifyStockAlertSubscribers(id, productData.name, shopData.name, shopSlug)
     }
   }
+
+  return { success: true }
+}
+
+// Lot 4 de la bascule variantes (REPRISE.md §76-81) : écrit dans
+// product_variants (système B) — products.variants (JSONB, système A) n'est
+// plus jamais mis à jour par ce formulaire à partir de ce lot, il reste figé
+// comme trace historique pour les produits jamais réédités depuis.
+//
+// Réconciliation, pas remplacement : une variante soumise avec un `id` déjà
+// en base est mise à jour ; sans `id`, elle est insérée ; une ligne en base
+// absente de la liste soumise est désactivée (is_active=false), jamais
+// supprimée — order_items.variant_id (ON DELETE SET NULL) n'a jamais besoin
+// de se déclencher, et le marchand ne perd pas la trace d'une variante déjà
+// commandée par le passé.
+export async function syncProductVariants(
+  productId: string,
+  variants: (Pick<ProductVariant, 'label' | 'price' | 'stock_count' | 'image_url'> & { id?: string | null })[]
+) {
+  const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
+  if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: product } = await (supabase.from('products') as any)
+    .select('id')
+    .eq('id', productId)
+    .eq('shop_id', shopId)
+    .maybeSingle()
+  if (!product) return { error: 'Produit introuvable.' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existingRows } = await (supabase.from('product_variants') as any)
+    .select('id')
+    .eq('product_id', productId)
+  const existingIds  = new Set<string>((existingRows ?? []).map((r: { id: string }) => r.id))
+  const validEntries  = variants.filter(v => v.label.trim())
+  const submittedIds  = new Set(validEntries.filter(v => v.id).map(v => v.id as string))
+
+  const toDeactivate = [...existingIds].filter(id => !submittedIds.has(id))
+  if (toDeactivate.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('product_variants') as any)
+      .update({ is_active: false })
+      .in('id', toDeactivate)
+  }
+
+  for (const [index, v] of validEntries.entries()) {
+    const row = {
+      name:       v.label.trim(),
+      price:      v.price,
+      stock:      v.stock_count ?? null,
+      image_url:  v.image_url ?? null,
+      position:   index,
+      is_active:  true,
+    }
+    if (v.id && existingIds.has(v.id)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('product_variants') as any).update(row).eq('id', v.id)
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('product_variants') as any).insert({ ...row, product_id: productId })
+    }
+  }
+
+  revalidatePath('/dashboard/products')
+  revalidatePath(`/dashboard/products/${productId}`)
+  if (shopSlug) revalidatePath(`/${shopSlug}`)
 
   return { success: true }
 }
