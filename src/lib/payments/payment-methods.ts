@@ -48,3 +48,50 @@ export const PAYMENT_METHODS_BY_COUNTRY: Record<BictorysCountry, PaymentMethodOp
     { id: 'moov_money',   label: 'Moov Money',    description: 'Paiement push mobile',        icon: '/logo-payments/moov_1.svg' },
   ],
 }
+
+const BICTORYS_COUNTRIES: BictorysCountry[] = ['SN', 'CI', 'BK', 'ML', 'TG', 'BJ']
+
+function isBictorysCountry(value: string): value is BictorysCountry {
+  return (BICTORYS_COUNTRIES as string[]).includes(value)
+}
+
+/**
+ * Agrège les moyens de paiement affichables pour une boutique ciblant
+ * plusieurs marchés. Le pays de la boutique passe en premier (s'il est
+ * un pays Bictorys valide), puis les marchés ciblés dans leur ordre
+ * stocké. Déduplication par id de méthode : le premier pays rencontré
+ * fixe le libellé/description affichés (ex. "Orange Money" a 3 textes
+ * OTP différents selon CI/BK/ML, "Moov Money" s'appelle "Flooz" au Togo
+ * — on ne peut pas fusionner ces variantes, on choisit la première).
+ * Sans target_countries (boutique mono-pays), comportement inchangé.
+ */
+export function getPaymentMethodsForTargetCountries(
+  shopCountry: BictorysCountry | null,
+  targetCountries: string[] | null | undefined
+): PaymentMethodOption[] {
+  if (!targetCountries || targetCountries.length === 0) {
+    return shopCountry ? (PAYMENT_METHODS_BY_COUNTRY[shopCountry] ?? []) : []
+  }
+
+  const orderedCountries: BictorysCountry[] = []
+  if (shopCountry && isBictorysCountry(shopCountry)) {
+    orderedCountries.push(shopCountry)
+  }
+  for (const country of targetCountries) {
+    if (isBictorysCountry(country) && !orderedCountries.includes(country)) {
+      orderedCountries.push(country)
+    }
+  }
+
+  const seen = new Set<PaymentMethod>()
+  const result: PaymentMethodOption[] = []
+  for (const country of orderedCountries) {
+    for (const method of PAYMENT_METHODS_BY_COUNTRY[country]) {
+      if (!seen.has(method.id)) {
+        seen.add(method.id)
+        result.push(method)
+      }
+    }
+  }
+  return result
+}

@@ -7,7 +7,7 @@ import { ShareButton } from './ShareButton'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getPlanFeatures } from '@/lib/plan-features'
-import { PAYMENT_METHODS_BY_COUNTRY, type BictorysCountry } from '@/lib/payments/payment-methods'
+import { getPaymentMethodsForTargetCountries, type BictorysCountry } from '@/lib/payments/payment-methods'
 
 // Champs boutique pas encore présents dans les types Supabase générés
 // (database.ts n'a pas été régénéré depuis leur ajout en base) — même
@@ -21,6 +21,7 @@ interface ShopExtras {
   product_layout?: 'list' | 'grid' | null
   verification_status?: string | null
   grid_image_ratio?: 'square' | 'portrait' | null
+  target_countries?: string[] | null
 }
 
 interface DeliveryZone { id: string; name: string; price: number }
@@ -148,7 +149,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
   const hasDelivery   = deliveryZones.length > 0
 
   const shopCountry    = shop.country as BictorysCountry | undefined
-  const onlineMethods  = shopCountry ? (PAYMENT_METHODS_BY_COUNTRY[shopCountry] ?? []) : []
+  const onlineMethods  = getPaymentMethodsForTargetCountries(shopCountry ?? null, shop.target_countries)
   const acceptsCash    = shop.accept_cash_on_delivery ?? true
   const hasOnlineCard  = onlineMethods.length > 0 || !!shop.bictorys_secret_key || !!shop.stripe_connect_enabled
   const hasPayment     = hasOnlineCard || acceptsCash

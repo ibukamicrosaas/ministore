@@ -15,7 +15,7 @@ import { APP_URL } from '@/constants'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getShopBasePath } from '@/lib/utils/custom-domain'
-import { PAYMENT_METHODS_BY_COUNTRY } from '@/lib/payments/payment-methods'
+import { getPaymentMethodsForTargetCountries } from '@/lib/payments/payment-methods'
 import type { BictorysCountry } from '@/lib/payments/payment-methods'
 import { hasRichDescription } from '@/lib/plan-features'
 import { displayName } from '@/lib/utils/display-name'
@@ -36,7 +36,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shopRes = await (supabase.from('shops') as any)
-    .select('id, name, primary_color, plan, currency, country, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones, phone_whatsapp')
+    .select('id, name, primary_color, plan, currency, country, target_countries, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones, phone_whatsapp')
     .eq('slug', shopSlug)
     .single()
 
@@ -144,6 +144,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const shop    = shopData as Pick<Shop, 'id' | 'name' | 'primary_color' | 'logo_url' | 'city' | 'address' | 'phone_whatsapp'> & {
     plan?: string; currency?: string | null
     country?: string | null
+    target_countries?: string[] | null
     accept_cash_on_delivery?: boolean | null
     bictorys_secret_key?: string | null
     stripe_connect_enabled?: boolean | null
@@ -230,9 +231,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   // Méthodes de paiement pour affichage discret sous le CTA
   const shopCountry = shop.country as BictorysCountry | null
-  const onlineMethods = shopCountry && PAYMENT_METHODS_BY_COUNTRY[shopCountry]
-    ? PAYMENT_METHODS_BY_COUNTRY[shopCountry]
-    : []
+  const onlineMethods = getPaymentMethodsForTargetCountries(shopCountry, shop.target_countries)
   const hasOnlinePayment = onlineMethods.length > 0 || shop.bictorys_secret_key || shop.stripe_connect_enabled
   const acceptCash = shop.accept_cash_on_delivery ?? true
 
