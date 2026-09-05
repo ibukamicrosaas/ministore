@@ -2200,3 +2200,11 @@ Plan complet à poser ensuite, découpé bascule/migration d'un côté et les tr
 **Testé en conditions réelles, mesure du ratio rendu (pas la présence de la classe)**, desktop 1780px et mobile 390px, sur une vraie boutique en Portrait : hero et vignette à l'exact **0.75** (3:4) aux deux largeurs après correctif, contre 1.11 (hero, desktop) et 1.0 (vignette, carré fixe) avant.
 
 **Restent à traiter séparément, ordre déjà fixé par l'utilisateur** : `ProductCardList` (vue liste accueil) ; "Vous aimerez aussi"/"Tu aimeras aussi" (plan à soumettre avant code, vérifier d'abord si `shop.grid_image_ratio` est accessible dans le périmètre de données de ces deux pages).
+
+## 84. Livraison/paiement affichés sans condition sur un produit digital, commit `7725ae1`
+
+**Constat vérifié** : la carte "Livraison" et la mention "Paiement à la livraison" du bloc "Avant de commander" (`produit/[id]/page.tsx`) s'affichaient sans tenir compte du produit consulté — incohérent avec le tunnel de commande réel, qui interdit déjà le paiement à la livraison pour un panier 100% digital (`api/orders/route.ts`).
+
+**Corrigé** : `showDeliveryCard`/`showCashOnDelivery` ajoutent `!isDigital` (déjà disponible sur cette page, utilisée à 7 autres endroits). La carte "Paiement" elle-même reste affichée dans les deux cas — seule la mention "Paiement à la livraison" en dépend.
+
+**Testé en conditions réelles**, boutique de test dédiée (zones de livraison + paiement à la livraison + paiement en ligne configurés) avec un produit physique et un produit digital : livraison et mention "à la livraison" disparaissent uniquement sur le digital ; carte Paiement inchangée dans les deux cas (Wave, MaxIt toujours affichés). Nettoyage par identifiants précis, vérifié propre.
