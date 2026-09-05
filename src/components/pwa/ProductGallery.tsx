@@ -23,13 +23,22 @@ export function ProductGallery({ photos, videoEmbedUrl, productName, primaryColo
 
   const activePhoto = photos[activeIndex]
   const aspectClass = isPortrait ? 'aspect-[3/4]' : 'aspect-square'
+  // Un maxHeight fixe combiné à w-full neutralise aspect-ratio sur un écran
+  // large : la largeur suit le conteneur (ex. 534px), l'aspect-ratio voudrait
+  // ~712px de haut, mais le plafond de hauteur l'en empêchait — le rendu
+  // n'était plus du tout 3:4 (mesuré : ratio 1.11 au lieu de 0.75 attendu).
+  // Plafonner la largeur plutôt que la hauteur laisse aspect-ratio calculer
+  // la hauteur correctement à partir d'une largeur déjà contrainte — jamais
+  // en conflit. 360px de large en portrait donne 480px de haut (3:4), la
+  // même limite visuelle qu'avant pour le mode carré.
+  const heroMaxWidth = isPortrait ? 360 : 480
 
   return (
     <>
       {/* Hero photo */}
       <div className="relative">
         {activePhoto ? (
-          <div className={`relative w-full ${aspectClass}`} style={{ maxHeight: 480 }}>
+          <div className={`relative w-full mx-auto ${aspectClass}`} style={{ maxWidth: heroMaxWidth }}>
             <Image
               src={activePhoto.url}
               alt={`${productName} ${activeIndex + 1}`}
@@ -41,7 +50,7 @@ export function ProductGallery({ photos, videoEmbedUrl, productName, primaryColo
             />
           </div>
         ) : (
-          <div className={`flex w-full ${aspectClass} items-center justify-center bg-gray-100`} style={{ maxHeight: 480 }}>
+          <div className={`flex w-full mx-auto ${aspectClass} items-center justify-center bg-gray-100`} style={{ maxWidth: heroMaxWidth }}>
             <Package className="h-20 w-20 text-gray-300" />
           </div>
         )}
@@ -67,7 +76,10 @@ export function ProductGallery({ photos, videoEmbedUrl, productName, primaryColo
               onClick={() => setActiveIndex(i)}
               className="shrink-0 rounded-xl overflow-hidden transition-all"
               style={{
-                width: 56, height: 56,
+                // Hauteur fixe pour aligner toute la bande, largeur dérivée
+                // du ratio choisi (3:4 en portrait) — jamais carré en dur,
+                // même correctif que ProductCardGrid/ProductCardList.
+                width: isPortrait ? 42 : 56, height: 56,
                 outline: i === activeIndex ? `2px solid ${primaryColor}` : '2px solid transparent',
                 outlineOffset: 2,
               }}
