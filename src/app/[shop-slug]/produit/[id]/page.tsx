@@ -243,7 +243,13 @@ export default async function ProductDetailPage({ params }: Props) {
   const deliveryZones = Array.isArray(shop.delivery_zones)
     ? (shop.delivery_zones as { id: string; name: string; price: number }[])
     : []
-  const hasBeforeOrderBlock = deliveryZones.length > 0 || hasOnlinePayment || acceptCash
+  // Un produit digital n'a rien à livrer, et un panier 100% digital ne peut
+  // être payé qu'en ligne (déjà la règle dans le vrai tunnel de commande,
+  // api/orders/route.ts) — cette fiche affichait pourtant les deux sans
+  // condition sur le produit consulté.
+  const showDeliveryCard = !isDigital && deliveryZones.length > 0
+  const showCashOnDelivery = !isDigital && acceptCash
+  const hasBeforeOrderBlock = showDeliveryCard || hasOnlinePayment || showCashOnDelivery
 
   const publicUrl = `${APP_URL}/${shopSlug}/produit/${product.slug ?? product.id}`
 
@@ -566,7 +572,7 @@ export default async function ProductDetailPage({ params }: Props) {
         {hasBeforeOrderBlock && (
           <div className="mt-5 pt-5 border-t border-gray-100 space-y-2.5">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Avant de commander</p>
-            {deliveryZones.length > 0 && (
+            {showDeliveryCard && (
               <div className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
                 <Truck className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">
@@ -577,7 +583,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
-            {(hasOnlinePayment || acceptCash) && (
+            {(hasOnlinePayment || showCashOnDelivery) && (
               <div className="flex items-start gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
                 <Wallet className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">
@@ -586,7 +592,7 @@ export default async function ProductDetailPage({ params }: Props) {
                     {[
                       ...onlineMethods.map(m => m.label),
                       ...(onlineMethods.length === 0 && hasOnlinePayment ? ['Carte bancaire'] : []),
-                      ...(acceptCash ? ['Paiement à la livraison'] : []),
+                      ...(showCashOnDelivery ? ['Paiement à la livraison'] : []),
                     ].join(', ')}
                   </p>
                 </div>
