@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
 import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
+import { sendOrderConfirmationEmail } from '@/lib/notifications/email'
+import { formatPrice } from '@/lib/utils/country-groups'
+import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { APP_URL } from '@/constants'
 import { setShopStatus } from '@/lib/billing/shop-status'
 import * as Sentry from '@sentry/nextjs'
@@ -84,7 +87,14 @@ export async function POST(req: NextRequest) {
             .update({ status: 'confirmed', payment_method: 'stripe_card' })
             .eq('id', orderId)
             .eq('status', 'pending')
-            .select('id, shop_id, clients(first_name, whatsapp, phone), shops:shop_id(name)')
+            .select(`
+              id, shop_id, client_token, total_price, deposit_amount, payment_type,
+              delivery_type, delivery_date, delivery_price, delivery_zone_name,
+              promo_code, promo_discount_pct, discount_amount,
+              clients(first_name, whatsapp, phone, email),
+              order_items(product_name, quantity, line_total, product_id, products(product_type, digital_file_name)),
+              shops:shop_id(name, slug, currency)
+            `)
             .single()
 
           if (updateError) {
@@ -101,20 +111,18 @@ export async function POST(req: NextRequest) {
 
           if (updatedOrder) {
             const ord = updatedOrder as unknown as {
-              id: string; shop_id: string
-              clients: { first_name: string; whatsapp: string | null; phone: string } | null
-              shops: { name: string } | null
+              id: string; shop_id: string; client_token: string
+              total_price: number; deposit_amount: number | null; payment_type: string
+              delivery_type: 'home_delivery' | 'store_pickup'; delivery_date: string | null
+              delivery_price: number | null; delivery_zone_name: string | null
+              promo_code: string | null; promo_discount_pct: number | null; discount_amount: number | null
+              clients: { first_name: string; whatsapp: string | null; phone: string; email: string | null } | null
+              order_items: { product_name: string; quantity: number; line_total: number; product_id: string; products: { product_type: string | null; digital_file_name: string | null } | null }[]
+              shops: { name: string; slug: string; currency: string | null } | null
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: items } = await (supabase as any)
-              .from('order_items')
-              .select('product_id, products(product_type, digital_file_name)')
-              .eq('order_id', ord.id)
 
-            const digitalItems = ((items ?? []) as Array<{
-              product_id: string
-              products: { product_type: string | null; digital_file_name: string | null } | null
-            }>).filter(i => i.products?.product_type === 'digital')
+            const digitalItems = ord.order_items.filter(i => i.products?.product_type === 'digital')
+            const digitalDownloads: { productName: string; downloadUrl: string }[] = []
 
             if (digitalItems.length > 0 && ord.clients) {
               const completedAt = new Date().toISOString()
@@ -145,15 +153,56 @@ export async function POST(req: NextRequest) {
 
                 if (tokenData?.token) {
                   const downloadUrl = `${APP_URL}/telechargement/${tokenData.token}`
+                  const productName = item.products?.digital_file_name ?? 'ton fichier'
+                  digitalDownloads.push({ productName, downloadUrl })
                   const msg = buildDigitalDownloadMessage({
                     shopName: ord.shops?.name ?? '',
                     clientName: ord.clients.first_name,
-                    productName: item.products?.digital_file_name ?? 'ton fichier',
+                    productName,
                     downloadUrl, expiresHours: 48,
                   })
                   await sendWhatsApp(clientPhone, msg)
                 }
               }
+            }
+
+            // E-mail de confirmation client — absent jusqu'ici sur ce chemin de
+            // paiement (carte Stripe, diaspora EU/CA) : aucune confirmation
+            // générale n'était envoyée, digital ou non (§1 REPRISE.md). Même
+            // gabarit que le webhook Bictorys.
+            if (ord.clients?.email && ord.shops) {
+              const shopCurrency = (ord.shops.currency ?? 'EUR') as ShopCurrency
+              const isDigitalOrder = ord.order_items.length > 0 && ord.order_items.every(i => i.products?.product_type === 'digital')
+              const isDeposit = ord.payment_type === 'online_deposit' && (ord.deposit_amount ?? 0) > 0
+              const itemsSummaryEmail = ord.order_items
+                .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${formatPrice(i.line_total, shopCurrency)}`)
+                .join('\n')
+              const orderUrl = `${APP_URL}/${ord.shops.slug}/commander/success?order_id=${ord.id}&token=${ord.client_token}`
+              void sendOrderConfirmationEmail({
+                toEmail:          ord.clients.email,
+                clientName:       ord.clients.first_name,
+                shopName:         ord.shops.name,
+                shopSlug:         ord.shops.slug,
+                orderId:          ord.id,
+                clientToken:      ord.client_token,
+                currency:         shopCurrency,
+                items:            itemsSummaryEmail,
+                itemsSubtotal:    ord.order_items.reduce((sum, i) => sum + i.line_total, 0),
+                promoCode:        ord.promo_code,
+                promoDiscountPct: ord.promo_discount_pct,
+                discountAmount:   ord.discount_amount,
+                deliveryPrice:    ord.delivery_price,
+                deliveryZoneName: ord.delivery_zone_name,
+                totalPrice:       ord.total_price,
+                amountNow:        isDeposit ? (ord.deposit_amount ?? 0) : ord.total_price,
+                amountLater:      isDeposit ? ord.total_price - (ord.deposit_amount ?? 0) : 0,
+                isDigitalOrder,
+                digitalDownloads: digitalDownloads.length > 0 ? digitalDownloads : undefined,
+                deliveryType: ord.delivery_type,
+                deliveryDate: ord.delivery_date,
+                paymentType:  ord.payment_type,
+                orderUrl,
+              })
             }
           }
         }

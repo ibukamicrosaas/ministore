@@ -182,6 +182,8 @@ interface OrderConfirmationParams {
   amountLater: number
   /** Panier 100% digital — masque toute mention de livraison/retrait (§8/§9 de SPEC-refonte-tunnel-commande.md). */
   isDigitalOrder: boolean
+  /** Un lien par produit digital de la commande, déjà généré (token existant) — affiché même sur un panier mixte. */
+  digitalDownloads?: { productName: string; downloadUrl: string }[]
   deliveryType: 'home_delivery' | 'store_pickup'
   deliveryDate?: string | null
   paymentType: string
@@ -220,6 +222,20 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
           <td style="padding:6px 0;text-align:right;">+${formatPrice(params.deliveryPrice!, cur)}</td>
         </tr>`
 
+  // Liens de téléchargement — même token que celui déjà envoyé par WhatsApp
+  // (buildDigitalDownloadMessage), jamais régénéré ici. Affiché dès qu'il y a
+  // au moins un produit digital, y compris sur un panier mixte.
+  const digitalDownloads = params.digitalDownloads ?? []
+  const digitalDownloadsBlock = digitalDownloads.length === 0 ? '' : `
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.05em;">📄 Tes fichiers</p>
+        ${digitalDownloads.map(d => `
+        <a href="${d.downloadUrl}" style="display:block;text-align:center;background:#0ea5e9;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:8px;">
+          Télécharger « ${d.productName} » →
+        </a>`).join('')}
+        <p style="margin:6px 0 0;font-size:11px;color:#1d4ed8;">Lien${digitalDownloads.length > 1 ? 's' : ''} valide${digitalDownloads.length > 1 ? 's' : ''} 48h — max 5 téléchargements.</p>
+      </div>`
+
   const paidNowBlock = params.amountNow > 0
     ? `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#111827;">
          <span>Tu payes maintenant</span><span>${formatPrice(params.amountNow, cur)}</span>
@@ -253,7 +269,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Articles</p>
         <pre style="margin:0;font-size:13px;color:#374151;white-space:pre-wrap;font-family:inherit;">${params.items}</pre>
       </div>
-
+      ${digitalDownloadsBlock}
       <!-- Récap -->
       <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;margin-bottom:12px;">${deliveryMethodRow}
         <tr>
