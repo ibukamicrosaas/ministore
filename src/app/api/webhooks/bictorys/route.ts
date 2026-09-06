@@ -369,7 +369,7 @@ async function handleOrderWebhook(
       delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
       clients(first_name, last_name, whatsapp, phone, email),
       order_items(product_name, quantity, line_total, product_id, products(product_type)),
-      shops(name, phone_whatsapp, slug, currency)
+      shops(name, phone_whatsapp, slug, currency, logo_url, primary_color)
     `)
     .single()
 
@@ -396,7 +396,7 @@ async function handleOrderWebhook(
     discount_amount: number | null
     clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string; email: string | null } | null
     order_items: { product_name: string; quantity: number; line_total: number; product_id: string | null; products: { product_type: string | null } | null }[]
-    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null } | null
+    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null } | null
   }
 
   if (!o.clients || !o.shops) {
@@ -544,6 +544,8 @@ async function handleOrderWebhook(
       toEmail:          o.clients.email,
       clientName:       o.clients.first_name,
       shopName:         o.shops.name,
+      shopColor:        o.shops.primary_color,
+      shopLogoUrl:      o.shops.logo_url,
       shopSlug:         o.shops.slug,
       orderId:          o.id,
       clientToken:      o.client_token,

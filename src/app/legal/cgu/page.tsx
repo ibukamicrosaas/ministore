@@ -5,8 +5,9 @@ export const metadata: Metadata = { title: "Conditions Générales d'Utilisation
 /**
  * ⚠️ AVANT PUBLICATION — points à valider par un juriste :
  *  - L'entité éditrice (Dukka) : dénomination sociale exacte, forme juridique,
- *    numéro d'immatriculation, adresse du siège. Les mentions ci-dessous sont
- *    des espaces réservés à compléter.
+ *    numéro d'immatriculation. Adresse du siège fournie par l'utilisateur le
+ *    2026-09-06 (12, Ouest-Foire, Dakar - Sénégal), déjà reportée ci-dessous —
+ *    forme juridique et immatriculation restent à compléter.
  *  - L'article 17 (droit applicable) : le service est fourni dans 11 pays, dont
  *    5 soumis au droit de la consommation européen. Une clause de compétence
  *    exclusive au Sénégal peut être inopposable à un utilisateur consommateur
@@ -24,7 +25,7 @@ export default function CGUPage() {
 
       <Section title="1. Présentation de TEKKIShop">
         <p>TEKKIShop est une plateforme en ligne qui permet aux commerçants et entrepreneurs de créer une boutique en ligne depuis leur téléphone, de présenter leurs produits, de recevoir des commandes et d&apos;encaisser des paiements par mobile money.</p>
-        <p>TEKKIShop est édité et exploité par <strong>Dukka</strong>{/* TODO : forme juridique, immatriculation, siège */}, dont le siège est établi à Dakar, Sénégal.</p>
+        <p>TEKKIShop est édité et exploité par <strong>Dukka</strong>{/* TODO : forme juridique, immatriculation */}, dont le siège est établi au 12, Ouest-Foire, Dakar - Sénégal.</p>
         <p>Contact : <a href="mailto:contact@tekki.shop" className="text-[var(--color-primary)]">contact@tekki.shop</a></p>
       </Section>
 

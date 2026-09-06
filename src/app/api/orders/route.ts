@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   // Vérifier que la boutique existe et est active
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status, accept_online_payment, accept_cash_on_delivery, currency')
+    .select('id, name, phone_whatsapp, slug, deposit_percentage, delivery_zones, email, status, accept_online_payment, accept_cash_on_delivery, currency, logo_url, primary_color')
     .eq('id', shopId)
     .eq('is_active', true)
     .single()
@@ -521,6 +521,8 @@ export async function POST(req: NextRequest) {
     void sendNewOrderAlertEmail({
       toEmail:           shopEmail,
       shopName:          shop.name,
+      shopColor:         shop.primary_color,
+      shopLogoUrl:       shop.logo_url,
       clientName:        merchantClient.clientName,
       clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
       items:             itemsSummary,
@@ -593,6 +595,8 @@ export async function POST(req: NextRequest) {
       toEmail:          client_email,
       clientName:       client_first_name,
       shopName:         shop.name,
+      shopColor:        shop.primary_color,
+      shopLogoUrl:      shop.logo_url,
       shopSlug:         shop.slug,
       orderId:          order.id,
       clientToken:      order.client_token,

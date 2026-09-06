@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
               promo_code, promo_discount_pct, discount_amount,
               clients(first_name, whatsapp, phone, email),
               order_items(product_name, quantity, line_total, product_id, products(product_type, digital_file_name)),
-              shops:shop_id(name, slug, currency)
+              shops:shop_id(name, slug, currency, logo_url, primary_color)
             `)
             .single()
 
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
               promo_code: string | null; promo_discount_pct: number | null; discount_amount: number | null
               clients: { first_name: string; whatsapp: string | null; phone: string; email: string | null } | null
               order_items: { product_name: string; quantity: number; line_total: number; product_id: string; products: { product_type: string | null; digital_file_name: string | null } | null }[]
-              shops: { name: string; slug: string; currency: string | null } | null
+              shops: { name: string; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null } | null
             }
 
             const digitalItems = ord.order_items.filter(i => i.products?.product_type === 'digital')
@@ -182,6 +182,8 @@ export async function POST(req: NextRequest) {
                 toEmail:          ord.clients.email,
                 clientName:       ord.clients.first_name,
                 shopName:         ord.shops.name,
+                shopColor:        ord.shops.primary_color,
+                shopLogoUrl:      ord.shops.logo_url,
                 shopSlug:         ord.shops.slug,
                 orderId:          ord.id,
                 clientToken:      ord.client_token,

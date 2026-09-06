@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { APP_URL } from '@/constants'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -13,9 +14,33 @@ const _rawFrom = process.env.RESEND_FROM_EMAIL ?? ''
 const _fromEmail = _rawFrom.includes('@') ? _rawFrom : 'noreply@tekki.shop'
 const FROM_ADDRESS = `TEKKIShop <${_fromEmail}>`
 
+// Siège social — fournie par l'utilisateur le 2026-09-06, cohérente avec
+// legal/cgu/page.tsx (même donnée, TODO forme juridique/immatriculation
+// toujours ouvert, hors périmètre de ce correctif).
+const COMPANY_ADDRESS = '12, Ouest-Foire, Dakar - Sénégal'
+
+// Bandeau d'en-tête avec la marque du marchand (logo si présent, sinon
+// initiale sur sa couleur) — même principe que sendReviewRequestEmail,
+// pour que chaque flux d'e-mails se distingue visuellement d'un gabarit
+// générique répété à l'identique par des milliers d'expéditeurs différents.
+function buildBrandHeader(shopName: string, label: string, shopColor?: string | null, shopLogoUrl?: string | null): string {
+  const accentColor = shopColor ?? '#0EA5E9'
+  const logoBlock = shopLogoUrl
+    ? `<img src="${shopLogoUrl}" alt="${shopName}" style="height:40px;width:40px;object-fit:cover;border-radius:10px;margin-bottom:4px;">`
+    : `<div style="display:inline-flex;align-items:center;justify-content:center;height:40px;width:40px;border-radius:10px;background:${accentColor};color:#fff;font-weight:700;font-size:18px;">${shopName[0]?.toUpperCase() ?? '?'}</div>`
+  return `
+    <div style="padding:24px 28px 20px;border-bottom:1px solid #f3f4f6;">
+      ${logoBlock}
+      <p style="margin:10px 0 0;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">${label}</p>
+      <h1 style="margin:2px 0 0;font-size:20px;font-weight:700;color:#111827;">${shopName}</h1>
+    </div>`
+}
+
 interface NewOrderAlertParams {
   toEmail: string
   shopName: string
+  shopColor?: string | null
+  shopLogoUrl?: string | null
   clientName: string
   clientPhone: string
   items: string
@@ -33,10 +58,7 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
   <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
-    <div style="background:#0f172a;padding:24px 28px;">
-      <p style="margin:0;color:rgba(255,255,255,0.6);font-size:13px;">Nouvelle commande</p>
-      <h1 style="margin:4px 0 0;color:#fff;font-size:20px;font-weight:700;">${params.shopName}</h1>
-    </div>
+    ${buildBrandHeader(params.shopName, 'Nouvelle commande', params.shopColor, params.shopLogoUrl)}
     <div style="padding:28px;">
       <p style="color:#374151;font-size:15px;margin:0 0 20px;">
         <strong>${params.clientName}</strong> vient de passer une commande.
@@ -59,6 +81,12 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
          style="display:block;text-align:center;background:#0f172a;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:14px 24px;border-radius:10px;">
         Gérer la commande →
       </a>
+    </div>
+    <div style="border-top:1px solid #e5e7eb;padding:16px 28px;background:#f9fafb;">
+      <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;text-align:center;">
+        <a href="${APP_URL}/dashboard/settings" style="color:#9ca3af;">Gérer cette alerte →</a>
+      </p>
+      <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">TEKKIShop — ${COMPANY_ADDRESS}</p>
     </div>
   </div>
 </body>
@@ -164,6 +192,8 @@ interface OrderConfirmationParams {
   toEmail: string
   clientName: string
   shopName: string
+  shopColor?: string | null
+  shopLogoUrl?: string | null
   shopSlug: string
   orderId: string
   clientToken: string
@@ -251,11 +281,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
 <body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
   <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
 
-    <!-- En-tête -->
-    <div style="background:#0ea5e9;padding:24px 28px;">
-      <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;">Ta commande</p>
-      <h1 style="margin:4px 0 0;color:#fff;font-size:22px;font-weight:700;">${params.shopName}</h1>
-    </div>
+    ${buildBrandHeader(params.shopName, 'Ta commande', params.shopColor, params.shopLogoUrl)}
 
     <!-- Corps -->
     <div style="padding:28px;">
@@ -300,9 +326,10 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
 
     <!-- Pied de page -->
     <div style="border-top:1px solid #e5e7eb;padding:16px 28px;background:#f9fafb;">
-      <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+      <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;text-align:center;">
         Cet e-mail t'a été envoyé car tu as passé une commande sur la boutique <strong>${params.shopName}</strong>.
       </p>
+      <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">TEKKIShop — ${COMPANY_ADDRESS}</p>
     </div>
   </div>
 </body>
