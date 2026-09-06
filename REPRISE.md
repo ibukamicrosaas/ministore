@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-05.
+> Dernière mise à jour : 2026-09-06.
 
 ---
 
@@ -2222,3 +2222,20 @@ Plan complet à poser ensuite, découpé bascule/migration d'un côté et les tr
 **Testé en conditions réelles** :
 - `ibukandjoli` (SN, cible SN/CI/BJ/TG/ML/BK/FR/BE/CH/LU/CA) : fiche produit et accueil affichent 7 méthodes uniques, ordre vérifié par position d'octet dans le HTML rendu (pas seulement visuellement) — Wave/MaxIt (SN) puis Orange Money/MTN Money/Moov Money (CI) puis T-Money (TG) puis Mobicash (ML). Aucun doublon : "Flooz" n'apparaît jamais (Moov Money vu en premier via CI l'emporte) ; FR/BE/CH/LU/CA absents.
 - Non-régression, boutique mono-pays réelle (`2asimarket`, CI, `target_countries: ["CI"]`) — le premier candidat choisi (`la-bonita-store`) s'est révélé être une boutique suspendue en réalité (sans rapport avec ce correctif), écarté au profit d'une boutique authentiquement active : sortie strictement identique à `PAYMENT_METHODS_BY_COUNTRY['CI']`, sur la fiche produit et l'accueil.
+
+## 86. Cadrage des images — trois derniers points, commit `12c7ec0` — chantier `grid_image_ratio` clos
+
+Derniers emplacements identifiés au §83 (`ProductCardGrid`/`ProductGallery.tsx` déjà corrigés) qui ignoraient encore le réglage Portrait/Carré de la boutique.
+
+**1. `ProductCardList` (vue liste de l'accueil — vue par défaut tant qu'un marchand n'a pas choisi la grille)** : dimension `72×72` fixe remplacée par une largeur dérivée du ratio (54px portrait / 72px carré, hauteur fixe à 72) — même principe que la bande de vignettes de `ProductGallery.tsx` (§83).
+
+**2. "Vous aimerez aussi" (`produit/[id]/page.tsx`)** : `isPortrait` déjà calculé sur cette page (utilisé par la galerie), simplement réutilisé sur la carte produit liée — rien à ajouter côté données, confirmé avant de coder.
+
+**3. "Tu aimeras aussi" (`commander/success/page.tsx`)** : seul point nécessitant un ajout — `grid_image_ratio` absent de la requête `shops(...)` jointe à la commande, ajouté, `isPortrait` calculé, appliqué à la carte upsell.
+
+**Testé en conditions réelles** :
+- Point 1 : deux boutiques Portrait authentiquement actives (`ton-mentor`, `aea-cosmetics`) → `width:54px;height:72px` rendu ; deux boutiques Carré (`chez-diarra`, `groov-technology`) → `width:72px;height:72px` inchangé. Plusieurs premiers candidats mono-pays/liste (`chak-m-shop`, `deby-shop`, `la-bonita-store` au §85) écartés en route car en réalité suspendus malgré `status='active'` en base — vérifié avant de conclure, pas supposé.
+- Point 2 : `ibukandjoli` (Portrait) → `aspect-[3/4]` sur la carte liée ; `2asimarket` (Carré) → `aspect-square`, inchangé.
+- Point 3 — seul point exigeant un vrai flux de commande pour être atteint : deux boutiques de test dédiées (Portrait, Carré), 2 produits chacune, commande réelle via `/api/orders`, page de succès réelle consultée — comptage exact dans le HTML rendu (pas seulement présence) : 1 occurrence de la classe attendue, 0 de l'autre, sur les deux boutiques. **Nettoyage par identifiants précis** (les 4 boutiques de test, leurs produits/commandes/clients, par id exact), revérifié à zéro résidu sur ces mêmes ids. Une ligne `clients` non liée trouvée par coïncidence de numéro de téléphone de test (boutique de production réelle, `theambitious-store`, commande de juillet, sans rapport avec ce test) — vérifiée explicitement comme non liée à l'un des 4 shop_id de test avant de conclure, non touchée.
+
+**Chantier `grid_image_ratio` considéré clos sur tous les points connus** (`ProductCardGrid`, hero/vignettes `ProductGallery.tsx` au §83, `ProductCardList` et les deux sections upsell ici).
