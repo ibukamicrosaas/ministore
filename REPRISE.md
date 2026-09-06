@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-06.
+> Dernière mise à jour : 2026-09-06 (soir).
 
 ---
 
@@ -2239,3 +2239,31 @@ Derniers emplacements identifiés au §83 (`ProductCardGrid`/`ProductGallery.tsx
 - Point 3 — seul point exigeant un vrai flux de commande pour être atteint : deux boutiques de test dédiées (Portrait, Carré), 2 produits chacune, commande réelle via `/api/orders`, page de succès réelle consultée — comptage exact dans le HTML rendu (pas seulement présence) : 1 occurrence de la classe attendue, 0 de l'autre, sur les deux boutiques. **Nettoyage par identifiants précis** (les 4 boutiques de test, leurs produits/commandes/clients, par id exact), revérifié à zéro résidu sur ces mêmes ids. Une ligne `clients` non liée trouvée par coïncidence de numéro de téléphone de test (boutique de production réelle, `theambitious-store`, commande de juillet, sans rapport avec ce test) — vérifiée explicitement comme non liée à l'un des 4 shop_id de test avant de conclure, non touchée.
 
 **Chantier `grid_image_ratio` considéré clos sur tous les points connus** (`ProductCardGrid`, hero/vignettes `ProductGallery.tsx` au §83, `ProductCardList` et les deux sections upsell ici).
+
+## 87. Fiabilité de la livraison des produits digitaux — investigation à 3 points, correctif du point 1 (e-mail), commit `1726a39`
+
+**Signalement initial** : trois symptômes remontés ensemble, probablement liés — aucun e-mail avec le fichier digital après achat, notifications push non déclenchées malgré activation, e-mail de confirmation atterrissant en spam. Risque : un client sans WhatsApp fonctionnel n'a alors aucun canal fiable pour récupérer un achat digital, et le marchand peut ne pas savoir qu'une vente a eu lieu.
+
+**Investigation, avant tout code — les trois diagnostics** :
+
+1. **E-mail sans lien de téléchargement — confirmé, et plus grave qu'un manque.** `sendOrderConfirmationEmail` n'avait aucun champ pour ce lien ; celui-ci n'était envoyé que par WhatsApp (`buildDigitalDownloadMessage`), jamais par e-mail, dans tout le flux automatique. Or `OrderForm.tsx:1098` affiche à chaque acheteur : *"Ton lien de téléchargement sera aussi envoyé par e-mail."* — une promesse jamais tenue.
+2. **Push non déclenché — confirmé comme réel par test indépendant de l'utilisateur** (PWA installée sur iPhone, notifications activées, aucun push reçu pour une vraie commande alors que l'e-mail correspondant est arrivé). Investigation code : `sendPushToShop` est appelé sans condition à la création de la commande, 2 abonnements valides existaient en base pour la boutique testée — mais **aucune journalisation du résultat de l'envoi n'existe** (contrairement au SMS/WhatsApp, chaque tentative loggée dans `notification_logs`) : un échec est invisible, seul un `console.error` éphémère en garde trace. **Correction sur une preuve fournie par l'utilisateur** : la bannière de notification d'une capture d'écran, prise pour une preuve de push manqué, était en réalité la notification de l'app Mail pour l'e-mail tombé en spam (même icône octogone gris que dans la capture Gmail du dossier spam juste après) — signalé explicitement avant de tirer une conclusion depuis cette capture.
+3. **E-mail en spam — pas une histoire de SPF/DKIM/DMARC absents, contrairement à l'hypothèse de départ.** Vérifié en DNS réel et via l'API Resend : SPF correct sur `send.tekki.shop` (`include:amazonses.com`), DKIM valide et aligné (`resend._domainkey.tekki.shop`), domaine `tekki.shop` marqué `"verified"` par Resend. L'e-mail en cause a pour `last_event: "delivered"` (accepté par Gmail) — le classement en spam s'est fait après acceptation, côté réputation/contenu de Gmail, pas au niveau de l'authentification. Le texte du warning Gmail ("similaire à des messages identifiés comme spam par le passé") est une classification par motif, pas un message d'échec d'authentification.
+
+**Question posée avant de coder le point 1** : ajouter réellement le lien à l'e-mail, ou retirer la promesse d'`OrderForm.tsx` en attendant ? **Choix : le vrai correctif** — WhatsApp est le seul canal porteur du lien et déjà documenté comme non fiable (historique Lafricamobile) ; retirer la promesse n'aurait rien réglé au risque réel.
+
+**Découverte élargissant le lot, incluse sur demande explicite** : le webhook Stripe (paiement carte, diaspora EU/CA) n'envoyait **aucune** confirmation au client, digital ou non — pas seulement le lien manquant, l'e-mail entier était absent de ce chemin. Corrigé en même temps.
+
+**Correctif** : dans les deux webhooks (Bictorys, Stripe), génération des `download_tokens` déplacée avant l'envoi de l'e-mail (au lieu d'après) pour que celui-ci puisse inclure les mêmes liens — un seul token par produit digital, réutilisé pour WhatsApp et e-mail, jamais régénéré. Nouveau champ `digitalDownloads` sur `OrderConfirmationParams`, nouveau bloc HTML affiché dès qu'il y a au moins un produit digital (même sur un panier mixte, pas seulement `isDigitalOrder` qui ne couvre que le 100% digital).
+
+**Testé en conditions réelles**, contre les deux vrais webhooks (Bictorys signé avec le vrai secret partagé, Stripe signé avec `stripe.webhooks.generateTestHeaderString` et le vrai `STRIPE_WEBHOOK_SECRET`), e-mail réellement envoyé via Resend et son HTML relu via leur API (pas supposé) :
+- Bictorys, panier digital : 1 `download_token`, e-mail avec exactement 1 lien correspondant au bon token.
+- Bictorys, panier physique : 0 token, aucun bloc de téléchargement (non-régression).
+- Stripe, panier digital (chemin auparavant muet) : e-mail désormais reçu, bon token.
+- Stripe, panier physique : confirmation générale désormais reçue, correctement sans bloc de téléchargement.
+
+Nettoyage par identifiants précis, revérifié à zéro résidu sur les 4 boutiques de test.
+
+**Dette confirmée en cours de route, vérifiée par appel direct à l'API (pas seulement lecture de code), non traitée dans ce lot — plan séparé à venir** : la règle "un produit digital force le paiement en ligne complet" n'existe que côté client (`OrderForm.tsx:371-376`, bascule automatique dès qu'un article digital est présent). Côté serveur (`api/orders/route.ts:246-253`), elle ne s'applique qu'aux paniers 100% digitaux — un panier mixte physique+digital avec `payment_type: on_delivery`/`on_site` est accepté tel quel dès que `shop.accept_cash_on_delivery` est actif. **Vérifié en direct** : appel réel à `/api/orders` avec un tel panier → `200`, commande créée, **0 `download_tokens` généré** pour l'article digital. Ce n'est pas du code mort : ce chemin est atteignable aujourd'hui, et aucun canal (ni e-mail ni WhatsApp) ne peut alors jamais porter le lien de téléchargement du produit digital.
+
+**Suite, dans l'ordre fixé par l'utilisateur** : point 2 (gabarit d'e-mail contre le classement en spam — adresse physique, lien de désinscription, contenu moins générique — plan avant code), puis point 3 (journalisation du push, même mécanisme que `notification_logs`).
