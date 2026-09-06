@@ -37,7 +37,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
       clients(first_name, phone, whatsapp),
       order_items(product_name, variant_label, unit_price, quantity, line_total),
-      shops(id, name, slug, primary_color, phone_whatsapp, currency)
+      shops(id, name, slug, primary_color, phone_whatsapp, currency, grid_image_ratio)
     `)
     .eq('id', order_id)
     .eq('client_token', token)
@@ -63,7 +63,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
     discount_amount: number | null
     clients: { first_name: string; phone: string; whatsapp: string | null } | null
     order_items: OrderItem[]
-    shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null }) | null
+    shops: (Pick<Shop, 'id' | 'name' | 'slug' | 'primary_color' | 'phone_whatsapp'> & { currency?: string | null; grid_image_ratio?: 'square' | 'portrait' | null }) | null
   }
 
   // Relevé (§6 de la spec) — décomposition depuis les colonnes déjà persistées à la
@@ -118,9 +118,10 @@ export default async function SuccessPage({ params, searchParams }: Props) {
   const hasPhysicalItem = orderItemsWithType.some(item => item.products?.product_type !== 'digital')
   const isDigitalOrder  = hasDigitalItem && !hasPhysicalItem
 
-  const shop     = order.shops
-  const color    = 'var(--brand)'
-  const currency = (shop?.currency ?? 'XOF') as ShopCurrency
+  const shop       = order.shops
+  const color      = 'var(--brand)'
+  const currency   = (shop?.currency ?? 'XOF') as ShopCurrency
+  const isPortrait = shop?.grid_image_ratio === 'portrait'
 
   const basePath = await getShopBasePath(slug)
 
@@ -402,7 +403,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
               const href = `${basePath}/produit/${(p as Product & { slug?: string | null }).slug ?? p.id}`
               return (
                 <a key={p.id} href={href} className="shrink-0 w-32 group">
-                  <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-gray-100">
+                  <div className={`relative w-32 rounded-xl overflow-hidden bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
                     {photo ? (
                       <Image
                         src={photo}

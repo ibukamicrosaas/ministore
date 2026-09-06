@@ -635,7 +635,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 const rpHref = `${basePath}/produit/${rpSlug ?? rp.id}`
                 return (
                   <a key={rp.id} href={rpHref} className="shrink-0 w-32 lg:w-auto group">
-                    <div className="relative w-32 h-32 lg:w-full lg:h-48 rounded-xl overflow-hidden bg-gray-100">
+                    <div className={`relative w-32 lg:w-full rounded-xl overflow-hidden bg-gray-100 ${isPortrait ? 'aspect-[3/4]' : 'aspect-square'}`}>
                       {rpPhoto ? (
                         <Image
                           src={rpPhoto}

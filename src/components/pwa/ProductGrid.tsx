@@ -98,9 +98,13 @@ function FeaturedCard({ product, shopSlug, primaryColor, currency, showNewBadge,
   )
 }
 
-function ProductCardList({ product, shopSlug, primaryColor, currency, showNewBadge }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean }) {
+function ProductCardList({ product, shopSlug, primaryColor, currency, showNewBadge, imageRatio }: { product: Product; shopSlug: string; primaryColor: string; currency: ShopCurrency; showNewBadge: boolean; imageRatio: 'square' | 'portrait' }) {
   const photo = getPrimaryPhoto(product)
   const price = getPrice(product, currency)
+  const isPortrait = imageRatio === 'portrait'
+  // Hauteur fixe pour aligner toute la liste, largeur dérivée du ratio 3:4
+  // en portrait — même principe que la bande de vignettes de ProductGallery.tsx.
+  const imageWidth = isPortrait ? 54 : 72
   const soldOut = product.stock_count === 0
   const lowStock = product.stock_count !== null && product.stock_count > 0 && product.stock_count <= 3
   const newProduct = showNewBadge && isNew(product)
@@ -112,17 +116,17 @@ function ProductCardList({ product, shopSlug, primaryColor, currency, showNewBad
     >
       <div className="relative shrink-0">
         {photo ? (
-          <div className="relative rounded-xl overflow-hidden" style={{ height: 72, width: 72 }}>
+          <div className="relative rounded-xl overflow-hidden" style={{ height: 72, width: imageWidth }}>
             <Image
               src={photo}
               alt={product.name}
               fill
-              sizes="72px"
+              sizes={`${imageWidth}px`}
               className="object-cover"
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-xl bg-gray-100" style={{ height: 72, width: 72 }}>
+          <div className="flex items-center justify-center rounded-xl bg-gray-100" style={{ height: 72, width: imageWidth }}>
             <Package className="h-6 w-6 text-gray-300" />
           </div>
         )}
@@ -451,7 +455,7 @@ export function ProductGrid({ products, shopSlug, primaryColor, currency = 'XOF'
             {view === 'list' ? (
               <div className="space-y-2.5">
                 {byCategory[category].map(p => (
-                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} />
+                  <ProductCardList key={p.id} product={p} shopSlug={shopSlug} primaryColor={primaryColor} currency={currency} showNewBadge={showNewBadge} imageRatio={imageRatio} />
                 ))}
               </div>
             ) : (
