@@ -525,29 +525,40 @@ export async function POST(req: NextRequest) {
     { is_held: isHeld, released_at: null },
   )
 
-  // Notification push au marchand (fire-and-forget)
-  void sendPushToShop(shopId, {
-    title: `Nouvelle commande — ${shop.name}`,
-    body:  `${merchantClient.clientName} • ${total_price.toLocaleString('fr-FR')} FCFA`,
-    url:   `${APP_URL}/dashboard/orders`,
-  }, order.id, 'new_order_shop')
+  // Notification push + e-mail au marchand — seulement si rien ne reste à
+  // payer en ligne. Même principe déjà appliqué au reçu client (plus bas) et
+  // à l'alerte WhatsApp marchand (branche paiement à la réception) : ne
+  // jamais laisser croire qu'une vente a eu lieu avant que le paiement ne
+  // soit réellement confirmé. Pour le paiement en ligne, ces deux alertes
+  // partent désormais depuis les webhooks Bictorys/Stripe, après confirmation
+  // réelle (REPRISE.md §91).
+  const isOnlinePayment = payment_type === 'online_full' || payment_type === 'online_deposit'
 
-  // Alerte email au marchand si email configuré (fire-and-forget)
-  const shopEmail = (shop as typeof shop & { email?: string | null }).email
-  if (shopEmail) {
-    void sendNewOrderAlertEmail({
-      toEmail:           shopEmail,
-      shopName:          shop.name,
-      shopColor:         shop.primary_color,
-      shopLogoUrl:       shop.logo_url,
-      clientName:        merchantClient.clientName,
-      clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
-      items:             itemsSummary,
-      totalPrice:        total_price,
-      deliveryType:      delivery_type,
-      deliveryDate:      delivery_date,
-      orderDashboardUrl: `${APP_URL}/dashboard/orders/${order.id}`,
-    })
+  if (!isOnlinePayment) {
+    // Notification push au marchand (fire-and-forget)
+    void sendPushToShop(shopId, {
+      title: `Nouvelle commande — ${shop.name}`,
+      body:  `${merchantClient.clientName} • ${total_price.toLocaleString('fr-FR')} FCFA`,
+      url:   `${APP_URL}/dashboard/orders`,
+    }, order.id, 'new_order_shop')
+
+    // Alerte email au marchand si email configuré (fire-and-forget)
+    const shopEmail = (shop as typeof shop & { email?: string | null }).email
+    if (shopEmail) {
+      void sendNewOrderAlertEmail({
+        toEmail:           shopEmail,
+        shopName:          shop.name,
+        shopColor:         shop.primary_color,
+        shopLogoUrl:       shop.logo_url,
+        clientName:        merchantClient.clientName,
+        clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
+        items:             itemsSummary,
+        totalPrice:        total_price,
+        deliveryType:      delivery_type,
+        deliveryDate:      delivery_date,
+        orderDashboardUrl: `${APP_URL}/dashboard/orders/${order.id}`,
+      })
+    }
   }
 
   // Enregistrer la commande pour le rate limiting
@@ -606,7 +617,6 @@ export async function POST(req: NextRequest) {
   // E-mail de confirmation client (fire-and-forget, ne bloque pas la réponse)
   // Pour les paiements en ligne, l'email part depuis le webhook après confirmation du paiement —
   // pas ici, pour ne pas laisser croire au client que sa commande est validée avant qu'il ait payé.
-  const isOnlinePayment = payment_type === 'online_full' || payment_type === 'online_deposit'
   if (client_email && !isOnlinePayment) {
     void sendOrderConfirmationEmail({
       toEmail:          client_email,

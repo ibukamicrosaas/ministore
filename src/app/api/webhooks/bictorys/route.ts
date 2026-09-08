@@ -10,9 +10,10 @@ import {
 } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 import { activatePlan } from '@/lib/billing/activate-plan'
-import { sendOrderConfirmationEmail } from '@/lib/notifications/email'
+import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
 import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp'
+import { sendPushToShop } from '@/lib/push/send'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 
@@ -369,7 +370,7 @@ async function handleOrderWebhook(
       delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
       clients(first_name, last_name, whatsapp, phone, email),
       order_items(product_name, quantity, line_total, product_id, products(product_type)),
-      shops(name, phone_whatsapp, slug, currency, logo_url, primary_color)
+      shops(name, phone_whatsapp, slug, currency, logo_url, primary_color, email)
     `)
     .single()
 
@@ -396,7 +397,7 @@ async function handleOrderWebhook(
     discount_amount: number | null
     clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string; email: string | null } | null
     order_items: { product_name: string; quantity: number; line_total: number; product_id: string | null; products: { product_type: string | null } | null }[]
-    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null } | null
+    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null } | null
   }
 
   if (!o.clients || !o.shops) {
@@ -442,8 +443,9 @@ async function handleOrderWebhook(
   // boutique n'est pas activée (§13 de la spec) — voir src/lib/orders/redact.ts.
   // (o.clients ci-dessus reste volontairement non redacté : c'est le message
   // de confirmation envoyé AU CLIENT à propos de sa propre commande.)
+  const merchantClient = loadOrderForMerchant(o).merchantClient
+
   if (o.shops.phone_whatsapp) {
-    const merchantClient = loadOrderForMerchant(o).merchantClient
     const alertMsg = merchantClient.clientName === REDACTED_LABEL
       ? buildHeldOrderMerchantAlertMessage({
           totalPrice: o.total_price,
@@ -470,6 +472,33 @@ async function handleOrderWebhook(
       message:           alertMsg,
       status:            shopNotif.success ? 'sent' : 'failed',
       error_message:     shopNotif.error ?? null,
+    })
+  }
+
+  // Notification push + e-mail au marchand — pendant, pour le paiement en
+  // ligne, de ce que api/orders/route.ts envoie immédiatement pour le
+  // paiement à la réception. Ici seulement après confirmation réelle du
+  // paiement (on est déjà dans la zone protégée par l'idempotence du webhook
+  // — voir REPRISE.md §91), jamais avant.
+  void sendPushToShop(o.shop_id, {
+    title: `Nouvelle commande — ${o.shops.name}`,
+    body:  `${merchantClient.clientName} • ${o.total_price.toLocaleString('fr-FR')} FCFA`,
+    url:   `${APP_URL}/dashboard/orders`,
+  }, o.id, 'new_order_shop')
+
+  if (o.shops.email) {
+    void sendNewOrderAlertEmail({
+      toEmail:           o.shops.email,
+      shopName:          o.shops.name,
+      shopColor:         o.shops.primary_color,
+      shopLogoUrl:       o.shops.logo_url,
+      clientName:        merchantClient.clientName,
+      clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
+      items:             itemsSummary,
+      totalPrice:        o.total_price,
+      deliveryType:      o.delivery_type,
+      deliveryDate:      o.delivery_date,
+      orderDashboardUrl: `${APP_URL}/dashboard/orders/${o.id}`,
     })
   }
 
