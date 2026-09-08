@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-08 (soir).
+> Dernière mise à jour : 2026-09-08 (nuit).
 
 ---
 
@@ -2327,3 +2327,20 @@ Nettoyage par identifiants précis, revérifié à zéro résidu sur les 4 bouti
 - **Le cas le plus délicat, prouvé dans les deux temps** : panier mixte + boutique `expired`, `online_full` demandé → `payment_type` reste `on_site` (protection physique confirmée) ; **0 `download_tokens` avant** confirmation de livraison, **1 généré après** — le filet se déclenche au bon moment, jamais avant.
 
 Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (avant correction d'un bug de script de test) repéré et nettoyé par id exact avant de conclure à zéro résidu.
+
+## 91. Alerte marchand (push + e-mail) déclenchée avant paiement réel, corrigée, commit `70bb63e`
+
+**Constat, confirmé par lecture de code avant tout correctif** : `sendPushToShop` et `sendNewOrderAlertEmail` (`api/orders/route.ts`) partaient à la création de **toute** commande, sans condition sur `payment_type` — avant même que la variable `isOnlinePayment` existe dans le flux. Un client qui abandonne au moment de payer en ligne laissait quand même croire au marchand qu'une vente venait d'avoir lieu. Le bon pattern existait déjà, mais sur un seul des trois canaux marchand : le reçu client (`sendOrderConfirmationEmail`) était déjà gardé par `!isOnlinePayment` (avec le commentaire explicite "ne pas laisser croire que sa commande est validée avant qu'il ait payé"), et l'alerte WhatsApp marchand n'existait déjà que dans la branche paiement-à-la-réception + les webhooks. Seuls le push et l'e-mail marchand n'avaient jamais reçu cette même discipline — un oubli de cohérence, pas une conception voulue.
+
+**Vérifié avant de coder** : le paiement à la réception (`on_site`) n'a pas d'étape en ligne à attendre — confirmé, ne devait pas changer. Vérifié aussi qu'une commande en ligne jamais payée ne reste pas indéfiniment "en attente" : `expire_pending_orders()` (migration `059`) l'annule automatiquement après 24h, via un cron déjà actif (`vercel.json`, 9h UTC quotidien) — pas un trou à corriger.
+
+**Idempotence des webhooks vérifiée avant de coder, comme demandé** : les deux webhooks (Bictorys, Stripe) protègent déjà tout leur code d'envoi via une mise à jour de commande conditionnée à `.eq('status', 'pending')`, qui ne réussit qu'une fois — un rejeu du prestataire ne matche plus aucune ligne et sort avant tout envoi. L'alerte WhatsApp marchand existante était déjà placée à l'intérieur de cette zone protégée dans les deux cas. Donc aucun garde supplémentaire à écrire : ajouter push/e-mail au même endroit suffit à hériter de la même protection.
+
+**Correctif** : gating par `!isOnlinePayment` dans `api/orders/route.ts` (calcul remonté plus haut dans le flux, réutilisé aussi pour le reçu client). Ajout des deux appels dans les deux webhooks, juste à côté de l'alerte WhatsApp marchand déjà en place.
+
+**Testé en conditions réelles, contre les vrais webhooks** (Bictorys signé avec le vrai secret, Stripe signé avec `stripe.webhooks.generateTestHeaderString`) :
+- Paiement à la réception : push + e-mail toujours immédiats — non-régression.
+- Bictorys en ligne : 0 avant le webhook, 1 de chaque après. **Rejeu du même webhook** (`{"skipped": true}`, l'idempotence existante en action) : toujours 1, pas de doublon — prouvé par un vrai rejeu, pas supposé.
+- Stripe en ligne : même comportement — ce chemin n'avait jusqu'ici aucune alerte marchand du tout, ni push ni e-mail.
+
+**Trouvé en creusant, signalé plutôt que corrigé silencieusement dans ce lot** : le webhook Stripe n'a jamais eu d'alerte WhatsApp marchand (contrairement à Bictorys) — sujet du lot suivant (§92).
