@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-06 (soir).
+> Dernière mise à jour : 2026-09-08.
 
 ---
 
@@ -2279,3 +2279,30 @@ Nettoyage par identifiants précis, revérifié à zéro résidu sur les 4 bouti
 **Testé en conditions réelles**, deux boutiques de test (une avec vrai `logo_url`, une sans — repli sur l'initiale colorée), commande réelle via `/api/orders`, les deux e-mails (alerte marchand + confirmation client) réellement envoyés via Resend et relus via leur API sur les 4 combinaisons : logo `<img>` présent uniquement quand `logo_url` est défini, initiale colorée en repli sinon, adresse présente au pied de page dans les 4 cas, lien "Gérer cette alerte" présent uniquement sur l'alerte marchand (absent du reçu client, conforme au périmètre). **Fausse alerte vérifiée avant conclusion** : un e-mail introuvable au premier passage du script de test s'est révélé être un simple retard de propagation de l'API de listage Resend, pas un bug — confirmé en le relisant directement par son id avant de le signaler. Nettoyage par identifiants précis, revérifié à zéro résidu.
 
 **Suite, dans l'ordre fixé par l'utilisateur** : point 3 (journalisation du push, même mécanisme que `notification_logs`) — nouvelle donnée disponible : l'utilisateur a testé lui-même (PWA installée sur iPhone, notifications activées) et n'a reçu aucun push pour une vraie commande alors que l'e-mail correspondant est bien arrivé, confirmant le problème comme réel et indépendant du correctif e-mail.
+
+## 89. Journalisation du push, et le vrai bug qu'elle a révélé en route, commit `ee9b083`
+
+**Point 3 de l'investigation du §87 — la journalisation devait rendre visible un futur échec silencieux ; elle a immédiatement révélé un échec déjà en cours.**
+
+**Migration `100_notification_logs_push.sql`**, montrée avant application, appliquée et vérifiée (`recipient_phone` nullable, `push_endpoint TEXT` ajoutée, `notification_type` étendu avec `'delivery_confirmed'`) — script `check-notification-logs-push.sql` confirmé sur 3 points en transaction annulée (forme push acceptée, forme SMS/WhatsApp toujours acceptée, valeur invalide toujours rejetée), zéro résidu.
+
+**`sendPushToShop`** (`src/lib/push/send.ts`) : signature étendue avec `orderId`/`notificationType`, une ligne `notification_logs` par abonnement (pas agrégée) — succès, échec avec message précis, ou "aucun abonnement enregistré" quand la boutique n'en a aucun. VAPID non configuré volontairement non journalisé par commande (panne globale, pas propre à une boutique — `console.warn` suffisant). Deux points d'appel mis à jour : `api/orders/route.ts` (`new_order_shop`), `api/delivery/confirm/route.ts` (`delivery_confirmed`, nouvelle valeur).
+
+**Testé en conditions réelles, 3 scénarios** — le premier passage sur l'abonnement "périmé" utilisait des clés cryptographiques bidon mal formées, provoquant un échec de validation locale plutôt qu'un vrai 404/410 réseau : corrigé avec une vraie paire de clés EC P-256 générée pour de bon, permettant à l'appel d'atteindre réellement le service push :
+- Abonnement valide (vrai endpoint iOS d'`ibukandjoli`, réutilisé en lecture seule) : tentative réelle, `status: 'failed'`, `error_message: "Received unexpected response code"` — voir plus bas, ce résultat s'est avéré être le bug lui-même, pas un aléa.
+- Abonnement périmé (vraies clés, faux endpoint FCM) : vrai `410` reçu, journalisé, abonnement supprimé de `push_subscriptions` — confirmé à zéro résidu.
+- Confirmation de livraison, testée isolément (commande insérée directement en `confirmed`, pas de passage par `/api/orders`, pour ne pas laisser un premier push consommer l'abonnement avant celui testé) : `notification_type: 'delivery_confirmed'` correctement journalisé avec un vrai `push_endpoint`.
+
+**Le résultat du premier test ("abonnement valide") a été signalé par l'utilisateur comme potentiellement la cause racine elle-même, pas seulement une preuve que la journalisation marche — demande explicite de creuser avant de committer.**
+
+**Diagnostic, sans contourner le message générique de `web-push`** : appel direct à la librairie (hors API applicative) contre le vrai abonnement Apple d'`ibukandjoli`. Code HTTP brut renvoyé par Apple : **`403`**, corps `{"reason":"BadJwtToken"}` — reproductible (identique deux fois de suite, seul l'`apns-id` change). Cause : `VAPID_EMAIL` vaut déjà `"mailto:support@tekki.shop"` dans l'environnement (confirmé identique en production par l'utilisateur), mais `src/lib/push/send.ts:12` préfixait `mailto:` sans condition — sujet JWT doublement préfixé (`mailto:mailto:support@tekki.shop`), rejeté par la validation JWT plus stricte d'Apple. Le repli du code (`'admin@tekkishop.com'`, sans préfixe) confirme que la variable est censée être une adresse nue — c'est la valeur d'environnement qui viole ce contrat, pas une intention du code.
+
+**Présent depuis la toute première version du fichier** (commit `29685a1`, 10 juin), jamais retouché depuis.
+
+**Périmètre réel, vérifié et pas seulement supposé** : sur les 94 abonnements actifs en base, seuls les **9 abonnements Apple (`web.push.apple.com`, ~10%) sont touchés**. Un vrai abonnement Chrome/Android (FCM, 80 abonnements sur 94, ~85%) testé avec le même sujet doublement préfixé : **accepté quand même (`201`)** — FCM plus tolérant qu'Apple sur la validation du `sub`. Le bug est donc spécifique à Apple/iOS Safari depuis l'origine de la fonctionnalité, jamais aux autres plateformes.
+
+**Correctif confirmé avant d'être proposé** : sujet corrigé (`mailto:support@tekki.shop`, sans doublon) sur ce même abonnement réel → Apple répond **`201`**, acceptation réelle. Appliqué dans `send.ts` (`email.startsWith('mailto:') ? email : \`mailto:${email}\``), puis **re-testé via le vrai chemin applicatif** (pas le contournement de diagnostic) : commande réelle sur une boutique de test avec ce même abonnement Apple → `notification_logs` confirme `status: 'sent'`, `error_message: null`.
+
+**À la charge de l'utilisateur** : vérification finale sur son propre iPhone qu'une notification arrive réellement (ce diagnostic prouve qu'Apple accepte désormais l'envoi côté serveur — l'affichage réel côté appareil reste à confirmer par l'utilisateur lui-même).
+
+**Chantier des trois symptômes de la panne de notification (§87) considéré clos sur le fond** — e-mail avec lien digital (§87), gabarits anti-spam (§88), et push (ici) tous corrigés et testés en conditions réelles. Reste ouvert, sans lien direct avec ce chantier : la dette du panier mixte physique+digital payé à la livraison (§87, plan séparé à venir).
