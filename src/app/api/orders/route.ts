@@ -230,19 +230,36 @@ export async function POST(req: NextRequest) {
   // physique — la règle du plus contraignant s'applique, on ne scinde jamais
   // une commande.
   const hasPhysicalItem = items.some(it => productMap.get(it.product_id)?.product_type !== 'digital')
+  const hasDigitalItem  = items.some(it => productMap.get(it.product_id)?.product_type === 'digital')
   const isOnlinePaymentRequested = payment_type === 'online_full' || payment_type === 'online_deposit'
-  if (shop.status === 'expired' && hasPhysicalItem && isOnlinePaymentRequested) {
+  // Boutique expired + article physique : la protection de l'acheteur l'emporte
+  // (argent bloqué chez un marchand inactif qui ne peut pas expédier) — décidée
+  // avant la règle digital ci-dessous, jamais annulée par elle après coup.
+  const expiredPhysicalOverride = shop.status === 'expired' && hasPhysicalItem
+  if (expiredPhysicalOverride && isOnlinePaymentRequested) {
     payment_type = delivery_type === 'home_delivery' ? 'on_delivery' : 'on_site'
+  }
+
+  // Un produit digital force le paiement en ligne complet, même règle que
+  // côté client (OrderForm.tsx:371-376) — jamais seulement les paniers 100%
+  // digitaux comme le laissait entendre le commentaire précédent : un panier
+  // mixte payé à la réception créait la même commande non livrable (REPRISE.md
+  // §87/§90). Un appel direct à cette route contournerait sinon la bascule
+  // déjà faite côté client. Ne s'applique pas si la boutique expired vient de
+  // router ce panier vers la réception à cause d'un article physique — la
+  // règle du plus contraignant, tranchée juste au-dessus, ne se rediscute pas
+  // ici (le digital de ce panier mixte sera livré à la confirmation de
+  // livraison — voir api/delivery/confirm/route.ts).
+  if (hasDigitalItem && !expiredPhysicalOverride && payment_type !== 'online_full') {
+    payment_type = 'online_full'
   }
 
   // Le marchand a-t-il réellement configuré le mode de paiement retenu ? Ne
   // jamais faire confiance à payment_type envoyé par le client seul —
   // OrderForm.tsx bloque déjà ce cas côté UI (hasAnyPaymentMethod), mais un
   // appel direct à cette route le contournerait. Vérifié sur payment_type
-  // après le reroute expired ci-dessus, pour valider le mode réellement
-  // retenu, pas seulement celui demandé au départ. Un panier 100% digital ne
-  // peut être payé qu'en ligne (pas de livraison à laquelle rattacher un
-  // paiement à la réception).
+  // après les deux reroutes ci-dessus, pour valider le mode réellement
+  // retenu, pas seulement celui demandé au départ.
   const allDigital = !hasPhysicalItem
   const finalIsOnline = payment_type === 'online_full' || payment_type === 'online_deposit'
   const paymentMethodAvailable = (finalIsOnline || allDigital)
