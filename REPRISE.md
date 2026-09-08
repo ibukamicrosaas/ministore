@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-08.
+> Dernière mise à jour : 2026-09-08 (soir).
 
 ---
 
@@ -2308,3 +2308,22 @@ Nettoyage par identifiants précis, revérifié à zéro résidu sur les 4 bouti
 **Confirmé le 2026-09-08 : l'utilisateur reçoit désormais réellement les notifications push sur son iPhone.** Dernière vérification externe du chantier des trois symptômes de la panne de notification — chantier **officiellement clos** (e-mail avec lien digital §87, gabarits anti-spam §88, push ici, tous corrigés et confirmés en conditions réelles, y compris côté appareil pour le push).
 
 **Chantier des trois symptômes de la panne de notification (§87) considéré clos sur le fond** — e-mail avec lien digital (§87), gabarits anti-spam (§88), et push (ici) tous corrigés et testés en conditions réelles. Reste ouvert, sans lien direct avec ce chantier : la dette du panier mixte physique+digital payé à la livraison (§87, plan séparé à venir).
+
+## 90. Dette panier digital + paiement à la réception, commit `217183b`
+
+**État exact revérifié avant de coder, comme demandé — plus grave que documenté au §87.** Le §87 décrivait le trou comme limité au panier *mixte* (physique+digital) payé à la réception. En revérifiant, le vrai trou est plus large : le serveur (`api/orders/route.ts`) ne forçait **jamais** `payment_type` vers `online_full` dans aucun cas — même un panier **100% digital** passait en paiement à la réception sans erreur dès que la boutique acceptait les deux modes de paiement (une configuration très courante), le code se contentant de vérifier le mauvais indicateur (`accept_online_payment` au lieu de `accept_cash_on_delivery`) sans jamais réécrire `payment_type` lui-même. Confirmé en direct : panier 100% digital + boutique aux deux modes actifs + `payment_type: on_site` envoyé directement → `200`, commande créée, 0 `download_tokens`.
+
+**Correctif** : `hasDigitalItem` force `payment_type` vers `online_full` côté serveur, même règle que côté client (`OrderForm.tsx:371-376`), sur **tout** panier contenant un digital — pas seulement les paniers 100% digitaux comme le laissait entendre l'ancien commentaire.
+
+**Point de collision tranché avant de coder** : la protection boutique `expired` existante (retire le paiement en ligne dès qu'un panier contient du physique, pour ne pas bloquer l'argent d'un acheteur chez un marchand inactif) et la nouvelle règle digital s'opposent sur un panier mixte + boutique expirée. Décidé : la protection physique l'emporte toujours — elle protège d'un vrai risque financier, le digital n'a pas cette contrainte. Le digital de ce panier mixte reste donc payé à la réception dans ce cas précis, seul cas restant après le correctif.
+
+**Filet de sécurité pour ce cas restant** — proposé d'abord à la création de la commande, **déplacé sur signalement de l'utilisateur** : générer le lien à la création aurait livré le fichier digital avant tout signal de paiement réel pour l'article physique qui l'accompagne (contrairement à Bictorys/Stripe, où le lien ne part qu'après confirmation webhook) — un vrai risque pour un panier mixte payé à la réception, pas seulement un défaut de robustesse. Déplacé vers `api/delivery/confirm/route.ts` (bouton marchand "Livraison effectuée", déjà utilisé pour la notification `delivery_confirmed`). **Vérifié avant de s'y accrocher** : ce point n'est accessible qu'au marchand/livreur (jamais au client), et pour un paiement à la réception, livraison et encaissement sont censés être le même geste physique simultané — pas une case "paiement reçu" séparée et explicite, une convention déjà utilisée ailleurs dans l'app (même bouton pour un pickup payé en boutique). Accepté tel quel par l'utilisateur, jugé disproportionné d'ajouter une case dédiée pour un cas déjà rare.
+
+**Idempotence** : vérifie qu'aucun `download_tokens` n'existe déjà pour la commande avant d'en générer (garde contre le cas où la commande aurait entre-temps été payée en ligne et déjà traitée par un webhook).
+
+**Testé en conditions réelles, les trois scénarios prévus** :
+- Panier 100% digital + boutique aux deux modes actifs, `on_site` demandé → `payment_type` réellement `online_full` en base, `redirect: 'pay'`.
+- Panier mixte + boutique normale, `on_delivery` demandé → même forçage.
+- **Le cas le plus délicat, prouvé dans les deux temps** : panier mixte + boutique `expired`, `online_full` demandé → `payment_type` reste `on_site` (protection physique confirmée) ; **0 `download_tokens` avant** confirmation de livraison, **1 généré après** — le filet se déclenche au bon moment, jamais avant.
+
+Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (avant correction d'un bug de script de test) repéré et nettoyé par id exact avant de conclure à zéro résidu.
