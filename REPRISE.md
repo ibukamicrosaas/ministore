@@ -2305,4 +2305,6 @@ Nettoyage par identifiants précis, revérifié à zéro résidu sur les 4 bouti
 
 **À la charge de l'utilisateur** : vérification finale sur son propre iPhone qu'une notification arrive réellement (ce diagnostic prouve qu'Apple accepte désormais l'envoi côté serveur — l'affichage réel côté appareil reste à confirmer par l'utilisateur lui-même).
 
+**Confirmé le 2026-09-08 : l'utilisateur reçoit désormais réellement les notifications push sur son iPhone.** Dernière vérification externe du chantier des trois symptômes de la panne de notification — chantier **officiellement clos** (e-mail avec lien digital §87, gabarits anti-spam §88, push ici, tous corrigés et confirmés en conditions réelles, y compris côté appareil pour le push).
+
 **Chantier des trois symptômes de la panne de notification (§87) considéré clos sur le fond** — e-mail avec lien digital (§87), gabarits anti-spam (§88), et push (ici) tous corrigés et testés en conditions réelles. Reste ouvert, sans lien direct avec ce chantier : la dette du panier mixte physique+digital payé à la livraison (§87, plan séparé à venir).
