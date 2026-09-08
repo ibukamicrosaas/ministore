@@ -513,7 +513,7 @@ export async function POST(req: NextRequest) {
     title: `Nouvelle commande — ${shop.name}`,
     body:  `${merchantClient.clientName} • ${total_price.toLocaleString('fr-FR')} FCFA`,
     url:   `${APP_URL}/dashboard/orders`,
-  })
+  }, order.id, 'new_order_shop')
 
   // Alerte email au marchand si email configuré (fire-and-forget)
   const shopEmail = (shop as typeof shop & { email?: string | null }).email

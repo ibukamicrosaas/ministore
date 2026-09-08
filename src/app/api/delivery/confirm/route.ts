@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     title: `✅ Livraison confirmée — ${orderRef}`,
     body:  `${clientName} a reçu sa commande.`,
     url:   `${APP_URL}/dashboard/orders/${orderData.id}`,
-  })
+  }, orderData.id, 'delivery_confirmed')
 
   console.log(`[delivery/confirm] Commande ${orderData.id} → delivered (shop: ${slug})`)
   return NextResponse.json({ ok: true })
