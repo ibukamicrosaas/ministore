@@ -98,6 +98,10 @@ export function buildNewOrderAlertMessage(params: {
   clientPhone: string
   items: string
   totalPrice: number
+  /** Montant déjà formaté dans la devise réelle du shop (ex. "30,00 €") —
+   * remplace le FCFA en dur pour une boutique non-XOF (Stripe, diaspora EU/CA).
+   * Sans cette valeur, comportement inchangé (FCFA, comme Bictorys/XOF). */
+  totalPriceFormatted?: string
   deliveryType: 'home_delivery' | 'store_pickup'
   deliveryDate?: string
   paymentType: string
@@ -105,7 +109,8 @@ export function buildNewOrderAlertMessage(params: {
   const delivery = params.deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait'
   const payment  = params.paymentType === 'on_delivery' ? 'A la reception' : params.paymentType === 'on_site' ? 'En boutique' : 'Paye en ligne'
   const date     = params.deliveryDate ? ` | ${params.deliveryDate}` : ''
-  return `Nouvelle commande - ${params.clientName} (${params.clientPhone})\n${params.items}\n${params.totalPrice.toLocaleString('fr-FR')} FCFA | ${delivery}${date} | ${payment}`
+  const amount   = params.totalPriceFormatted ?? `${params.totalPrice.toLocaleString('fr-FR')} FCFA`
+  return `Nouvelle commande - ${params.clientName} (${params.clientPhone})\n${params.items}\n${amount} | ${delivery}${date} | ${payment}`
 }
 
 export function buildOrderReminderMessage(params: {
@@ -197,11 +202,14 @@ export function buildHeldOrderClientConfirmationMessage(params: {
 
 export function buildHeldOrderMerchantAlertMessage(params: {
   totalPrice: number
+  /** Même repli que buildNewOrderAlertMessage — devise réelle du shop si fournie. */
+  totalPriceFormatted?: string
   itemCount: number
   upgradeUrl: string
 }): string {
   const plural = params.itemCount > 1 ? 's' : ''
-  return `TekkiShop: une commande de ${params.totalPrice.toLocaleString('fr-FR')} FCFA (${params.itemCount} article${plural}) t'attend. Active ta boutique pour voir le client et la traiter: ${params.upgradeUrl}`
+  const amount = params.totalPriceFormatted ?? `${params.totalPrice.toLocaleString('fr-FR')} FCFA`
+  return `TekkiShop: une commande de ${amount} (${params.itemCount} article${plural}) t'attend. Active ta boutique pour voir le client et la traiter: ${params.upgradeUrl}`
 }
 
 export function buildQuotaWarningMessage(params: {

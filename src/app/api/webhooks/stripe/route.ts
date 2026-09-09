@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
-import { sendWhatsApp, buildDigitalDownloadMessage } from '@/lib/notifications/whatsapp'
+import {
+  sendWhatsApp,
+  buildDigitalDownloadMessage,
+  buildNewOrderAlertMessage,
+  buildHeldOrderMerchantAlertMessage,
+} from '@/lib/notifications/whatsapp'
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
 import { sendPushToShop } from '@/lib/push/send'
+import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { APP_URL } from '@/constants'
@@ -91,10 +97,10 @@ export async function POST(req: NextRequest) {
             .select(`
               id, shop_id, client_token, total_price, deposit_amount, payment_type,
               delivery_type, delivery_date, delivery_price, delivery_zone_name,
-              promo_code, promo_discount_pct, discount_amount,
+              promo_code, promo_discount_pct, discount_amount, is_held, released_at,
               clients(first_name, whatsapp, phone, email),
               order_items(product_name, quantity, line_total, product_id, products(product_type, digital_file_name)),
-              shops:shop_id(name, slug, currency, logo_url, primary_color, email)
+              shops:shop_id(name, slug, currency, logo_url, primary_color, email, phone_whatsapp)
             `)
             .single()
 
@@ -117,9 +123,10 @@ export async function POST(req: NextRequest) {
               delivery_type: 'home_delivery' | 'store_pickup'; delivery_date: string | null
               delivery_price: number | null; delivery_zone_name: string | null
               promo_code: string | null; promo_discount_pct: number | null; discount_amount: number | null
+              is_held: boolean; released_at: string | null
               clients: { first_name: string; whatsapp: string | null; phone: string; email: string | null } | null
               order_items: { product_name: string; quantity: number; line_total: number; product_id: string; products: { product_type: string | null; digital_file_name: string | null } | null }[]
-              shops: { name: string; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null } | null
+              shops: { name: string; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null; phone_whatsapp: string | null } | null
             }
 
             const digitalItems = ord.order_items.filter(i => i.products?.product_type === 'digital')
@@ -171,17 +178,23 @@ export async function POST(req: NextRequest) {
             const itemsSummaryEmail = ord.order_items
               .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${formatPrice(i.line_total, shopCurrency)}`)
               .join('\n')
+            const totalPriceFormatted = formatPrice(ord.total_price, shopCurrency)
+            // Même logique de commande retenue (is_held) que le webhook Bictorys
+            // — jamais nom/téléphone client tant que la boutique n'est pas
+            // activée (§13 de la spec). Absente jusqu'ici de ce fichier ; ce
+            // correctif l'ajoute en même temps que les alertes marchand ci-dessous
+            // pour ne pas leur faire courir ce risque dès leur premier jour.
+            const merchantClient = loadOrderForMerchant(ord).merchantClient
 
-            // Notification push + e-mail au marchand — absentes jusqu'ici sur ce
-            // chemin de paiement (carte Stripe, diaspora EU/CA), comme la
-            // confirmation client l'était (§87/§91 REPRISE.md). Note : ce fichier
-            // n'a jamais eu de logique de commande retenue (is_held) pour ce
-            // chemin — reste hors périmètre de ce correctif, cohérent avec le
-            // lien de téléchargement digital ci-dessus, déjà non redacté ici.
+            // Notification push + e-mail + WhatsApp au marchand — absentes
+            // jusqu'ici sur ce chemin de paiement (carte Stripe, diaspora EU/CA),
+            // comme la confirmation client l'était (§87/§91 REPRISE.md). Montant
+            // formaté dans la devise réelle du shop (jamais FCFA en dur — Stripe
+            // ne sert que des boutiques EUR/CAD, contrairement à Bictorys/XOF).
             if (ord.shops) {
               void sendPushToShop(ord.shop_id, {
                 title: `Nouvelle commande — ${ord.shops.name}`,
-                body:  `${ord.clients?.first_name ?? 'Client'} • ${formatPrice(ord.total_price, shopCurrency)}`,
+                body:  `${merchantClient.clientName} • ${totalPriceFormatted}`,
                 url:   `${APP_URL}/dashboard/orders`,
               }, ord.id, 'new_order_shop')
 
@@ -191,13 +204,45 @@ export async function POST(req: NextRequest) {
                   shopName:          ord.shops.name,
                   shopColor:         ord.shops.primary_color,
                   shopLogoUrl:       ord.shops.logo_url,
-                  clientName:        ord.clients?.first_name ?? 'Client',
-                  clientPhone:       ord.clients?.phone ?? '',
+                  clientName:        merchantClient.clientName,
+                  clientPhone:       merchantClient.clientPhone ?? REDACTED_LABEL,
                   items:             itemsSummaryEmail,
                   totalPrice:        ord.total_price,
                   deliveryType:      ord.delivery_type,
                   deliveryDate:      ord.delivery_date,
                   orderDashboardUrl: `${APP_URL}/dashboard/orders/${ord.id}`,
+                })
+              }
+
+              if (ord.shops.phone_whatsapp) {
+                const alertMsg = merchantClient.clientName === REDACTED_LABEL
+                  ? buildHeldOrderMerchantAlertMessage({
+                      totalPrice: ord.total_price,
+                      totalPriceFormatted,
+                      itemCount:  ord.order_items.length,
+                      upgradeUrl: `${APP_URL}/dashboard/upgrade`,
+                    })
+                  : buildNewOrderAlertMessage({
+                      clientName:   merchantClient.clientName,
+                      clientPhone:  merchantClient.clientPhone ?? '',
+                      items:        itemsSummaryEmail,
+                      totalPrice:   ord.total_price,
+                      totalPriceFormatted,
+                      deliveryType: ord.delivery_type,
+                      deliveryDate: ord.delivery_date ?? undefined,
+                      paymentType:  ord.payment_type,
+                    })
+
+                const shopNotif = await sendWhatsApp(ord.shops.phone_whatsapp, alertMsg)
+                await supabase.from('notification_logs').insert({
+                  shop_id:           ord.shop_id,
+                  order_id:          ord.id,
+                  recipient_phone:   ord.shops.phone_whatsapp,
+                  notification_type: 'new_order_shop',
+                  channel:           'sms',
+                  message:           alertMsg,
+                  status:            shopNotif.success ? 'sent' : 'failed',
+                  error_message:     shopNotif.error ?? null,
                 })
               }
             }
