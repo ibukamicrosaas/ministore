@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-08 (nuit).
+> Dernière mise à jour : 2026-09-09.
 
 ---
 
@@ -2344,3 +2344,17 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 - Stripe en ligne : même comportement — ce chemin n'avait jusqu'ici aucune alerte marchand du tout, ni push ni e-mail.
 
 **Trouvé en creusant, signalé plutôt que corrigé silencieusement dans ce lot** : le webhook Stripe n'a jamais eu d'alerte WhatsApp marchand (contrairement à Bictorys) — sujet du lot suivant (§92).
+
+## 92. Alerte WhatsApp marchand ajoutée au webhook Stripe, commit `cc9835c`
+
+**Trouvé en creusant le §91** : `api/webhooks/stripe/route.ts` n'avait jamais eu d'alerte WhatsApp marchand, contrairement à Bictorys — corrigé dans ce lot séparé, sur demande explicite (les clients Stripe, diaspora EU/CA, sont déjà ceux qui ont le moins d'options de secours).
+
+**Un point de précision tranché avant de coder** : `buildNewOrderAlertMessage`/`buildHeldOrderMerchantAlertMessage` (les builders déjà utilisés par Bictorys) ont "FCFA" en dur. Stripe ne sert que des boutiques EUR/CAD (`isEuCaCountry` imposé à la création du paiement) — réutiliser les builders tels quels aurait affiché "FCFA" sur un vrai montant en euros ou dollars canadiens, à **chaque** commande Stripe, pas un cas limite comme le FCFA-en-dur l'était pour le SMS (§31, "0 boutique non-XOF sur 30 jours" au moment de cette décision passée). **Choix : étendre les builders** avec un paramètre optionnel `totalPriceFormatted` — Bictorys inchangé (paramètre omis, repli sur FCFA identique à avant), Stripe correctement formaté dans la devise réelle du shop. Vérifié après coup : `bictorys/route.ts` a zéro ligne modifiée par ce lot, ses appels ne passent pas le nouveau paramètre — sortie strictement identique, commandes retenues traitées pareil.
+
+**Réutilise la même logique de commande retenue (`is_held`) que Bictorys, absente elle aussi de ce fichier jusqu'ici** — appliquée en même temps aux trois alertes marchand (push, e-mail, WhatsApp), pas seulement la nouvelle.
+
+**Testé en conditions réelles, contre le vrai webhook Stripe signé** :
+- Boutique normale, EUR : alerte envoyée, contenu exact `"...30,00 €\n30,00 € | Retrait | Paye en ligne"` — devise correcte partout, jamais FCFA.
+- Commande retenue (boutique `expired` + `trial_model: 'free_orders'`, seule condition qui déclenche réellement `is_held` — un simple `status: 'expired'` sans ce `trial_model` ne suffit pas, vérifié en creusant le trigger `handle_free_order_quota`) : message générique sans nom ni téléphone client, montant toujours correctement formaté, envoi réussi.
+
+**Écart trouvé en cours de test, vérifié avant d'être écarté, pas juste supposé transitoire** : le test "boutique normale" a échoué à l'envoi avec `Lafricamobile HTTP 401`. Remonté dans REPRISE.md avant de conclure : c'est le même incident déjà documenté en détail §13-§16 (2026-08-13) — `Lafricamobile HTTP 401` constant depuis le tout premier jour d'usage du fournisseur (23 juin), 488 occurrences mesurées à l'époque. Cause déjà établie par un test direct de l'utilisateur **depuis le tableau de bord Lafricamobile lui-même** (hors de tout code) : SMS envoyés, affichés "Envoyé" côté fournisseur, aucun jamais arrivé — élimine code/identifiants/solde, pointe vers la délivrabilité côté opérateurs (26,5 % mesurée par Lafricamobile eux-mêmes, 55 % de rejets), probablement un nom d'expéditeur non approuvé. Un ticket a été ouvert chez le fournisseur à l'époque. **Aucune trace trouvée d'une résolution depuis — ce ticket semble toujours non résolu à ce jour (2026-09-08).** Une future session ne doit pas repartir de zéro sur ce diagnostic si `Lafricamobile HTTP 401` réapparaît : c'est l'incident connu de §13-§16, pas un nouveau signal, sauf preuve du contraire (ex. une confirmation de résolution còté fournisseur jamais obtenue jusqu'ici).
