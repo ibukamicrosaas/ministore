@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Clock, ShoppingBag, Star, ShieldCheck, Banknote, Package, Truck, Wallet, MessageCircle } from 'lucide-react'
 import type { Shop, Product, ProductPhoto, ProductVariant } from '@/types'
 import { ShareButton } from '@/components/pwa/ShareButton'
+import { ReportContentLink } from '@/components/pwa/ReportContentLink'
 import { PixelViewContent } from './ProductPixelEvents'
 import { ProductStickyCta } from '@/components/pwa/ProductStickyCtaManager'
 import { VariantSelectorCta } from './VariantSelectorCta'
@@ -548,6 +549,12 @@ export default async function ProductDetailPage({ params }: Props) {
             Poser une question sur ce produit
           </a>
         )}
+
+        {/* Signalement — chantier modération, deuxième point d'accès (le
+            premier est le pied de page ShopBranding). Volontairement discret,
+            jamais au même niveau visuel que le CTA d'achat ou "Poser une
+            question". */}
+        <ReportContentLink shopId={shop.id} productId={product.id} />
 
         {/* Partage WhatsApp — visible sous le CTA */}
         {!soldOut && !isDigital && (

@@ -4,6 +4,7 @@ import { Phone, MessageCircle, Clock, ShoppingBag, MapPin, Truck, Wallet, Search
 import type { Shop, Product } from '@/types'
 import { ProductGrid } from './ProductGrid'
 import { ShareButton } from './ShareButton'
+import { ReportContentLink } from './ReportContentLink'
 import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getPlanFeatures } from '@/lib/plan-features'
@@ -377,6 +378,17 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
                       </a>
                     ))}
                   </div>
+                )}
+
+                {/* Signalement — chantier modération, deuxième point d'accès (le
+                    premier est le pied de page ShopBranding). Volontairement en
+                    dehors de la grille actionButtons ci-dessus : pas au même
+                    niveau visuel qu'"Appeler"/"Écrire". */}
+                {!previewMode && (
+                  <ReportContentLink
+                    shopId={shop.id}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors self-start"
+                  />
                 )}
 
                 {/* Réseaux sociaux — mobile seulement ici (empilés avec le reste comme
