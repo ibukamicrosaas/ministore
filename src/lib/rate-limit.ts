@@ -39,8 +39,11 @@ export async function checkRateLimit(
     )
   }
 
-  // Enregistrer la requête (fire-and-forget)
-  void supabase.from('login_attempts').insert({
+  // Enregistrer la requête. Awaité — un query builder Supabase est un
+  // thenable paresseux, `void` seul sur l'expression n'appelle jamais
+  // .then() et la requête ne part donc jamais (REPRISE.md §94) : c'était le
+  // défaut réel, pas juste une écriture "fire-and-forget" qui traînait.
+  await supabase.from('login_attempts').insert({
     identifier,
     attempt_type: opts.key,
     success:      true,
