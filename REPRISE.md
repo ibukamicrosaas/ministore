@@ -2376,3 +2376,33 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 **Piège de test rencontré, propre au script pas au produit** : une boutique de test avec `plan: 'trial'` sans `trial_model: 'free_orders'` s'affiche comme suspendue quel que soit `is_active` (`[shop-slug]/layout.tsx:46-47`, `isTrial = trial_model !== 'free_orders' && plan === 'trial'`) — corrigé dans le script de test (`plan: 'decouverte'` + `subscription_ends_at` futur), pas un bug produit.
 
 **Reste en file pour ce chantier** : lot 2 (traçabilité des suspensions — migration `suspension_reason`/`suspended_by`/horodatage dédié), lot 3 (deux clauses CGU, texte à valider avant publication), lot 4 en réserve (modération au niveau produit, détection semi-automatique). **Interrompu avant le lot 2** par la découverte du §94 — reprise une fois ce chantier-là traité.
+
+## 94. `void <requête Supabase>` jamais exécuté — découvert en construisant le rate limit du lot 1, investigation complète
+
+**Mécanisme** : un query builder Supabase-js (`.from(...).insert(...)`, `.update(...)`, etc.) est un "thenable" paresseux — la requête HTTP réelle ne part que si `.then()`/`await` est appelé dessus. `void expr` évalue l'expression et jette le résultat **sans jamais appeler `.then()`** : la requête ne part jamais, pas seulement en différé. Prouvé directement : le même insert, lancé isolément avec 3 secondes d'attente et sans fin de process, n'écrit rien ; le même avec `await`, immédiat.
+
+**Recherche exhaustive dans tout `src/` — 9 occurrences réelles, toutes avec `void` explicite (aucun cas "sans rien du tout" trouvé)** :
+- `lib/rate-limit.ts:43` — suivi du rate limit, **partagé par 11 routes** : `bictorys/create`, `bictorys/subscription`, `resend-digital`, `check-promo`, `delivery/confirm`, `wave-payment`, `verify-orange-otp`, `orange-money-payment`, `shop-visit`, `licence.ts`.
+- `api/orders/route.ts:565` — suivi du rate limit de création de commande (20/h).
+- `lib/actions/auth.ts:115,169,319` — signup, pin_change, pin_reset_confirm (le vrai verrou de connexion, 10 échecs/15min ligne 41-61, est lui correctement `await`é — c'est ce contraste qui a permis de repérer le défaut).
+- `lib/actions/licence.ts:53`, `app/start/actions.ts:195,251` — suivi anti-spam candidatures, analytics onboarding.
+- `api/ai/chat/route.ts:127` — snapshot intermédiaire de conversation IA, impact faible (une seconde écriture ligne 157, correctement `await`ée, sauvegarde tout juste après).
+
+**Vérifié et écarté** : `void sendPushToShop/sendNewOrderAlertEmail/sendOrderConfirmationEmail(...)` (vraies fonctions async, `await` interne correct — `void` dessus est le bon pattern) ; `void recordCronRun(...)` (6 crons — vérifié précisément car ça aurait pu expliquer le silence de `cron_health` déjà documenté ailleurs dans ce fichier ; ce n'est pas la cause) ; `void notifyStockAlertSubscribers(...)` ; `lib/billing/events.ts:10` (a un `.then()` chaîné, donc part bien malgré le `void`).
+
+**Origine** : présent depuis la toute première version de `rate-limit.ts` (commit `29685a1`, 10 juin — le même commit que le bug VAPID déjà corrigé au §89). Jamais retouché depuis.
+
+**Recherche d'abus déjà exploité, dans les vraies données, pas supposée** : sur les 177 lignes de `payments` (couverture complète), une seule commande a plus de 3 tentatives (5, `5ffea588...`) — datée du **8 juin, avant que le rate limiting n'existe** : un test manuel d'époque, pas un abus. Répartition par jour sur toute l'historique : aucun pic, max 14/jour, cohérent avec un volume organique. **Aucun signe d'exploitation trouvé.** Limite honnête : ces routes ne journalisent pas chaque tentative (seuls les succès Bictorys laissent une trace indirecte), pas d'accès aux logs de requêtes bruts (Vercel) — l'absence de preuve n'est pas une preuve d'absence, juste ce que les données disponibles permettent de dire.
+
+**`verify-orange-otp` — investigation de l'intention d'origine, sur demande explicite avant de la traiter comme une route normale.** Vérifié par `git show` sur le commit de création (`633db60`, 8 juin) : le commentaire actuel ("la vérification réelle se fait via le webhook Bictorys") est présent **dès la création**, pas un vestige — le paramètre `otp` reçu n'a jamais été lu, dès le premier jour. Risque de brute-force nul par conception, pas juste par accident : rien à vérifier dans cette route.
+
+**Découverte plus large en répondant à cette question** : `verify-orange-otp`, `orange-money-payment` et `wave-payment` (les trois créées par le même commit du 8 juin, "redesign checkout flow") **n'ont aucun appelant nulle part dans `src/`** — recherche exhaustive de chaque chaîne, zéro résultat en dehors de leur propre fichier. Le vrai flux de paiement actif aujourd'hui passe par `api/payments/bictorys/create` (appelé depuis `PaymentMethodSelector.tsx`, confirmé). Ces trois routes sont très probablement des restes de la même refonte déjà partiellement nettoyée cette session ("route morte checkout", §74) — non détectées à l'époque car ce nettoyage cherchait des liens depuis les templates de notification, pas les appelants d'API directs. **Pas traité dans ce lot** — reste à vérifier et nettoyer séparément (code mort probable, pas seulement un défaut de rate limit).
+
+**Dette séparée, distincte du défaut void insert, notée explicitement pour ne pas être perdue** : même une fois le rate limit corrigé sur `bictorys/create`/`orange-money-payment`/`wave-payment`, **aucune de ces routes ne vérifie que l'appelant est le client réel de la commande** — un `orderId` réutilisable (ex. depuis un panier abandonné) reste exploitable pour déclencher une charge/sollicitation OTP vers un numéro arbitraire, juste à une fréquence plus lente. Le rate limit réduit la fréquence d'abus possible, il ne corrige pas l'absence de vérification de propriété de la commande. **Pas résolu par ce lot — à traiter comme son propre chantier.**
+
+**Plan de correction validé, priorisé par sensibilité, un lot séparé par priorité** :
+1. `lib/rate-limit.ts` (une ligne, corrige les 11 routes partagées) — en cours.
+2. `api/orders/route.ts:565` (rate limit création de commande, route la plus fréquentée).
+3. `lib/actions/auth.ts` (3 occurrences, adjacent sécurité compte — le vrai verrou de connexion fonctionne déjà, ces trois sont des compteurs supplémentaires).
+4. `app/start/actions.ts` (2 occurrences, analytics/tracking, aucune conséquence de sécurité).
+5. `api/ai/chat/route.ts:127` (impact déjà limité par la sauvegarde correcte de la ligne 157).
