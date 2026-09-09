@@ -2382,7 +2382,7 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 **Mécanisme** : un query builder Supabase-js (`.from(...).insert(...)`, `.update(...)`, etc.) est un "thenable" paresseux — la requête HTTP réelle ne part que si `.then()`/`await` est appelé dessus. `void expr` évalue l'expression et jette le résultat **sans jamais appeler `.then()`** : la requête ne part jamais, pas seulement en différé. Prouvé directement : le même insert, lancé isolément avec 3 secondes d'attente et sans fin de process, n'écrit rien ; le même avec `await`, immédiat.
 
 **Recherche exhaustive dans tout `src/` — 9 occurrences réelles, toutes avec `void` explicite (aucun cas "sans rien du tout" trouvé)** :
-- `lib/rate-limit.ts:43` — suivi du rate limit, **partagé par 11 routes** : `bictorys/create`, `bictorys/subscription`, `resend-digital`, `check-promo`, `delivery/confirm`, `wave-payment`, `verify-orange-otp`, `orange-money-payment`, `shop-visit`, `licence.ts`.
+- `lib/rate-limit.ts:43` — suivi du rate limit, **partagé par 9 routes** (celles qui appellent réellement la fonction `checkRateLimit()`) : `bictorys/create`, `bictorys/subscription`, `resend-digital`, `check-promo`, `delivery/confirm`, `wave-payment`, `verify-orange-otp`, `orange-money-payment`, `shop-visit`. **`licence.ts` n'en fait pas partie** — correction après une première liste erronée : ce fichier n'appelle pas `checkRateLimit()`, il réimplémente la même logique en ligne (commentaire explicite dans le fichier : le helper attend un `NextRequest`, indisponible dans une Server Action) — même défaut, mais une instance séparée, listée ci-dessous avec les siennes.
 - `api/orders/route.ts:565` — suivi du rate limit de création de commande (20/h).
 - `lib/actions/auth.ts:115,169,319` — signup, pin_change, pin_reset_confirm (le vrai verrou de connexion, 10 échecs/15min ligne 41-61, est lui correctement `await`é — c'est ce contraste qui a permis de repérer le défaut).
 - `lib/actions/licence.ts:53`, `app/start/actions.ts:195,251` — suivi anti-spam candidatures, analytics onboarding.
@@ -2401,8 +2401,8 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 **Dette séparée, distincte du défaut void insert, notée explicitement pour ne pas être perdue** : même une fois le rate limit corrigé sur `bictorys/create`/`orange-money-payment`/`wave-payment`, **aucune de ces routes ne vérifie que l'appelant est le client réel de la commande** — un `orderId` réutilisable (ex. depuis un panier abandonné) reste exploitable pour déclencher une charge/sollicitation OTP vers un numéro arbitraire, juste à une fréquence plus lente. Le rate limit réduit la fréquence d'abus possible, il ne corrige pas l'absence de vérification de propriété de la commande. **Pas résolu par ce lot — à traiter comme son propre chantier.**
 
 **Plan de correction validé, priorisé par sensibilité, un lot séparé par priorité** :
-1. `lib/rate-limit.ts` (une ligne, corrige les 11 routes partagées) — en cours.
+1. `lib/rate-limit.ts` (une ligne, corrige les 9 routes partagées) — en cours.
 2. `api/orders/route.ts:565` (rate limit création de commande, route la plus fréquentée).
 3. `lib/actions/auth.ts` (3 occurrences, adjacent sécurité compte — le vrai verrou de connexion fonctionne déjà, ces trois sont des compteurs supplémentaires).
-4. `app/start/actions.ts` (2 occurrences, analytics/tracking, aucune conséquence de sécurité).
+4. `lib/actions/licence.ts:53` (instance séparée, pas corrigée par le point 1 — anti-spam d'un formulaire public, même niveau de sensibilité que le point 5) et `app/start/actions.ts` (2 occurrences, analytics/tracking) — aucune conséquence de sécurité pour les deux.
 5. `api/ai/chat/route.ts:127` (impact déjà limité par la sauvegarde correcte de la ligne 157).
