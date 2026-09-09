@@ -561,8 +561,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Enregistrer la commande pour le rate limiting
-  void supabase.from('login_attempts').insert({
+  // Enregistrer la commande pour le rate limiting. Awaité — un query
+  // builder Supabase est un thenable paresseux, `void` seul n'appelle
+  // jamais .then() et la requête ne part donc jamais (REPRISE.md §94) :
+  // cette limite de 20/h n'avait jamais réellement compté une commande.
+  await supabase.from('login_attempts').insert({
     identifier:   `order:${ip}`,
     attempt_type: 'order',
     success:      true,
