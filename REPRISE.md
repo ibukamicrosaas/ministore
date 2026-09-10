@@ -2473,3 +2473,15 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite du chantier modération** : lot 3 (deux clauses CGU — consentement, usurpation d'identité — texte à proposer et valider avant publication), lot 4 en réserve (modération au niveau produit, détection semi-automatique).
+
+## 98. Chantier modération — lot 3, deux clauses CGU, commit `9a0de6b` — périmètre actuel clos
+
+**Ferme les deux trous identifiés dès l'état des lieux initial (§93)** : article 9 (« Produits et contenus interdits ») de `legal/cgu/page.tsx` n'avait ni clause de consentement (cas "Rose photos" — la clause existante ne couvrait que le contenu pornographique explicite, pas l'absence de consentement en général), ni clause d'usurpation d'identité d'un organisme dans un service vendu (cas "Campus France" — la clause contrefaçon ne couvre que la contrefaçon physique).
+
+**Texte proposé, validé mot pour mot avant toute modification du fichier**, sur consigne explicite (pas de promesse de détection ni de délai qu'on ne pourrait pas tenir, formulation simple cohérente avec le reste du document, pas de jargon juridique lourd) :
+
+> Il vous est également interdit de publier ou vendre tout contenu impliquant une personne identifiable (photo, vidéo ou enregistrement) sans son consentement, ainsi que tout produit ou service présenté comme émanant d'un organisme, d'une marque ou d'une institution que vous ne représentez pas.
+
+Volontairement large plutôt que collé aux deux cas précis (consentement en général, pas seulement contenu sexuel explicite ; usurpation en général, pas seulement un service de visa/formation) — pour ne pas laisser d'autres angles morts du même type. Insérée entre la phrase existante de l'article 9 et la phrase de sanction (retrait/suspension sans préavis, déjà en place, pas de nouvelle garantie ajoutée). `tsc --noEmit` et `npm run build` propres.
+
+**Chantier modération clos dans son périmètre actuel (lots 1-3)** : bouton de signalement (§93), traçabilité des suspensions (§97), CGU (ce lot). **Lot 4 reste en réserve, non prioritaire** : modération au niveau produit (pas seulement boutique entière), détection semi-automatique par liste de mots-surveillés — à reprendre séparément quand ce sera la priorité.
