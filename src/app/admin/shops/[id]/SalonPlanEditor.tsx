@@ -38,6 +38,8 @@ export interface SalonAdminData {
   phone_whatsapp: string | null
   city: string | null
   created_at: string
+  suspension_reason?: string | null
+  suspended_at?: string | null
 }
 
 function formatFCFA(n: number): string {
@@ -48,6 +50,7 @@ export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminDat
   const router = useRouter()
   const [plan, setPlan] = useState(salon.plan)
   const [isActive, setIsActive] = useState(salon.is_active)
+  const [suspensionReason, setSuspensionReason] = useState(salon.suspension_reason ?? '')
   const [trialEndsAt, setTrialEndsAt] = useState(
     salon.trial_ends_at ? salon.trial_ends_at.slice(0, 10) : ''
   )
@@ -89,7 +92,13 @@ export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminDat
     }
   }
 
+  const isNewSuspension = salon.is_active && !isActive
+
   async function handleSave() {
+    if (isNewSuspension && !suspensionReason.trim()) {
+      toast.error('Une raison est obligatoire pour suspendre une boutique.')
+      return
+    }
     setLoading(true)
     const result = await updateShopPlan(salon.id, {
       plan,
@@ -98,6 +107,7 @@ export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminDat
       subscription_ends_at: plan !== 'trial'
         ? (subscriptionEndsAt ? new Date(subscriptionEndsAt + 'T23:59:59').toISOString() : undefined)
         : undefined,
+      suspension_reason: isNewSuspension ? suspensionReason.trim() : undefined,
     })
     if ('error' in result) {
       toast.error(result.error ?? 'Erreur')
@@ -278,6 +288,36 @@ export function SalonPlanEditor({ salon, onlineRevenue }: { salon: SalonAdminDat
             <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-5' : ''}`} />
           </button>
         </div>
+
+        {isNewSuspension && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Raison de la suspension <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={suspensionReason}
+              onChange={e => setSuspensionReason(e.target.value)}
+              rows={3}
+              placeholder="Ex. contenu signalé pour usurpation d'identité, cas Campus France"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Enregistrée avec ton identifiant admin et l'horodatage, conservée même après une future réactivation.
+            </p>
+          </div>
+        )}
+
+        {!isActive && !isNewSuspension && salon.suspension_reason && (
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+            <p className="font-medium text-gray-700">Dernière raison de suspension enregistrée</p>
+            <p className="mt-0.5">{salon.suspension_reason}</p>
+            {salon.suspended_at && (
+              <p className="mt-1 text-gray-400">
+                {format(new Date(salon.suspended_at), 'd MMM yyyy à HH:mm', { locale: fr })}
+              </p>
+            )}
+          </div>
+        )}
 
         <button
           type="button"

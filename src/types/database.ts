@@ -101,6 +101,9 @@ export type Database = {
           trial_extended_at: string | null
           free_orders_used: number
           free_orders_quota: number
+          suspension_reason: string | null
+          suspended_by: string | null
+          suspended_at: string | null
           created_at: string
           updated_at: string
         }
@@ -152,6 +155,9 @@ export type Database = {
           trial_extended_at?: string | null
           free_orders_used?: number
           free_orders_quota?: number
+          suspension_reason?: string | null
+          suspended_by?: string | null
+          suspended_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -206,6 +212,9 @@ export type Database = {
           trial_extended_at?: string | null
           free_orders_used?: number
           free_orders_quota?: number
+          suspension_reason?: string | null
+          suspended_by?: string | null
+          suspended_at?: string | null
           created_at?: string
           updated_at?: string
         }

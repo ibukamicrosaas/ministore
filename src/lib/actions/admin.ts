@@ -4,14 +4,15 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { setShopStatus } from '@/lib/billing/shop-status'
+import { logShopEvent } from '@/lib/billing/events'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
 async function assertAdmin() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !ADMIN_USER_IDS.includes(user.id)) return { error: 'Accès non autorisé.' }
-  return { error: null }
+  if (!user || !ADMIN_USER_IDS.includes(user.id)) return { error: 'Accès non autorisé.', userId: null }
+  return { error: null, userId: user.id }
 }
 
 export async function updateShopPlan(shopId: string, input: {
@@ -19,11 +20,43 @@ export async function updateShopPlan(shopId: string, input: {
   is_active: boolean
   trial_ends_at?: string | null
   subscription_ends_at?: string | null
+  suspension_reason?: string
 }) {
-  const { error: authError } = await assertAdmin()
-  if (authError) return { error: authError }
+  const { error: authError, userId } = await assertAdmin()
+  if (authError || !userId) return { error: authError }
 
   const supabase = createAdminClient()
+
+  // Détection de la transition is_active, sur l'état réel en base — pas sur
+  // ce que le formulaire admin croit être l'état initial (REPRISE.md §97).
+  const { data: current, error: currentError } = await supabase
+    .from('shops')
+    .select('is_active')
+    .eq('id', shopId)
+    .single()
+
+  if (currentError || !current) {
+    console.error('[admin/updateShopPlan] lecture is_active', currentError?.message)
+    return { error: 'Boutique introuvable.' }
+  }
+
+  const isSuspending   = current.is_active && !input.is_active
+  const isReactivating = !current.is_active && input.is_active
+
+  if (isSuspending && !input.suspension_reason?.trim()) {
+    return { error: 'Une raison est obligatoire pour suspendre une boutique.' }
+  }
+
+  // Les 3 champs représentent la DERNIÈRE suspension connue — jamais effacés
+  // à la réactivation (décision explicite, migration 102), seulement écrits
+  // lors d'une vraie transition active→suspendue.
+  const suspensionFields = isSuspending
+    ? {
+        suspension_reason: input.suspension_reason!.trim(),
+        suspended_by:      userId,
+        suspended_at:      new Date().toISOString(),
+      }
+    : {}
 
   const { error } = input.plan === 'trial'
     ? await supabase.from('shops').update({
@@ -31,6 +64,7 @@ export async function updateShopPlan(shopId: string, input: {
         is_active:     input.is_active,
         trial_ends_at: input.trial_ends_at ?? undefined,
         updated_at:    new Date().toISOString(),
+        ...suspensionFields,
       }).eq('id', shopId)
     : await supabase.from('shops').update({
         plan:                 input.plan,
@@ -38,11 +72,21 @@ export async function updateShopPlan(shopId: string, input: {
         subscription_ends_at: input.subscription_ends_at
           ?? new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
         updated_at:           new Date().toISOString(),
+        ...suspensionFields,
       }).eq('id', shopId)
 
   if (error) {
     console.error('[admin/updateShopPlan]', error.message)
     return { error: 'Impossible de mettre à jour la boutique.' }
+  }
+
+  // Historique complet (pas seulement le dernier état) : shop_events porte
+  // chaque cycle suspension/réactivation, même mécanisme que
+  // free_order_used/order_held/trial_expired.
+  if (isSuspending) {
+    logShopEvent(shopId, 'shop_suspended', { reason: input.suspension_reason!.trim(), suspended_by: userId })
+  } else if (isReactivating) {
+    logShopEvent(shopId, 'shop_reactivated', { reactivated_by: userId })
   }
 
   // Boutique free_orders activée manuellement par l'admin (plan payant + is_active)
