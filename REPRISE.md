@@ -2485,3 +2485,11 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 Volontairement large plutôt que collé aux deux cas précis (consentement en général, pas seulement contenu sexuel explicite ; usurpation en général, pas seulement un service de visa/formation) — pour ne pas laisser d'autres angles morts du même type. Insérée entre la phrase existante de l'article 9 et la phrase de sanction (retrait/suspension sans préavis, déjà en place, pas de nouvelle garantie ajoutée). `tsc --noEmit` et `npm run build` propres.
 
 **Chantier modération clos dans son périmètre actuel (lots 1-3)** : bouton de signalement (§93), traçabilité des suspensions (§97), CGU (ce lot). **Lot 4 reste en réserve, non prioritaire** : modération au niveau produit (pas seulement boutique entière), détection semi-automatique par liste de mots-surveillés — à reprendre séparément quand ce sera la priorité.
+
+## 99. Suppression des 3 routes de paiement mortes, commit `c3e710a`
+
+**Décision prise sur la piste creusée au §94** : `verify-orange-otp`, `orange-money-payment`, `wave-payment` — restes de la refonte checkout du 8 juin, déjà partiellement nettoyée (§74, "route morte checkout") — supprimées, même traitement.
+
+**Revérifié une dernière fois avant suppression, pas sur la seule foi de l'investigation du §94** : recherche exhaustive dans `src/` (zéro appelant, composants/actions/autres routes) confirmée à nouveau ; `webhookUrl` envoyé à Bictorys par `orange-money-payment` identique à celui du flux actif (`bictorys/create`) — rien n'est orphelin côté fournisseur ; `bictorys-api-integration.md` ne les documente pas comme intégration active. Seules mentions restantes hors code : `ARCHITECTURE.md` (arbre de fichiers, pas une preuve d'usage — mis à jour dans le même commit pour retirer les 3 lignes désormais obsolètes, fichier protégé, diff montré avant application) et ces notes.
+
+`tsc --noEmit` et `npm run build` propres après suppression (l'erreur `.next/types/validator.ts` observée juste après le `git rm` était un artefact de build non régénéré, pas une régression réelle — confirmé disparu après un `npm run build` complet).
