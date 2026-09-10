@@ -2447,3 +2447,29 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 **Correctif** : `PhoneInput` (`OrderForm.tsx`) — classe du menu déroulant passée de `z-50 ... overflow-hidden` à `z-[60] ... max-h-64 overflow-y-auto`. `z-[60]` fait gagner le menu sur la barre collante en cas de chevauchement ; le plafond de hauteur + défilement propre au menu rend chaque option atteignable quelle que soit la position du champ à l'écran.
 
 **Retesté réellement après correctif, sur les deux tailles** : les options auparavant recouvertes par la barre résolvent désormais correctement vers l'option du menu, et faire défiler la liste jusqu'en bas (`menu.scrollTop = menu.scrollHeight`) rend le Canada cliquable sur les deux écrans.
+
+## 97. Chantier modération — lot 2, traçabilité des suspensions, commit `8b07e13`
+
+**Repris directement après la mise en production du bouton de signalement (§93, lot 1)** : de vrais signalements peuvent désormais arriver, une action de modération sans trace resterait aussi invisible qu'elle l'a été pour "Rose photos" — plan explicitement demandé avant tout code, comme pour toute modification de schéma.
+
+**Trouvé en vérifiant l'état des migrations avant d'appliquer la nouvelle, pas supposé** : `supabase migration list --linked` a montré `100` et `101` (déjà en base d'après REPRISE.md §89/§93) sans enregistrement dans l'historique distant — appliquées directement à un moment sans jamais passer par `migration repair`, exactement le trou qu'AI_RULES.md décrit ("Une migration appliquée directement sans passer par `db push` puis sans réparation n'apparaît dans aucun des deux"). Vérifié objet par objet avant de réparer (table `content_reports`, colonne `notification_logs.channel`, toutes deux réellement présentes) — pas réparé sur la seule foi d'une note dans REPRISE.md. Réparation faite (`migration repair --status applied 100`/`101`) avant de toucher à `102`.
+
+**Schéma — migration `102_shop_suspension_traceability.sql`** : `shops.suspension_reason` (TEXT), `shops.suspended_by` (UUID → `auth.users`, `ON DELETE SET NULL`), `shops.suspended_at` (TIMESTAMPTZ), tous nullable. **Deux décisions explicitement validées avant de coder** :
+1. Les 3 champs portent la **dernière suspension connue**, jamais effacés à la réactivation — visibles même sur une boutique redevenue active, utile pour repérer un cas récidiviste.
+2. La raison est **obligatoire** pour suspendre depuis l'admin — sinon la traçabilité construite risque de rester vide en pratique, exactement le problème à corriger.
+
+**Historique complet, pas seulement le dernier état** : `shop_events` reçoit un événement `shop_suspended`/`shop_reactivated` à chaque vraie transition — réutilise `logShopEvent` (`lib/billing/events.ts`, déjà correctement `await`é en interne, contrairement au défaut du §94), même mécanisme que `free_order_used`/`order_held`/`trial_expired`.
+
+**Correctif** : `updateShopPlan` (`lib/actions/admin.ts`) lit désormais l'état réel `is_active` en base avant d'écrire (pas l'état que le formulaire admin croit être l'état initial) pour détecter une vraie transition — un admin qui ré-enregistre une boutique déjà suspendue sans changer l'interrupteur ne déclenche ni exigence de raison ni événement. `SalonPlanEditor.tsx` : champ raison obligatoire affiché à la bascule vers "suspendu" ; la dernière raison connue affichée en lecture seule si la boutique est déjà suspendue sans nouvelle transition.
+
+**Migration vérifiée par script avant application** (`scripts/check-shop-suspension-traceability.sql`, transaction annulée) : 5/5 checks — colonnes présentes avec les bons types, écriture/lecture des 3 champs, `suspended_by` rejette un utilisateur inexistant (FK), contrainte bien `ON DELETE SET NULL`. **Écrit en respectant la règle `db query` ne restitue pas `RAISE NOTICE`** (AI_RULES.md) — résultat par un unique `SELECT` final à colonnes booléennes, pas par des messages pendant l'exécution.
+
+**Testé en conditions réelles, contre la vraie base, sur une boutique de test dédiée** (`suspension-test-102`, jamais un vrai marchand — supprimée après coup, zéro résidu vérifié) : logique de `updateShopPlan` reproduite exactement (même séquence d'opérations, même client admin, même `logShopEvent`) dans un script plutôt que via un clic réel dans l'admin — **choix explicite, validé par l'utilisateur** : passer par un vrai clic aurait exigé de réinitialiser temporairement le PIN admin réel, refusé comme risque opérationnel disproportionné par rapport au gain de vérification pour cette partie déjà couverte par le code review du diff. Quatre scénarios, tous positifs :
+1. Suspension sans raison → bloquée, état inchangé.
+2. Suspension avec raison → `is_active: false`, les 3 champs écrits, 1 événement `shop_suspended`.
+3. Réactivation → `is_active: true`, les 3 champs **préservés** (raison/admin/horodatage inchangés).
+4. Second cycle (nouvelle suspension) → nouvelle raison écrase l'ancienne sur `shops`, mais `shop_events` montre l'historique complet des 3 événements dans l'ordre (`suspended` → `reactivated` → `suspended`).
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite du chantier modération** : lot 3 (deux clauses CGU — consentement, usurpation d'identité — texte à proposer et valider avant publication), lot 4 en réserve (modération au niveau produit, détection semi-automatique).
