@@ -2436,4 +2436,14 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 
 `tsc --noEmit` et `npm run build` propres avant et après.
 
-**Suite immédiate demandée par l'utilisateur** : vérification en production sur `ibukandjoli` par l'utilisateur lui-même une fois déployé.
+**Suite immédiate demandée par l'utilisateur** : vérification en production sur `ibukandjoli` par l'utilisateur lui-même une fois déployé. **Poussé, `3f4fcfe`.**
+
+## 96. Menu pays de l'indicatif inatteignable sous la barre collante mobile (`/commander`), commit `e1d3ff5`
+
+**Signalé par de vrais clients, déjà demandé une première fois avant cette session** — vérifié avant de recoder : ce qui existait (`pb-44`, commentaire "corrige 3.2") était l'ancienne technique de padding fixe, appliquée pour une raison différente, et structurellement incapable de corriger ce cas précis puisque le menu déroulant du sélecteur d'indicatif est en `position: absolute`, pas du contenu de flux qu'un padding peut repousser.
+
+**Mesuré réellement (CDP, deux tailles d'écran mobiles — 390×844 et 375×667), pas supposé** : 7 des 11 pays du menu étaient rendus inatteignables au clic — `elementFromPoint` résolvait la barre collante, pas l'option, les deux partageant `z-50` avec une égalité tranchée par l'ordre du DOM en faveur de la barre. Le 11e pays (Canada) était entièrement hors écran, aucun moyen de l'atteindre.
+
+**Correctif** : `PhoneInput` (`OrderForm.tsx`) — classe du menu déroulant passée de `z-50 ... overflow-hidden` à `z-[60] ... max-h-64 overflow-y-auto`. `z-[60]` fait gagner le menu sur la barre collante en cas de chevauchement ; le plafond de hauteur + défilement propre au menu rend chaque option atteignable quelle que soit la position du champ à l'écran.
+
+**Retesté réellement après correctif, sur les deux tailles** : les options auparavant recouvertes par la barre résolvent désormais correctement vers l'option du menu, et faire défiler la liste jusqu'en bas (`menu.scrollTop = menu.scrollHeight`) rend le Canada cliquable sur les deux écrans.
