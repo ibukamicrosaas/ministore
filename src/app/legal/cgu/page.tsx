@@ -91,6 +91,7 @@ export default function CGUPage() {
 
       <Section title="9. Produits et contenus interdits">
         <p>Il vous est interdit de proposer sur votre boutique des produits ou contenus illicites, notamment : produits contrefaits, stupéfiants, armes, médicaments soumis à prescription, espèces protégées, contenus à caractère pornographique, contenus incitant à la haine ou à la violence, ainsi que tout produit dont la vente est réglementée sans que vous disposiez des autorisations requises.</p>
+        <p>Il vous est également interdit de publier ou vendre tout contenu impliquant une personne identifiable (photo, vidéo ou enregistrement) sans son consentement, ainsi que tout produit ou service présenté comme émanant d&apos;un organisme, d&apos;une marque ou d&apos;une institution que vous ne représentez pas.</p>
         <p>TEKKIShop peut retirer un produit ou suspendre une boutique en cas de manquement, sans préavis.</p>
       </Section>
 
