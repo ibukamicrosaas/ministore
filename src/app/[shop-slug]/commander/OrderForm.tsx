@@ -124,7 +124,16 @@ function PhoneInput({
         </button>
 
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          // max-h-64 + overflow-y-auto (corrige un vrai bug, pas une hypothèse) :
+          // avec 11 pays, ce menu ouvert dépassait la hauteur restante avant la
+          // barre collante mobile (z-50, comme ce menu — égalité résolue par
+          // l'ordre du DOM en faveur de la barre) sur un écran standard. Mesuré
+          // réellement (CDP, 390×844) : 7 des 11 options rendues inatteignables
+          // au clic (elementFromPoint renvoyait la barre, pas l'option), la
+          // dernière hors écran. z-[60] fait gagner ce menu sur la barre quand
+          // ils se chevauchent ; le plafond + défilement rend chaque option
+          // atteignable quelle que soit la position du champ à l'écran.
+          <div className="absolute left-0 top-full z-[60] mt-1 w-56 max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
             {countries.map((c) => {
               const isSelected = c.dial === dialCode
               return (
