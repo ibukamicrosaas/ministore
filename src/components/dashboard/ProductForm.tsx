@@ -695,6 +695,11 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
               onChange={handleDescImageUpload}
               className="hidden"
             />
+            {productType === 'physical' && !useVariants && (
+              <p className="mt-1.5 text-[11px] text-gray-400">
+                Ton produit existe en plusieurs tailles, couleurs ou formats ? Utilise <strong className="text-gray-500">« Tailles, couleurs ou autres choix »</strong> plus bas plutôt que de les lister ici — chaque client choisira la sienne, et tu sauras quoi préparer.
+              </p>
+            )}
             {description.trim() && (
               <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Aperçu</p>
@@ -845,8 +850,8 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
           {productType === 'physical' && (
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Variantes de prix</p>
-              <p className="text-xs text-gray-500">Ex : Format entier / Demi format</p>
+              <p className="text-sm font-medium text-gray-900">Tailles, couleurs ou autres choix</p>
+              <p className="text-xs text-gray-500">Ex : Pointure, Couleur, Format…</p>
             </div>
             <button
               type="button"
@@ -862,6 +867,10 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
           {productType === 'physical' && useVariants && (
             <div className="space-y-3">
+              <p className="text-xs text-gray-400">
+                Chaque client choisit la sienne au moment de commander — plus besoin de deviner.
+              </p>
+
               {/* Presets rapides */}
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-2">Modèles rapides :</p>
