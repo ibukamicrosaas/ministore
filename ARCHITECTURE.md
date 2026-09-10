@@ -99,9 +99,6 @@ ministore/
 │   │   │   │   ├── route.ts               → POST créer commande
 │   │   │   │   ├── [id]/route.ts          → GET détail commande
 │   │   │   │   ├── bictorys-checkout/route.ts → POST créer session Bictorys
-│   │   │   │   ├── wave-payment/route.ts → POST enregistrer tentative Wave
-│   │   │   │   ├── orange-money-payment/route.ts → POST session Orange Money
-│   │   │   │   ├── verify-orange-otp/route.ts → POST vérifier OTP
 │   │   │   │   └── [id]/verify-payment/route.ts → GET vérifier statut paiement
 │   │   │   ├── checkout/
 │   │   │   │   └── bictorys/
