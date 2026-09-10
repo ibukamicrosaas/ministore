@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createStripeOrderPaymentSession } from '@/lib/payments/stripe'
-import { isEuCaCountry, getCurrencyForCountry, toStripeAmount } from '@/lib/utils/country-groups'
+import { getCurrencyForCountry, toStripeAmount } from '@/lib/utils/country-groups'
 
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -83,15 +83,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Paiement par carte non disponible pour cette boutique' }, { status: 400 })
   }
 
-  // Vérifier que le pays est EU/CA
-  if (!isEuCaCountry(shopRaw.country ?? null)) {
-    return NextResponse.json({ error: 'Paiement par carte disponible uniquement en Europe et au Canada' }, { status: 400 })
-  }
-
-  const currency     = getCurrencyForCountry(shopRaw.country ?? null)
-  if (currency === 'XOF') {
-    return NextResponse.json({ error: 'Devise non supportée' }, { status: 400 })
-  }
+  // Restriction EU/CA + rejet XOF retirés (REPRISE.md §95) : le garde-fou qui
+  // compte réellement — stripe_connect_enabled && stripe_account_id — est déjà
+  // vérifié ci-dessus, indépendant du pays du compte marchand (un marchand
+  // sénégalais peut avoir un compte Stripe enregistré en France, par exemple).
+  // Vérifié en direct sur l'API Stripe (country_specs) : "xof" est une devise
+  // de paiement supportée — toStripeAmount() la gère déjà correctement (entier
+  // sans décimales), aucune conversion vers l'euro n'est nécessaire ici.
+  const currency = getCurrencyForCountry(shopRaw.country ?? null)
 
   const displayAmount = isDeposit && orderRaw.deposit_amount
     ? orderRaw.deposit_amount
