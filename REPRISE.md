@@ -2566,3 +2566,29 @@ Boutique et commande de test supprimées après coup, aucun résidu. `tsc --noEm
 Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : priorités 4 (`lib/actions/licence.ts:53` + `app/start/actions.ts`, dont son occurrence `signup`) et 5 (`api/ai/chat/route.ts:127`) restent en file.
+
+## 104. Photos orphelines en storage — investigation, ampleur mesurée, correctif pour l'avenir, commit `1bfe37a`
+
+**Investigation d'abord, comme pour tout sujet de cette nature cette session.** Recherche exhaustive : **zéro appel `.remove()` sur le storage dans tout `src/`**, tous flux confondus — photo produit, image de variante, image intégrée dans la description (les trois via la même fonction `uploadProductPhoto`), logo boutique, image de couverture, photo « à propos ». Chaque flux génère un nom de fichier avec timestamp/aléatoire (jamais de clé stable), donc chaque remplacement crée un nouvel objet et ne fait jamais que réécrire le pointeur en base — l'ancien fichier n'était jamais supprimé, ni au remplacement, ni à la suppression du produit/variante/boutique.
+
+**Ampleur mesurée réellement** (comparaison objet par objet entre le storage et toutes les références actuelles en base — `products.photos`, `products.variants` legacy, `product_variants.image_url`, images intégrées dans les descriptions, `shops.logo_url`/`cover_image_url`/`about_photo_url`) :
+
+| Bucket | Objets totaux | Orphelins | Taille orpheline |
+|---|---|---|---|
+| `product-photos` | 6 008 | 2 240 (37 %) | 913 MB |
+| `shop-logos` | 980 | 206 (21 %) | 116 MB |
+| `shop-covers` | 21 | 8 (38 %) | 5 MB |
+| **Total** | 7 009 | **2 454** | **≈ 1,03 GB** |
+
+**Vérifié avant de proposer quoi que ce soit sur ces orphelins** : les URLs de ces trois buckets ne sont écrites nulle part ailleurs dans le code que les flux déjà identifiés — `order_items`/`payments` n'ont aucune colonne photo/image, une commande ne référence jamais une image directement. **Seul risque réellement invérifiable par requête, signalé honnêtement** : une URL de storage copiée-collée par un marchand en dehors de l'app. Jugé faible en pratique — ce sont par construction des photos déjà remplacées, un marchand partage naturellement le lien de la page produit (toujours à jour), pas l'URL brute d'une image qu'il a lui-même remplacée depuis.
+
+**Volet 1 — correctif pour l'avenir, codé et testé, nouveau helper partagé** `lib/storage/cleanup.ts` (`storagePathFromPublicUrl`, `deleteOldStorageFiles` — jamais bloquant, une suppression échouée ne fait jamais échouer l'opération principale déjà réussie) :
+- `uploadShopLogo`/`uploadCoverImage`/`uploadAboutPhoto` (`settings.ts`) : ancien fichier lu avant l'upload, supprimé après la mise à jour réussie.
+- Logo d'onboarding (`onboarding.ts`, `upsert:true` sur chemin fixe) : suppression seulement si le chemin change réellement (changement d'extension) — jamais si `upsert` a déjà écrasé en place, pour ne pas supprimer le fichier qu'on vient d'écrire.
+- `updateProduct` : photos et images de description retirées, diffées avant/après sauvegarde.
+- `syncProductVariants` : image remplacée sur une variante *conservée* uniquement — **jamais** à la désactivation (l'image reste pour l'historique de commande, même logique déjà appliquée à la ligne elle-même).
+- `deleteProduct` : collecte photos + images de description + images de toutes les variantes (actives ou non — la cascade les rend inatteignables juste après) avant la suppression, nettoyage après coup.
+
+**Testé en conditions réelles, 5 scénarios, boutique/produit de test dédiés (supprimés après coup)** : les 5 remplacements (logo, couverture, photo produit, image de description, image de variante) confirment l'ancien fichier disparu du storage et le nouveau présent ; **variante désactivée testée explicitement — image bien préservée, pas supprimée** ; suppression de produit confirmée nettoyer photo + description + les deux images de variantes restantes. `tsc --noEmit` et `npm run build` propres.
+
+**Suite** : volet 2, nettoyage rétroactif des 2 454 fichiers déjà orphelins — test à blanc d'abord (§105), aucune suppression avant validation explicite de l'échantillon.
