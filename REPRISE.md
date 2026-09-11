@@ -2548,3 +2548,21 @@ Volontairement large plutôt que collé aux deux cas précis (consentement en g�
 Boutique et commande de test supprimées après coup, aucun résidu. `tsc --noEmit` et `npm run build` propres.
 
 **Dette caller-ownership définitivement close.**
+
+## 103. `void` insert — priorité 3 (`pin_change`/`pin_reset_confirm`), commit `2b4d2d2`
+
+**Reprise du chantier §94, deux des trois occurrences de `lib/actions/auth.ts`** — `signup` (troisième occurrence) laissé de côté sur instruction explicite : code mort (zéro appelant dans `src/`, confirmé par recherche exhaustive — le vrai flux d'inscription passe entièrement par `app/start/actions.ts`, qui a sa propre occurrence distincte du même bug, priorité 4, pas traitée ici), à regrouper avec son vrai équivalent actif plutôt que corrigé isolément sans effet réel.
+
+**Vérifié avant tout code, sur demande explicite : aucun seuil ne devait se déclencher de façon inattendue.**
+- `pin_change` (`ChangePinForm.tsx`, page Réglages) — seuil 5 tentatives/15min par utilisateur (commentaire `MED-1`), jamais actif jusqu'ici. Compte chaque appel, réussi ou non, avant même la vérification du PIN actuel.
+- `pin_reset_confirm` (`ResetPinForm.tsx`, `/login/reset-pin`) — seuil 5 échecs/30min (commentaire `CRIT-3`), jamais actif jusqu'ici.
+
+**`pin_reset_confirm` est la vraie découverte de ce lot, pas seulement une dette de cohérence** : ce garde-fou a été conçu dès l'origine pour empêcher le brute-force d'un code de réinitialisation à 6 chiffres envoyé par WhatsApp (un million de combinaisons) — resté **entièrement sans limite de tentatives réelle depuis sa création**, à cause du même bug `void`. Une vulnérabilité active fermée par ce correctif, pas une amélioration de confort.
+
+**Testé en conditions réelles, contre la vraie base de données, sur un utilisateur et un numéro de test dédiés** (logique reproduite exactement, sans passer par `createServerClient()`/cookies Next.js — obstacle CDP déjà documenté §100, non pertinent ici puisque le comportement à vérifier vit entièrement côté base) :
+- `pin_change` : 6 appels — les 5 premiers passent, le 6ᵉ bloqué (`"Trop de tentatives..."`), exactement 5 lignes en base.
+- `pin_reset_confirm` : un vrai code de réinitialisation en attente créé, 6 échecs simulés — les 5 premiers renvoient `"Code invalide ou expiré."`, le 6ᵉ bloque **et invalide bien le code en attente** (`used: false → true`, comportement CRIT-3 vérifié pour de vrai, pas supposé), exactement 5 lignes en base.
+
+Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` propres.
+
+**Suite** : priorités 4 (`lib/actions/licence.ts:53` + `app/start/actions.ts`, dont son occurrence `signup`) et 5 (`api/ai/chat/route.ts:127`) restent en file.
