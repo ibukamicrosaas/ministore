@@ -2517,4 +2517,16 @@ Volontairement large plutôt que collé aux deux cas précis (consentement en g�
 - **5 cas nets, correspondant exactement au piège du §100** (tailles/pointures listées en description, zéro variante configurée) : *"Lacoste 🐊"* (pointure 39-45), *"Timberland"* (pointure 40-45), *"Ensemble kimono +short S,M,L"*, *"Air force one"* (Pointure 40-45), *"Complet homme"* (taille M,S,XML,XL,XXL).
 - **5 faux positifs restants, source identifiée** : des fiches techniques (poids, dimensions, taille d'écran) où une **virgule décimale** (`2,00 kg`, `1,99 pouce`, `1,5 Litre`) ou une **plage de mesure unique** (`5-6 g`, `20-25 cm`) sont lues par la regex comme une liste de valeurs — structurellement identique à une vraie liste de tailles, mais sémantiquement une caractéristique physique du produit, pas un choix.
 
-**Pas encore affiné plus loin** : deux pistes identifiées pour un prochain passage si besoin — exclure poids/dimension/longueur (presque toujours des caractéristiques, rarement des choix) du jeu de mots-clés, et/ou garder la virgule comme séparateur seulement si elle n'est pas immédiatement entourée de chiffres (`\d,\d{2}` typique d'une décimale). **Suite attendue, sur instruction de l'utilisateur : contact direct des marchands des 5 cas nets, pas de correction automatique du contenu.**
+**Pas encore affiné plus loin** : deux pistes identifiées pour un prochain passage si besoin — exclure poids/dimension/longueur (presque toujours des caractéristiques, rarement des choix) du jeu de mots-clés, et/ou garder la virgule comme séparateur seulement si elle n'est pas immédiatement entourée de chiffres (`\d,\d{2}` typique d'une décimale). **Rapport signal/bruit jugé exploitable tel quel par l'utilisateur — pas de resserrage supplémentaire demandé.**
+
+**Les 5 cas nets, pour contact direct** (4 boutiques distinctes — les deux premiers produits appartiennent à la même boutique) :
+
+| Boutique (`slug`) | Produit | `product_id` | Description actuelle |
+|---|---|---|---|
+| `la-boutique-des-pepites-chez-smith` | Lacoste 🐊 | `87616a65-b242-4afe-be91-c0cf0264bf48` | « pointure 39-45 / Couleur : blanc et noir » |
+| `la-boutique-des-pepites-chez-smith` | Timberland | `870ef765-a061-43f5-afb5-d308c52308ff` | « pointure 40-45 / Couleurs disponibles : Blanc et Bleu » |
+| `claudy-fashion-store-parfumerie` | Ensemble kimono +short S,M,L | `021cb79d-4fd6-46cd-b128-607677d0cc11` | « disponible en taille S, M, L à 3000f... » |
+| `maison-des-pepeites` | Air force one | `c92867b1-8846-4c7b-985c-cc246b3b12ef` | « Air force Nike / Pointure 40-45 / Neuf » |
+| `chez-kakou-pfc` | Complet homme | `504b4655-ea93-494e-ab3a-2f31e8c56cb4` | « disponible en plusieurs couleurs et taille (M,S,XML, XL,XXL) » |
+
+**Chantier tactique variantes (§100-§101) clos côté agent.** Suite entièrement portée par l'utilisateur : contact direct des 4 boutiques ci-dessus, pas de correction automatique du contenu.
