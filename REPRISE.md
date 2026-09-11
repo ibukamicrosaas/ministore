@@ -2530,3 +2530,21 @@ Volontairement large plutôt que collé aux deux cas précis (consentement en g�
 | `chez-kakou-pfc` | Complet homme | `504b4655-ea93-494e-ab3a-2f31e8c56cb4` | « disponible en plusieurs couleurs et taille (M,S,XML, XL,XXL) » |
 
 **Chantier tactique variantes (§100-§101) clos côté agent.** Suite entièrement portée par l'utilisateur : contact direct des 4 boutiques ci-dessus, pas de correction automatique du contenu.
+
+## 102. Dette caller-ownership sur `bictorys/create` et `stripe/order-payment/create`, commit `eac9be6`
+
+**Vulnérabilité active, pas une dette de confort** : identifiée en investiguant le défaut void-insert (§94) — le rate limit déjà corrigé sur ces routes réduit la fréquence d'abus possible, mais un `orderId` réutilisable (ex. depuis un panier abandonné) restait exploitable pour déclencher une charge ou une sollicitation OTP vers un numéro arbitraire, ou une session de paiement carte pour une commande qui n'est pas la sienne — juste plus lentement.
+
+**État des lieux avant tout code** : `orders.client_token` (`UUID NOT NULL DEFAULT gen_random_uuid()`, migration 001) est un vrai secret par commande, déjà généré à la création, déjà utilisé exactement comme garde d'appartenance à trois endroits (`.eq('client_token', token)` directement dans la requête) — `api/reviews/route.ts`, `api/orders/[id]/verify-payment/route.ts`, `commande/[token]/page.tsx`. Seules exceptions trouvées : `bictorys/create` et `stripe/order-payment/create` lisaient `client_token` en base (pour construire les URLs de retour) sans jamais l'exiger côté appelant. **`PaymentMethodSelector.tsx` confirmé comme seul appelant réel des deux routes** (les deux autres fichiers qui mentionnent ces chemins sont des routes mortes renvoyant un message d'erreur, pas de vrais appels) — et il recevait déjà `clientToken` en prop, simplement absent des corps de requête POST.
+
+**Correctif, symétrique sur les deux routes** : `clientToken` ajouté aux deux corps `fetch` de `PaymentMethodSelector.tsx` (déjà en portée, zéro nouvelle plomberie) ; `.eq('id', orderId).single()` remplacé par `.eq('id', orderId).eq('client_token', clientToken).single()` sur les deux routes serveur — même idiome déjà éprouvé ailleurs, pas de nouveau mécanisme inventé. Même message d'erreur générique `404` qu'avant en cas de token absent ou faux, pour ne rien révéler à un attaquant sur la validité d'un `orderId`.
+
+**Testé en conditions réelles, sur un vrai serveur, quatre cas** :
+- Bictorys/Stripe, mauvais `clientToken` → `404`, message générique inchangé.
+- Bictorys/Stripe, `clientToken` absent → `400`.
+- Bictorys, bon token → passe la garde (plus de 404), atteint le vrai appel API Bictorys, qui échoue en `403` — confirmé dans les logs comme sans rapport avec ce correctif (webhook `localhost` non public / boutique de test jamais onboardée chez Bictorys, pas la vérification de token elle-même).
+- Stripe, bon token → **poussé jusqu'au succès complet plutôt qu'une preuve partielle** : réutilisation du compte Connect de test créé au §95 (`acct_1UDwLORVwT8V2PuI`, toujours actif) via un second processus `next start` avec `STRIPE_SECRET_KEY` substituée par la clé de test le temps de cette seule requête — jamais écrite dans `.env.local`, jamais la clé live touchée. Résultat : `200`, vraie session Checkout Stripe créée.
+
+Boutique et commande de test supprimées après coup, aucun résidu. `tsc --noEmit` et `npm run build` propres.
+
+**Dette caller-ownership définitivement close.**
