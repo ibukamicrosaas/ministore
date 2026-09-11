@@ -166,7 +166,10 @@ export async function changePin(currentPin: string, newPin: string) {
   if ((changeAttempts ?? 0) >= 5) {
     return { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
   }
-  void admin.from('login_attempts').insert({
+  // Awaité — void seul sur un query builder Supabase n'appelle jamais .then(),
+  // la requête ne part donc jamais : ce compteur n'avait jamais bloqué
+  // personne depuis sa création (REPRISE.md §94/§103).
+  await admin.from('login_attempts').insert({
     identifier:   `pin_change:${user.id}`,
     attempt_type: 'pin_change',
     success:      true,
@@ -316,7 +319,12 @@ export async function confirmPinReset(phone: string, token: string, newPin: stri
   })()
 
   if (fetchError || !resetData || !tokenValid) {
-    void admin.from('login_attempts').insert({
+    // Awaité — void seul sur un query builder Supabase n'appelle jamais
+    // .then(), la requête ne part donc jamais : le code de réinitialisation
+    // à 6 chiffres n'avait jamais eu de limite de tentatives réelle depuis
+    // sa création, malgré le garde-fou CRIT-3 ci-dessus conçu pour ça
+    // (REPRISE.md §94/§103).
+    await admin.from('login_attempts').insert({
       identifier:   `pin_reset_confirm:${phoneEmail}`,
       attempt_type: 'pin_reset_confirm',
       success:      false,
