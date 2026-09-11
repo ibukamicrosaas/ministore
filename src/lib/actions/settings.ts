@@ -10,6 +10,7 @@ import { detectCountryFromPhone } from '@/lib/payments/bictorys'
 import { getCountryFromCityOrPhone } from '@/lib/locations/city-to-country'
 import type { UpdateShopInput } from '@/types'
 import { canHideTekkishopFooter, canUseCustomDomain, minimumPlanLabel } from '@/lib/plan-features'
+import { deleteOldStorageFiles } from '@/lib/storage/cleanup'
 
 async function getPlanGatedShopId(
   check: (plan: string | null | undefined) => boolean,
@@ -153,8 +154,8 @@ export async function uploadShopLogo(formData: FormData) {
 
   const { data: { publicUrl } } = admin.storage.from('shop-logos').getPublicUrl(path)
 
-  // Récupérer le slug pour revalider la page publique
-  const { data: shopData } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  // Récupérer le slug (revalidation) et l'ancien logo (nettoyage storage après coup)
+  const { data: shopData } = await supabase.from('shops').select('slug, logo_url').eq('id', profile.shop_id).single()
 
   const { error: updateError } = await supabase
     .from('shops')
@@ -165,6 +166,9 @@ export async function uploadShopLogo(formData: FormData) {
     console.error('[uploadShopLogo update]', updateError.message)
     return { error: 'Logo téléchargé mais mise à jour échouée.' }
   }
+
+  // Nettoyage de l'ancien fichier — après coup, jamais bloquant (REPRISE.md §104)
+  await deleteOldStorageFiles(admin, 'shop-logos', [shopData?.logo_url])
 
   revalidatePath('/dashboard/settings')
   if (shopData?.slug) revalidatePath(`/${shopData.slug}`)
@@ -460,9 +464,10 @@ export async function uploadCoverImage(formData: FormData): Promise<{ error?: st
   if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
 
   const admin = createAdminClient()
-  const { data: shop } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: shop } = await (admin
     .from('shops')
-    .select('plan')
+    .select('plan, cover_image_url') as any)
     .eq('id', profile.shop_id)
     .single()
 
@@ -505,6 +510,9 @@ export async function uploadCoverImage(formData: FormData): Promise<{ error?: st
     return { error: 'Image téléchargée mais mise à jour échouée.' }
   }
 
+  // Nettoyage de l'ancienne image — après coup, jamais bloquant (REPRISE.md §104)
+  await deleteOldStorageFiles(admin, 'shop-covers', [shop?.cover_image_url])
+
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
   revalidatePath('/dashboard/settings')
   if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
@@ -525,9 +533,10 @@ export async function uploadAboutPhoto(formData: FormData): Promise<{ error?: st
   if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
 
   const admin = createAdminClient()
-  const { data: shop } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: shop } = await (admin
     .from('shops')
-    .select('plan')
+    .select('plan, about_photo_url') as any)
     .eq('id', profile.shop_id)
     .single()
 
@@ -569,6 +578,9 @@ export async function uploadAboutPhoto(formData: FormData): Promise<{ error?: st
     console.error('[uploadAboutPhoto update]', updateError.message)
     return { error: 'Photo téléchargée mais mise à jour échouée.' }
   }
+
+  // Nettoyage de l'ancienne photo — après coup, jamais bloquant (REPRISE.md §104)
+  await deleteOldStorageFiles(admin, 'shop-covers', [shop?.about_photo_url])
 
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
   revalidatePath('/dashboard/settings')

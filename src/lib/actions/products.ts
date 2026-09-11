@@ -8,6 +8,18 @@ import { slugify } from '@/lib/utils/slugify'
 import { sendSMS, buildStockBackMessage } from '@/lib/notifications/whatsapp'
 import { APP_URL } from '@/constants'
 import { assertProductLimit } from '@/lib/actions/product-limit'
+import { deleteOldStorageFiles } from '@/lib/storage/cleanup'
+
+// Extrait les URLs d'images intégrées dans une description (format
+// ![alt](url), voir ProductForm.tsx insertAtCursor/renderDescription).
+function extractDescriptionImageUrls(description: string | null | undefined): string[] {
+  if (!description) return []
+  const urls: string[] = []
+  for (const m of description.matchAll(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g)) {
+    urls.push(m[1])
+  }
+  return urls
+}
 
 async function generateUniqueSlug(
   supabase: Awaited<ReturnType<typeof createServerClient>>,
@@ -178,6 +190,23 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     previousStockCount = current?.stock_count ?? null
   }
 
+  // Snapshot photos/description avant écrasement — pour nettoyer du storage
+  // les images retirées après une sauvegarde réussie (REPRISE.md §104).
+  let previousPhotoUrls: string[] = []
+  let previousDescImageUrls: string[] = []
+  if (input.photos !== undefined || input.description !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: current } = await (supabase.from('products') as any)
+      .select('photos, description')
+      .eq('id', id)
+      .eq('shop_id', shopId)
+      .single()
+    previousPhotoUrls = Array.isArray(current?.photos)
+      ? (current.photos as ProductPhoto[]).map(p => p.url).filter(Boolean)
+      : []
+    previousDescImageUrls = extractDescriptionImageUrls(current?.description)
+  }
+
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
   if (input.name !== undefined)               updates.name               = input.name.trim()
@@ -246,6 +275,24 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     return { error: 'Impossible de mettre à jour le produit.' }
   }
 
+  // Nettoyage des photos/images de description retirées — après coup, jamais
+  // bloquant (REPRISE.md §104).
+  if (previousPhotoUrls.length > 0 || previousDescImageUrls.length > 0) {
+    const newPhotoUrls = input.photos !== undefined
+      ? input.photos.map(p => p.url).filter(Boolean)
+      : previousPhotoUrls
+    const newDescImageUrls = input.description !== undefined
+      ? extractDescriptionImageUrls(input.description)
+      : previousDescImageUrls
+    const removedUrls = [
+      ...previousPhotoUrls.filter(u => !newPhotoUrls.includes(u)),
+      ...previousDescImageUrls.filter(u => !newDescImageUrls.includes(u)),
+    ]
+    if (removedUrls.length > 0) {
+      await deleteOldStorageFiles(createAdminClient(), 'product-photos', removedUrls)
+    }
+  }
+
   revalidatePath('/dashboard/products')
   revalidatePath(`/dashboard/products/${id}`)
   if (shopSlug) {
@@ -307,9 +354,12 @@ export async function syncProductVariants(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingRows } = await (supabase.from('product_variants') as any)
-    .select('id')
+    .select('id, image_url')
     .eq('product_id', productId)
   const existingIds  = new Set<string>((existingRows ?? []).map((r: { id: string }) => r.id))
+  const previousImageById = new Map<string, string | null>(
+    (existingRows ?? []).map((r: { id: string; image_url: string | null }) => [r.id, r.image_url])
+  )
   const validEntries  = variants.filter(v => v.label.trim())
   const submittedIds  = new Set(validEntries.filter(v => v.id).map(v => v.id as string))
 
@@ -321,6 +371,12 @@ export async function syncProductVariants(
       .in('id', toDeactivate)
   }
 
+  // Image remplacée sur une variante existante — jamais à la désactivation
+  // (toDeactivate ci-dessus, l'image reste pour l'historique de commande),
+  // seulement quand une variante conservée change réellement d'image
+  // (REPRISE.md §104).
+  const replacedVariantImageUrls: string[] = []
+
   for (const [index, v] of validEntries.entries()) {
     const row = {
       name:       v.label.trim(),
@@ -331,12 +387,20 @@ export async function syncProductVariants(
       is_active:  true,
     }
     if (v.id && existingIds.has(v.id)) {
+      const previousImage = previousImageById.get(v.id)
+      if (previousImage && previousImage !== v.image_url) {
+        replacedVariantImageUrls.push(previousImage)
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from('product_variants') as any).update(row).eq('id', v.id)
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from('product_variants') as any).insert({ ...row, product_id: productId })
     }
+  }
+
+  if (replacedVariantImageUrls.length > 0) {
+    await deleteOldStorageFiles(createAdminClient(), 'product-photos', replacedVariantImageUrls)
   }
 
   revalidatePath('/dashboard/products')
@@ -374,6 +438,19 @@ export async function deleteProduct(id: string) {
   const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
+  // Collecte avant suppression — la cascade sur product_variants rend ces
+  // lignes inatteignables juste après, actives ou non (REPRISE.md §104).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: productBefore } = await (supabase.from('products') as any)
+    .select('photos, description')
+    .eq('id', id)
+    .eq('shop_id', shopId)
+    .single()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: variantRows } = await (supabase.from('product_variants') as any)
+    .select('image_url')
+    .eq('product_id', id)
+
   const { error } = await supabase
     .from('products')
     .delete()
@@ -383,6 +460,18 @@ export async function deleteProduct(id: string) {
   if (error) {
     console.error('[deleteProduct]', error.message)
     return { error: 'Impossible de supprimer le produit.' }
+  }
+
+  const photoUrls = Array.isArray(productBefore?.photos)
+    ? (productBefore.photos as ProductPhoto[]).map(p => p.url).filter(Boolean)
+    : []
+  const descImageUrls = extractDescriptionImageUrls(productBefore?.description)
+  const variantImageUrls = (variantRows ?? [])
+    .map((r: { image_url: string | null }) => r.image_url)
+    .filter((u: string | null): u is string => Boolean(u))
+  const allUrls = [...photoUrls, ...descImageUrls, ...variantImageUrls]
+  if (allUrls.length > 0) {
+    await deleteOldStorageFiles(createAdminClient(), 'product-photos', allUrls)
   }
 
   revalidatePath('/dashboard/products')

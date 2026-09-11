@@ -7,6 +7,7 @@ import { TRIAL_DAYS } from '@/constants'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
 import { getCurrencyForCountry } from '@/lib/utils/country-groups'
 import { assertProductLimit } from '@/lib/actions/product-limit'
+import { deleteOldStorageFiles, storagePathFromPublicUrl } from '@/lib/storage/cleanup'
 
 async function getOwnerContext() {
   const supabase = await createServerClient()
@@ -168,6 +169,12 @@ export async function saveOnboardingInfo(formData: FormData): Promise<{ error?: 
     const path = `${profile.shop_id}/logo.${ext}`
     const admin = createAdminClient()
 
+    // Ancien logo, pour nettoyage après coup — upsert:true écrase déjà en
+    // place si l'extension est identique, mais un changement d'extension
+    // (png -> jpg par ex.) change le chemin et laisserait l'ancien fichier
+    // orphelin sans ce garde (REPRISE.md §104).
+    const { data: shopBefore } = await supabase.from('shops').select('logo_url').eq('id', profile.shop_id).single()
+
     const { error: uploadError } = await admin.storage
       .from('shop-logos')
       .upload(path, logo, { upsert: true, contentType: logo.type })
@@ -178,6 +185,11 @@ export async function saveOnboardingInfo(formData: FormData): Promise<{ error?: 
         .from('shops')
         .update({ logo_url: publicUrl })
         .eq('id', profile.shop_id)
+
+      const oldPath = storagePathFromPublicUrl(shopBefore?.logo_url, 'shop-logos')
+      if (oldPath && oldPath !== path) {
+        await deleteOldStorageFiles(admin, 'shop-logos', [shopBefore?.logo_url])
+      }
     }
   }
 
