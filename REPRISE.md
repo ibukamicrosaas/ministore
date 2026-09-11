@@ -2603,4 +2603,6 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 
 **Lot 2 — `shop-logos`, terminé.** 206 fichiers supprimés par sous-lots de 100 (confirmé 100+100+6 = 206/206). Revérifié (requêtes correctement paginées cette fois, 1770 lignes `shops` parcourues) : 776 objets restants, exactement 776 référencés, **0 orphelin, 0 référence cassée** (982 − 206 = 776, cohérent).
 
-**Suite** : lot 3, `product-photos` (2 244 fichiers) — dernier lot, le plus gros, même méthode.
+**Lot 3 — `product-photos`, terminé.** Test à blanc régénéré juste avant suppression (2 244/916,3 MB, identique à la mesure initiale — aucune dérive) plutôt que de réutiliser une liste vieille de plusieurs échanges, pour ne rien supprimer qu'un marchand aurait référencé entre-temps. 2 244 fichiers supprimés par sous-lots de 100 (23 sous-lots, tous confirmés). Revérifié (2193 lignes `products` + 717 lignes `product_variants`, toutes paginées) : 3 780 objets restants, exactement 3 780 référencés, **0 orphelin, 0 référence cassée** (6 024 − 2 244 = 3 780, cohérent). Vérification supplémentaire au-delà de la comparaison base/storage : 3 vraies photos produit actuelles rechargées en direct, `200` sur les trois.
+
+**Volet 2 clos.** Trois lots, **2 458 fichiers supprimés, ≈1 037 MB récupérés**, zéro incident sur les trois revérifications, zéro référence cassée. Chantier photos orphelines (§104-§105) entièrement terminé — correctif pour l'avenir en place, dette rétroactive résorbée.
