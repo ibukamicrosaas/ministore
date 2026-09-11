@@ -2592,3 +2592,15 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 **Testé en conditions réelles, 5 scénarios, boutique/produit de test dédiés (supprimés après coup)** : les 5 remplacements (logo, couverture, photo produit, image de description, image de variante) confirment l'ancien fichier disparu du storage et le nouveau présent ; **variante désactivée testée explicitement — image bien préservée, pas supprimée** ; suppression de produit confirmée nettoyer photo + description + les deux images de variantes restantes. `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : volet 2, nettoyage rétroactif des 2 454 fichiers déjà orphelins — test à blanc d'abord (§105), aucune suppression avant validation explicite de l'échantillon.
+
+## 105. Nettoyage rétroactif du storage — volet 2, en cours (§104)
+
+**Méthode, comme pour une migration irréversible** : test à blanc (lecture seule, liste écrite dans un fichier, rien supprimé) → validation de l'échantillon → suppression par petit lot → revérification (objets restants vs références en base) → lot suivant. Ordre du plus petit risque au plus gros : `shop-covers` (8) → `shop-logos` (206) → `product-photos` (2 244).
+
+**Piège de méthode trouvé et corrigé sur mon propre script, avant de rien montrer — à retenir pour toute future requête sur une table qui dépasse 1000 lignes** : le premier script de revérification après le lot `shop-covers` interrogeait `shops` sans pagination (`admin.from('shops').select(...)`, pas de `.range()`) — le client Supabase-js plafonne silencieusement une requête sans `range()` à 1000 lignes, sans erreur ni avertissement. Avec plus de 1700 boutiques en base, ce plafond tronquait les références réelles et affichait un faux "10 orphelins restants" après une suppression pourtant propre. Repéré en comparant le nombre de lignes DB parcourues (visible dans le script) au nombre de boutiques attendu, corrigé avant de présenter quoi que ce soit — **toute requête `select()` sur une table volumineuse doit paginer explicitement (`.range()` en boucle), jamais faire confiance au comportement par défaut sans vérifier le nombre de lignes réellement parcourues.**
+
+**Lot 1 — `shop-covers`, terminé.** 8 fichiers supprimés (confirmé par la réponse Supabase, 8/8). Revérifié après correction du piège de pagination ci-dessus : 13 objets restants, 13 référencés en base, **0 orphelin, 0 référence cassée**.
+
+**Lot 2 — `shop-logos`, terminé.** 206 fichiers supprimés par sous-lots de 100 (confirmé 100+100+6 = 206/206). Revérifié (requêtes correctement paginées cette fois, 1770 lignes `shops` parcourues) : 776 objets restants, exactement 776 référencés, **0 orphelin, 0 référence cassée** (982 − 206 = 776, cohérent).
+
+**Suite** : lot 3, `product-photos` (2 244 fichiers) — dernier lot, le plus gros, même méthode.
