@@ -8,6 +8,7 @@ import { APP_URL } from '@/constants'
 interface RequestBody {
   orderId: string
   shopSlug: string
+  clientToken: string
   customerFirstName: string
   customerLastName?: string
   customerPhone?: string
@@ -22,18 +23,25 @@ export async function POST(req: NextRequest) {
   const platformApiKey = process.env.BICTORYS_API_KEY
 
   const body = (await req.json()) as RequestBody
-  const { orderId, shopSlug, customerFirstName, customerLastName, customerPhone, paymentType, otp } = body
+  const { orderId, shopSlug, clientToken, customerFirstName, customerLastName, customerPhone, paymentType, otp } = body
 
-  if (!orderId || !shopSlug) {
-    return NextResponse.json({ error: 'orderId et shopSlug requis' }, { status: 400 })
+  if (!orderId || !shopSlug || !clientToken) {
+    return NextResponse.json({ error: 'orderId, shopSlug et clientToken requis' }, { status: 400 })
   }
 
   const supabase = createAdminClient()
 
+  // clientToken exigé et vérifié en base (pas seulement lu) : sans ça,
+  // n'importe quel orderId réutilisable suffisait à déclencher une charge ou
+  // une sollicitation OTP vers un numéro arbitraire (REPRISE.md §102). Même
+  // idiome déjà en production sur verify-payment/route.ts et reviews/route.ts
+  // — un token absent ou faux ne trouve simplement rien, même 404 générique
+  // que "commande introuvable" pour ne rien révéler à un attaquant.
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .select('id, deposit_amount, total_price, shop_id, status, payment_type, client_token')
     .eq('id', orderId)
+    .eq('client_token', clientToken)
     .single()
 
   if (orderError || !orderData) {

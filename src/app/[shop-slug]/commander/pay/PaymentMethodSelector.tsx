@@ -97,7 +97,7 @@ export function PaymentMethodSelector({
       const res  = await fetch('/api/stripe/order-payment/create', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ orderId, shopSlug, isDeposit }),
+        body:    JSON.stringify({ orderId, shopSlug, isDeposit, clientToken }),
       })
       const data = await res.json() as { url?: string; error?: string }
       if (!res.ok || !data.url) {
@@ -124,6 +124,7 @@ export function PaymentMethodSelector({
         body: JSON.stringify({
           orderId,
           shopSlug,
+          clientToken,
           customerFirstName,
           customerPhone,
           paymentType,

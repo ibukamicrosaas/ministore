@@ -11,9 +11,10 @@ function createServiceClient() {
 }
 
 interface RequestBody {
-  orderId:    string
-  shopSlug:   string
-  isDeposit?: boolean
+  orderId:     string
+  shopSlug:    string
+  clientToken: string
+  isDeposit?:  boolean
 }
 
 export async function POST(req: NextRequest) {
@@ -24,20 +25,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
   }
 
-  const { orderId, shopSlug, isDeposit = false } = body
+  const { orderId, shopSlug, clientToken, isDeposit = false } = body
 
-  if (!orderId || !shopSlug) {
+  if (!orderId || !shopSlug || !clientToken) {
     return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
   }
 
   const supabase = createServiceClient()
 
-  // Récupérer la commande et le shop en même temps
+  // clientToken exigé et vérifié en base (pas seulement lu pour construire
+  // l'URL de retour) : sans ça, n'importe quel orderId réutilisable suffisait
+  // à déclencher une session de paiement carte pour une commande qui n'est
+  // pas la sienne (REPRISE.md §102). Même idiome déjà en production sur
+  // verify-payment/route.ts et reviews/route.ts.
   const [{ data: order }, { data: shop }] = await Promise.all([
     supabase
       .from('orders')
       .select('id, client_token, total_price, deposit_amount, status, shop_id')
       .eq('id', orderId)
+      .eq('client_token', clientToken)
       .single(),
     supabase
       .from('shops')
