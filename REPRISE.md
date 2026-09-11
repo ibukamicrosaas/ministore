@@ -2436,7 +2436,7 @@ Nettoyage par identifiants précis ; un résidu d'un tout premier essai raté (a
 
 `tsc --noEmit` et `npm run build` propres avant et après.
 
-**Suite immédiate demandée par l'utilisateur** : vérification en production sur `ibukandjoli` par l'utilisateur lui-même une fois déployé. **Poussé, `3f4fcfe`.**
+**Suite immédiate demandée par l'utilisateur** : vérification en production sur `ibukandjoli` par l'utilisateur lui-même une fois déployé. **Poussé, `3f4fcfe`.** **Confirmé par l'utilisateur en production le 2026-09-11 : paiement carte fonctionne pour un client hors EU/CA sur `ibukandjoli`. Chantier définitivement clos.**
 
 ## 96. Menu pays de l'indicatif inatteignable sous la barre collante mobile (`/commander`), commit `e1d3ff5`
 
