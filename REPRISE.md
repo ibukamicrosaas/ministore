@@ -2669,4 +2669,57 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 
 **Méthode** : investigation uniquement, aucun code avant l'inventaire complet. 9 catégories couvertes : authentification/sessions, contrôle d'accès et appartenance des ressources, politiques RLS Supabase (audit de toutes les tables, pas seulement les récentes), upload de fichiers, manipulation prix/logique métier côté client, vérification des webhooks, injection/XSS sur contenu utilisateur, secrets/configuration, dépendances npm.
 
-**En cours — voir la suite de cette session pour l'inventaire complet une fois terminé.**
+**Investigation terminée — inventaire complet livré**, organisé par gravité :
+
+**Critique**
+1. `shops` : colonnes financières sensibles (`payout_wave_number`, `payout_om_number`, `bictorys_secret_key`, `bictorys_webhook_secret`, `moneroo_api_key`, `stripe_customer_id`, `stripe_subscription_id`) lisibles par n'importe qui via l'API REST Supabase, sans authentification — RLS filtre les lignes, jamais les colonnes. 167/132 boutiques sur 274 publiquement lisibles exposaient un vrai numéro Wave/Orange Money (vérifié en direct). **Fermé, voir §110.**
+2. Injection de script exécutable sur les pages publiques via le JSON-LD SEO (`JSON.stringify` non échappé dans `dangerouslySetInnerHTML`, `ShopHomeLayout.tsx`/`produit/[id]/page.tsx`). **En cours, voir §111.**
+3. Injection HTML dans les e-mails transactionnels (`sendOrderConfirmationEmail`/`sendNewOrderAlertEmail`), exploitable par un visiteur anonyme au checkout vers une cible arbitraire.
+
+**Élevé**
+4. Cookies de session Supabase sans `httpOnly` ni `secure` (`src/lib/supabase/server.ts`, `middleware.ts`).
+5. `verifyAndUpdatePayoutNumbers` (`settings.ts`) sans rate-limiting sur la revérification du PIN — brute-forçable, impact direct sur les numéros de reversement.
+6. Trois fichiers de Server Actions admin sans vérification interne (`notifications.ts`, `ai-knowledge.ts`, `analytics.ts`) — appelables comme endpoints publics indépendamment du garde de page.
+7. Dépendance `next` — vulnérabilité DoS critique (CVSS 7.5), correctif disponible en 16.3.5 (mise à jour mineure).
+
+**Moyen**
+8. Pas de révocation de session après changement/réinitialisation de PIN.
+9. `markNotificationsRead` sans vérification d'appartenance (code mort actuellement).
+10. `fixShopCountriesByCity`/`processPayout` protégées uniquement par leurs appelants, pas de garde interne propre.
+11. `stock_alerts` : policy RLS `INSERT` publique sans validation — abus SMS possible.
+12. Upload logo onboarding : validation par `Content-Type` déclaré seul (mitigé par la whitelist MIME du bucket Storage).
+13. 7 vulnérabilités npm modérées supplémentaires (correctifs disponibles).
+
+**Faible**
+14. Pas d'alerte Sentry sur mismatch de montant Bictorys.
+15. Fragment de secret webhook partiellement loggé.
+16. 5 vulnérabilités npm faibles (correctifs disponibles).
+
+**Zones auditées et confirmées saines** : tunnel de commande complet (prix/stock/remises/statut de paiement toujours recalculés serveur), webhooks Stripe/Bictorys (signature vérifiée systématiquement), contrôle d'accès/IDOR (quasi toute la surface), accès admin, upload de fichiers (hors point 12), RLS (33/33 tables avec RLS activé), secrets/configuration (rien en clair, historique git propre), contenu utilisateur hors JSON-LD/emails (avis, signalements, description produit, chat IA — tous correctement échappés).
+
+**Ordre de correction validé** : critiques d'abord (1 → 2 → 3), puis mise à jour Next.js (7) en parallèle, puis élevé/moyen/faible dans l'ordre une fois les critiques et Next.js refermés.
+
+## 110. Finding critique #1 — colonnes financières de `shops` isolées, commit `d7eb297`
+
+**Diagnostic** : `shops_public_read` filtre correctement les lignes (boutiques actives) mais RLS Postgres ne filtre jamais les colonnes. N'importe quelle boutique publiquement lisible exposait aussi `payout_wave_number`, `payout_om_number`, `bictorys_secret_key`, `bictorys_webhook_secret`, `moneroo_api_key`, `stripe_customer_id`, `stripe_subscription_id` via `GET /rest/v1/shops?select=<colonne>`, sans authentification, indépendamment du code Next.js.
+
+**Plan avant code** : investigation exhaustive de tous les points de lecture/écriture réels de ces 7 colonnes dans `src/` avant de choisir la forme du correctif — la majorité des lectures (~20) n'utilisaient jamais la vraie valeur, seulement sa présence (`!!shop.bictorys_secret_key`), y compris sur les pages boutique/produit **publiques**. Un déplacement brutal aurait cassé ces endroits pour rien.
+
+**Correctif, migration `103_shop_payment_secrets.sql`** :
+- Nouvelle table `shop_payment_secrets` (relation 1:1 avec `shops`, RLS stricte — `shop_id = get_my_shop_id() AND get_my_role() = 'owner'`, aucune policy INSERT/DELETE pour authenticated/public, ligne créée par trigger `SECURITY DEFINER` à chaque nouvelle boutique).
+- Colonne miroir publique `shops.bictorys_key_configured` (booléen) pour les ~20 lectures de présence uniquement — évite une jointure supplémentaire sur les pages à fort trafic. `payout_wave_number`/`payout_om_number` n'ont pas cet usage public : les quelques endroits qui en ont besoin (dashboard marchand, admin/IA en `service_role`) interrogent `shop_payment_secrets` directement.
+- Anciennes colonnes laissées en place sur `shops` dans la migration (pas de `DROP COLUMN`) — décision initiale de "période d'observation" avant suppression définitive.
+
+**Incident auto-détecté par le test négatif, corrigé avant de continuer — la vraie leçon de ce chantier** : le premier passage des tests a révélé que garder les anciennes colonnes *remplies* laissait la faille réelle grande ouverte — une requête REST anonyme sur une vraie boutique (`ndiayenne-trading`) renvoyait toujours son vrai numéro Wave en clair, alors que le code applicatif avait déjà entièrement migré vers `shop_payment_secrets`. Le raisonnement du plan ("garder les colonnes pour qu'un appel oublié ne fasse pas 500") confondait *garder la colonne* (utile, filet de sécurité) et *garder la valeur* (inutile une fois le code migré, et c'est précisément la valeur qui constitue la faille). **Correction immédiate** : vidage des 7 colonnes sur `shops` par `UPDATE` (348 boutiques concernées), sans toucher au schéma — la vraie suppression des colonnes reste pour une migration séparée, plus tard, une fois la période d'observation écoulée. Retenir pour toute future migration de ce type : ne jamais confondre les deux, vider les valeurs immédiatement si elles sont la donnée sensible elle-même, indépendamment du calendrier de suppression du schéma.
+
+**Testé en conditions réelles, 6 tests, boutique/commande/session de test dédiées (supprimées après coup, `ON DELETE CASCADE` confirmé fonctionnel sur `shop_payment_secrets`)** :
+- **Négatif** : `GET /rest/v1/shops?select=payout_wave_number` sur `ndiayenne-trading` (vraie boutique) → `null` après correction (exposait le vrai numéro avant) ; `shop_payment_secrets` → `[]` pour un appel anonyme ; 0 boutique sur 1776 encore remplie sur `shops` (confirmé par requête directe).
+- **Paramètres marchand** : formulaire réel soumis (`requestSubmit()`, vraie requête POST observée) — nouvelle valeur atterrit dans `shop_payment_secrets`, `shops.bictorys_secret_key` reste `null`.
+- **Page publique** : bascule dynamique de `bictorys_key_configured` (true/false) confirmée sur le rendu réel — "Carte bancaire" apparaît/disparaît en conséquence.
+- **Paiement Bictorys réel** : log serveur confirme une vraie tentative d'appel à l'API Bictorys avec la clé de la boutique (`shop_payment_secrets`), rejetée `403` (clé de test factice) — même méthode de preuve qu'au §102.
+- **Webhook Stripe** : requête exacte de résolution (`shop_payment_secrets` → embed `shops(trial_model)`) exécutée pour de vrai, résultat correct.
+- **Retrait réel** : `POST /api/payouts/request` avec session marchande réelle → "Solde insuffisant" (pas "numéro non configuré") — preuve indirecte que le numéro a bien été résolu depuis la nouvelle table.
+
+`tsc --noEmit` et `npm run build` propres. Cause du seul blocage rencontré pendant les tests (soumission du formulaire de paramètres silencieusement bloquée) : boutique de test créée sans `city`/`phone_whatsapp`, deux champs requis — validation HTML5 native, pas un bug du correctif.
+
+**Suite** : finding critique #2 (XSS JSON-LD), puis #3 (XSS e-mails), puis mise à jour Next.js (finding #7) en parallèle — élevé/moyen/faible ensuite.
