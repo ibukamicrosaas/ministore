@@ -2749,4 +2749,8 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 
 `tsc --noEmit` et `npm run build` propres. **Les trois findings critiques du §109 sont maintenant clos.**
 
-**Suite** : statut mise à jour Next.js (finding élevé #7) à confirmer, puis plan pour les 3 autres findings élevés (cookies sans `httpOnly`, `verifyAndUpdatePayoutNumbers` sans rate-limiting, Server Actions admin sans vérification interne) — un à la fois, plan avant code.
+## 113. Finding élevé #7 — mise à jour Next.js 16.2.4 → 16.3.5, commit `5346dfa`
+
+Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5, GHSA-8h8q-6873-q5fj) et le lot `postcss`/`sharp` qui y était lié dans `npm audit` (21 → 17 vulnérabilités, **0 critique** contre 1 avant). Vérifié avant application : `tsc --noEmit`/`npm run build` propres, smoke test réel sur `next start` (pages publiques, boutique réelle, `POST /api/orders` invalide → 400, `/dashboard` sans session → 307, route cron sans secret → 401, en-têtes CSP intacts y compris le correctif §107). `package.json` passé de `"16.2.4"` (exact) à `"^16.3.5"` (caret) — volontaire, cohérent avec le reste du fichier (`next` était l'exception).
+
+**Ordre validé pour les 3 findings élevés restants** : cookies de session sans `httpOnly`/`secure` (le plus transversal, aggrave directement les deux XSS fermés §111/§112) → `verifyAndUpdatePayoutNumbers` sans rate-limiting (réutilise le pattern `login_attempts` du §103) → Server Actions admin sans vérification interne (pattern déjà correct ailleurs dans `admin.ts`/`admin-shops.ts`, le plus mécanique des trois). Plan détaillé à chaque étape avant tout code, comme toujours pour l'authentification.
