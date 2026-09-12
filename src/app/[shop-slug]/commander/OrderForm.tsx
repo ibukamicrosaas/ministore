@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Trash2, ChevronDown, ChevronLeft, Package, MapPin, ShoppingBag, Pencil } from 'lucide-react'
@@ -239,6 +239,12 @@ export function OrderForm({
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const pendingOrderBody = useRef<Record<string, unknown> | null>(null)
+  // Hauteur réelle de la barre collante mobile, mesurée pas devinée — un
+  // pb-44 fixe ne peut pas suivre un contenu dont la hauteur varie (promo
+  // appliquée, acompte vs solde, message d'indisponibilité...). Même
+  // technique que ProductStickyCtaManager.tsx (SPEC-v2 §5.5).
+  const stickyBarRef = useRef<HTMLDivElement>(null)
+  const [stickyBarHeight, setStickyBarHeight] = useState(0)
   const [errors, setErrors] = useState<{
     firstName?: string
     phone?: string
@@ -708,6 +714,19 @@ export function OrderForm({
     </>
   )
 
+  // Hauteur réelle mesurée, pas devinée — au montage, au redimensionnement,
+  // et à chaque rendu où le récapitulatif/bouton a pu changer de hauteur
+  // (acompte vs solde, code promo appliqué/erreur, indisponibilité du
+  // paiement...). Un pb-44 fixe ne peut pas suivre ce contenu.
+  useLayoutEffect(() => {
+    function measure() {
+      if (stickyBarRef.current) setStickyBarHeight(stickyBarRef.current.offsetHeight)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  })
+
   return (
     <form onSubmit={handleSubmit}>
       {/* Shop header */}
@@ -740,7 +759,13 @@ export function OrderForm({
       <div className="mx-auto max-w-[1040px] min-[960px]:grid min-[960px]:grid-cols-[1fr_360px] min-[960px]:gap-10 min-[960px]:px-8 min-[960px]:py-8">
 
         {/* ── Colonne formulaire ── */}
-        <div className="space-y-6 px-4 pt-4 pb-44 min-[960px]:px-0 min-[960px]:pb-0">
+        {/* paddingBottom mesuré, pas deviné — la barre collante est
+            min-[960px]:hidden (display:none), donc stickyBarHeight vaut déjà
+            0 sur desktop sans avoir besoin d'un pb-0 séparé par breakpoint. */}
+        <div
+          className="space-y-6 px-4 pt-4 min-[960px]:px-0"
+          style={{ paddingBottom: stickyBarHeight }}
+        >
 
           {/* 1 — Ce que tu commandes */}
           <section>
@@ -1219,11 +1244,16 @@ export function OrderForm({
         </div>
       </div>
 
-      {/* Barre collante mobile — hauteur réservée par le pb-44 de la colonne formulaire (corrige 3.2).
+      {/* Barre collante mobile — hauteur réservée par un espaceur mesuré (stickyBarHeight,
+          voir useLayoutEffect ci-dessus), pas un pb-44 fixe qui ne pouvait pas suivre une
+          hauteur qui varie (acompte vs solde, promo, indisponibilité paiement...) — repris
+          après signalement, le pb-44 laissait "Comment tu paies"/"Ajouter une précision"
+          recouverts dans certains états (REPRISE.md §106).
           max-w-lg mx-auto sur le contenu (pas sur la barre elle-même, qui reste pleine largeur) : sans
           cap explicite, un texte qui ne se coupe pas peut forcer la barre — donc toute la page — plus
           large que le viewport (constaté en recette sur cette refonte, corrigé ici). */}
       <div
+        ref={stickyBarRef}
         className="fixed bottom-0 left-0 right-0 z-50 min-[960px]:hidden overflow-x-hidden bg-white border-t border-gray-100 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]"
       >
         <div
