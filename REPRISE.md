@@ -2723,3 +2723,18 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 `tsc --noEmit` et `npm run build` propres. Cause du seul blocage rencontré pendant les tests (soumission du formulaire de paramètres silencieusement bloquée) : boutique de test créée sans `city`/`phone_whatsapp`, deux champs requis — validation HTML5 native, pas un bug du correctif.
 
 **Suite** : finding critique #2 (XSS JSON-LD), puis #3 (XSS e-mails), puis mise à jour Next.js (finding #7) en parallèle — élevé/moyen/faible ensuite.
+
+## 111. Finding critique #2 — XSS JSON-LD, commit `02b732d`
+
+**Diagnostic** (déjà posé par l'audit §109) : `JSON.stringify(jsonLd)` injecté via `dangerouslySetInnerHTML` dans `<script type="application/ld+json">` (`ShopHomeLayout.tsx`, `produit/[id]/page.tsx`) — `JSON.stringify` n'échappe jamais `<`, donc un `</script>` dans un nom/description de boutique ou produit (texte libre marchand) sort de la balise et exécute un vrai `<script>` sur la page publique, pour tout visiteur.
+
+**Correctif** : nouveau helper partagé `src/lib/utils/json-ld.ts` (`safeJsonLdString`, `JSON.stringify(data).replace(/</g, '\\u003c')`), appliqué aux deux fichiers. `<` est équivalent à `<` pour tout parseur JSON — y compris à l'intérieur d'une balise `<script>` — donc sans effet sur le SEO/les données structurées.
+
+**Testé en conditions réelles, payload exact de l'audit** (`Test XSS</script><script>window.__xssFired=true</script>`, injecté dans le nom **et** la description d'une boutique de test dédiée, supprimée après coup), vérifié à trois niveaux :
+- **Source HTML** : `</script><script>` devient `</script><script>` — plus aucune casse de balise.
+- **Exécution réelle** (Chrome headless) : `window.__xssFired === false` — le script injecté ne s'exécute jamais.
+- **SEO préservé** : le JSON-LD reste valide et parseable (`JSON.parse` réussit, le payload revient intact comme texte, pas de dégradation des données structurées).
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : finding critique #3 (XSS e-mails transactionnels), puis mise à jour Next.js (finding #7) en parallèle — élevé/moyen/faible ensuite.
