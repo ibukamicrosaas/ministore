@@ -2738,3 +2738,15 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : finding critique #3 (XSS e-mails transactionnels), puis mise à jour Next.js (finding #7) en parallèle — élevé/moyen/faible ensuite.
+
+## 112. Finding critique #3 — XSS e-mails transactionnels, commit `9a130fe`
+
+**Diagnostic** (déjà posé par l'audit §109) : `sendNewOrderAlertEmail`/`sendOrderConfirmationEmail` (`src/lib/notifications/email.ts`) interpolaient `clientName`/`clientPhone` sans échappement — ces champs viennent d'un POST **non authentifié** sur `/api/orders` (`client_email` jamais vérifié comme appartenant à l'appelant). Un visiteur anonyme pouvait faire partir, depuis le domaine d'expédition légitime de TEKKIShop, un e-mail contenant du HTML/JS injecté vers n'importe quelle adresse.
+
+**Correctif** : fonction `escapeHtml()` ajoutée au niveau module (identique à celle déjà utilisée dans `sendLicenceApplicationEmail`/`sendCountryManagerInviteEmail`, mêmes 3 remplacements `&`/`<`/`>`), appliquée aux 3 interpolations de `clientName`/`clientPhone` dans les deux fonctions ciblées par l'audit.
+
+**Testé en conditions réelles** : le vrai module chargé tel quel (`node --experimental-strip-types`, seuls `Resend`/`formatPrice`/`APP_URL` stubbés pour capturer le HTML construit sans appel réseau réel — la logique d'échappement testée est le vrai code, pas une réimplémentation), payload identique à la faille #2 (`Test</script><script>window.__xssFired=true</script>`) injecté dans `clientName` et `clientPhone` des deux fonctions. HTML capturé : `</script><script>` devient `&lt;/script&gt;&lt;script&gt;`, confirmé visuellement dans le vrai fragment "Client" de l'e-mail marchand — aucun script exécutable dans le HTML final.
+
+`tsc --noEmit` et `npm run build` propres. **Les trois findings critiques du §109 sont maintenant clos.**
+
+**Suite** : statut mise à jour Next.js (finding élevé #7) à confirmer, puis plan pour les 3 autres findings élevés (cookies sans `httpOnly`, `verifyAndUpdatePayoutNumbers` sans rate-limiting, Server Actions admin sans vérification interne) — un à la fois, plan avant code.
