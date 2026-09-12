@@ -2626,8 +2626,6 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 
 **L'écart de 20px entre acompte et solde complet (293 vs 273) est la preuve retenue** que l'espaceur suit une vraie variation dynamique du contenu, pas une coïncidence — obtenu par une vraie bascule de radio-bouton (pas simulé), avec relecture réelle du récapitulatif affiché à chaque état. Testé aussi sur un second viewport (375×667) pour l'état normal — même résultat propre. `tsc --noEmit` et `npm run build` propres.
 
-**Suite** : dernier sujet en attente, texte de la bannière d'installation PWA — à recevoir séparément de l'utilisateur.
-
 ## 107. Meta Pixel entièrement silencieux — CSP bloquait `fbevents.js` pour toutes les boutiques, commit `d668e5a`
 
 **Signalement** : un marchand Pro a configuré un Meta Pixel ID, aucun événement n'apparaît dans l'outil de test d'événements du Business Manager Meta. Investigation demandée d'abord, aucun code avant rapport.
@@ -2647,4 +2645,28 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 
 **Limitation honnêtement signalée** : aucun accès à un compte Meta Business Manager réel dans cette session — pas de vérification visuelle dans l'outil de test d'événements Meta lui-même. La requête HTTP réelle observée (bons paramètres `id`/`ev`, réponse `200`) est la preuve technique équivalente, mais reste une preuve de substitution, pas la confirmation dans l'interface Meta.
 
-**Suite** : dernier sujet en attente, texte de la bannière d'installation PWA — à recevoir séparément de l'utilisateur.
+## 108. Texte bannière PWA iOS — bénéfice « accès direct » manquant, commit `8ba09f5`
+
+**Contexte** : la bannière `ios-first` (`PushPermissionPrompt.tsx`) datait du chantier notifications push, dont le besoin initial demandait deux bénéfices mis en avant — accès facilité depuis l'écran d'accueil, et réception des notifications de commande. Vérification demandée : seul le second était réellement présent dans le texte en production, le premier absent du titre comme du sous-titre.
+
+**Correctif** :
+```diff
+-<p>Pour recevoir tes commandes même app fermée</p>
++<p>Retrouve ta boutique directement depuis ton écran d'accueil, et reçois tes commandes</p>
+ <p>
+-  Installe d'abord TekkiShop sur ton écran d'accueil — appuie sur l'icône ⬇ en haut.
++  Installe TekkiShop sur ton écran d'accueil pour ça — appuie sur l'icône ⬇ en haut.
+ </p>
+```
+
+**Test réel, pas une relecture de diff** — obstacle déjà documenté §100 (`PinInput.tsx` résiste à toute saisie synthétique CDP) contourné cette fois par la voie recommandée à l'époque plutôt que réattaqué : session réelle mintée via l'API Admin Supabase (`generateLink` + `verifyOtp`, cookie `sb-<ref>-auth-token` construit dans le format exact attendu par `@supabase/ssr`, injecté via `Network.setCookie`), Chrome headless en UA iOS non installé, contre un `next start` reconstruit avec ce correctif. La variante `ios-first` s'affiche telle quelle dans le vrai `DashboardShell` — confirmé en lecture DOM et par capture d'écran. Boutique/profil/utilisateur de test supprimés après coup.
+
+**Dernier sujet en attente avant cette session close.**
+
+## 109. Audit de sécurité structuré — inventaire par catégorie, investigation en cours
+
+**Déclenché par** : plusieurs vulnérabilités réelles trouvées par accident cette session (double middleware §41, rate-limiting inactif des mois, absence de vérification de propriété sur les paiements §102, faille CRIT-3 sur la réinitialisation de PIN §103) — décision de chercher délibérément plutôt que d'attendre la prochaine découverte fortuite.
+
+**Méthode** : investigation uniquement, aucun code avant l'inventaire complet. 9 catégories couvertes : authentification/sessions, contrôle d'accès et appartenance des ressources, politiques RLS Supabase (audit de toutes les tables, pas seulement les récentes), upload de fichiers, manipulation prix/logique métier côté client, vérification des webhooks, injection/XSS sur contenu utilisateur, secrets/configuration, dépendances npm.
+
+**En cours — voir la suite de cette session pour l'inventaire complet une fois terminé.**
