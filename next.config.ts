@@ -6,7 +6,7 @@ import type { NextConfig } from 'next'
 const csp = [
   "default-src 'self'",
   // blob: requis pour les workers Next.js (RSC streaming, prefetch)
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://va.vercel-scripts.com https://vercel.live",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://va.vercel-scripts.com https://vercel.live https://connect.facebook.net",
   // worker-src blob: requis pour que Next.js puisse créer ses workers internes
   "worker-src blob: 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
