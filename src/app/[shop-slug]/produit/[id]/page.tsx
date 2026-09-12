@@ -25,6 +25,7 @@ import { withEffectiveVariants } from '@/lib/products/effective-variants'
 export const revalidate = 60
 import type { Metadata } from 'next'
 import { getVideoEmbedUrl } from '@/lib/utils/video'
+import { safeJsonLdString } from '@/lib/utils/json-ld'
 import { ProductGallery } from '@/components/pwa/ProductGallery'
 import { ReviewsList } from '@/components/pwa/ReviewsList'
 
@@ -279,7 +280,7 @@ export default async function ProductDetailPage({ params }: Props) {
     <div className="max-w-lg mx-auto lg:max-w-none bg-white">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdString(jsonLd) }}
       />
       <PixelViewContent
         productId={product.id}

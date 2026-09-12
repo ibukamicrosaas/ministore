@@ -9,6 +9,7 @@ import { APP_URL } from '@/constants'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getPlanFeatures } from '@/lib/plan-features'
 import { getPaymentMethodsForTargetCountries, type BictorysCountry } from '@/lib/payments/payment-methods'
+import { safeJsonLdString } from '@/lib/utils/json-ld'
 
 // Champs boutique pas encore présents dans les types Supabase générés
 // (database.ts n'a pas été régénéré depuis leur ajout en base) — même
@@ -203,7 +204,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
     <div className="max-w-lg mx-auto lg:max-w-none min-h-screen bg-white">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdString(jsonLd) }}
       />
 
       {/* ── Barre supérieure fixe mobile — logo + recherche (maquette). Le bouton
