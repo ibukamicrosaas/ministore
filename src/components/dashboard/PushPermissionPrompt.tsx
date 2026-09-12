@@ -127,9 +127,9 @@ export function PushPermissionPrompt() {
       <div className="flex items-center gap-3 border-b border-sky-100 bg-sky-50 px-4 py-3 shrink-0">
         <BellRing className="h-5 w-5 shrink-0 text-sky-600" />
         <div className="flex-1">
-          <p className="text-sm font-semibold text-sky-900">Pour recevoir tes commandes même app fermée</p>
+          <p className="text-sm font-semibold text-sky-900">Retrouve ta boutique directement depuis ton écran d&apos;accueil, et reçois tes commandes</p>
           <p className="text-xs text-sky-700">
-            Installe d&apos;abord TekkiShop sur ton écran d&apos;accueil — appuie sur l&apos;icône ⬇ en haut.
+            Installe TekkiShop sur ton écran d&apos;accueil pour ça — appuie sur l&apos;icône ⬇ en haut.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
