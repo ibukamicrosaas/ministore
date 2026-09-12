@@ -45,6 +45,17 @@ export default async function SettingsPage({ searchParams }: Props) {
   const shop = shopData as Shop | null
   if (!shop) redirect('/dashboard')
 
+  // Colonnes financières sensibles isolées dans shop_payment_secrets depuis
+  // la migration 103 (audit sécurité §109, finding critique #1) — requête
+  // séparée, RLS restreinte au propriétaire, fusionnée dans shop pour que
+  // SettingsForm continue de les lire comme avant sans changement de sa part.
+  const { data: secretsData } = await supabase
+    .from('shop_payment_secrets')
+    .select('payout_wave_number, payout_om_number, bictorys_secret_key, bictorys_webhook_secret')
+    .eq('shop_id', profile.shop_id)
+    .single()
+  if (secretsData) Object.assign(shop, secretsData)
+
   // plan_cancel_at_period_end n'est pas dans les types générés — requête séparée
   const { data: cancelData } = await supabase
     .from('shops')

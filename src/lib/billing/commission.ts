@@ -5,8 +5,10 @@
 // vérifié contre leur grille tarifaire officielle le 2026-08-16) et jamais
 // du plan de la boutique : le 0% n'est pas un avantage de plan, c'est ce qui
 // se produit mécaniquement quand une boutique a configuré ses propres clés
-// Bictorys (shops.bictorys_secret_key) — ses clients la paient en direct,
-// l'argent ne transite jamais par la plateforme. Voir REPRISE.md §4.3.
+// Bictorys (shop_payment_secrets.bictorys_secret_key, shops.bictorys_key_configured
+// pour le booléen public — voir migration 103, audit sécurité §109) — ses
+// clients la paient en direct, l'argent ne transite jamais par la plateforme.
+// Voir REPRISE.md §4.3.
 export const COMMISSION_RATE_BY_COUNTRY: Record<string, number> = {
   SN: 3,
   CI: 3,
@@ -23,7 +25,7 @@ const DEFAULT_COMMISSION_RATE = 3
 /**
  * Taux de commission réel applicable à une boutique, en pourcentage entier
  * (ex: 3 pour 3%). hasOwnBictorysKeys doit toujours venir de
- * `!!shop.bictorys_secret_key` — jamais de `shop.plan === 'pro'`.
+ * `!!shop.bictorys_key_configured` — jamais de `shop.plan === 'pro'`.
  */
 export function getCommissionRate(
   country: string | null | undefined,

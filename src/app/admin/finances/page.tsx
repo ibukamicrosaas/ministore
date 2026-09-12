@@ -95,14 +95,14 @@ export default async function AdminFinancesPage({
     // (voir lib/billing/commission.ts).
     admin
       .from('payments')
-      .select('amount, created_at, shops!inner(country, bictorys_secret_key)')
+      .select('amount, created_at, shops!inner(country, bictorys_key_configured)')
       .eq('status', 'completed')
       .gte('created_at', periodStart),
 
     // Paiements marchands all-time
     admin
       .from('payments')
-      .select('amount, shops!inner(country, bictorys_secret_key)')
+      .select('amount, shops!inner(country, bictorys_key_configured)')
       .eq('status', 'completed'),
 
     // Reversements effectués all-time
@@ -152,8 +152,8 @@ export default async function AdminFinancesPage({
   // voir lib/billing/commission.ts.
   type PaymentShopRow = {
     amount: number
-    shops: { country: string | null; bictorys_secret_key: string | null }
-      | { country: string | null; bictorys_secret_key: string | null }[]
+    shops: { country: string | null; bictorys_key_configured: boolean }
+      | { country: string | null; bictorys_key_configured: boolean }[]
       | null
   }
   const shopOfPayment = (p: PaymentShopRow) => Array.isArray(p.shops) ? p.shops[0] : p.shops
@@ -162,7 +162,7 @@ export default async function AdminFinancesPage({
     for (const p of rows ?? []) {
       const s = shopOfPayment(p)
       gross += p.amount
-      commission += Math.floor(p.amount * (getCommissionRate(s?.country, !!s?.bictorys_secret_key) / 100))
+      commission += Math.floor(p.amount * (getCommissionRate(s?.country, !!s?.bictorys_key_configured) / 100))
     }
     return { gross, commission }
   }

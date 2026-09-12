@@ -37,7 +37,7 @@ async function fetchShopAndProduct(shopSlug: string, id: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shopRes = await (supabase.from('shops') as any)
-    .select('id, name, primary_color, plan, currency, country, target_countries, accept_cash_on_delivery, bictorys_secret_key, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones, phone_whatsapp')
+    .select('id, name, primary_color, plan, currency, country, target_countries, accept_cash_on_delivery, bictorys_key_configured, stripe_connect_enabled, logo_url, grid_image_ratio, city, address, delivery_zones, phone_whatsapp')
     .eq('slug', shopSlug)
     .single()
 
@@ -147,7 +147,7 @@ export default async function ProductDetailPage({ params }: Props) {
     country?: string | null
     target_countries?: string[] | null
     accept_cash_on_delivery?: boolean | null
-    bictorys_secret_key?: string | null
+    bictorys_key_configured?: boolean | null
     stripe_connect_enabled?: boolean | null
     grid_image_ratio?: 'square' | 'portrait' | null
     delivery_zones?: unknown
@@ -233,7 +233,7 @@ export default async function ProductDetailPage({ params }: Props) {
   // Méthodes de paiement pour affichage discret sous le CTA
   const shopCountry = shop.country as BictorysCountry | null
   const onlineMethods = getPaymentMethodsForTargetCountries(shopCountry, shop.target_countries)
-  const hasOnlinePayment = onlineMethods.length > 0 || shop.bictorys_secret_key || shop.stripe_connect_enabled
+  const hasOnlinePayment = onlineMethods.length > 0 || shop.bictorys_key_configured || shop.stripe_connect_enabled
   const acceptCash = shop.accept_cash_on_delivery ?? true
 
   // Bloc « Avant de commander » (§5.4) — mêmes sources que la bande de faits
@@ -509,7 +509,7 @@ export default async function ProductDetailPage({ params }: Props) {
                       <span className="text-[9px] text-gray-400 leading-none">{m.label.split(' ')[0]}</span>
                     </div>
                   ))}
-                  {(shop.bictorys_secret_key || shop.stripe_connect_enabled) && onlineMethods.length === 0 && (
+                  {(shop.bictorys_key_configured || shop.stripe_connect_enabled) && onlineMethods.length === 0 && (
                     <>
                       <div className="flex flex-col items-center gap-0.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}

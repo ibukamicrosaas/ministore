@@ -85,6 +85,7 @@ export type Database = {
           delivery_zones: Json
           bictorys_secret_key: string | null
           bictorys_webhook_secret: string | null
+          bictorys_key_configured: boolean
           accept_cash_on_delivery: boolean
           subscription_ends_at: string | null
           hide_branding: boolean
@@ -142,6 +143,7 @@ export type Database = {
           delivery_zones?: Json
           bictorys_secret_key?: string | null
           bictorys_webhook_secret?: string | null
+          bictorys_key_configured?: boolean
           accept_cash_on_delivery?: boolean
           subscription_ends_at?: string | null
           product_layout?: 'list' | 'grid' | null
@@ -196,6 +198,7 @@ export type Database = {
           delivery_zones?: Json
           bictorys_secret_key?: string | null
           bictorys_webhook_secret?: string | null
+          bictorys_key_configured?: boolean
           accept_cash_on_delivery?: boolean
           subscription_ends_at?: string | null
           hide_branding?: boolean
@@ -219,6 +222,50 @@ export type Database = {
           updated_at?: string
         }
       Relationships: []
+      }
+      shop_payment_secrets: {
+        Row: {
+          shop_id: string
+          payout_wave_number: string | null
+          payout_om_number: string | null
+          bictorys_secret_key: string | null
+          bictorys_webhook_secret: string | null
+          moneroo_api_key: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          shop_id: string
+          payout_wave_number?: string | null
+          payout_om_number?: string | null
+          bictorys_secret_key?: string | null
+          bictorys_webhook_secret?: string | null
+          moneroo_api_key?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          shop_id?: string
+          payout_wave_number?: string | null
+          payout_om_number?: string | null
+          bictorys_secret_key?: string | null
+          bictorys_webhook_secret?: string | null
+          moneroo_api_key?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+      Relationships: [
+        {
+          foreignKeyName: "shop_payment_secrets_shop_id_fkey"
+          columns: ["shop_id"]
+          isOneToOne: true
+          referencedRelation: "shops"
+          referencedColumns: ["id"]
+        },
+      ]
       }
       profiles: {
         Row: {

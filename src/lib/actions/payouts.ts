@@ -60,7 +60,7 @@ export async function processPayout(
   // Récupérer les infos de la boutique
   const { data: shop, error: shopError } = await admin
     .from('shops')
-    .select('plan, payout_wave_number, payout_om_number, country, name, bictorys_secret_key')
+    .select('plan, country, name, bictorys_key_configured')
     .eq('id', shopId)
     .single()
 
@@ -74,6 +74,13 @@ export async function processPayout(
     return { error: 'Boutique introuvable.' }
   }
 
+  // Numéros réels isolés dans shop_payment_secrets (audit sécurité §109, migration 103)
+  const { data: shopSecrets } = await admin
+    .from('shop_payment_secrets')
+    .select('payout_wave_number, payout_om_number')
+    .eq('shop_id', shopId)
+    .single()
+
   const rawCountry = (shop as any).country as string | null ?? 'SN'
   // Garde-fou : 'BF' n'est pas un code pays valide côté Bictorys (seul 'BK'
   // l'est), voir migration 093 et REPRISE.md §4. shops.country ne devrait
@@ -86,15 +93,15 @@ export async function processPayout(
   // Résoudre le numéro de réception depuis le bon slot DB selon pays + méthode
   const methodDef = getPayoutMethods(country).find(m => m.key === payoutMethod)
   const recipientPhone = methodDef?.col === 'payout_wave_number'
-    ? shop.payout_wave_number
-    : shop.payout_om_number
+    ? shopSecrets?.payout_wave_number
+    : shopSecrets?.payout_om_number
 
   if (!recipientPhone) {
     return { error: `Numéro de reversement "${payoutMethod}" non configuré.` }
   }
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
-  const commissionRate = getCommissionRate(country, !!(shop as any).bictorys_secret_key)
+  const commissionRate = getCommissionRate(country, !!shop.bictorys_key_configured)
   const commissionAmount = Math.round(grossAmount * (commissionRate / 100))
   const amountAfterCommission = grossAmount - commissionAmount
 

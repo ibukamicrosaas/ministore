@@ -47,8 +47,15 @@ export async function POST(req: NextRequest) {
 
   const { data: shop } = await admin
     .from('shops')
-    .select('name, country, payout_wave_number, payout_om_number, bictorys_secret_key')
+    .select('name, country, bictorys_key_configured')
     .eq('id', profile.shop_id)
+    .single()
+
+  // Numéros réels isolés dans shop_payment_secrets (audit sécurité §109, migration 103)
+  const { data: shopSecrets } = await admin
+    .from('shop_payment_secrets')
+    .select('payout_wave_number, payout_om_number')
+    .eq('shop_id', profile.shop_id)
     .single()
 
   // Résoudre le numéro selon pays + méthode
@@ -57,8 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Méthode de retrait non reconnue' }, { status: 400 })
   }
   const payoutNumber = methodDef.col === 'payout_wave_number'
-    ? shop?.payout_wave_number
-    : shop?.payout_om_number
+    ? shopSecrets?.payout_wave_number
+    : shopSecrets?.payout_om_number
   if (!payoutNumber) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
   }
@@ -93,7 +100,7 @@ export async function POST(req: NextRequest) {
   const grossBalance     = totalCollected - totalPaidOutGross
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
-  const commissionRate       = getCommissionRate(shop?.country ?? null, !!shop?.bictorys_secret_key)
+  const commissionRate       = getCommissionRate(shop?.country ?? null, !!shop?.bictorys_key_configured)
   const commissionAmount     = Math.floor(grossBalance * (commissionRate / 100))
   const amountAfterCommission = grossBalance - commissionAmount
 

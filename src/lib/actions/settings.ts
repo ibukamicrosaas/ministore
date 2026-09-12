@@ -341,14 +341,24 @@ export async function updateShop(data: UpdateShopInput) {
   const ALLOWED: (keyof UpdateShopInput)[] = [
     'name', 'description', 'city', 'country', 'phone_whatsapp', 'email', 'address',
     'delivery_options', 'available_days', 'deposit_percentage', 'primary_color',
-    'logo_url', 'accept_online_payment', 'payout_wave_number', 'payout_om_number',
-    'delivery_zones', 'bictorys_secret_key', 'bictorys_webhook_secret',
+    'logo_url', 'accept_online_payment', 'delivery_zones',
     'accept_cash_on_delivery', 'target_countries',
+  ]
+  // Colonnes financières sensibles — vivent dans shop_payment_secrets depuis
+  // la migration 103 (audit sécurité §109, finding critique #1 : ces colonnes
+  // étaient publiquement lisibles via shops_public_read, RLS ne filtrant que
+  // les lignes, jamais les colonnes). Whitelist séparée, même principe.
+  const SECRETS_ALLOWED: (keyof UpdateShopInput)[] = [
+    'payout_wave_number', 'payout_om_number', 'bictorys_secret_key', 'bictorys_webhook_secret',
   ]
   const raw = data as Record<string, unknown>
   const payload: Record<string, unknown> = {}
   for (const key of ALLOWED) {
     if (key in raw) payload[key] = raw[key]
+  }
+  const secretsPayload: Record<string, unknown> = {}
+  for (const key of SECRETS_ALLOWED) {
+    if (key in raw) secretsPayload[key] = raw[key]
   }
 
   // Empêche d'atteindre l'état "aucun mode de paiement actif" — sans garde,
@@ -362,11 +372,30 @@ export async function updateShop(data: UpdateShopInput) {
   }
 
   // Chiffrer les clés Bictorys avant de les écrire en DB
-  if (typeof payload.bictorys_secret_key === 'string' && payload.bictorys_secret_key) {
-    payload.bictorys_secret_key = encryptApiKey(payload.bictorys_secret_key)
+  if (typeof secretsPayload.bictorys_secret_key === 'string' && secretsPayload.bictorys_secret_key) {
+    secretsPayload.bictorys_secret_key = encryptApiKey(secretsPayload.bictorys_secret_key)
   }
-  if (typeof payload.bictorys_webhook_secret === 'string' && payload.bictorys_webhook_secret) {
-    payload.bictorys_webhook_secret = encryptApiKey(payload.bictorys_webhook_secret)
+  if (typeof secretsPayload.bictorys_webhook_secret === 'string' && secretsPayload.bictorys_webhook_secret) {
+    secretsPayload.bictorys_webhook_secret = encryptApiKey(secretsPayload.bictorys_webhook_secret)
+  }
+
+  // Indicateur public de présence (booléen, sur shops — jamais la vraie clé)
+  // — mis à jour uniquement quand le champ a réellement été soumis ce tour-ci.
+  if ('bictorys_secret_key' in raw) {
+    payload.bictorys_key_configured = !!raw.bictorys_secret_key
+  }
+
+  if (Object.keys(secretsPayload).length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: secretsError } = await supabase
+      .from('shop_payment_secrets')
+      .update(secretsPayload as any)
+      .eq('shop_id', profile.shop_id)
+
+    if (secretsError) {
+      console.error('[updateShop] shop_payment_secrets', secretsError.message)
+      return { error: 'Impossible de mettre à jour la boutique.' }
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -737,15 +766,14 @@ export async function verifyAndUpdatePayoutNumbers(
   if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
 
   const admin = createAdminClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await admin
-    .from('shops')
+    .from('shop_payment_secrets')
     .update({
       payout_wave_number: payoutWaveNumber,
       payout_om_number:   payoutOmNumber,
       updated_at:         new Date().toISOString(),
-    } as any)
-    .eq('id', profile.shop_id)
+    })
+    .eq('shop_id', profile.shop_id)
 
   if (updateError) return { error: 'Impossible de mettre à jour les numéros.' }
 

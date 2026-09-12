@@ -55,12 +55,20 @@ export async function POST(req: NextRequest) {
           await supabase
             .from('shops')
             .update({
-              plan:                   planKey,
-              is_active:              true,
+              plan:      planKey,
+              is_active: true,
+            })
+            .eq('id', shopId)
+
+          // stripe_customer_id/stripe_subscription_id isolés dans
+          // shop_payment_secrets depuis la migration 103 (audit sécurité §109).
+          await supabase
+            .from('shop_payment_secrets')
+            .update({
               stripe_customer_id:     session.customer as string | null,
               stripe_subscription_id: session.subscription as string | null,
             })
-            .eq('id', shopId)
+            .eq('shop_id', shopId)
 
           // Boutique free_orders payée via Stripe (diaspora EU/CA) : même
           // traitement qu'un paiement Bictorys — status='active', libère les
@@ -293,9 +301,11 @@ export async function POST(req: NextRequest) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
 
         if (customerId) {
-          const { data: shop, error: shopLookupError } = await supabase
-            .from('shops')
-            .select('id, trial_model')
+          // Résolution shop_id depuis shop_payment_secrets (audit sécurité
+          // §109, migration 103 — stripe_customer_id n'est plus sur shops).
+          const { data: secretsRow, error: shopLookupError } = await supabase
+            .from('shop_payment_secrets')
+            .select('shop_id, shops(trial_model)')
             .eq('stripe_customer_id', customerId)
             .single()
 
@@ -310,12 +320,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Boutique introuvable' }, { status: 500 })
           }
 
+          const embeddedShop = secretsRow
+            ? (Array.isArray(secretsRow.shops) ? secretsRow.shops[0] : secretsRow.shops)
+            : null
+          const shop = secretsRow
+            ? { id: secretsRow.shop_id, trial_model: embeddedShop?.trial_model }
+            : null
+
+          await supabase.from('shop_payment_secrets').update({ stripe_subscription_id: null }).eq('shop_id', shop!.id)
+
           if (shop?.trial_model === 'free_orders') {
             // Résiliation (§12 de la spec) : 'expired', pas is_active=false direct —
             // la boutique reste publique, ses commandes sont de nouveau retenues,
             // celles déjà libérées le restent. plan repassé à 'decouverte' quand
             // même : ce n'est plus un plan payant actif.
-            await supabase.from('shops').update({ plan: 'decouverte', stripe_subscription_id: null }).eq('id', shop.id)
+            await supabase.from('shops').update({ plan: 'decouverte' }).eq('id', shop.id)
             // Idempotent : simple UPDATE status='expired', pas d'effet de bord
             // multi-table (contrairement à la transition 'active') — un rejeu
             // Stripe ne peut rien casser ici.
@@ -331,11 +350,10 @@ export async function POST(req: NextRequest) {
             await supabase
               .from('shops')
               .update({
-                plan:                   'decouverte',
-                is_active:              false,
-                stripe_subscription_id: null,
+                plan:      'decouverte',
+                is_active: false,
               })
-              .eq('stripe_customer_id', customerId)
+              .eq('id', shop!.id)
           }
         }
         break
@@ -347,9 +365,11 @@ export async function POST(req: NextRequest) {
         const isActive   = sub.status === 'active' || sub.status === 'trialing'
 
         if (customerId) {
-          const { data: shop, error: shopLookupError } = await supabase
-            .from('shops')
-            .select('id, trial_model')
+          // Résolution shop_id depuis shop_payment_secrets (audit sécurité
+          // §109, migration 103 — stripe_customer_id n'est plus sur shops).
+          const { data: secretsRow, error: shopLookupError } = await supabase
+            .from('shop_payment_secrets')
+            .select('shop_id, shops(trial_model)')
             .eq('stripe_customer_id', customerId)
             .single()
 
@@ -360,6 +380,13 @@ export async function POST(req: NextRequest) {
             })
             return NextResponse.json({ error: 'Boutique introuvable' }, { status: 500 })
           }
+
+          const embeddedShop = secretsRow
+            ? (Array.isArray(secretsRow.shops) ? secretsRow.shops[0] : secretsRow.shops)
+            : null
+          const shop = secretsRow
+            ? { id: secretsRow.shop_id, trial_model: embeddedShop?.trial_model }
+            : null
 
           if (shop?.trial_model === 'free_orders') {
             // Même logique que la résiliation : jamais is_active=false direct pour
@@ -381,7 +408,7 @@ export async function POST(req: NextRequest) {
             await supabase
               .from('shops')
               .update({ is_active: isActive })
-              .eq('stripe_customer_id', customerId)
+              .eq('id', shop!.id)
           }
         }
         break

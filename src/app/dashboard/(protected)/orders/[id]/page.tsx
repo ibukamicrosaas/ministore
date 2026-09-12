@@ -100,13 +100,13 @@ export default async function OrderDetailPage({
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('slug, currency, country, bictorys_secret_key')
+    .select('slug, currency, country, bictorys_key_configured')
     .eq('id', profile.shop_id)
     .single()
-  type ShopFields = { slug?: string; currency?: string | null; country?: string | null; bictorys_secret_key?: string | null }
+  type ShopFields = { slug?: string; currency?: string | null; country?: string | null; bictorys_key_configured?: boolean }
   const shopSlug    = (shopData as ShopFields | null)?.slug ?? ''
   const shopCurrency = (shopData as ShopFields | null)?.currency ?? 'XOF'
-  const commissionRate = getCommissionRate((shopData as ShopFields | null)?.country, !!(shopData as ShopFields | null)?.bictorys_secret_key)
+  const commissionRate = getCommissionRate((shopData as ShopFields | null)?.country, !!(shopData as ShopFields | null)?.bictorys_key_configured)
 
   const order = data as unknown as OrderRow
 

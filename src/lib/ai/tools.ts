@@ -19,12 +19,20 @@ export function buildAiTools(shopId: string) {
         const { data: shop, error } = await admin
           .from('shops')
           .select(
-            'name, plan, country, is_active, slug, logo_url, payout_wave_number, payout_om_number, accept_online_payment, accept_cash_on_delivery, created_at, trial_model, status, free_orders_used, free_orders_quota'
+            'name, plan, country, is_active, slug, logo_url, accept_online_payment, accept_cash_on_delivery, created_at, trial_model, status, free_orders_used, free_orders_quota'
           )
           .eq('id', shopId)
           .single()
 
         if (error || !shop) throw new Error('Impossible de récupérer les infos boutique')
+
+        // Présence des numéros de reversement (shop_payment_secrets, audit
+        // sécurité §109, migration 103) — utilisée seulement comme booléen.
+        const { data: payoutSecrets } = await admin
+          .from('shop_payment_secrets')
+          .select('payout_wave_number, payout_om_number')
+          .eq('shop_id', shopId)
+          .single()
 
         return {
           name: shop.name,
@@ -40,8 +48,8 @@ export function buildAiTools(shopId: string) {
           free_orders_quota: shop.trial_model === 'free_orders' ? shop.free_orders_quota : null,
           site_url: `${APP_URL}/${shop.slug}`,
           has_logo: shop.logo_url != null,
-          wave_configured: shop.payout_wave_number != null,
-          om_configured: shop.payout_om_number != null,
+          wave_configured: payoutSecrets?.payout_wave_number != null,
+          om_configured: payoutSecrets?.payout_om_number != null,
           accept_online_payment: shop.accept_online_payment,
           accept_cash_on_delivery: shop.accept_cash_on_delivery,
           created_at: shop.created_at,
@@ -54,10 +62,10 @@ export function buildAiTools(shopId: string) {
         "Vérifie l'état de configuration de la boutique : quelles étapes sont complètes et lesquelles manquent pour la mettre en ligne (le sens exact de « manquant » dépend du modèle d'essai, voir trial_model dans le résultat).",
       inputSchema: zodSchema(z.object({})),
       execute: async () => {
-        const [shopResult, productsResult] = await Promise.all([
+        const [shopResult, productsResult, secretsResult] = await Promise.all([
           admin
             .from('shops')
-            .select('logo_url, is_active, payout_wave_number, payout_om_number, custom_domain, trial_model, status')
+            .select('logo_url, is_active, custom_domain, trial_model, status')
             .eq('id', shopId)
             .single(),
           admin
@@ -65,6 +73,13 @@ export function buildAiTools(shopId: string) {
             .select('id', { count: 'exact', head: true })
             .eq('shop_id', shopId)
             .eq('is_active', true),
+          // Présence des numéros de reversement (shop_payment_secrets, audit
+          // sécurité §109, migration 103) — utilisée seulement comme booléen.
+          admin
+            .from('shop_payment_secrets')
+            .select('payout_wave_number, payout_om_number')
+            .eq('shop_id', shopId)
+            .single(),
         ])
 
         if (!shopResult.data) throw new Error('Boutique introuvable')
@@ -74,8 +89,8 @@ export function buildAiTools(shopId: string) {
         const has_logo = shop.logo_url != null
         const has_products = (productsResult.count ?? 0) > 0
         const product_count = productsResult.count ?? 0
-        const wave_configured = shop.payout_wave_number != null
-        const om_configured = shop.payout_om_number != null
+        const wave_configured = secretsResult.data?.payout_wave_number != null
+        const om_configured = secretsResult.data?.payout_om_number != null
         const has_payment_method = wave_configured || om_configured
         const domain_configured = shop.custom_domain != null
         // legacy : is_active fait foi. free_orders : is_active reste true dès
@@ -319,7 +334,7 @@ export function buildAiTools(shopId: string) {
             .eq('shop_id', shopId)
             .in('status', ['pending', 'processing', 'completed'])
             .order('created_at', { ascending: false }),
-          admin.from('shops').select('country, bictorys_secret_key').eq('id', shopId).single(),
+          admin.from('shops').select('country, bictorys_key_configured').eq('id', shopId).single(),
         ])
 
         const total_collected = (paymentsRes.data ?? []).reduce((s, p) => s + p.amount, 0)
@@ -329,7 +344,7 @@ export function buildAiTools(shopId: string) {
           .filter((p) => p.status === 'pending' || p.status === 'processing')
           .reduce((s, p) => s + p.net_amount, 0)
 
-        const commission_rate = getCommissionRate(shopRes.data?.country, !!shopRes.data?.bictorys_secret_key)
+        const commission_rate = getCommissionRate(shopRes.data?.country, !!shopRes.data?.bictorys_key_configured)
 
         return {
           total_collected,

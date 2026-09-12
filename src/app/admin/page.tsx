@@ -67,7 +67,7 @@ export default async function AdminOverviewPage() {
       .gte('created_at', monthStart).lte('created_at', monthEnd + 'T23:59:59'),
     supabase.from('orders').select('id', { count: 'exact' })
       .gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd + 'T23:59:59'),
-    supabase.from('payments').select('amount, created_at, shops!inner(country, bictorys_secret_key)').eq('status', 'completed'),
+    supabase.from('payments').select('amount, created_at, shops!inner(country, bictorys_key_configured)').eq('status', 'completed'),
     supabase.from('shops').select('id, name, slug, trial_ends_at').eq('plan', 'trial').eq('is_active', true)
       .gte('trial_ends_at', now.toISOString())
       .lte('trial_ends_at', sevenDaysFromNow.toISOString()),
@@ -108,8 +108,8 @@ export default async function AdminOverviewPage() {
   type PaymentShopRow = {
     amount: number
     created_at: string
-    shops: { country: string | null; bictorys_secret_key: string | null }
-      | { country: string | null; bictorys_secret_key: string | null }[]
+    shops: { country: string | null; bictorys_key_configured: boolean }
+      | { country: string | null; bictorys_key_configured: boolean }[]
       | null
   }
   const payments = (paymentsRes.data ?? []) as unknown as PaymentShopRow[]
@@ -121,7 +121,7 @@ export default async function AdminOverviewPage() {
   // jamais un taux plat sur la somme globale — voir lib/billing/commission.ts.
   const tekkishopCommission = payments.reduce((s, p) => {
     const shop = Array.isArray(p.shops) ? p.shops[0] : p.shops
-    return s + Math.floor(p.amount * (getCommissionRate(shop?.country, !!shop?.bictorys_secret_key) / 100))
+    return s + Math.floor(p.amount * (getCommissionRate(shop?.country, !!shop?.bictorys_key_configured) / 100))
   }, 0)
 
   const paidShops = allShops.filter(s => s.is_active && s.plan !== 'trial')

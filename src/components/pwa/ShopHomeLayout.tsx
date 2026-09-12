@@ -152,7 +152,7 @@ export function ShopHomeLayout({ shop, products, shopSlug, basePath, previewMode
   const shopCountry    = shop.country as BictorysCountry | undefined
   const onlineMethods  = getPaymentMethodsForTargetCountries(shopCountry ?? null, shop.target_countries)
   const acceptsCash    = shop.accept_cash_on_delivery ?? true
-  const hasOnlineCard  = onlineMethods.length > 0 || !!shop.bictorys_secret_key || !!shop.stripe_connect_enabled
+  const hasOnlineCard  = onlineMethods.length > 0 || !!shop.bictorys_key_configured || !!shop.stripe_connect_enabled
   const hasPayment     = hasOnlineCard || acceptsCash
   const paymentLabel   = [
     ...onlineMethods.map(m => m.label),

@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const { data: shopData } = await supabase
     .from('shops')
     .select(`
-      id, slug, name, payout_wave_number, payout_om_number, plan, currency, country,
+      id, slug, name, plan, currency, country,
       status, trial_model, trial_ends_at, trial_started_at, trial_extended_at,
       free_orders_used, free_orders_quota, specialty, specialty_other
     `)
@@ -53,10 +53,20 @@ export default async function DashboardPage({ searchParams }: Props) {
     .single()
 
   const shop = shopData as (Pick<Shop,
-    'id' | 'slug' | 'name' | 'payout_wave_number' | 'payout_om_number' | 'plan' | 'currency' | 'country' |
+    'id' | 'slug' | 'name' | 'plan' | 'currency' | 'country' |
     'status' | 'trial_model' | 'trial_ends_at' | 'trial_started_at' | 'trial_extended_at' |
     'free_orders_used' | 'free_orders_quota' | 'specialty' | 'specialty_other'
   >) | null
+
+  // Présence des numéros de reversement (shop_payment_secrets, audit §109,
+  // migration 103) — utilisée seulement comme booléen pour la checklist.
+  const { data: payoutSecrets } = shop
+    ? await supabase
+        .from('shop_payment_secrets')
+        .select('payout_wave_number, payout_om_number')
+        .eq('shop_id', shop.id)
+        .single()
+    : { data: null }
 
   const { count: productCount } = await supabase
     .from('products')
@@ -248,7 +258,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           shopSlug={shop.slug}
           shopName={shop.name}
           hasProduct={(productCount ?? 0) > 0}
-          hasPayoutNumbers={!!(shop.payout_wave_number || shop.payout_om_number)}
+          hasPayoutNumbers={!!(payoutSecrets?.payout_wave_number || payoutSecrets?.payout_om_number)}
           isActivePlan={shop.plan !== 'trial'}
           isFreeOrders={isFreeOrders}
         />

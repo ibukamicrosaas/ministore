@@ -273,13 +273,13 @@ Quand le marchand te pose une question sur sa boutique, utilise l'outil get_setu
 interface KnowledgeEntry { title: string; content: string }
 
 export function buildSystemPrompt(
-  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota' | 'bictorys_secret_key'>,
+  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota' | 'bictorys_key_configured'>,
   knowledgeEntries?: KnowledgeEntry[],
 ): string {
   const siteUrl = `${APP_URL}/${shop.slug}`
   const planLabel = PLAN_LABELS[shop.plan] ?? shop.plan
   const countryLabel = COUNTRY_LABELS[shop.country] ?? shop.country
-  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
   const createdDate = new Date(shop.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',

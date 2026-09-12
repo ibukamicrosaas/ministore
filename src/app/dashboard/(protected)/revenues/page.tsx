@@ -33,7 +33,7 @@ export default async function RevenuesPage() {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, country, currency, payout_wave_number, payout_om_number, bictorys_secret_key')
+    .select('name, country, currency, bictorys_key_configured')
     .eq('id', shopId)
     .single()
 
@@ -41,15 +41,21 @@ export default async function RevenuesPage() {
     name: string
     country: string | null
     currency: string | null
-    payout_wave_number: string | null
-    payout_om_number: string | null
-    bictorys_secret_key: string | null
+    bictorys_key_configured: boolean
   } | null
   if (!shop) redirect('/dashboard')
 
+  // Numéros réels isolés dans shop_payment_secrets (audit sécurité §109, migration 103)
+  const { data: shopSecrets } = await supabase
+    .from('shop_payment_secrets')
+    .select('payout_wave_number, payout_om_number')
+    .eq('shop_id', shopId)
+    .single()
+  const payoutNumbers = shopSecrets as { payout_wave_number: string | null; payout_om_number: string | null } | null
+
   const shopCurrency = (shop.currency ?? 'XOF') as import('@/lib/utils/country-groups').ShopCurrency
   const euCa = isEuCaCountry(shop.country)
-  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
 
   // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis
   // les slots DB, et frais de retrait réels (opérateur + Bictorys) par
@@ -59,7 +65,7 @@ export default async function RevenuesPage() {
     .map(m => ({
       label:  m.label,
       key:    m.key,
-      number: m.col === 'payout_wave_number' ? shop.payout_wave_number : shop.payout_om_number,
+      number: m.col === 'payout_wave_number' ? payoutNumbers?.payout_wave_number : payoutNumbers?.payout_om_number,
       feeRate: getPayoutFeeRate(shop.country, m.key),
     }))
     .filter((m): m is { label: string; key: PayoutMethodKey; number: string; feeRate: number | null } => !!m.number)

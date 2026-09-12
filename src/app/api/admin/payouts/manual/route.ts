@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const { data: shop } = await admin
     .from('shops')
-    .select('id, name, country, bictorys_secret_key')
+    .select('id, name, country, bictorys_key_configured')
     .eq('slug', shopSlug.trim())
     .single()
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Boutique "${shopSlug}" introuvable` }, { status: 404 })
   }
 
-  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
+  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
 
   // Calcul du solde disponible pour information (non bloquant — admin connaît son contexte)
   const [{ data: payments }, { data: payouts }] = await Promise.all([

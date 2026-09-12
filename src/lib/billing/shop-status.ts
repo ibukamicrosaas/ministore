@@ -31,7 +31,7 @@ export async function setShopStatus(
 
   const { data: shop } = await admin
     .from('shops')
-    .select('trial_model, status, slug, name, phone_whatsapp, currency, country, bictorys_secret_key')
+    .select('trial_model, status, slug, name, phone_whatsapp, currency, country, bictorys_key_configured')
     .eq('id', shopId)
     .single()
 
@@ -68,7 +68,7 @@ export async function setShopStatus(
     // Fonds de commandes digitales retenues et payées, débloqués dans la même
     // transaction que la RPC — net de commission, comme partout sur la page
     // Revenus. Voir ADDITIF-argent-commandes-retenues.md.
-    const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_secret_key)
+    const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
     const fundsGross = result?.released_funds_gross ?? 0
     const fundsNet    = fundsGross - Math.floor(fundsGross * (commissionRate / 100))
 

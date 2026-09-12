@@ -61,13 +61,24 @@ export async function POST(req: NextRequest) {
   // Utiliser la clé Bictorys propre de la boutique (plan Pro) si disponible
   const { data: shopData } = await supabase
     .from('shops')
-    .select('plan, bictorys_secret_key, country, accept_online_payment')
+    .select('plan, country, accept_online_payment')
     .eq('id', order.shop_id)
     .single()
 
   if (!shopData?.country) {
     return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
   }
+
+  // Clé réelle isolée dans shop_payment_secrets depuis la migration 103
+  // (audit sécurité §109, finding critique #1) — jamais sur shops, jamais
+  // exposée via shops_public_read.
+  const { data: secretsData } = shopData.plan === 'pro'
+    ? await supabase
+        .from('shop_payment_secrets')
+        .select('bictorys_secret_key')
+        .eq('shop_id', order.shop_id)
+        .single()
+    : { data: null }
 
   // Dernier point de vérification avant de créer une charge réelle — ne fait
   // confiance ni au client, ni à payment_type déjà enregistré sur la
@@ -79,7 +90,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Le paiement en ligne n\'est pas disponible pour cette boutique.' }, { status: 400 })
   }
 
-  const rawShopKey = shopData?.plan === 'pro' ? (shopData.bictorys_secret_key ?? null) : null
+  const rawShopKey = secretsData?.bictorys_secret_key ?? null
   const shopKey = rawShopKey ? decryptApiKey(rawShopKey) : null
   const apiKey = shopKey ?? platformApiKey
 
