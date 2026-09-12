@@ -19,6 +19,15 @@ const FROM_ADDRESS = `TEKKIShop <${_fromEmail}>`
 // toujours ouvert, hors périmètre de ce correctif).
 const COMPANY_ADDRESS = '12, Ouest-Foire, Dakar - Sénégal'
 
+// Échappement HTML pour tout champ texte libre soumis par un client anonyme
+// au checkout (clientName, clientPhone) avant interpolation dans un template
+// e-mail — sans ça, un visiteur non authentifié peut faire partir un e-mail
+// contenant du HTML/JS injecté depuis le domaine d'expédition de TEKKIShop,
+// vers n'importe quelle adresse (audit sécurité §109, finding critique #3).
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 // Bandeau d'en-tête avec la marque du marchand (logo si présent, sinon
 // initiale sur sa couleur) — même principe que sendReviewRequestEmail,
 // pour que chaque flux d'e-mails se distingue visuellement d'un gabarit
@@ -61,7 +70,7 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
     ${buildBrandHeader(params.shopName, 'Nouvelle commande', params.shopColor, params.shopLogoUrl)}
     <div style="padding:28px;">
       <p style="color:#374151;font-size:15px;margin:0 0 20px;">
-        <strong>${params.clientName}</strong> vient de passer une commande.
+        <strong>${escapeHtml(params.clientName)}</strong> vient de passer une commande.
       </p>
       <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
         <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Articles</p>
@@ -70,7 +79,7 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
       <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;margin-bottom:20px;">
         <tr>
           <td style="padding:6px 0;color:#6b7280;">Client</td>
-          <td style="padding:6px 0;text-align:right;">${params.clientName} · ${params.clientPhone}</td>
+          <td style="padding:6px 0;text-align:right;">${escapeHtml(params.clientName)} · ${escapeHtml(params.clientPhone)}</td>
         </tr>
         <tr style="border-top:1px solid #e5e7eb;">
           <td style="padding:10px 0 0;font-weight:700;">Total</td>
@@ -286,7 +295,7 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
     <!-- Corps -->
     <div style="padding:28px;">
       <p style="color:#374151;font-size:15px;margin:0 0 20px;">
-        Bonjour <strong>${params.clientName}</strong>,<br>
+        Bonjour <strong>${escapeHtml(params.clientName)}</strong>,<br>
         Ta commande a bien été enregistrée.
       </p>
 
