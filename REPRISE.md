@@ -2606,3 +2606,24 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 **Lot 3 — `product-photos`, terminé.** Test à blanc régénéré juste avant suppression (2 244/916,3 MB, identique à la mesure initiale — aucune dérive) plutôt que de réutiliser une liste vieille de plusieurs échanges, pour ne rien supprimer qu'un marchand aurait référencé entre-temps. 2 244 fichiers supprimés par sous-lots de 100 (23 sous-lots, tous confirmés). Revérifié (2193 lignes `products` + 717 lignes `product_variants`, toutes paginées) : 3 780 objets restants, exactement 3 780 référencés, **0 orphelin, 0 référence cassée** (6 024 − 2 244 = 3 780, cohérent). Vérification supplémentaire au-delà de la comparaison base/storage : 3 vraies photos produit actuelles rechargées en direct, `200` sur les trois.
 
 **Volet 2 clos.** Trois lots, **2 458 fichiers supprimés, ≈1 037 MB récupérés**, zéro incident sur les trois revérifications, zéro référence cassée. Chantier photos orphelines (§104-§105) entièrement terminé — correctif pour l'avenir en place, dette rétroactive résorbée.
+
+## 106. Barre collante mobile recouvrait le formulaire de commande sur certains états, commit `0f013ea`
+
+**Signalement distinct du §96** (qui réglait le menu déroulant de l'indicatif pays, pas ce problème). Sur mobile, la barre collante du bas continuait de cacher une partie du formulaire — en particulier « Comment tu paies » et « Ajouter une précision ».
+
+**État vérifié avant tout code** : `OrderForm.tsx` utilisait encore un `pb-44` fixe (176px deviné), avec un commentaire explicite « corrige 3.2 » — l'ancienne technique déjà critiquée lors de l'investigation du menu déroulant (§96), appliquée pour une raison différente et structurellement incapable de suivre une barre dont le contenu (récapitulatif + bouton) varie réellement en hauteur (code promo appliqué, acompte vs solde, message d'indisponibilité de paiement...).
+
+**Correctif** : même technique déjà éprouvée deux fois cette session (`ProductStickyCtaManager.tsx`, SPEC-v2 §5.5) — hauteur réelle de la barre mesurée par `useLayoutEffect` (`stickyBarRef.offsetHeight`), stockée dans `stickyBarHeight`, utilisée comme `paddingBottom` inline de la colonne formulaire à la place du `pb-44`. Remesurée à chaque rendu (pas de tableau de dépendances — une lecture `offsetHeight` est bon marché, et React ne déclenche un nouveau rendu que si la valeur a réellement changé) plutôt que d'énumérer chaque état pouvant affecter la hauteur, pour ne rien manquer. Plus besoin d'un `pb-0` séparé pour desktop : la barre étant déjà `min-[960px]:hidden` (`display:none`), sa hauteur mesurée y vaut déjà 0 naturellement.
+
+**Testé en conditions réelles, quatre états du récapitulatif, boutique/produit/code promo de test dédiés (supprimés après coup)**, `elementFromPoint` à chaque cas — pas seulement visuel :
+
+| État | Hauteur barre mesurée | « Comment tu paies » | « Ajouter une précision » |
+|---|---|---|---|
+| Normal | 273px | non recouvert | non recouvert |
+| Code promo appliqué (`-15%`, ligne en plus) | 269px | non recouvert | non recouvert |
+| Payer un acompte (récap 2 lignes : *"Tu paies maintenant... / Puis... en boutique"*) | **293px** | non recouvert | non recouvert |
+| Payer maintenant / solde complet (récap 1 ligne) | 273px | non recouvert | non recouvert |
+
+**L'écart de 20px entre acompte et solde complet (293 vs 273) est la preuve retenue** que l'espaceur suit une vraie variation dynamique du contenu, pas une coïncidence — obtenu par une vraie bascule de radio-bouton (pas simulé), avec relecture réelle du récapitulatif affiché à chaque état. Testé aussi sur un second viewport (375×667) pour l'état normal — même résultat propre. `tsc --noEmit` et `npm run build` propres.
+
+**Suite** : dernier sujet en attente, texte de la bannière d'installation PWA — à recevoir séparément de l'utilisateur.
