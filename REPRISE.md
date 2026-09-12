@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-09.
+> Dernière mise à jour : 2026-09-12.
 
 ---
 
@@ -2625,5 +2625,26 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 | Payer maintenant / solde complet (récap 1 ligne) | 273px | non recouvert | non recouvert |
 
 **L'écart de 20px entre acompte et solde complet (293 vs 273) est la preuve retenue** que l'espaceur suit une vraie variation dynamique du contenu, pas une coïncidence — obtenu par une vraie bascule de radio-bouton (pas simulé), avec relecture réelle du récapitulatif affiché à chaque état. Testé aussi sur un second viewport (375×667) pour l'état normal — même résultat propre. `tsc --noEmit` et `npm run build` propres.
+
+**Suite** : dernier sujet en attente, texte de la bannière d'installation PWA — à recevoir séparément de l'utilisateur.
+
+## 107. Meta Pixel entièrement silencieux — CSP bloquait `fbevents.js` pour toutes les boutiques, commit `d668e5a`
+
+**Signalement** : un marchand Pro a configuré un Meta Pixel ID, aucun événement n'apparaît dans l'outil de test d'événements du Business Manager Meta. Investigation demandée d'abord, aucun code avant rapport.
+
+**Câblage réel vérifié, pas un chantier inachevé** : les 5 événements standards sont bien codés, pas de stub — `PageView` (snippet inline, `MetaPixelProvider.tsx`), `ViewContent` (`ProductPixelEvents.tsx`, montage page produit), `AddToCart` (`VariantSelectorCta.tsx` + `ProductPixelEvents.tsx` + `ProductStickyCtaManager.tsx`, au clic), `InitiateCheckout` (`OrderForm.tsx`, montage), `Purchase` (`PixelPurchase.tsx`, montage page succès). `MetaPixelProvider` monté dans `[shop-slug]/layout.tsx` — couvre bien toutes les pages de la boutique.
+
+**Cause réelle, confirmée par test CDP réel (boutique de test dédiée, Pixel ID factice mais valide au format) : le header CSP bloquait `https://connect.facebook.net`, absent de `script-src`** — `fbevents.js` ne chargeait jamais (`net::ERR_FAILED`, violation CSP explicite dans la console). `window.fbq` et `fbq.loaded === true` existaient malgré tout : le snippet officiel Meta pose ces valeurs lui-même dans son stub inline, avant même la tentative de chargement du vrai script — un faux signal de succès qui explique pourquoi l'extension Meta Pixel Helper affichait "chargé" alors que **zéro requête ne partait jamais vers `facebook.com/tr`**, pour aucun événement. **Bug touchant potentiellement toutes les boutiques avec un Pixel configuré, pas un cas isolé du marchand qui a signalé le problème.**
+
+**Correctif réduit à une seule ligne, vérifiée empiriquement avant d'écrire quoi que ce soit sur `connect-src`** — sur demande explicite de ne pas élargir un en-tête de sécurité plus que nécessaire : capture du type exact de chaque requête réseau via CDP. `fbevents.js` et `signals/config/...` sont de type `Script` (gouvernées par `script-src`, seule ligne touchée) ; le ping de tracking réel `www.facebook.com/tr/...` est de type `Image` (gouverné par `img-src`, déjà `'self' data: blob: https:` — n'importe quel domaine HTTPS déjà autorisé). Le SDK Meta Pixel n'utilise jamais `fetch`/`XHR` pour son mécanisme de tracking — **`connect-src` n'a donc reçu aucune modification**, empiriquement confirmé et non deviné.
+
+```diff
+-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://va.vercel-scripts.com https://vercel.live",
++  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://va.vercel-scripts.com https://vercel.live https://connect.facebook.net",
+```
+
+**Testé en conditions réelles, parcours complet (accueil → produit → commander → succès), boutique/produit/commande de test dédiés (supprimés après coup)** : les 5 événements produisent chacun une vraie requête vers `facebook.com/tr` avec `200`, zéro violation CSP sur tout le parcours. `tsc --noEmit` et `npm run build` propres.
+
+**Limitation honnêtement signalée** : aucun accès à un compte Meta Business Manager réel dans cette session — pas de vérification visuelle dans l'outil de test d'événements Meta lui-même. La requête HTTP réelle observée (bons paramètres `id`/`ev`, réponse `200`) est la preuve technique équivalente, mais reste une preuve de substitution, pas la confirmation dans l'interface Meta.
 
 **Suite** : dernier sujet en attente, texte de la bannière d'installation PWA — à recevoir séparément de l'utilisateur.
