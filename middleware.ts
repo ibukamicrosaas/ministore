@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/types/database'
 import { APP_URL } from '@/constants'
+import { SESSION_COOKIE_OPTIONS } from '@/lib/supabase/cookie-options'
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 // In-memory, per-instance (Vercel Edge). Sufficient for early-stage traffic.
@@ -202,6 +203,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: SESSION_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return request.cookies.getAll()
