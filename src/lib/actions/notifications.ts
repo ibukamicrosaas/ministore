@@ -4,6 +4,26 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+
+// Une Server Action importée par un composant client est un endpoint POST
+// public, indépendant du garde de /admin/layout.tsx — même mécanisme que
+// admin.ts (audit sécurité §109, finding élevé #6). Seules les deux fonctions
+// marquées "Admin :" ci-dessous en ont besoin — getMyNotifications/
+// markNotificationsRead sont du self-service marchand légitime.
+async function assertAdmin(): Promise<string | null> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !ADMIN_USER_IDS.includes(user.id)) return 'Accès non autorisé.'
+  return null
+}
+
+async function requireAdmin(): Promise<void> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !ADMIN_USER_IDS.includes(user.id)) throw new Error('Unauthorized')
+}
+
 export type NotificationType = 'info' | 'warning' | 'promo' | 'success'
 
 export interface ShopNotification {
@@ -24,6 +44,9 @@ export async function sendNotificationToShops(payload: {
   body: string
   type: NotificationType
 }): Promise<{ sent: number; error?: string }> {
+  const authError = await assertAdmin()
+  if (authError) return { sent: 0, error: authError }
+
   if (!payload.shopIds.length) return { sent: 0, error: 'Aucune boutique cible.' }
   if (!payload.title.trim() || !payload.body.trim()) return { sent: 0, error: 'Titre et message requis.' }
 
@@ -49,6 +72,8 @@ export async function sendNotificationToShops(payload: {
 export async function getShopIdsByPlan(
   plans: string[],
 ): Promise<string[]> {
+  await requireAdmin()
+
   const admin = createAdminClient()
   const { data } = await admin
     .from('shops')

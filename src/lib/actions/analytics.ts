@@ -1,7 +1,19 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerClient } from '@/lib/supabase/server'
 import { subDays, startOfDay, format } from 'date-fns'
+
+const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+
+// Une Server Action importée par un composant client est un endpoint POST
+// public, indépendant du garde de /admin/layout.tsx — même mécanisme que
+// admin-shops.ts (audit sécurité §109, finding élevé #6).
+async function requireAdmin(): Promise<void> {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !ADMIN_USER_IDS.includes(user.id)) throw new Error('Unauthorized')
+}
 
 const PLAN_PRICES: Record<string, number> = {
   decouverte: 2900,
@@ -10,6 +22,8 @@ const PLAN_PRICES: Record<string, number> = {
 }
 
 export async function getCountryConversionStats() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
 
   const { data: shops } = await supabase
@@ -37,6 +51,8 @@ export async function getCountryConversionStats() {
 }
 
 export async function getActivationRates() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
 
   const { data: shops } = await supabase
@@ -63,6 +79,8 @@ export async function getActivationRates() {
 }
 
 export async function getChurnRate() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -102,6 +120,8 @@ const PLAN_PRICES_ANNUAL: Record<string, number> = {
 }
 
 export async function getMRRBreakdown() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
   const now = new Date()
   const thirtyDaysAgo = subDays(now, 30)
@@ -174,6 +194,8 @@ export async function getMRRBreakdown() {
 }
 
 export async function getPlanDistribution() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
 
   const { data: shops } = await supabase
@@ -189,6 +211,8 @@ export async function getPlanDistribution() {
 }
 
 export async function getCustomerSegments() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
 
   const { data: shops } = await supabase
@@ -213,6 +237,8 @@ export async function getCustomerSegments() {
 }
 
 export async function getTrendsData() {
+  await requireAdmin()
+
   const supabase = createAdminClient()
   const now = new Date()
   const thirtyDaysAgo = subDays(now, 30)
