@@ -2836,3 +2836,14 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : finding moyen #8 — révocation de session après changement/réinitialisation de PIN.
+
+## 119. Finding moyen #8 — révocation de session, déjà fermé nativement (aucun code)
+
+**L'audit signalait ce point avec prudence** ("gap constaté dans le code — aucune révocation explicite déclenchée par l'app — à confirmer côté configuration Supabase plutôt qu'affirmé comme faille certaine"). Avant tout plan de correctif, vérification empirique des deux mécanismes réels utilisés par `changePin`/`confirmPinReset`/`resetUserPin` (`lib/actions/auth.ts`, `lib/actions/admin-shops.ts`) :
+
+- `admin.auth.admin.updateUserById(userId, { password })` (chemin `confirmPinReset`/`resetUserPin` admin) : une session mintée avant le changement devient invalide après — access token et refresh token tous deux rejetés par Supabase Auth (`"Auth session missing!"`, `"Invalid Refresh Token"`).
+- `supabase.auth.updateUser({ password })` (chemin `changePin`, self-service) : même résultat — une **autre** session du même compte (simulant un appareil volé, distincte de celle qui fait le changement) devient invalide dès que le mot de passe change.
+
+**Comportement natif de Supabase Auth (GoTrue)** : révocation automatique de toutes les sessions du compte à chaque changement de mot de passe, sans qu'aucun code applicatif n'ait besoin de le déclencher. Vérifié réellement (deux sessions réelles mintées via l'API Admin, comptes de test supprimés après coup), pas supposé depuis la documentation. **Aucun code nécessaire — finding clos.**
+
+**Suite** : `npm audit fix` sur les vulnérabilités restantes (findings 13, 16), `tsc`/build comme filet de sécurité — dernière étape avant la clôture officielle de l'audit sécurité §109.
