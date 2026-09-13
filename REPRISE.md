@@ -2847,3 +2847,11 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 **Comportement natif de Supabase Auth (GoTrue)** : révocation automatique de toutes les sessions du compte à chaque changement de mot de passe, sans qu'aucun code applicatif n'ait besoin de le déclencher. Vérifié réellement (deux sessions réelles mintées via l'API Admin, comptes de test supprimés après coup), pas supposé depuis la documentation. **Aucun code nécessaire — finding clos.**
 
 **Suite** : `npm audit fix` sur les vulnérabilités restantes (findings 13, 16), `tsc`/build comme filet de sécurité — dernière étape avant la clôture officielle de l'audit sécurité §109.
+
+## 120. `npm audit fix` — 17 → 0 vulnérabilités, commit `594dcf3` — audit sécurité §109 officiellement clos
+
+`npm audit fix` (deux passes) a résolu les 17 vulnérabilités restantes (moyen #13, faible #16) — `browserslist`, `fast-uri`, `js-yaml`, `ws`, `nanoid`, `brace-expansion` et le reste du lot, tous via des ranges semver déjà autorisés par `package.json` (aucune dépendance directe modifiée, seul `package-lock.json` change). Vérifié avant de considérer le correctif terminé : `tsc --noEmit`/`npm run build` propres, smoke test réel sur `next start` (accueil, boutique publique réelle, `POST /api/orders` invalide → 400, `/dashboard` sans session → 307, route cron sans secret → 401).
+
+**Bilan de l'audit sécurité §109** : 9 findings fermés sur 16 — les 3 critiques (§110-§112), les 4 élevés (§113-§116), 2 moyens (§118 `stock_alerts`, §119 révocation de session — clos sans code, comportement déjà natif à Supabase Auth), et les vulnérabilités npm (§120). Restent volontairement non traités, documentés tels quels sans code dessus sur décision explicite : moyens #9 (`markNotificationsRead`, code mort), #10 (`fixShopCountriesByCity`/`processPayout`, déjà protégées par leurs appelants), #12 (upload logo onboarding, déjà mitigé par la whitelist du bucket) ; faibles #14 (alerte Sentry manquante sur mismatch Bictorys) et #15 (fragment de secret loggé).
+
+**Chantier sécurité clos pour cette session.** Reprise des trois sujets void-insert laissés en attente avant l'audit (priorité 4 : `lib/actions/licence.ts:53` + `app/start/actions.ts` dont son `signup` ; priorité 5 : `api/ai/chat/route.ts:127`).
