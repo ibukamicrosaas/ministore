@@ -2754,3 +2754,22 @@ Données de test nettoyées, aucun résidu. `tsc --noEmit` et `npm run build` pr
 Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5, GHSA-8h8q-6873-q5fj) et le lot `postcss`/`sharp` qui y était lié dans `npm audit` (21 → 17 vulnérabilités, **0 critique** contre 1 avant). Vérifié avant application : `tsc --noEmit`/`npm run build` propres, smoke test réel sur `next start` (pages publiques, boutique réelle, `POST /api/orders` invalide → 400, `/dashboard` sans session → 307, route cron sans secret → 401, en-têtes CSP intacts y compris le correctif §107). `package.json` passé de `"16.2.4"` (exact) à `"^16.3.5"` (caret) — volontaire, cohérent avec le reste du fichier (`next` était l'exception).
 
 **Ordre validé pour les 3 findings élevés restants** : cookies de session sans `httpOnly`/`secure` (le plus transversal, aggrave directement les deux XSS fermés §111/§112) → `verifyAndUpdatePayoutNumbers` sans rate-limiting (réutilise le pattern `login_attempts` du §103) → Server Actions admin sans vérification interne (pattern déjà correct ailleurs dans `admin.ts`/`admin-shops.ts`, le plus mécanique des trois). Plan détaillé à chaque étape avant tout code, comme toujours pour l'authentification.
+
+## 114. Finding élevé #4 — cookies de session sans `httpOnly`/`secure`, commit `491154c`
+
+**Diagnostic** : le cookie de session Supabase (`sb-<ref>-auth-token`) était posé sans `httpOnly` ni `secure` (défaut `@supabase/ssr`, aucune des deux écritures — `src/lib/supabase/server.ts`, `middleware.ts` — ne passait de `cookieOptions`). Lisible en JS par tout futur XSS (transformerait un XSS en vol de session complète), sans garantie HTTPS. Vérifié avant correctif : aucun code applicatif ne lit ce cookie via `document.cookie` (seuls `pending_sub_txn`/`pending_sub_plan`, cookies applicatifs distincts, l'utilisent) — `httpOnly: false` n'avait donc aucune justification.
+
+**Correctif** : constante partagée `src/lib/supabase/cookie-options.ts` (`SESSION_COOKIE_OPTIONS = { httpOnly: true, secure: true }`), appliquée aux deux points d'écriture via le paramètre `cookieOptions` de `createServerClient()`. `secure: true` sans condition d'environnement — Vercel sert production et preview en HTTPS, seule la variante `NODE_ENV` aurait ajouté une branche inutile.
+
+**Hypothèse à risque traitée comme telle, pas supposée** : `secure: true` sur `http://localhost` (seul environnement non-HTTPS du projet) aurait pu casser silencieusement toute session en dev/test local si les navigateurs modernes ne traitaient pas `localhost` comme contexte sécurisé exempté. Testé en premier, avant tout le reste : route de test temporaire déclenchant le vrai `createServerClient()` patché via `supabase.auth.setSession()` (session réelle mintée par l'API Admin), un vrai `fetch` navigateur (`credentials: 'include'`) laissant Chrome lui-même décider d'honorer le `Set-Cookie ...Secure` — pas une injection CDP qui aurait contourné cette décision. **Confirmé** : `Network.getCookies` (voit les cookies `httpOnly`) trouve le cookie avec `httpOnly: true, secure: true`, valeur complète présente. Découverte en cours de route : Next.js exclut du routing tout dossier d'API préfixé `_` (convention "dossier privé") — la route de test a dû être renommée sans ce préfixe pour être atteignable.
+
+**Testé en conditions réelles, 4 tests, boutique/session de test dédiées (supprimées après coup)** :
+- `document.cookie` ne montre plus le cookie de session (httpOnly confirmé).
+- `secure` honoré sur `http://localhost` (le test le plus risqué, fait en premier).
+- Accès réel à `/dashboard` avec la session stockée par le navigateur → vrai contenu affiché, pas de redirection.
+- Persistance sur une deuxième page protégée (`/dashboard/settings`).
+- Non-régression garde admin : `/admin` sans session → 307, `/api/admin/*` sans session → 401.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : `verifyAndUpdatePayoutNumbers` sans rate-limiting (finding élevé #5) — réutilise le pattern `login_attempts` déjà éprouvé pour `pin_change`/`pin_reset_confirm` (§103).
