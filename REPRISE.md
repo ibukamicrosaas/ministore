@@ -2817,4 +2817,22 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 
 **En attente depuis avant l'audit sécurité, jamais repris** : void-insert priorité 4 (`lib/actions/licence.ts:53` + `app/start/actions.ts`, dont son occurrence `signup`) et priorité 5 (`api/ai/chat/route.ts:127`) — voir §94/§103.
 
-**Décision à prendre avec l'utilisateur** : continuer à descendre la liste moyen/faible, ou refermer ce chantier pour l'instant et reprendre les 3 sujets void-insert/priorité en attente.
+**Décision** : traiter les deux findings moyens à scénario d'exploitation actif (n°8, n°11), puis clore l'audit — n°9/10/12 restent documentés tels quels, sans code. Les npm restants (13, 16) via `npm audit fix` avant la clôture finale.
+
+## 118. Finding moyen #11 — `stock_alerts` verrouillée (RLS + rate-limit), commit `b08e552`
+
+**Diagnostic** : la policy RLS `stock_alerts_insert_public` (`with_check: true`) autorisait n'importe qui, sans authentification, à insérer directement via l'API REST — n'importe quel `shop_id`/`product_id`, n'importe quel `phone`/`name`, sans passer par les validations de `subscribeStockAlert`. Effet de bord réel : un SMS payant part à chaque restock vers tout numéro inscrit, sans limite.
+
+**Option retenue plutôt qu'une policy RLS validante** : une policy RLS ne peut pas compter les tentatives passées (pas d'état en SQL) — même parfaitement validante, elle laisserait ouvert l'abus principal (inondation en volume). Migration `104_stock_alerts_lockdown.sql` : `DROP POLICY stock_alerts_insert_public` — plus aucun accès d'écriture `anon`/`authenticated`. `subscribeStockAlert` bascule vers `createAdminClient()` (seul chemin d'écriture désormais) et ajoute un rate-limit anti-volume (5/heure/IP).
+
+**Nouvelle fonction `checkRateLimitAction()`** (`src/lib/rate-limit.ts`) — équivalent de `checkRateLimit()` utilisable depuis une Server Action (`'use server'`, ne reçoit pas de `NextRequest`) : IP lue via `headers()` de `next/headers` au lieu de `req.headers`, logique de comptage partagée (`checkAndRecord`) avec la version route.
+
+**Testé en conditions réelles, 4 tests, boutique/produit de test dédiés (supprimés après coup)** :
+- Négatif : `POST` direct REST avec la clé anon → `401`, RLS refuse.
+- Légitime : appel réel sur un vrai produit en rupture → accepté, ligne insérée.
+- Déduplication : même produit/téléphone → `success: true` silencieux, toujours 1 seule ligne (comportement préexistant préservé).
+- Rate-limit : 6 appels réels consécutifs → les 5 premiers passent, le 6ᵉ bloqué.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : finding moyen #8 — révocation de session après changement/réinitialisation de PIN.
