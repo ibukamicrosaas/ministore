@@ -751,6 +751,30 @@ export async function verifyAndUpdatePayoutNumbers(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !user.email) return { error: 'Non authentifié.' }
 
+  // Rate limit anti-brute-force (5 tentatives / 15 min) — même pattern que
+  // changePin (MED-1, lib/actions/auth.ts) : sans ça, quiconque tient une
+  // session volée mais ignore le mot de passe peut le brute-forcer en boucle
+  // pour rediriger les numéros de reversement (audit sécurité §109, finding
+  // élevé #5). Compteur incrémenté avant la vérification du mot de passe,
+  // await explicite — jamais void (REPRISE.md §94/§103).
+  const admin = createAdminClient()
+  const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { count: attempts } = await admin
+    .from('login_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('identifier', `payout_numbers_update:${user.id}`)
+    .eq('attempt_type', 'payout_numbers_update')
+    .gte('attempted_at', fifteenMinsAgo)
+
+  if ((attempts ?? 0) >= 5) {
+    return { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+  }
+  await admin.from('login_attempts').insert({
+    identifier:   `payout_numbers_update:${user.id}`,
+    attempt_type: 'payout_numbers_update',
+    success:      true,
+  })
+
   // Re-vérification du mot de passe (protection contre accès non autorisé)
   const { error: authError } = await supabase.auth.signInWithPassword({
     email:    user.email,
@@ -765,7 +789,6 @@ export async function verifyAndUpdatePayoutNumbers(
     .single()
   if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès refusé.' }
 
-  const admin = createAdminClient()
   const { error: updateError } = await admin
     .from('shop_payment_secrets')
     .update({
