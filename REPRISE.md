@@ -2773,3 +2773,15 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : `verifyAndUpdatePayoutNumbers` sans rate-limiting (finding élevé #5) — réutilise le pattern `login_attempts` déjà éprouvé pour `pin_change`/`pin_reset_confirm` (§103).
+
+## 115. Finding élevé #5 — `verifyAndUpdatePayoutNumbers` sans rate-limiting, commit `0aa39a4`
+
+**Diagnostic** (déjà posé par l'audit §109) : cette fonction (`src/lib/actions/settings.ts`) revérifiait le mot de passe (`signInWithPassword`) avant de modifier les numéros de reversement Wave/Orange Money, sans aucun rate-limiting — contrairement à `changePin` (`MED-1`)/`confirmPinReset` (`CRIT-3`) sur le même principe. Brute-forçable en boucle par quiconque tient une session volée mais ignore le mot de passe, impact direct sur l'argent du marchand.
+
+**Correctif** : même pattern `login_attempts` que `changePin` (5 tentatives/15 min), compteur incrémenté **avant** la vérification du mot de passe, `await` explicite (jamais `void`, l'erreur déjà rencontrée deux fois cette session — §94/§103). Les deux appels `createAdminClient()` (rate-limit + écriture `shop_payment_secrets`) fusionnés en un seul en tête de fonction — confirmé sans effet de bord, `createAdminClient()` est une fabrique stateless (pas de cookies, pas de session, aucune dépendance à l'ordre d'appel).
+
+**Testé en conditions réelles, même méthode qu'au §103** (logique reproduite exactement contre la vraie base, utilisateur/boutique de test dédiés supprimés après coup) : 6 appels avec mauvais mot de passe — les 5 premiers échouent normalement, le 6ᵉ bloqué avant même la tentative de vérification, exactement 5 lignes en base ; fenêtre de 15 minutes confirmée expirée après 20 minutes (comptage `0`, pas de blocage).
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : dernier finding élevé — Server Actions admin sans vérification interne (`notifications.ts`, `ai-knowledge.ts`, `analytics.ts`), pattern déjà correct dans `admin.ts`/`admin-shops.ts`/`admin-country-managers.ts` à reproduire.
