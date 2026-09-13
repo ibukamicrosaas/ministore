@@ -2855,3 +2855,18 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 **Bilan de l'audit sécurité §109** : 9 findings fermés sur 16 — les 3 critiques (§110-§112), les 4 élevés (§113-§116), 2 moyens (§118 `stock_alerts`, §119 révocation de session — clos sans code, comportement déjà natif à Supabase Auth), et les vulnérabilités npm (§120). Restent volontairement non traités, documentés tels quels sans code dessus sur décision explicite : moyens #9 (`markNotificationsRead`, code mort), #10 (`fixShopCountriesByCity`/`processPayout`, déjà protégées par leurs appelants), #12 (upload logo onboarding, déjà mitigé par la whitelist du bucket) ; faibles #14 (alerte Sentry manquante sur mismatch Bictorys) et #15 (fragment de secret loggé).
 
 **Chantier sécurité clos pour cette session.** Reprise des trois sujets void-insert laissés en attente avant l'audit (priorité 4 : `lib/actions/licence.ts:53` + `app/start/actions.ts` dont son `signup` ; priorité 5 : `api/ai/chat/route.ts:127`).
+
+## 121. `void` insert — priorité 4 (licence, signup), commit `0708ee1`
+
+**Quatre occurrences, 3 fichiers** — même bug déjà rencontré (§94/§103) : `void` seul sur un query builder Supabase n'appelle jamais `.then()`, la requête ne part donc jamais.
+
+- `licence.ts:53` — rate-limit "candidature licence" (5/h/IP) jamais appliqué. Testé réellement : 6 appels, 5 passent, 6ᵉ bloqué, exactement 5 lignes en base, 5 candidatures insérées (effet de bord signalé : 5 vrais e-mails partis via Resend vers `NOTIFY_EMAIL`, l'adresse de l'utilisateur — comportement normal de la fonction).
+- `app/start/actions.ts:195` — événement `shop_events` `"shop_published"` jamais journalisé depuis sa création. Testé réellement sur une boutique brouillon de test : événement bien inséré, boutique correctement passée en `trial`.
+- `app/start/actions.ts:251` — **la vraie découverte de ce lot, même calibre que CRIT-3 (§103), pas seulement une dette de cohérence** : rate-limit "signup" (3/h/email) jamais appliqué sur `completeSignupFromStart`, le vrai flux d'inscription actif. Testé réellement : 4 appels (même numéro) — 1er réussit (vrai compte créé), 2ᵉ/3ᵉ échouent normalement ("déjà enregistré") mais comptent quand même dans le rate-limit, 4ᵉ bloqué avant même la tentative d'inscription, exactement 3 lignes en base.
+- `auth.ts:115` (`signUp`) — même compteur `identifier`/`attempt_type` que `completeSignupFromStart`, corrigé par cohérence ; fonction confirmée morte (zéro appelant), aucun effet sur un flux réel — pas de test artificiel sur du code inatteignable (même méthode qu'au §100), `tsc`/build propres suffisants.
+
+**Note pour plus tard, pas faite maintenant** : `licence.ts` réimplémente à la main le même rate-limit que `checkRateLimitAction()` (créée pendant le correctif `stock_alerts`, §118) — son commentaire ("réimplémenté ici, `checkRateLimit` attend un `NextRequest` indisponible en Server Action") n'est plus vrai depuis. Simplification possible en remplaçant le bloc par un appel à `checkRateLimitAction({key: 'licence', maxRequests: 5, windowMs: 60*60*1000})` — hors périmètre de ce correctif void-insert.
+
+Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
+
+**Suite** : priorité 5, dernière occurrence — `api/ai/chat/route.ts:127`.
