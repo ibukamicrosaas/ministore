@@ -2870,3 +2870,13 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 
 **Suite** : priorité 5, dernière occurrence — `api/ai/chat/route.ts:127`.
+
+## 122. `void` insert — priorité 5 (dernière), `ai_conversations`, commit `53e4f55` — chantier void-insert entièrement clos
+
+**Dernière occurrence** (`api/ai/chat/route.ts:127`) : `ai_conversations.upsert()` censé sauvegarder le message utilisateur **avant** l'appel Claude, comme filet de sécurité si le streaming est interrompu avant la sauvegarde finale (`onFinish`, ligne ~157, déjà correctement `await`ée). `void` empêchait la requête de partir — ce filet n'avait jamais sauvegardé la moindre conversation partielle depuis sa création.
+
+**Testé en conditions réelles, boutique/session de test dédiées (supprimées après coup)** — méthode retenue : interroger la base **pendant que le flux tournait encore**, seule façon honnête de vérifier l'utilité réelle d'un filet de sécurité pré-streaming. Requête envoyée, base interrogée à 1,2s (confirmé en vol via le `wait` sur `curl` juste après, qui a dû patienter) : la ligne existait déjà avec `message_count: 1` (message utilisateur seul). Après complétion du flux : `message_count: 2`, conversation complète avec la vraie réponse de l'assistant IA (qui a réellement interrogé les outils de la boutique). Les deux sauvegardes fonctionnent désormais dans le bon ordre.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Chantier `void` insert entièrement clos, sur ses 5 priorités** (§94, §103, §121, §122) — toutes les occurrences de ce bug (`void` sur un query builder Supabase, jamais awaité, la requête ne partant donc jamais) corrigées à travers le codebase, avec à chaque fois un test réel confirmant l'écart avant/après plutôt qu'une simple relecture de diff.
