@@ -1,0 +1,21 @@
+-- Retrait de l'accès INSERT public sur stock_alerts (audit sécurité §109,
+-- finding moyen #11).
+--
+-- stock_alerts_insert_public (with_check: true) autorisait n'importe qui,
+-- sans authentification, à insérer directement via l'API REST — n'importe
+-- quel shop_id/product_id (existant ou non), n'importe quel phone/name.
+-- La Server Action subscribeStockAlert valide déjà correctement (existence
+-- produit, stock_count = 0, format téléphone) mais cette validation n'est
+-- qu'une porte d'entrée parmi d'autres tant que la policy RLS n'exige rien.
+--
+-- Option retenue plutôt qu'une policy RLS validante : une policy RLS ne
+-- peut pas compter les tentatives passées (pas d'état en SQL), donc même
+-- parfaitement validante elle laisserait ouvert l'abus principal — inonder
+-- en volume (script automatisé gonflant la facture SMS du marchand à
+-- chaque restock). Seul un rate-limit côté Server Action peut fermer ça —
+-- voir src/lib/actions/stockAlerts.ts (bascule vers createAdminClient +
+-- checkRateLimitAction, corrigé dans le même chantier que cette migration).
+--
+-- stock_alerts_select_owner (déjà correcte, scope propriétaire) inchangée.
+
+DROP POLICY stock_alerts_insert_public ON stock_alerts;

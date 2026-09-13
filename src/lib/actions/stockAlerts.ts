@@ -1,6 +1,7 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { checkRateLimitAction } from '@/lib/rate-limit'
 
 export async function subscribeStockAlert(
   productId: string,
@@ -14,11 +15,17 @@ export async function subscribeStockAlert(
   if (!trimPhone || trimPhone.length < 8) return { error: 'Numéro invalide.' }
   if (!/^[+]?\d{7,15}$/.test(trimPhone)) return { error: 'Numéro invalide.' }
 
-  const supabase = await createServerClient()
+  // Rate limit anti-volume (5/heure/IP) — audit sécurité §109, finding
+  // moyen #11. La policy RLS d'INSERT public a été retirée (migration 104) :
+  // cette Server Action, avec le client admin ci-dessous, est désormais le
+  // SEUL chemin d'écriture possible sur stock_alerts.
+  const limited = await checkRateLimitAction({ key: 'stock-alert', maxRequests: 5, windowMs: 60 * 60 * 1000 })
+  if (limited) return limited
+
+  const admin = createAdminClient()
 
   // Récupérer shop_id et vérifier que le produit est bien en rupture
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: product } = await (supabase as any).from('products')
+  const { data: product } = await admin.from('products')
     .select('id, shop_id, stock_count, is_active')
     .eq('id', productId)
     .eq('is_active', true)
@@ -28,7 +35,7 @@ export async function subscribeStockAlert(
   if (product.stock_count !== 0) return { error: 'Ce produit est déjà disponible.' }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('stock_alerts').insert({
+  const { error } = await (admin as any).from('stock_alerts').insert({
     product_id: productId,
     shop_id:    product.shop_id,
     name:       trimName,
