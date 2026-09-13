@@ -117,14 +117,18 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(shop, knowledgeEntries ?? [])
   const tools = buildAiTools(shop.id)
 
-  // Sauvegarder la conversation avec les messages utilisateur (fire-and-forget)
+  // Sauvegarder la conversation avec les messages utilisateur — filet de
+  // sécurité si le streaming est interrompu avant onFinish (ligne ~157).
+  // Awaité — void seul sur un query builder Supabase n'appelle jamais
+  // .then(), la requête ne partait donc jamais (REPRISE.md §94/§103) :
+  // ce filet n'avait jamais sauvegardé la moindre conversation partielle.
   if (sessionId) {
     const userMessages = messages.map(m => ({
       role: (m as any).role,
       content: typeof (m as any).content === 'string' ? (m as any).content : '',
       at: new Date().toISOString(),
     }))
-    void admin.from('ai_conversations' as never).upsert(
+    await admin.from('ai_conversations' as never).upsert(
       {
         session_id:      sessionId,
         shop_id:         shop.id,
