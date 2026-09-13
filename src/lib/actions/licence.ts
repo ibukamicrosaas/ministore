@@ -50,7 +50,10 @@ export async function submitLicenceApplication(
   if ((recentAttempts ?? 0) >= 5) {
     return { error: 'Trop de tentatives. Réessaie dans une heure.' }
   }
-  void admin.from('login_attempts').insert({ identifier, attempt_type: 'licence', success: true })
+  // Awaité — void seul sur un query builder Supabase n'appelle jamais .then(),
+  // la requête ne part donc jamais : ce compteur n'avait jamais bloqué
+  // personne depuis sa création (REPRISE.md §94/§103).
+  await admin.from('login_attempts').insert({ identifier, attempt_type: 'licence', success: true })
 
   const { error } = await admin.from('licence_applications' as never).insert({
     country,

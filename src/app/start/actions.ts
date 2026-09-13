@@ -192,7 +192,10 @@ export async function activateTrialShop(): Promise<{ error?: string }> {
     .eq('status', 'draft') // n'écrase pas une boutique déjà active (idempotent)
 
   if (!error) {
-    void admin.from('shop_events').insert({
+    // Awaité — void seul sur un query builder Supabase n'appelle jamais .then(),
+    // la requête ne part donc jamais : cet événement n'avait jamais été
+    // journalisé depuis sa création (REPRISE.md §94/§103).
+    await admin.from('shop_events').insert({
       shop_id: profile.shop_id,
       event_name: 'shop_published',
       metadata: {},
@@ -248,7 +251,12 @@ export async function completeSignupFromStart(input: ShopSegmentation & {
     options: { data: { phone: normalizedPhone } },
   })
 
-  void admin.from('login_attempts').insert({ identifier: email, attempt_type: 'signup', success: !signUpError })
+  // Awaité — void seul sur un query builder Supabase n'appelle jamais .then(),
+  // la requête ne part donc jamais : le rate limit "max 3 créations/heure"
+  // ci-dessus n'avait jamais bloqué personne depuis sa création (REPRISE.md
+  // §94/§103) — vraie faille sur le flux d'inscription actif, pas seulement
+  // une dette de cohérence.
+  await admin.from('login_attempts').insert({ identifier: email, attempt_type: 'signup', success: !signUpError })
 
   if (signUpError) {
     if (signUpError.message.toLowerCase().includes('already registered')) {

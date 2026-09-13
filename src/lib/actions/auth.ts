@@ -111,8 +111,13 @@ export async function signUp(formData: FormData) {
     },
   })
 
-  // Enregistrer la tentative d'inscription (rate limiting)
-  void admin.from('login_attempts').insert({
+  // Enregistrer la tentative d'inscription (rate limiting). Awaité — void
+  // seul n'appelle jamais .then() (REPRISE.md §94/§103). Fonction confirmée
+  // morte (zéro appelant, le vrai flux d'inscription est
+  // app/start/actions.ts:completeSignupFromStart, même compteur
+  // identifier/attempt_type — corrigé ici par cohérence, pas d'effet sur un
+  // flux réel puisqu'inatteignable.
+  await admin.from('login_attempts').insert({
     identifier:   email,
     attempt_type: 'signup',
     success:      !error,
