@@ -2785,3 +2785,36 @@ Mise à jour mineure, corrige la vulnérabilité DoS Server Components (CVSS 7.5
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : dernier finding élevé — Server Actions admin sans vérification interne (`notifications.ts`, `ai-knowledge.ts`, `analytics.ts`), pattern déjà correct dans `admin.ts`/`admin-shops.ts`/`admin-country-managers.ts` à reproduire.
+
+## 116. Finding élevé #6 — Server Actions admin sans vérification interne, commit `d5b081e`
+
+**Diagnostic** (déjà posé par l'audit §109) : une Server Action `'use server'` importée par un composant client est un endpoint POST public indépendant du garde de `/admin/layout.tsx`. 12 fonctions réellement admin dans `notifications.ts` (2/4 — `sendNotificationToShops`, `getShopIdsByPlan`), `ai-knowledge.ts` (3/3), `analytics.ts` (7/7) n'avaient aucune vérification interne, contrairement à `admin.ts`/`admin-shops.ts`/`admin-country-managers.ts`.
+
+**Correctif** : chaque fonction reprend l'un des deux patterns déjà existants dans le codebase (pas de troisième pattern inventé), choisi selon la forme de retour déjà en place — `assertAdmin()` (retourne `{error}`, comme `admin.ts`) pour les fonctions qui retournaient déjà `{error?: string}` ; `requireAdmin()` (lève une exception, comme `admin-shops.ts`) pour celles qui retournent une donnée brute. `getMyNotifications`/`markNotificationsRead` (self-service marchand légitime dans le même fichier `notifications.ts`) explicitement intouchées — `markNotificationsRead` reste le finding moyen #9 (appartenance), un autre sujet.
+
+**Testé en conditions réelles, 3 scénarios × 4 fonctions représentatives** : route de test temporaire appelant les vraies Server Actions avec de vrais cookies de session (sans session, session marchande réelle, session admin réelle — un utilisateur de test temporairement ajouté à `ADMIN_USER_IDS` dans `.env.local`, jamais l'identité d'un vrai admin, retiré après avec un diff vide confirmé contre la sauvegarde). Les deux premiers scénarios bloqués systématiquement (erreur ou exception selon le pattern) ; le troisième fonctionne normalement (vraie liste de boutiques, vraies données agrégées, insertion réelle réussie et nettoyée après coup).
+
+`tsc --noEmit` et `npm run build` propres. **Les trois findings critiques et les trois findings élevés du §109 sont maintenant tous clos.**
+
+## 117. État des lieux — audit sécurité §109, ce qui reste
+
+**Fermé cette session** : 3 critiques (§110 fuite `shops`, §111 XSS JSON-LD, §112 XSS e-mails) + 3 élevés (§113 Next.js 16.3.5, §114 cookies `httpOnly`/`secure`, §115 rate-limit payout numbers, §116 Server Actions admin) — 6 findings au total sur les 16 de l'inventaire initial.
+
+**Restant, par gravité** :
+
+*Moyen (5)* :
+8. Pas de révocation de session après changement/réinitialisation de PIN.
+9. `markNotificationsRead` sans vérification d'appartenance (code mort actuellement, aucun appelant).
+10. `fixShopCountriesByCity`/`processPayout` protégées uniquement par leurs appelants `route.ts`, pas de garde interne propre.
+11. `stock_alerts` : policy RLS `INSERT` publique sans validation — abus SMS possible (inscription à l'insu d'un tiers, pollution en volume).
+12. Upload logo onboarding : validation par `Content-Type` déclaré seul (mitigé aujourd'hui par la whitelist MIME du bucket Storage lui-même).
+13. 7 vulnérabilités npm modérées (`browserslist`, `fast-uri`, `js-yaml`, `ws`, `nanoid`, `brace-expansion`, `postcss`) — correctifs disponibles, non appliqués (la mise à jour Next.js §113 n'a résolu que le lot critique lié à `next`/`postcss`/`sharp`, il en reste d'autres).
+
+*Faible (3)* :
+14. Pas d'alerte Sentry sur mismatch de montant Bictorys détecté (le rejet lui-même est correct).
+15. Fragment de secret webhook Bictorys partiellement loggé (16 premiers caractères).
+16. 5 vulnérabilités npm faibles — correctifs disponibles.
+
+**En attente depuis avant l'audit sécurité, jamais repris** : void-insert priorité 4 (`lib/actions/licence.ts:53` + `app/start/actions.ts`, dont son occurrence `signup`) et priorité 5 (`api/ai/chat/route.ts:127`) — voir §94/§103.
+
+**Décision à prendre avec l'utilisateur** : continuer à descendre la liste moyen/faible, ou refermer ce chantier pour l'instant et reprendre les 3 sujets void-insert/priorité en attente.
