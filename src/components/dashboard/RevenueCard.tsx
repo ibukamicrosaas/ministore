@@ -4,15 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { TrendingUp } from 'lucide-react'
 import type { RevenuePeriod } from '@/lib/dashboard/date-range'
 
+// Réduit à l'essentiel du quotidien — section 5, SPEC-refonte-dashboard-
+// marchand.md (Lot 3). Les autres périodes existent toujours côté serveur
+// (getDateRange, /api/dashboard/revenue) pour la page Statistiques — ce
+// n'est qu'un trim de ce sélecteur, aucune capacité retirée ailleurs.
 const PERIODS: { key: RevenuePeriod; label: string }[] = [
-  { key: 'today',    label: 'Auj.' },
-  { key: 'yesterday', label: 'Hier' },
-  { key: 'week',     label: 'Semaine' },
-  { key: 'month',    label: 'Mois' },
-  { key: 'quarter',  label: 'Trimestre' },
-  { key: 'semester', label: 'Semestre' },
-  { key: 'year',     label: 'Année' },
-  { key: 'all',      label: 'Tout' },
+  { key: 'today', label: "Aujourd'hui" },
+  { key: 'week',  label: 'Semaine' },
+  { key: 'month', label: 'Mois' },
 ]
 
 interface Props {

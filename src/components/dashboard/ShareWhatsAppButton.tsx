@@ -2,7 +2,10 @@
 
 interface Props {
   message: string
-  variant?: 'full' | 'icon'
+  // 'primary' : bouton principal plein, couleur pleine — SPEC-refonte-
+  // dashboard-marchand.md section 5 (Lot 3), l'unique action dominante
+  // d'un écran. 'full'/'icon' inchangés (usages existants préservés).
+  variant?: 'full' | 'icon' | 'primary'
   className?: string
 }
 
@@ -27,6 +30,20 @@ export function ShareWhatsAppButton({ message, variant = 'full', className }: Pr
         className={`flex items-center justify-center rounded-lg p-1.5 text-[#25D366] hover:bg-green-50 transition-colors ${className ?? ''}`}
       >
         <WhatsAppIcon />
+      </a>
+    )
+  }
+
+  if (variant === 'primary') {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--db-whatsapp,#22B559)] py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity ${className ?? ''}`}
+      >
+        <WhatsAppIcon className="h-4 w-4" />
+        Partager sur WhatsApp
       </a>
     )
   }

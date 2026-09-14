@@ -383,12 +383,12 @@ export default async function DashboardPage({ searchParams }: Props) {
                   href={`/dashboard/orders/${order.id}`}
                   className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors active:bg-gray-100"
                 >
-                  {/* Status dot */}
+                  {/* Status dot — palette section 6 (Lot 1), alignée sur Badge/Stepper */}
                   <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${
-                    order.status === 'pending'   ? 'bg-yellow-400' :
-                    order.status === 'confirmed' ? 'bg-blue-400' :
-                    order.status === 'preparing' ? 'bg-purple-400' :
-                    order.status === 'ready'     ? 'bg-sky-400' : 'bg-gray-300'
+                    order.status === 'pending'   ? 'bg-[var(--db-amber,#B4740E)]' :
+                    order.status === 'confirmed' ? 'bg-[var(--db-primary,#155EEF)]' :
+                    order.status === 'preparing' ? 'bg-[var(--db-primary,#155EEF)]' :
+                    order.status === 'ready'     ? 'bg-[var(--db-money,#128A4C)]' : 'bg-gray-300'
                   }`} />
 
                   <div className="flex-1 min-w-0">
