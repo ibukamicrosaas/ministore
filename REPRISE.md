@@ -2880,3 +2880,29 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` et `npm run build` propres.
 
 **Chantier `void` insert entièrement clos, sur ses 5 priorités** (§94, §103, §121, §122) — toutes les occurrences de ce bug (`void` sur un query builder Supabase, jamais awaité, la requête ne partant donc jamais) corrigées à travers le codebase, avec à chaque fois un test réel confirmant l'écart avant/après plutôt qu'une simple relecture de diff.
+
+## 123. Refonte dashboard marchand — cadrage et Lot 1 (Fondations), commit `dbeb98d`
+
+**Chantier cadré depuis longtemps** (`SPEC-refonte-dashboard-marchand.md` + `tekkishop-dashboard-mockup.html`, tous deux dans le dépôt), jamais démarré avant cette session. Investigation complète avant tout code : relecture intégrale de la spec et de la maquette, état des lieux exhaustif du dashboard actuel (navigation, 16 pages, composants partagés, tokens, `seller_stage`/`selling_channel`/`pain_point`).
+
+**Découvertes de l'état des lieux qui ont changé l'ordre d'exécution** :
+- La `BottomNav` mobile ne couvre que 4 des 11 sections du menu actuel — cité par l'utilisateur comme cause probable réelle de la confusion terrain rapportée ("les marchands remettent à plus tard, oublient d'y revenir"), pas seulement un habillage. Le Lot 2 (Navigation) est remonté juste après le Lot 1, avant Lot 3, dans l'ordre validé.
+- Le correctif vocabulaire variantes (§100/101, déjà en prod) vit dans `ProductForm.tsx` lignes 700/853 — à préserver mot pour mot dans le Lot 5a, pas à redécouvrir depuis la spec générique.
+- `seller_stage`/`selling_channel`/`pain_point` : confirmé par recherche exhaustive — écrits une seule fois à l'onboarding (`app/start/actions.ts`), jamais relus nulle part. Utilisation pour adapter l'UI à un marchand néophyte explicitement **différée**, hors périmètre de cette refonte (nouvelle logique, pas un re-skin).
+- Extrait produit digital (aperçu avant achat) : décision prise — fichier téléchargeable séparé plutôt qu'un lecteur intégré (bien moins de risque, réutilise le pattern d'upload déjà en place). **Nécessite une migration** (nouvelles colonnes + bucket public distinct du bucket privé `digital-products` existant) — traité à part du flux normal des lots UI, migration montrée et validée séparément avant toute exécution (Lot 5b).
+- Analytics enrichies plan Pro : pas de lot dédié, structure d'accueil prévue dans le Lot 6 (Revenus) plutôt que Lot 3 (Accueil), en réutilisant le pattern de gate par plan déjà en place sur `rapports/page.tsx`.
+- Page Statistiques (`rapports/page.tsx`) : hors périmètre de la spec (citée dans la nav, jamais détaillée) — simple passe de cohérence visuelle glissée dans un lot existant, sans cérémonie de validation dédiée.
+
+**Ordre d'exécution validé** (ajusté par rapport à la spec) : Lot 1 (Fondations) → **Lot 2 (Navigation, remonté)** → Lot 3 (Accueil) → Lot 8 (Paramètres) → Lot 5a (Produits) → Lot 4 (Commandes) → Lot 6 (Revenus) → Lot 7 (Clients) → Lot 9 (Assistant IA). Un lot à la fois, plan déjà validé, diff + test réel + feu vert avant chaque commit — même méthode que tout le reste de cette session.
+
+**Lot 1 — Fondations, livré et testé réellement** :
+- Tokens section 3 de la spec, scopés à `.dashboard-scope` (`globals.css`) — jamais `--color-primary` global (déjà consommé hors dashboard : auth, landing), pour ne rien casser ailleurs. `shop.primary_color`/`--brand` reste scopé au storefront public, aucun conflit avec ce nouveau scope.
+- `Badge.tsx` : 6 nouvelles variantes de statut de commande (section 6) — pas encore consommées, prévu au Lot 4.
+- `Button.tsx` : correctif d'un repli de couleur incohérent trouvé en route (`#E85D04` → `#0252EA`, la vraie valeur de `--color-primary`).
+- Nouveau composant partagé `src/components/ui/Stepper.tsx`, extrait fidèlement de `orders/[id]/page.tsx` — comportement strictement inchangé, y compris le stepper trompeur sur commande annulée (correctif volontairement laissé pour le Lot 4, pas glissé "en passant" alors que le fichier était déjà ouvert).
+
+**Testé réellement** (boutique/commandes de test dédiées, supprimées après coup) : tokens `.dashboard-scope` confirmés résolus dans le DOM (`--db-primary: #155eef`, etc.) ; stepper d'une commande "en préparation" rendu **pixel pour pixel identique** à avant l'extraction (capture d'écran) ; comportement trompeur d'une commande annulée confirmé préservé à l'identique (aucune régression, aucune correction anticipée).
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : Lot 2 — Navigation (barre basse mobile 5 emplacements + feuille "Plus", sidebar desktop groupée en 3 sections).
