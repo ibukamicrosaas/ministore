@@ -36,7 +36,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
 
   return (
     <ChatAssistantContext.Provider value={{ openChatWithPrompt }}>
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="dashboard-scope flex h-screen overflow-hidden bg-gray-50">
       <Sidebar
         shop={shop}
         profile={profile}

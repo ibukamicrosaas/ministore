@@ -2,10 +2,11 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardHeader } from '@/components/ui/Card'
+import { Stepper } from '@/components/ui/Stepper'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
-  ChevronLeft, MapPin, Home, MessageCircle, CreditCard, CheckCircle2, Clock, Download,
+  ChevronLeft, MapPin, Home, MessageCircle, CreditCard, Clock, Download,
 } from 'lucide-react'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
@@ -217,34 +218,15 @@ export default async function OrderDetailPage({
         </span>
       </div>
 
-      {/* Progression statut */}
+      {/* Progression statut — composant partagé src/components/ui/Stepper.tsx
+          (SPEC-refonte-dashboard-marchand.md, Lot 1), extraction fidèle,
+          comportement inchangé. */}
       <Card padding="md">
-        <div className="flex items-center gap-1">
-          {statusFlow.map((s, i) => {
-            const idx  = statusFlow.indexOf(order.status)
-            const done = i <= idx
-            const last = i === statusFlow.length - 1
-            return (
-              <div key={s} className="flex flex-1 items-center gap-1">
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                  done ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {done && i < idx ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                </div>
-                {!last && (
-                  <div className={`flex-1 h-0.5 ${i < idx ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <div className="flex justify-between mt-1">
-          {statusFlow.map(s => (
-            <p key={s} className="text-[9px] text-gray-400 text-center flex-1">
-              {statusLabels[s] ?? ORDER_STATUS_LABELS[s] ?? s}
-            </p>
-          ))}
-        </div>
+        <Stepper
+          steps={statusFlow}
+          labels={{ ...ORDER_STATUS_LABELS, ...statusLabels }}
+          currentStatus={order.status}
+        />
       </Card>
 
       {/* Commande retenue : toutes les actions sont désactivées tant que la

@@ -46,6 +46,29 @@
   font-family: var(--font-display);
 }
 
+/* Scope dédié au dashboard marchand (SPEC-refonte-dashboard-marchand.md,
+   Lot 1 — REPRISE.md) — n'affecte jamais la landing ni les boutiques
+   publiques. Palette section 3 de la spec, sous des noms sémantiques neufs
+   (--db-*) plutôt que de réécrire --color-primary, déjà consommé hors
+   dashboard (auth, landing). shop.primary_color/--brand reste, lui,
+   scopé aux pages boutique publiques (shop-scope ci-dessus) — aucun conflit. */
+.dashboard-scope {
+  --db-primary:      #155EEF;
+  --db-primary-soft: #E7EFFF;
+  --db-whatsapp:     #22B559;
+  --db-money:        #128A4C;
+  --db-money-soft:   #E4F6EC;
+  --db-amber:        #B4740E;
+  --db-amber-soft:   #FBF0DD;
+  --db-danger:       #C4321F;
+  --db-danger-soft:  #FBEAE7;
+  --db-paper:        #F7F7F5;
+  --db-surface:      #FFFFFF;
+  --db-ink:          #14171F;
+  --db-ink-soft:     #5B6072;
+  --db-ink-faint:    #9297A6;
+}
+
 /* Désactiver le dark mode automatique — design light-only pour ce produit */
 @media (prefers-color-scheme: dark) {
   :root {
