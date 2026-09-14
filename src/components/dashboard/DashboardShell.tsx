@@ -25,7 +25,6 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false, renewalBanner, isTrial = false, expiredBanner }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | null>(null)
 
@@ -40,13 +39,11 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
       <Sidebar
         shop={shop}
         profile={profile}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
         isAdmin={isAdmin}
+        onChatOpen={() => setChatOpen(true)}
       />
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-0">
         <TopBar
-          onMenuClick={() => setSidebarOpen(true)}
           title={pageTitle}
           unreadCount={unreadNotifications}
           shopSlug={shop.slug}
