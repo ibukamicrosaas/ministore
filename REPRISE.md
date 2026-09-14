@@ -2906,3 +2906,23 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : Lot 2 — Navigation (barre basse mobile 5 emplacements + feuille "Plus", sidebar desktop groupée en 3 sections).
+
+## 124. Refonte dashboard — Lot 2 (Navigation), commit `16045eb`
+
+**Remonté juste après le Lot 1** (ordre ajusté par l'utilisateur) : l'état des lieux avait révélé que la `BottomNav` actuelle ne couvrait que 4 des 11 sections du menu — cause probable réelle de la confusion terrain rapportée ("les marchands remettent à plus tard, oublient d'y revenir"), pas seulement un habillage à corriger en passant.
+
+**Livré** :
+- Sidebar desktop regroupée en 3 sections (Aujourd'hui/Ma boutique/Compte, section 4.2 de la spec) au lieu d'un menu à plat de 11 entrées.
+- Nouvelle barre mobile à 5 emplacements (Accueil/Commandes/Assistant IA central/Produits/Plus) — hamburger et tiroir mobile retirés, plus nécessaires puisque la feuille "Plus" couvre désormais les 11 sections.
+- Nouveau composant partagé `src/components/ui/BottomSheet.tsx` (variante bas-d'écran de `Modal.tsx`, même primitive Radix Dialog).
+- FAB Assistant IA en couleur sombre pleine (`--db-ink`, premier vrai usage des tokens du Lot 1) plutôt que bleu primaire — distinct visuellement des onglets.
+
+**Deux décisions prises faute d'indication précise de la spec** : "Espace Admin" placé en dernier item du groupe Compte (une page comme les autres, pas une action) ; raccourci "profil → Paramètres" retiré du pied de sidebar (redondant, Paramètres est désormais un item de nav de premier niveau).
+
+**Testé en conditions réelles** (comptes marchand et admin de test dédiés, supprimés après coup ; `ADMIN_USER_IDS` modifié temporairement pour le test admin puis restauré à l'identique, diff vide confirmé) :
+- Mobile : 5 emplacements exacts dans l'ordre, hamburger confirmé absent, feuille "Plus" avec les 10 éléments dans l'ordre exact de la spec (Clients, Avis clients, Revenus, Statistiques, Facturation, Affiliation, Codes promo, Paramètres, Support WhatsApp, Déconnexion), navigation réelle vers Clients fonctionnelle, feuille qui se referme, onglet "Plus" actif sur une page de son groupe.
+- Desktop : 3 groupes avec le bon contenu, clic sur "Assistant IA" ouvre le panneau de chat sans naviguer, "Espace Admin" absent pour un compte marchand normal, présent pour un compte admin réel.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : Lot 3 — Accueil.
