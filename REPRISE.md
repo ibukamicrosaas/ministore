@@ -2926,3 +2926,18 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : Lot 3 — Accueil.
+
+## 125. Refonte dashboard — Lot 3 (Accueil), commit `e1da59b`
+
+**Livré** (section 5 de la spec) :
+- `RevenueCard` : sélecteur de période réduit de 8 à 3 choix (Aujourd'hui/Semaine/Mois) — les autres périodes restent disponibles côté serveur (`getDateRange`, `/api/dashboard/revenue`) pour la page Statistiques, aucune capacité retirée, seul le sélecteur de l'Accueil est trimé. Vérifié en investigation : aucune variation en % n'existait déjà dans ce composant — rien à masquer sur ce point précis de la spec.
+- `ShopLinkCard` : remplace le bloc à 5 boutons par un seul bouton principal plein (Partager sur WhatsApp — nouvelle variante `primary` ajoutée à `ShareWhatsAppButton.tsx`, plutôt qu'un contournement `!important`) + 4 actions secondaires discrètes (Copier, QR code, Voir le site, Carte — conservée en secondaire comme décidé au cadrage, pas supprimée faute de données d'usage).
+- Page Accueil : pastilles de statut des commandes en cours alignées sur la palette du Lot 1 (`--db-amber`/`--db-primary`/`--db-money`).
+
+**Volontairement non touché** : `SetupChecklist`, `FirstSalesNudge`, bandeau de bienvenue, alerte commandes à traiter, et le badge de statut (chip, pas la pastille) sur cette même liste — reste sur `ORDER_STATUS_COLORS`, la spec ne le mentionne que pour la page Commandes ; migration groupée prévue au Lot 4 plutôt que partielle ici.
+
+**Testé en conditions réelles** (boutique de test avec 3 commandes à statuts réels, supprimée après coup) : 3 boutons de période exactement, montant réel affiché et bascule Semaine/Mois fonctionnelle contre l'API réelle ; `ShopLinkCard` avec 1 seul bouton principal (couleur `#22B559` confirmée) et 4 secondaires dans l'ordre attendu ; clic "Copier" confirmé déclenché (vérification du contenu du presse-papiers impossible en headless — `Document is not focused`, limitation d'environnement documentée, pas une régression puisque `handleCopy()` n'a pas été modifié) ; pastilles de statut confirmées sur les nouveaux tokens (`#155EEF` confirmée, `#B4740E` en attente) ; capture d'écran du rendu complet.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : Lot 8 — Paramètres (correction des onglets tronqués, priorité absolue de la spec).
