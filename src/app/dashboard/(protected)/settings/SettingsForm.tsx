@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout, updateGridImageRatio } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Shop, DeliveryZone } from '@/types'
@@ -919,7 +919,9 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
               </div>
             )}
 
-            {/* Bouton dédié — séparé du formulaire principal pour exiger la confirmation */}
+            {/* Bouton dédié — séparé du formulaire principal pour exiger la confirmation.
+                L'indice PIN sous le bouton évite qu'un marchand pressé, qui ne voit rien
+                bouger côté formulaire principal, ne croie que le clic n'a rien fait. */}
             <button
               type="button"
               onClick={() => { setPayoutSaveError(null); setConfirmPassword(''); setPayoutConfirmOpen(true) }}
@@ -927,6 +929,10 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
             >
               Enregistrer les numéros de reversement
             </button>
+            <p className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+              <Lock className="h-3 w-3 shrink-0" />
+              Ton code PIN te sera demandé pour confirmer
+            </p>
           </div>
         )}
         {acceptOnlinePayment && isEuCa && (
