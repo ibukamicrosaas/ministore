@@ -27,6 +27,10 @@ interface DashboardShellProps {
 export function DashboardShell({ shop, profile, children, pageTitle, unreadNotifications = 0, isAdmin = false, renewalBanner, isTrial = false, expiredBanner }: DashboardShellProps) {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string | null>(null)
+  // Feuille "Plus" — état unique, partagé entre le hamburger de TopBar et le
+  // bouton "Plus" de BottomNav (correctif nav post-Lot 2) : un seul montage
+  // de BottomSheet, pas deux instances qui pourraient se désynchroniser.
+  const [moreOpen, setMoreOpen] = useState(false)
 
   function openChatWithPrompt(prompt: string) {
     setChatInitialPrompt(prompt)
@@ -44,6 +48,7 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
       />
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-0">
         <TopBar
+          onMenuClick={() => setMoreOpen(true)}
           title={pageTitle}
           unreadCount={unreadNotifications}
           shopSlug={shop.slug}
@@ -77,8 +82,11 @@ export function DashboardShell({ shop, profile, children, pageTitle, unreadNotif
       <BottomNav
         profile={profile}
         shop={shop}
+        isAdmin={isAdmin}
         onChatOpen={() => setChatOpen(true)}
         isChatOpen={chatOpen}
+        moreOpen={moreOpen}
+        onMoreOpenChange={setMoreOpen}
       />
       <ChatWidget
         shopName={shop.name}

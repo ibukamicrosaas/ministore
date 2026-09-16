@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingBag, Package, Sparkles, Grid2x2,
   UserCircle, Star, Wallet, BarChart2, CreditCard, Gift, Tag, Settings,
-  MessageCircle, LogOut,
+  MessageCircle, LogOut, Shield,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -16,8 +15,13 @@ import type { Profile, Shop } from '@/types'
 interface BottomNavProps {
   profile: Profile
   shop: Shop
+  isAdmin?: boolean
   onChatOpen: () => void
   isChatOpen: boolean
+  /** Feuille "Plus" — état levé dans DashboardShell, partagé avec le
+      hamburger de TopBar (même instance de BottomSheet, un seul montage). */
+  moreOpen: boolean
+  onMoreOpenChange: (open: boolean) => void
 }
 
 const leftTabs = [
@@ -47,9 +51,8 @@ const MORE_LINKS = [
   { href: '/dashboard/settings',    label: 'Paramètres',     icon: Settings },
 ]
 
-export function BottomNav({ profile: _profile, shop: _shop, onChatOpen, isChatOpen }: BottomNavProps) {
+export function BottomNav({ profile: _profile, shop: _shop, isAdmin = false, onChatOpen, isChatOpen, moreOpen, onMoreOpenChange }: BottomNavProps) {
   const pathname = usePathname()
-  const [moreOpen, setMoreOpen] = useState(false)
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href)
@@ -116,7 +119,7 @@ export function BottomNav({ profile: _profile, shop: _shop, onChatOpen, isChatOp
 
           {/* ── Plus ──────────────────────────────────────────────────── */}
           <button
-            onClick={() => setMoreOpen(true)}
+            onClick={() => onMoreOpenChange(true)}
             aria-label="Plus"
             className={clsx(
               'flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
@@ -129,7 +132,7 @@ export function BottomNav({ profile: _profile, shop: _shop, onChatOpen, isChatOp
         </div>
       </nav>
 
-      <BottomSheet open={moreOpen} onOpenChange={setMoreOpen}>
+      <BottomSheet open={moreOpen} onOpenChange={onMoreOpenChange}>
         <div className="px-2 pb-4">
           {MORE_LINKS.map((item) => {
             const Icon = item.icon
@@ -138,7 +141,7 @@ export function BottomNav({ profile: _profile, shop: _shop, onChatOpen, isChatOp
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMoreOpen(false)}
+                onClick={() => onMoreOpenChange(false)}
                 className={clsx(
                   'flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] font-medium transition-colors',
                   active ? 'bg-sky-50 text-[var(--color-primary)]' : 'text-gray-700 hover:bg-gray-50'
@@ -149,6 +152,22 @@ export function BottomNav({ profile: _profile, shop: _shop, onChatOpen, isChatOp
               </Link>
             )
           })}
+
+          {/* Espace Admin — même condition/whitelist ADMIN_USER_IDS que
+              Sidebar.tsx desktop, seule entrée manquante par rapport à
+              l'ancien tiroir mobile (retiré au Lot 2, jamais recouvert par
+              la feuille "Plus" — recette d'origine testée en desktop
+              seulement, cf. REPRISE.md §124). Même style que sur desktop. */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => onMoreOpenChange(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-3 text-[15px] font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+            >
+              <Shield className="h-5 w-5 shrink-0" />
+              Espace Admin
+            </Link>
+          )}
 
           <div className="my-2 border-t border-gray-100" />
 

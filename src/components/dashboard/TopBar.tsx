@@ -2,22 +2,34 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, BellRing, Eye } from 'lucide-react'
+import { Menu, Bell, BellRing, Eye } from 'lucide-react'
 import { PWAInstallButton } from './PWAInstallButton'
 import { PushEnableButton } from './PushEnableButton'
 
 interface TopBarProps {
+  onMenuClick: () => void
   title?: string
   unreadCount?: number
   shopSlug?: string
 }
 
-export function TopBar({ title, unreadCount = 0, shopSlug }: TopBarProps) {
+export function TopBar({ onMenuClick, title, unreadCount = 0, shopSlug }: TopBarProps) {
   const pathname = usePathname()
   const notifActive = pathname === '/dashboard/notifications'
 
   return (
     <header className="fixed left-0 right-0 top-0 z-20 lg:relative flex h-14 shrink-0 items-center gap-4 border-b border-gray-200 bg-white px-4 lg:px-6">
+      {/* Second point d'entrée vers la feuille "Plus" — même instance de
+          BottomSheet que le bouton "Plus" de BottomNav, état partagé levé
+          dans DashboardShell (correctif nav post-Lot 2). */}
+      <button
+        onClick={onMenuClick}
+        className="lg:hidden rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+        aria-label="Ouvrir le menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
       <div className="flex-1">
         {title && (
           <h1 className="text-sm font-semibold text-gray-900 lg:text-base">{title}</h1>
