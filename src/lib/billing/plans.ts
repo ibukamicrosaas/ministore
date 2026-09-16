@@ -56,7 +56,6 @@ export const AFRICA_PLANS: Plan[] = [
     currency:     'XOF',
     features: [
       'Tout du plan Business',
-      'Connecte ton propre compte Bictorys pour recevoir tes paiements directement',
       'Domaine personnalisé (tonsite.com)',
       'Section "À propos" avec photo de boutique',
       'Statistiques avancées & analyses',
@@ -118,11 +117,8 @@ export function getPlansForCountry(country: string | null | undefined): { plans:
     return { plans: [currency === 'CAD' ? EU_CA_PRO_PLAN_CAD : EU_CA_PRO_PLAN_EUR], isEuCa }
   }
 
-  // Le taux dépend du pays réel de la boutique — jamais un plan ne détient
-  // ses propres clés Bictorys tant qu'il n'est pas Pro et configuré
-  // manuellement (Paramètres → Paiements), donc toujours false ici : cette
-  // liste sert à choisir/comparer un plan, pas à refléter un état déjà acquis.
-  const commissionLabel = `${getCommissionRate(country, false)}%`
+  // Le taux dépend uniquement du pays réel de la boutique.
+  const commissionLabel = `${getCommissionRate(country)}%`
   const plans = AFRICA_PLANS.map(p => ({ ...p, features: resolvePlanFeatures(p.features, commissionLabel) }))
   return { plans, isEuCa }
 }

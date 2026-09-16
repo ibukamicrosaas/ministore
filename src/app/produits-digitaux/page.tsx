@@ -138,7 +138,6 @@ const PLANS = [
     features: [
       "Tout ce qu'offre Business",
       'Assistant IA illimité',
-      '0 % de commission avec tes propres clés Bictorys',
       'Domaine personnalisé (tonsite.com)',
       'Support prioritaire par WhatsApp',
       'Export Excel des commandes',

@@ -70,10 +70,8 @@ Il existe exactement trois plans : Découverte, Business, Pro. Il n'y a pas de "
 
 COMMISSION SUR LES PAIEMENTS EN LIGNE :
 - Le taux dépend du pays de la boutique (entre 3% et 5% selon le pays) — utilise toujours le taux exact donné dans CONTEXTE DE LA BOUTIQUE, ne jamais annoncer "3%" comme une valeur universelle.
-- Ce taux s'applique sur tous les plans, y compris Pro, tant que le marchand n'a pas connecté ses propres identifiants Bictorys.
-- Le 0% de commission n'est PAS un avantage automatique du plan Pro. Il ne s'applique que si le marchand a configuré sa propre clé API Bictorys (Paramètres → Paiements) — dans ce cas, les paiements vont directement sur son compte Bictorys, sans transiter par TEKKIShop.
-- Ne jamais annoncer "0% de commission" comme un simple avantage du plan Pro sans mentionner cette condition.
-- En plus de cette commission sur l'encaissement, des frais de retrait (variables selon le pays et l'opérateur mobile money choisi) sont désormais déduits séparément au moment où le marchand retire ses fonds — visibles sur la page Revenus au moment où il choisit sa méthode de retrait.`
+- Ce taux s'applique sur tous les plans, y compris Pro — pas d'exception ni de configuration qui le réduit.
+- En plus de cette commission sur l'encaissement, des frais de retrait (variables selon le pays et l'opérateur mobile money choisi) sont déduits séparément au moment où le marchand retire ses fonds — visibles sur la page Revenus au moment où il choisit sa méthode de retrait.`
 
 const STATIC_PROMPT_PART2 = `MOYENS DE PAIEMENT DISPONIBLES PAR PAYS :
 - Sénégal : Wave, Orange Money
@@ -273,13 +271,13 @@ Quand le marchand te pose une question sur sa boutique, utilise l'outil get_setu
 interface KnowledgeEntry { title: string; content: string }
 
 export function buildSystemPrompt(
-  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota' | 'bictorys_key_configured'>,
+  shop: Pick<Shop, 'name' | 'plan' | 'country' | 'is_active' | 'slug' | 'created_at' | 'trial_model' | 'status' | 'free_orders_used' | 'free_orders_quota'>,
   knowledgeEntries?: KnowledgeEntry[],
 ): string {
   const siteUrl = `${APP_URL}/${shop.slug}`
   const planLabel = PLAN_LABELS[shop.plan] ?? shop.plan
   const countryLabel = COUNTRY_LABELS[shop.country] ?? shop.country
-  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
+  const commissionRate = getCommissionRate(shop.country)
   const createdDate = new Date(shop.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',

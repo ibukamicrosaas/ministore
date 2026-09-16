@@ -334,7 +334,7 @@ export function buildAiTools(shopId: string) {
             .eq('shop_id', shopId)
             .in('status', ['pending', 'processing', 'completed'])
             .order('created_at', { ascending: false }),
-          admin.from('shops').select('country, bictorys_key_configured').eq('id', shopId).single(),
+          admin.from('shops').select('country').eq('id', shopId).single(),
         ])
 
         const total_collected = (paymentsRes.data ?? []).reduce((s, p) => s + p.amount, 0)
@@ -344,7 +344,7 @@ export function buildAiTools(shopId: string) {
           .filter((p) => p.status === 'pending' || p.status === 'processing')
           .reduce((s, p) => s + p.net_amount, 0)
 
-        const commission_rate = getCommissionRate(shopRes.data?.country, !!shopRes.data?.bictorys_key_configured)
+        const commission_rate = getCommissionRate(shopRes.data?.country)
 
         return {
           total_collected,

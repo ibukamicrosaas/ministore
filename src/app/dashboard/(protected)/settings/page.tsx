@@ -51,7 +51,7 @@ export default async function SettingsPage({ searchParams }: Props) {
   // SettingsForm continue de les lire comme avant sans changement de sa part.
   const { data: secretsData } = await supabase
     .from('shop_payment_secrets')
-    .select('payout_wave_number, payout_om_number, bictorys_secret_key, bictorys_webhook_secret')
+    .select('payout_wave_number, payout_om_number')
     .eq('shop_id', profile.shop_id)
     .single()
   if (secretsData) Object.assign(shop, secretsData)

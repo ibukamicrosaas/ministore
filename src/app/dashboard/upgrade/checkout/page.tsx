@@ -90,7 +90,7 @@ export default async function SubscriptionCheckoutPage({ searchParams }: Props) 
     // Taux de commission réel du pays — jamais tapé en dur dans le
     // formulaire, voir lib/billing/commission.ts / plans.ts. Sans objet
     // pour EU/CA (commission Stripe distincte, jamais liée à Bictorys).
-    const commissionLabel = `${getCommissionRate(shopCountry, false)}%`
+    const commissionLabel = `${getCommissionRate(shopCountry)}%`
 
     return (
       <StripeSubscriptionCheckoutForm

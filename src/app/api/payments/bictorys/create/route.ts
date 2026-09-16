@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysCharge, detectCountryFromPhone, normalizePhoneForBictorys, type BictorysPaymentType } from '@/lib/payments/bictorys'
-import { decryptApiKey } from '@/lib/crypto/encrypt'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
 
@@ -58,27 +57,15 @@ export async function POST(req: NextRequest) {
     client_token: string
   }
 
-  // Utiliser la clé Bictorys propre de la boutique (plan Pro) si disponible
   const { data: shopData } = await supabase
     .from('shops')
-    .select('plan, country, accept_online_payment')
+    .select('country, accept_online_payment')
     .eq('id', order.shop_id)
     .single()
 
   if (!shopData?.country) {
     return NextResponse.json({ error: 'Pays de la boutique manquant' }, { status: 400 })
   }
-
-  // Clé réelle isolée dans shop_payment_secrets depuis la migration 103
-  // (audit sécurité §109, finding critique #1) — jamais sur shops, jamais
-  // exposée via shops_public_read.
-  const { data: secretsData } = shopData.plan === 'pro'
-    ? await supabase
-        .from('shop_payment_secrets')
-        .select('bictorys_secret_key')
-        .eq('shop_id', order.shop_id)
-        .single()
-    : { data: null }
 
   // Dernier point de vérification avant de créer une charge réelle — ne fait
   // confiance ni au client, ni à payment_type déjà enregistré sur la
@@ -90,9 +77,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Le paiement en ligne n\'est pas disponible pour cette boutique.' }, { status: 400 })
   }
 
-  const rawShopKey = secretsData?.bictorys_secret_key ?? null
-  const shopKey = rawShopKey ? decryptApiKey(rawShopKey) : null
-  const apiKey = shopKey ?? platformApiKey
+  // Clé Bictorys propre par boutique retirée le 2026-09 (0 boutique ne
+  // l'a jamais configurée) — toujours la clé plateforme désormais.
+  const apiKey = platformApiKey
 
   if (!apiKey) {
     return NextResponse.json({ error: 'Bictorys non configuré (clé manquante)' }, { status: 500 })

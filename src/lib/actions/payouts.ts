@@ -60,7 +60,7 @@ export async function processPayout(
   // Récupérer les infos de la boutique
   const { data: shop, error: shopError } = await admin
     .from('shops')
-    .select('plan, country, name, bictorys_key_configured')
+    .select('plan, country, name')
     .eq('id', shopId)
     .single()
 
@@ -101,7 +101,7 @@ export async function processPayout(
   }
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
-  const commissionRate = getCommissionRate(country, !!shop.bictorys_key_configured)
+  const commissionRate = getCommissionRate(country)
   const commissionAmount = Math.round(grossAmount * (commissionRate / 100))
   const amountAfterCommission = grossAmount - commissionAmount
 

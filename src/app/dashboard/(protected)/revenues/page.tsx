@@ -33,7 +33,7 @@ export default async function RevenuesPage() {
 
   const { data: shopData } = await supabase
     .from('shops')
-    .select('name, country, currency, bictorys_key_configured')
+    .select('name, country, currency')
     .eq('id', shopId)
     .single()
 
@@ -41,7 +41,6 @@ export default async function RevenuesPage() {
     name: string
     country: string | null
     currency: string | null
-    bictorys_key_configured: boolean
   } | null
   if (!shop) redirect('/dashboard')
 
@@ -55,7 +54,7 @@ export default async function RevenuesPage() {
 
   const shopCurrency = (shop.currency ?? 'XOF') as import('@/lib/utils/country-groups').ShopCurrency
   const euCa = isEuCaCountry(shop.country)
-  const commissionRate = getCommissionRate(shop.country, !!shop.bictorys_key_configured)
+  const commissionRate = getCommissionRate(shop.country)
 
   // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis
   // les slots DB, et frais de retrait réels (opérateur + Bictorys) par

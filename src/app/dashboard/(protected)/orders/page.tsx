@@ -69,9 +69,9 @@ export default async function OrdersPage({
   if (!profile?.shop_id) redirect('/onboarding')
 
   const { data: shopData } = await supabase
-    .from('shops').select('plan, country, bictorys_key_configured').eq('id', profile.shop_id).single()
+    .from('shops').select('plan, country').eq('id', profile.shop_id).single()
   const isPro = (shopData as { plan: string } | null)?.plan === 'pro'
-  const commissionRate = getCommissionRate(shopData?.country, !!shopData?.bictorys_key_configured)
+  const commissionRate = getCommissionRate(shopData?.country)
 
   let query = supabase
     .from('orders')

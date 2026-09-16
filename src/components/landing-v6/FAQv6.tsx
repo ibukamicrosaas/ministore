@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: 'Quelle est la différence entre les 3 plans ?',
-    a: 'Le plan Découverte (2 900 FCFA/mois) donne accès à 10 produits et aux paiements de base. Le plan Business (4 900 FCFA/mois) ajoute les produits illimités et les codes promo. Le plan Pro (9 900 FCFA/mois) va plus loin : connecte ton propre compte Bictorys pour recevoir tes paiements directement, ton propre nom de domaine, et la marque TEKKIShop masquée.',
+    a: 'Le plan Découverte (2 900 FCFA/mois) donne accès à 10 produits et aux paiements de base. Le plan Business (4 900 FCFA/mois) ajoute les produits illimités et les codes promo. Le plan Pro (9 900 FCFA/mois) va plus loin : ton propre nom de domaine et la marque TEKKIShop masquée.',
   },
   {
     q: 'Est-ce que TEKKIShop m\'apporte des clients ?',

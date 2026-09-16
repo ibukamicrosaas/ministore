@@ -1,14 +1,12 @@
 // Source unique de vérité pour la commission TEKKIShop sur les paiements en
 // ligne (PAY IN Bictorys) — jamais un taux tapé en dur ailleurs.
 //
-// Le taux dépend du pays (coût réel Bictorys différent selon les pays,
-// vérifié contre leur grille tarifaire officielle le 2026-08-16) et jamais
-// du plan de la boutique : le 0% n'est pas un avantage de plan, c'est ce qui
-// se produit mécaniquement quand une boutique a configuré ses propres clés
-// Bictorys (shop_payment_secrets.bictorys_secret_key, shops.bictorys_key_configured
-// pour le booléen public — voir migration 103, audit sécurité §109) — ses
-// clients la paient en direct, l'argent ne transite jamais par la plateforme.
-// Voir REPRISE.md §4.3.
+// Le taux dépend uniquement du pays (coût réel Bictorys différent selon les
+// pays, vérifié contre leur grille tarifaire officielle le 2026-08-16),
+// jamais du plan de la boutique. Jusqu'au 2026-09, un mécanisme permettait un
+// 0% mécanique si la boutique configurait ses propres clés Bictorys — retiré
+// (0 boutique ne l'a jamais utilisé, retrait instantané depuis Revenus le
+// rendait redondant). Voir REPRISE.md §4.3 et le chantier de retrait 2026-09.
 export const COMMISSION_RATE_BY_COUNTRY: Record<string, number> = {
   SN: 3,
   CI: 3,
@@ -24,14 +22,11 @@ const DEFAULT_COMMISSION_RATE = 3
 
 /**
  * Taux de commission réel applicable à une boutique, en pourcentage entier
- * (ex: 3 pour 3%). hasOwnBictorysKeys doit toujours venir de
- * `!!shop.bictorys_key_configured` — jamais de `shop.plan === 'pro'`.
+ * (ex: 3 pour 3%).
  */
 export function getCommissionRate(
   country: string | null | undefined,
-  hasOwnBictorysKeys: boolean,
 ): number {
-  if (hasOwnBictorysKeys) return 0
   return COMMISSION_RATE_BY_COUNTRY[country ?? ''] ?? DEFAULT_COMMISSION_RATE
 }
 

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout, updateGridImageRatio } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
-import { Camera, X, Plus, Trash2, Link2, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
+import { Camera, X, Plus, Trash2, Link2, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import type { Shop, DeliveryZone } from '@/types'
@@ -110,8 +110,6 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
   const [customDomain, setCustomDomain]         = useState(shop.custom_domain ?? '')
   const [savingDomain, setSavingDomain]         = useState(false)
   const [domainStatus, setDomainStatus]         = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle')
-  const [showSecretKey, setShowSecretKey]       = useState(false)
-  const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Plan Pro - Design personnalisé
@@ -447,8 +445,6 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
     e.preventDefault()
     setSaving(true)
     const fd = new FormData(e.currentTarget)
-    const bictorysKey     = (fd.get('bictorys_secret_key') as string | null)?.trim() || null
-    const bictorysWebhook = (fd.get('bictorys_webhook_secret') as string | null)?.trim() || null
 
     const result = await updateShop({
       name:              (fd.get('name') as string).trim(),
@@ -464,10 +460,6 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       target_countries:  targetCountries,
       delivery_options:  { home_delivery: homeDelivery, store_pickup: storePickup },
       delivery_zones:    deliveryZones.filter(z => z.name.trim()),
-      ...(shop.plan === 'pro' ? {
-        bictorys_secret_key:     bictorysKey,
-        bictorys_webhook_secret: bictorysWebhook,
-      } : {}),
     })
     if ('error' in result) {
       toast.error(result.error ?? 'Erreur')
@@ -1129,79 +1121,13 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
         )}
       </div>
 
-      {/* Clés Bictorys — visible uniquement pour le plan Pro. Vocabulaire
-          simplifié (chantier séparé du Lot 8, 2026-09) : "Clé secrète API"
-          et "Secret webhook" reformulés en langage courant, le nom propre
-          "Bictorys" et l'URL exacte à coller restent tels quels (ce sont
-          des identifiants à recopier, pas des concepts à comprendre). */}
-      {shop.plan === 'pro' && (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Recevoir l&apos;argent directement (sans passer par TEKKIShop)</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                L&apos;argent de tes ventes arrive directement chez toi, sans commission TEKKIShop. Nécessite un compte chez notre partenaire de paiement Bictorys.
-              </p>
-            </div>
-            <a
-              href="https://dashboard.bictorys.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-1 text-xs text-[var(--color-primary)] hover:opacity-75 transition-opacity mt-0.5"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Voir mon compte Bictorys
-            </a>
-          </div>
-
-          <div className="space-y-3 pt-1 border-t border-sky-100">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Code d&apos;accès Bictorys</label>
-              <div className="flex items-center rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-[var(--color-primary)] transition-colors">
-                <input
-                  name="bictorys_secret_key"
-                  type={showSecretKey ? 'text' : 'password'}
-                  defaultValue={shop.bictorys_secret_key ?? ''}
-                  className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-transparent outline-none font-mono"
-                  placeholder="live_secret-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.xxx..."
-                  autoComplete="off"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSecretKey(v => !v)}
-                  className="px-3 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                >
-                  {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Code de confirmation Bictorys</label>
-              <div className="flex items-center rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-[var(--color-primary)] transition-colors">
-                <input
-                  name="bictorys_webhook_secret"
-                  type={showWebhookSecret ? 'text' : 'password'}
-                  defaultValue={shop.bictorys_webhook_secret ?? ''}
-                  className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-transparent outline-none font-mono"
-                  placeholder="Code généré dans ton compte Bictorys"
-                  autoComplete="off"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowWebhookSecret(v => !v)}
-                  className="px-3 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                >
-                  {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-gray-400">
-                Colle cette adresse dans ton compte Bictorys, section notifications : <span className="font-mono">tekki.shop/api/webhooks/bictorys</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Bloc "Recevoir l'argent directement" (clés Bictorys propres, plan
+          Pro) retiré le 2026-09 — 0 boutique ne l'a jamais configuré (vérifié
+          en base), et le retrait instantané depuis Revenus rend l'option
+          redondante. Colonnes shop_payment_secrets.bictorys_secret_key/
+          bictorys_webhook_secret et shops.bictorys_key_configured
+          conservées en base, documentées comme obsolètes plutôt que
+          supprimées (voir migration dédiée). */}
       </div>{/* /ventes */}
 
       {section !== 'contenu' && (

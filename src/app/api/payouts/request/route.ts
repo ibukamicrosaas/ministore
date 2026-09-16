@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { data: shop } = await admin
     .from('shops')
-    .select('name, country, bictorys_key_configured')
+    .select('name, country')
     .eq('id', profile.shop_id)
     .single()
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
   const grossBalance     = totalCollected - totalPaidOutGross
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
-  const commissionRate       = getCommissionRate(shop?.country ?? null, !!shop?.bictorys_key_configured)
+  const commissionRate       = getCommissionRate(shop?.country ?? null)
   const commissionAmount     = Math.floor(grossBalance * (commissionRate / 100))
   const amountAfterCommission = grossBalance - commissionAmount
 

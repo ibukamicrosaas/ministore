@@ -49,7 +49,6 @@ function buildPlans(commissionLabel: string) {
       { label: 'Produits illimités', locked: true },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
-      { label: 'Connecte ton propre compte Bictorys pour recevoir tes paiements directement', locked: true },
     ] as PlanFeature[],
     cta: { label: 'Commencer', href: '/start?plan=decouverte', primary: false },
   },
@@ -72,7 +71,6 @@ function buildPlans(commissionLabel: string) {
       { label: `${commissionLabel} sur les paiements en ligne, pour couvrir les frais des opérateurs` },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
-      { label: 'Connecte ton propre compte Bictorys pour recevoir tes paiements directement', locked: true },
     ] as PlanFeature[],
     cta: { label: 'Choisir Business', href: '/start?plan=business', primary: true },
     best: true,
@@ -88,7 +86,6 @@ function buildPlans(commissionLabel: string) {
     features: [
       { label: 'Tout ce qu\'offre Business' },
       { label: 'Assistant IA illimité pour ta boutique' },
-      { label: 'Connecte ton propre compte Bictorys pour recevoir tes paiements directement' },
       { label: 'Domaine personnalisé (tonsite.com)' },
       { label: 'Image de couverture + produits Coups de cœur' },
       { label: 'Marque TEKKIShop masquée — ta boutique, ta marque' },
@@ -123,7 +120,7 @@ interface Props {
 export function PricingV6({ country }: Props = {}) {
   const [period, setPeriod] = useState<'month' | 'year'>('month')
 
-  const commissionLabel = country ? `${getCommissionRate(country, false)}%` : getCommissionRateRangeLabel()
+  const commissionLabel = country ? `${getCommissionRate(country)}%` : getCommissionRateRangeLabel()
   const PLANS = buildPlans(commissionLabel)
 
   return (
@@ -202,7 +199,7 @@ export function PricingV6({ country }: Props = {}) {
               <tbody>
                 <tr><th scope="row">Nombre de produits</th><td>10 max</td><td>Illimités</td><td>Illimités</td></tr>
                 <tr><th scope="row">Assistant IA</th><td>20 msg/jour</td><td>50 msg/jour</td><td>Illimité</td></tr>
-                <tr><th scope="row">Commission paiements en ligne</th><td>{commissionLabel}</td><td>{commissionLabel}</td><td>Compte propre*</td></tr>
+                <tr><th scope="row">Commission paiements en ligne</th><td>{commissionLabel}</td><td>{commissionLabel}</td><td>{commissionLabel}</td></tr>
                 <tr><th scope="row">Paiement mobile money</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Paiement à la livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Envoi et confirmation livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
@@ -213,9 +210,6 @@ export function PricingV6({ country }: Props = {}) {
               </tbody>
             </table>
           </div>
-          <p style={{ fontSize: 13, color: '#697893', marginTop: 12 }}>
-            * En connectant ton propre compte Bictorys, tes paiements sont versés directement chez toi. Tu prends alors en charge les frais Bictorys et opérateur toi-même, au lieu qu&rsquo;ils soient reversés via TEKKIShop.
-          </p>
         </details>
       </div>
     </section>

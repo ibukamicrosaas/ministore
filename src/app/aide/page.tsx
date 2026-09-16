@@ -161,7 +161,7 @@ const CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Quelle commission TEKKIShop prend-elle sur mes ventes ?',
-        a: `De ${COMMISSION_RANGE} selon ton pays, sur les paiements encaissés en ligne, sur tous les plans. Le 0% de commission n'est pas un avantage automatique du plan Pro — il ne s'applique que si tu as configuré tes propres clés Bictorys (Paramètres → Paiements). Rien n’est prélevé sur le paiement à la livraison, puisque l’argent ne transite pas par nous.`,
+        a: `De ${COMMISSION_RANGE} selon ton pays, sur les paiements encaissés en ligne, sur tous les plans, sans exception. Rien n’est prélevé sur le paiement à la livraison, puisque l’argent ne transite pas par nous.`,
       },
     ],
   },

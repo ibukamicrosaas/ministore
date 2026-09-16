@@ -91,18 +91,18 @@ export default async function AdminFinancesPage({
       }>),
 
     // Paiements marchands sur la période — jointure shops pour calculer la
-    // commission réelle par pays/clés propres, pas un taux plat global
-    // (voir lib/billing/commission.ts).
+    // commission réelle par pays, pas un taux plat global (voir
+    // lib/billing/commission.ts).
     admin
       .from('payments')
-      .select('amount, created_at, shops!inner(country, bictorys_key_configured)')
+      .select('amount, created_at, shops!inner(country)')
       .eq('status', 'completed')
       .gte('created_at', periodStart),
 
     // Paiements marchands all-time
     admin
       .from('payments')
-      .select('amount, shops!inner(country, bictorys_key_configured)')
+      .select('amount, shops!inner(country)')
       .eq('status', 'completed'),
 
     // Reversements effectués all-time
@@ -147,13 +147,12 @@ export default async function AdminFinancesPage({
   const subAvailable = Math.max(0, subRevAllTime - totalAdminWithdrawn)
 
   // ── Paiements marchands ──
-  // Commission calculée ligne par ligne (pays + clés Bictorys propres de
-  // chaque boutique), jamais un taux plat appliqué à la somme globale —
-  // voir lib/billing/commission.ts.
+  // Commission calculée ligne par ligne (pays de chaque boutique), jamais un
+  // taux plat appliqué à la somme globale — voir lib/billing/commission.ts.
   type PaymentShopRow = {
     amount: number
-    shops: { country: string | null; bictorys_key_configured: boolean }
-      | { country: string | null; bictorys_key_configured: boolean }[]
+    shops: { country: string | null }
+      | { country: string | null }[]
       | null
   }
   const shopOfPayment = (p: PaymentShopRow) => Array.isArray(p.shops) ? p.shops[0] : p.shops
@@ -162,7 +161,7 @@ export default async function AdminFinancesPage({
     for (const p of rows ?? []) {
       const s = shopOfPayment(p)
       gross += p.amount
-      commission += Math.floor(p.amount * (getCommissionRate(s?.country, !!s?.bictorys_key_configured) / 100))
+      commission += Math.floor(p.amount * (getCommissionRate(s?.country) / 100))
     }
     return { gross, commission }
   }

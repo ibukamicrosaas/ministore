@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { TRIAL_DAYS } from '@/constants'
-import { encryptApiKey } from '@/lib/crypto/encrypt'
 import { detectCountryFromPhone } from '@/lib/payments/bictorys'
 import { getCountryFromCityOrPhone } from '@/lib/locations/city-to-country'
 import { isSupportedCountry } from '@/lib/utils/country-groups'
@@ -355,8 +354,12 @@ export async function updateShop(data: UpdateShopInput) {
   // la migration 103 (audit sécurité §109, finding critique #1 : ces colonnes
   // étaient publiquement lisibles via shops_public_read, RLS ne filtrant que
   // les lignes, jamais les colonnes). Whitelist séparée, même principe.
+  // bictorys_secret_key/bictorys_webhook_secret retirés le 2026-09 (0
+  // boutique ne les a jamais configurés, retrait instantané depuis Revenus
+  // rend l'option redondante) — colonnes conservées en base, documentées
+  // obsolètes plutôt que supprimées.
   const SECRETS_ALLOWED: (keyof UpdateShopInput)[] = [
-    'payout_wave_number', 'payout_om_number', 'bictorys_secret_key', 'bictorys_webhook_secret',
+    'payout_wave_number', 'payout_om_number',
   ]
   const raw = data as Record<string, unknown>
   const payload: Record<string, unknown> = {}
@@ -384,20 +387,6 @@ export async function updateShop(data: UpdateShopInput) {
   // pays non supporté (plan pays 2026-09).
   if (typeof payload.country === 'string' && payload.country && !isSupportedCountry(payload.country)) {
     return { error: "Ce pays n'est pas encore couvert par TEKKIShop." }
-  }
-
-  // Chiffrer les clés Bictorys avant de les écrire en DB
-  if (typeof secretsPayload.bictorys_secret_key === 'string' && secretsPayload.bictorys_secret_key) {
-    secretsPayload.bictorys_secret_key = encryptApiKey(secretsPayload.bictorys_secret_key)
-  }
-  if (typeof secretsPayload.bictorys_webhook_secret === 'string' && secretsPayload.bictorys_webhook_secret) {
-    secretsPayload.bictorys_webhook_secret = encryptApiKey(secretsPayload.bictorys_webhook_secret)
-  }
-
-  // Indicateur public de présence (booléen, sur shops — jamais la vraie clé)
-  // — mis à jour uniquement quand le champ a réellement été soumis ce tour-ci.
-  if ('bictorys_secret_key' in raw) {
-    payload.bictorys_key_configured = !!raw.bictorys_secret_key
   }
 
   if (Object.keys(secretsPayload).length > 0) {
