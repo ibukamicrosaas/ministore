@@ -2941,3 +2941,18 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : Lot 8 — Paramètres (correction des onglets tronqués, priorité absolue de la spec).
+
+## 126. Refonte dashboard — Lot 8 (Paramètres), commit `69d3c71`
+
+**Livré** (section 10 de la spec) :
+- `SettingsTabNav.tsx` : libellés d'onglets complets (Boutique / Paiement & livraison / Apparence / Mon compte), défilement horizontal si l'espace mobile ne suffit pas — correction prioritaire de la spec, les onglets s'affichaient tronqués ("Bout", "Vent", "Cont", "Comp").
+- `CancelSubscriptionButton.tsx` : lien "Annuler l'abonnement" redescendu en simple texte rouge, jamais un bouton plein au même niveau visuel que "Renouveler / Changer de plan" — rendu littéral de la spec (ligne 200), pas une interprétation.
+- **Ajout hors spec, sur demande explicite après relecture** : dégradé de bord (gauche/droite selon la position de scroll) sur les onglets Paramètres quand il en reste hors écran — ni la spec ni la maquette ne prévoyaient de signal visuel (mockup : scrollbar masquée, aucun autre indice, choix cohérent répété ailleurs dans la maquette), mais un angle mort réel en usage.
+
+**Testé en conditions réelles** (compte marchand jetable, Chrome headless piloté, 375px) : dimensions réelles confirmées (519px de contenu pour 343px visibles), dégradé droit visible au repos puis disparaissant une fois scrollé à fond, dégradé gauche apparaissant symétriquement ; lien d'annulation confirmé en petit texte rouge sans fond (vérifié sur un compte temporairement basculé en plan payant pour faire apparaître le bloc, plan restauré avant suppression du compte).
+
+`tsc --noEmit` propre.
+
+**Erreur de process à noter** : la suppression du code mort `src/app/onboarding/OnboardingForm.tsx` (prévue pour le chantier "pays hors des 6 officiels", §129) s'est retrouvée embarquée dans ce commit par erreur (fichier resté indexé depuis un `git rm` antérieur, `git status` non revérifié avant `git commit`). Aucun impact fonctionnel — juste un message de commit qui ne mentionne pas cette suppression, qui appartient en réalité à la table des matières du §129 ci-dessous.
+
+**Suite** : correctif navigation post-Lot 2 (hamburger + Espace Admin manquant en mobile).
