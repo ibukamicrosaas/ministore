@@ -2970,3 +2970,15 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` propre.
 
 **Suite** : vocabulaire Paramètres (Meta Pixel, Bictorys) — chantier séparé du Lot 8.
+
+## 128. Vocabulaire Paramètres — Meta Pixel et Bictorys, commit `892290f`
+
+**Chantier séparé du Lot 8** (état des lieux vocabulaire demandé après clôture du Lot 8) : liste complète des termes trop techniques produite bloc par bloc, avec reformulation proposée, avant tout code. Deux blocs corrigés sur feu vert — les seuls exposés à **tous les plans** (Meta Pixel) ou nécessitant une vraie manipulation technique chez un tiers (domaine/DNS, laissé tel quel sur demande explicite : les champs "Type A"/"CNAME" doivent rester identiques à ce qu'affiche le registrar du marchand, les traduire créerait un décalage trompeur) :
+- **Bictorys** (`SettingsForm.tsx`, plan Pro) : "Clé secrète API" → "Code d'accès Bictorys", "Secret webhook" → "Code de confirmation Bictorys", placeholder et lien "Mon compte" reformulés. Nom propre et URL exacte à coller conservés (identifiants à recopier, pas des concepts).
+- **Meta Pixel** (tous plans) : "Meta Pixel ID" → "Numéro du Pixel", description reformulée en langage courant, les 4 événements trackés (Page View/View Content/Add to Cart/Purchase) traduits en français plutôt que laissés en anglais dans une UI française.
+
+**Testé en conditions réelles** (compte jetable basculé en plan Pro pour faire apparaître le bloc Bictorys, supprimé après coup) : les deux blocs confirmés visuellement (captures), vérification textuelle automatisée de l'absence de chaque ancien terme technique et de la présence de chaque nouveau libellé.
+
+`tsc --noEmit` propre.
+
+**Suite** : chantier "pays hors des 6 officiels" — cadrage, validation serveur, correction des données existantes.
