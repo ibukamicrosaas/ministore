@@ -25,10 +25,13 @@ export interface PushPayload {
   url?: string
 }
 
-// Les deux seuls usages actuels de sendPushToShop — pas de valeur générique
-// "autre" : chaque appelant doit dire honnêtement ce qu'il notifie, comme le
-// SMS/WhatsApp le fait déjà via notification_type.
-export type PushNotificationType = 'new_order_shop' | 'delivery_confirmed'
+// Pas de valeur générique "autre" : chaque appelant doit dire honnêtement ce
+// qu'il notifie, comme le SMS/WhatsApp le fait déjà via notification_type.
+// 'trial_reminder'/'country_unsupported' ajoutés au plan push 2026-09
+// (migration 106) — voir cron/trial-reminder, cron/free-orders-trial-expiry.
+export type PushNotificationType =
+  | 'new_order_shop' | 'delivery_confirmed'
+  | 'trial_reminder' | 'country_unsupported'
 
 // push_endpoint n'existe pas encore dans les types Supabase générés
 // (database.ts jamais régénéré depuis la migration 100) — même limitation

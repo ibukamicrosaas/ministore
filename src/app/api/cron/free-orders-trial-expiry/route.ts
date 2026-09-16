@@ -3,6 +3,7 @@ import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { setShopStatus } from '@/lib/billing/shop-status'
 import { sendWhatsApp, buildFreeOrdersTrialExpiredMessage } from '@/lib/notifications/whatsapp'
+import { sendPushToShop } from '@/lib/push/send'
 import { recordCronRun } from '@/lib/cron/health'
 import { APP_URL } from '@/constants'
 
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
   const shops = data ?? []
   let expired = 0
   let notified = 0
+  let pushAttempted = 0
 
   for (const shop of shops) {
     const result = await setShopStatus(shop.id, 'expired')
@@ -46,6 +48,15 @@ export async function GET(req: NextRequest) {
       metadata: { motif: 'date' },
     })
 
+    // Push en plus du SMS existant, pas à sa place — même raisonnement que
+    // trial-reminder (REPRISE.md §130) ; indépendant de phone_whatsapp.
+    await sendPushToShop(shop.id, {
+      title: 'Ton essai gratuit est terminé',
+      body:  'Active ta boutique pour continuer à recevoir des commandes.',
+      url:   '/dashboard/upgrade',
+    }, null, 'trial_reminder')
+    pushAttempted++
+
     if (shop.phone_whatsapp) {
       const msg = buildFreeOrdersTrialExpiredMessage({
         shopName: shop.name,
@@ -56,6 +67,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  void recordCronRun('free-orders-trial-expiry', 'ok', { expired, notified })
-  return NextResponse.json({ expired, notified })
+  void recordCronRun('free-orders-trial-expiry', 'ok', { expired, notified, pushAttempted })
+  return NextResponse.json({ expired, notified, pushAttempted })
 }

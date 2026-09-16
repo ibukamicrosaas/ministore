@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsApp, buildTrialReminderMessage } from '@/lib/notifications/whatsapp'
+import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL } from '@/constants'
 import { addDays, format, startOfDay, endOfDay } from 'date-fns'
 
@@ -35,13 +36,27 @@ export async function GET(req: NextRequest) {
   }[]
 
   let sent = 0
+  let pushAttempted = 0
 
   for (const shop of shops) {
-    if (!shop.phone_whatsapp) continue
-
     const upgradeUrl = `${APP_URL}/dashboard/upgrade`
     const trialEnd   = new Date(shop.trial_ends_at)
     const daysLeft   = Math.max(1, Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+
+    // Push en plus du SMS existant, pas à sa place — le SMS reste tel quel
+    // tant que sa fiabilité n'est pas corrigée séparément (REPRISE.md §130).
+    // Indépendant de phone_whatsapp : le push ne nécessite pas de numéro.
+    // sendPushToShop ne retourne rien (void) — le succès/échec réel par
+    // abonnement est dans notification_logs, pas dans ce compteur, qui ne
+    // compte donc que les tentatives, pas les envois confirmés.
+    await sendPushToShop(shop.id, {
+      title: 'Ton essai gratuit se termine bientôt',
+      body:  `Plus que ${daysLeft} jour${daysLeft > 1 ? 's' : ''} — active ta boutique pour continuer à recevoir des commandes.`,
+      url:   '/dashboard/upgrade',
+    }, null, 'trial_reminder')
+    pushAttempted++
+
+    if (!shop.phone_whatsapp) continue
 
     const msg    = buildTrialReminderMessage({ shopName: shop.name, daysLeft, upgradeUrl })
     const result = await sendWhatsApp(shop.phone_whatsapp, msg)
@@ -49,5 +64,5 @@ export async function GET(req: NextRequest) {
     if (result.success) sent++
   }
 
-  return NextResponse.json({ processed: shops.length, sent })
+  return NextResponse.json({ processed: shops.length, sent, pushAttempted })
 }
