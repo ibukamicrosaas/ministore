@@ -2956,3 +2956,17 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 **Erreur de process à noter** : la suppression du code mort `src/app/onboarding/OnboardingForm.tsx` (prévue pour le chantier "pays hors des 6 officiels", §129) s'est retrouvée embarquée dans ce commit par erreur (fichier resté indexé depuis un `git rm` antérieur, `git status` non revérifié avant `git commit`). Aucun impact fonctionnel — juste un message de commit qui ne mentionne pas cette suppression, qui appartient en réalité à la table des matières du §129 ci-dessous.
 
 **Suite** : correctif navigation post-Lot 2 (hamburger + Espace Admin manquant en mobile).
+
+## 127. Correctif navigation post-Lot 2 — hamburger + Espace Admin mobile, commit `097bac2`
+
+**Deux manques trouvés en test réel du dashboard mobile, hors périmètre du Lot 8** :
+- Le hamburger retiré au Lot 2 (remplacé par la feuille "Plus") n'avait pas de remplaçant direct dans le header — restauré dans `TopBar.tsx` (gauche, mobile uniquement, même position/style que l'ancien), ouvrant la **même instance** de `BottomSheet` que le bouton "Plus" de `BottomNav.tsx` : état `moreOpen` levé dans `DashboardShell.tsx`, un seul montage, pas de désynchronisation possible entre les deux points d'entrée.
+- "Espace Admin" (présent dans l'ancien tiroir, présent sur `Sidebar.tsx` desktop) était absent de la feuille "Plus" mobile depuis la livraison initiale du Lot 2 — `BottomNav.tsx` n'avait structurellement aucun chemin pour l'afficher (pas de prop `isAdmin`, `MORE_LINKS` codé en dur). Corrigé par ajout d'une prop `isAdmin` + entrée conditionnelle, même whitelist `ADMIN_USER_IDS` et même style que le desktop.
+
+**Root cause du manque Espace Admin** : angle mort de la recette d'origine du Lot 2 (REPRISE.md §124) — la recette desktop testait explicitement les deux cas (compte normal / admin réel), la recette mobile n'a testé que 10 éléments sans jamais inclure Espace Admin dans son périmètre.
+
+**Testé en conditions réelles** (comptes marchand et admin jetables, `ADMIN_USER_IDS` modifié temporairement puis restauré à l'identique — hash MD5 de `.env.local` vérifié avant/après) : hamburger et "Plus" ouvrent chacun 1 seul dialogue (`document.querySelectorAll('[role="dialog"]').length === 1`), Espace Admin absent pour le compte non-admin par les deux points d'entrée, présent pour le compte admin par les deux points d'entrée, fermeture propre sans état fantôme après bascule hamburger→fermer→Plus.
+
+`tsc --noEmit` propre.
+
+**Suite** : vocabulaire Paramètres (Meta Pixel, Bictorys) — chantier séparé du Lot 8.
