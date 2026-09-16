@@ -23,11 +23,19 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  const { data: pendingPayouts, error: selectError } = await admin
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131) — sensible ici car déclenche
+  // un vrai virement, pas juste une notification.
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
+  let payoutsQuery = admin
     .from('payouts')
     .select('id, shop_id, gross_amount, net_amount, payout_method, payout_number, requested_at')
     .eq('status', 'pending')
     .order('requested_at', { ascending: true })
+  if (shopId) payoutsQuery = payoutsQuery.eq('shop_id', shopId)
+
+  const { data: pendingPayouts, error: selectError } = await payoutsQuery
 
   if (selectError) {
     console.error('[cron/process-payouts] Error fetching pending payouts:', selectError)

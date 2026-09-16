@@ -8,14 +8,20 @@ export async function GET(req: NextRequest) {
   }
   const supabase = createAdminClient()
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   // Paiements de remboursement en attente
-  const { data: paymentsData, error } = await supabase
+  let query = supabase
     .from('payments')
     .select('id, order_id, shop_id, amount, payment_method, provider_payment_id')
     .eq('payment_type', 'refund')
     .eq('status', 'pending')
     .not('provider_payment_id', 'is', null)
-    .limit(20)
+  if (shopId) query = query.eq('shop_id', shopId)
+
+  const { data: paymentsData, error } = await query.limit(20)
 
   if (error) {
     console.error('[cron/process-refunds]', error.message)

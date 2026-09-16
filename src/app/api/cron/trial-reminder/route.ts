@@ -12,11 +12,15 @@ export async function GET(req: NextRequest) {
   }
   const supabase = createAdminClient()
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   const targetDay = addDays(new Date(), 3)
   const from = format(startOfDay(targetDay), "yyyy-MM-dd'T'HH:mm:ssxxx")
   const to   = format(endOfDay(targetDay),   "yyyy-MM-dd'T'HH:mm:ssxxx")
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('shops')
     .select('id, name, slug, phone_whatsapp, trial_ends_at')
     .eq('plan', 'trial')
@@ -24,6 +28,9 @@ export async function GET(req: NextRequest) {
     .eq('trial_model', 'legacy') // free_orders : pas de rappel à J-3 équivalent pour l'instant, hors spec
     .gte('trial_ends_at', from)
     .lte('trial_ends_at', to)
+  if (shopId) query = query.eq('id', shopId)
+
+  const { data, error } = await query
 
   if (error) {
     console.error('[cron/trial-reminder]', error.message)

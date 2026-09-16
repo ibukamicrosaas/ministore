@@ -17,17 +17,24 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   // Boutiques free_orders payantes dont l'abonnement est résilié : repassent en
   // 'expired' (§3/§12 de la spec — reste publique, commandes de nouveau retenues,
   // celles déjà libérées le restent) via setShopStatus, jamais is_active=false
   // directement (qui les rendrait invisibles, contraire au modèle).
-  const { data: freeOrdersExpired } = await supabase
+  let freeOrdersQuery = supabase
     .from('shops')
     .select('id')
     .eq('trial_model', 'free_orders')
     .eq('status', 'active')
     .not('subscription_ends_at', 'is', null)
     .lt('subscription_ends_at', new Date().toISOString())
+  if (shopId) freeOrdersQuery = freeOrdersQuery.eq('id', shopId)
+
+  const { data: freeOrdersExpired } = await freeOrdersQuery
 
   let freeOrdersResiliated = 0
   for (const shop of freeOrdersExpired ?? []) {
@@ -36,7 +43,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Boutiques legacy dont l'abonnement est expiré et qui sont encore actives
-  const { data: expired, error } = await supabase
+  let legacyQuery = supabase
     .from('shops')
     .select('id, name, slug, plan, phone_whatsapp')
     .neq('plan', 'trial')
@@ -44,6 +51,9 @@ export async function GET(req: NextRequest) {
     .eq('trial_model', 'legacy')
     .not('subscription_ends_at', 'is', null)
     .lt('subscription_ends_at', new Date().toISOString())
+  if (shopId) legacyQuery = legacyQuery.eq('id', shopId)
+
+  const { data: expired, error } = await legacyQuery
 
   if (error) {
     console.error('[cron/subscription-expiry]', error.message)

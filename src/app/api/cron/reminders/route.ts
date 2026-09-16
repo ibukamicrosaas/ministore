@@ -14,8 +14,12 @@ export async function GET(req: NextRequest) {
 
   const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd')
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   // Commandes confirmées avec livraison demain et sans rappel envoyé
-  const { data: ordersData, error } = await supabase
+  let query = supabase
     .from('orders')
     .select(`
       id,
@@ -29,6 +33,9 @@ export async function GET(req: NextRequest) {
     .eq('delivery_date', tomorrow)
     .in('status', ['confirmed', 'preparing'])
     .is('reminder_sent_at', null)
+  if (shopId) query = query.eq('shop_id', shopId)
+
+  const { data: ordersData, error } = await query
 
   if (error) {
     console.error('[cron/reminders]', error.message)

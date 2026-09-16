@@ -22,12 +22,16 @@ export async function GET(req: NextRequest) {
   const now      = Date.now()
   let totalSent  = 0
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   for (const window of REMINDER_WINDOWS) {
     // Fenêtre de 24h autour du jour cible pour absorber les décalages de cron
     const windowStart = new Date(now + (window.days - 1) * 24 * 60 * 60 * 1000).toISOString()
     const windowEnd   = new Date(now + (window.days + 1) * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: shops, error } = await supabase
+    let shopsQuery = supabase
       .from('shops')
       .select('id, name, plan, phone_whatsapp, subscription_ends_at')
       .neq('plan', 'trial')
@@ -35,6 +39,9 @@ export async function GET(req: NextRequest) {
       .not('subscription_ends_at', 'is', null)
       .gte('subscription_ends_at', windowStart)
       .lte('subscription_ends_at', windowEnd)
+    if (shopId) shopsQuery = shopsQuery.eq('id', shopId)
+
+    const { data: shops, error } = await shopsQuery
 
     if (error) {
       console.error(`[cron/subscription-reminder] ${window.type}:`, error.message)

@@ -17,9 +17,13 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient()
   const cutoff   = new Date(Date.now() - DELAY_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   // Commandes livrées/complétées depuis au moins 3 jours, sans demande d'avis envoyée,
   // avec un e-mail client enregistré
-  const { data, error } = await supabase
+  let baseQuery = supabase
     .from('orders')
     .select(`
       id,
@@ -33,6 +37,9 @@ export async function GET(req: NextRequest) {
     .lte('delivered_at', cutoff)
     .is('review_request_sent_at', null)
     .not('client_id', 'is', null)
+  if (shopId) baseQuery = baseQuery.eq('shop_id', shopId)
+
+  const { data, error } = await baseQuery
     .limit(BATCH_SIZE) as {
       data: Array<{
         id: string

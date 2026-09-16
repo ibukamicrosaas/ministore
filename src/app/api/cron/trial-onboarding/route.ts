@@ -47,12 +47,16 @@ export async function GET(req: NextRequest) {
   const now = Date.now()
   let totalSent = 0
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   for (const window of WINDOWS) {
     // Fenêtre de 24h centrée sur J+day (absorbe les décalages cron)
     const windowStart = new Date(now - (window.day + 0.5) * 86400000).toISOString()
     const windowEnd   = new Date(now - (window.day - 0.5) * 86400000).toISOString()
 
-    const { data: shops, error } = await supabase
+    let shopsQuery = supabase
       .from('shops')
       .select('id, name, phone_whatsapp, slug, onboarding_completed')
       .eq('plan', 'trial')
@@ -60,6 +64,9 @@ export async function GET(req: NextRequest) {
       .eq('trial_model', 'legacy') // free_orders : /start a son propre funnel de relance, pas ces textes-ci
       .gte('created_at', windowStart)
       .lte('created_at', windowEnd)
+    if (shopId) shopsQuery = shopsQuery.eq('id', shopId)
+
+    const { data: shops, error } = await shopsQuery
 
     if (error) {
       console.error(`[cron/trial-onboarding] ${window.type}:`, error.message)

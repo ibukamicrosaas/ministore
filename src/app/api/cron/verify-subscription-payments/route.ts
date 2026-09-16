@@ -38,13 +38,21 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
 
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131). Fenêtre de 24h déjà présente,
+  // mais insuffisante seule : une vraie boutique en attente de paiement peut
+  // très bien s'y trouver au moment d'un test.
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
   // Retrouver toutes les transactions pending depuis moins de 24h
-  const { data: pendingTransactions, error: queryError } = await supabase
+  let txnQuery = supabase
     .from('subscription_transactions' as never)
     .select('id, shop_id, plan_key, charge_id, billing_cycle, created_at')
     .eq('status', 'pending')
     .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .limit(50) as any
+  if (shopId) txnQuery = txnQuery.eq('shop_id', shopId)
+
+  const { data: pendingTransactions, error: queryError } = await txnQuery.limit(50) as any
 
   if (queryError) {
     console.error('[verify-subscription-payments] Erreur requête BD:', queryError)

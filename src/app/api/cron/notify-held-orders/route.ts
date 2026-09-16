@@ -18,13 +18,20 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient()
   const threshold = new Date(Date.now() - HELD_ORDER_NOTICE_HOURS * 60 * 60 * 1000).toISOString()
 
-  const { data, error } = await supabase
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
+  let query = supabase
     .from('orders')
     .select('id, shop_id, client_id, shops(name, phone_whatsapp), clients(phone)' as never)
     .eq('is_held', true)
     .is('held_notified_at', null)
     .is('released_at', null)
     .lt('created_at', threshold)
+  if (shopId) query = query.eq('shop_id', shopId)
+
+  const { data, error } = await query
 
   if (error) {
     console.error('[cron/notify-held-orders]', error.message)

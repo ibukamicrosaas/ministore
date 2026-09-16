@@ -17,12 +17,21 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
+  // ?shop_id=xxx — restreint le traitement à une boutique précise, pour
+  // tester ce cron sans effet de bord sur le reste de la base (cf. incident
+  // du 2026-09-16, REPRISE.md §131 : un test sans ce filtre avait touché 2
+  // vraies boutiques en plus de la boutique de test).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
+  let query = supabase
     .from('shops')
     .select('id, name, phone_whatsapp')
     .eq('trial_model', 'free_orders')
     .eq('status', 'trial')
     .lt('trial_ends_at', new Date().toISOString())
+  if (shopId) query = query.eq('id', shopId)
+
+  const { data, error } = await query
 
   if (error) {
     console.error('[cron/free-orders-trial-expiry]', error.message)

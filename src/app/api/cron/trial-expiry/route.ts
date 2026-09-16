@@ -11,7 +11,11 @@ export async function GET(req: NextRequest) {
   }
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
+  // ?shop_id=xxx — restreint le traitement à une boutique précise pour un
+  // test sans effet de bord (REPRISE.md §131).
+  const shopId = req.nextUrl.searchParams.get('shop_id')
+
+  let query = supabase
     .from('shops')
     .select('id, name, slug, phone_whatsapp')
     .eq('plan', 'trial')
@@ -19,6 +23,9 @@ export async function GET(req: NextRequest) {
     .eq('trial_model', 'legacy') // free_orders a son propre cron (free-orders-trial-expiry) : une
     // boutique expired de ce modèle doit rester is_active=true (boutique publique), jamais désactivée ici
     .lt('trial_ends_at', new Date().toISOString())
+  if (shopId) query = query.eq('id', shopId)
+
+  const { data, error } = await query
 
   if (error) {
     console.error('[cron/trial-expiry]', error.message)
