@@ -2982,3 +2982,34 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` propre.
 
 **Suite** : chantier "pays hors des 6 officiels" — cadrage, validation serveur, correction des données existantes.
+
+## 129. Pays hors des 6 officiels — validation serveur, commit `cb0d4c6`, en cours
+
+**Déclencheur** : en vérifiant si un marchand béninois pouvait saisir un numéro MTN/Moov (réponse : oui, déjà géré dynamiquement par pays — rien à corriger là-dessus), découverte que 20 boutiques réelles avaient un `country` hors des 6 pays officiels (CM/GN/CD/GA/MG/MA/BF obsolète/FR-EU-CA), sans aucune validation serveur à l'écriture.
+
+**Décision produit** : TEKKIShop reste sur ses 6 pays officiels + EU/CA, pas d'ouverture même partielle tant qu'aucune solution d'encaissement n'existe pour les autres marchés.
+
+**Diagnostic corrigé en cours de route (deux fois)** — à documenter pour ne pas les refaire :
+1. Le blocage checkout "Impossible de détecter ton pays" ne dépend **pas** de `shop.country` mais du préfixe téléphonique du **client** (`getCountryFromPhone`, `payment-methods.ts`) — une boutique à `country` invalide n'empêche donc aucun paiement client par ce mécanisme précis.
+2. La vraie cible de la validation serveur n'était pas `createShop()`/`getCountryFromCityOrPhone()` (`settings.ts`) comme identifié au premier passage — ces deux-là sont du code mort, seul appelant : `OnboardingForm.tsx`, lui-même mort. Le vrai chemin vivant est `startOnboarding()` (`onboarding.ts`) alimenté par `OnboardingWizard.tsx`, avec sa propre fonction locale `detectCountryFromPhone` — probable root cause réelle des boutiques CM/GN/CD/GA/MG/MA déjà en base (pré-remplissage automatique jamais validé côté serveur).
+
+**Livré (commit `cb0d4c6`)** : `isSupportedCountry()` dans `country-groups.ts` (source unique) ; garde serveur dans `updateShop()` et `startOnboarding()` ; `detectCountryFromPhone` d'`OnboardingWizard.tsx` ne pré-remplit plus les 6 codes non couverts (retombe sur SN, comme les autres préfixes déjà non reconnus) ; `COUNTRY_OPTIONS` de `SettingsForm.tsx` réduit aux 11 pays supportés ; message de blocage checkout reformulé en langage moins technique.
+
+**Vérifié sans action nécessaire** : `target_countries` (déjà filtré aux 11 pays supportés côté sélecteur, et défensif côté consommation — `isBictorysCountry` ignore silencieusement tout code hors des 6) ; Stripe Connect sur les 9 boutiques `country='FR'` (aucune n'a de faux positif, toutes en trial jamais activé, rien à corriger).
+
+**Trou diaspora découvert en creusant le blocage checkout, distinct de ce chantier** : un client à numéro non-africain (FR/BE/CA...) est bloqué au paiement en ligne sur **n'importe laquelle** des 6 boutiques officielles, indépendamment de `shop.country` — 2 commandes réelles déjà touchées sur 293 échantillonnées (`gassama-multi-service`, Mali, plan Business, commande annulée ; `ibuka`, Sénégal, numéro local sans indicatif, commande annulée). Réel mais pas massif (0,7%) — laissé en attente, hors périmètre de ce chantier.
+
+**`BF → BK` exécuté** (script montré avant exécution, 1 boutique concernée) : `faso-song-taaba` corrigée, `target_countries` déjà propre (ne contenait jamais `BF`), vérifié 0 boutique restante en `'BF'`.
+
+**Testé en conditions réelles** (compte jetable) : sélecteur Pays confirmé à exactement les 11 valeurs attendues ; sauvegarde normale d'un champ non lié (ville) confirmée non cassée par la nouvelle garde (non-régression) ; `isSupportedCountry()` vérifié directement (`npx tsx`) sur les 21 cas pertinents (6 officiels, 5 EU/CA, 6 non couverts, `BF`, vide/null/undefined).
+
+`tsc --noEmit` propre.
+
+**En cours, pas encore clos** — 3 clarifications demandées avant de finaliser le lot de correction des 20 boutiques existantes :
+1. Statut réel des 9 boutiques CM/GN/CD/GA/MG/MA restantes (hors `barezy-consulting`) — toutes `status='active'`/`is_active=false` (aucune live), sauf `barezy-consulting` (`status='trial'`/`is_active=true`, gérée séparément par l'utilisateur).
+2. `tarkala-shop` (Maroc, plan Business payant, `is_active=false`) — facturation vérifiée : **pas de prélèvement actif**, `subscription_ends_at` expiré depuis le 2026-09-03 (13 jours), zéro paiement trouvé dans `payments`. Moins urgent que redouté sur le plan client (inactive) et sur le plan facturation (déjà expirée) — contact humain prévu par l'utilisateur, sans urgence de prélèvement en cours.
+3. `vente` (`country='CD'`, ville "Cotonou") — confirmé être une **erreur de détection**, pas un cas "pays non couvert" : `phone_whatsapp` commence par `+229` (indicatif Bénin, un des 6 pays officiels), cohérent avec la ville Cotonou (capitale économique du Bénin, pas de ville homonyme en RDC). Correction `CD → BJ` à faire comme `BF → BK`, pas une notification — script à montrer avant exécution, pas encore fait.
+
+**Restant à faire, hors de ce commit** : correction `vente` (`CD → BJ`) ; envoi de la notification WhatsApp (texte validé) aux 7 boutiques CM/CD confirmées non couvertes, jamais activées (`chez-mbaxal`, `poivre-blanc-de-penja`, `tobiz`, `aura-fashion-house`, `zofaroclub`, `mr-jordan-bukasa`, `corse`) — `tarkala-shop` et `barezy-consulting` explicitement exclues de l'envoi automatique, contact géré directement par l'utilisateur.
+
+**Suite** : Mali (frais de retrait non confirmés) — en attente, pas d'urgence identifiée, rien à faire pour l'instant.
