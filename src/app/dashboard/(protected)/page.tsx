@@ -7,7 +7,8 @@ import { FirstSalesNudge } from '@/components/dashboard/FirstSalesNudge'
 import { RevenueCard } from '@/components/dashboard/RevenueCard'
 import { getDateRange } from '@/lib/dashboard/date-range'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { ShoppingBag, TrendingUp, Package, ArrowRight, Bell, Clock } from 'lucide-react'
+import { ShoppingBag, TrendingUp, Package, ArrowRight, Bell, Clock, AlertTriangle } from 'lucide-react'
+import { isSupportedCountry } from '@/lib/utils/country-groups'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
@@ -269,6 +270,32 @@ export default async function DashboardPage({ searchParams }: Props) {
         <FirstSalesNudge shopSlug={shop.slug} shopName={shop.name} />
       )}
 
+
+      {/* Alerte pays non couvert — remplace l'envoi WhatsApp (canal SMS non
+          fiable, cf. plan pays 2026-09) par un bandeau dans le dashboard,
+          même mécanisme que l'alerte "commandes à traiter" ci-dessous :
+          recalculé à chaque connexion, pas de dépendance à un envoi externe
+          qui pourrait silencieusement échouer. Disparaît de lui-même si le
+          pays de la boutique est corrigé ou devient supporté. */}
+      {shop && !isSupportedCountry(shop.country) && (
+        <a
+          href="https://wa.me/221781362728"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-3.5 hover:bg-red-100 transition-colors"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 shrink-0">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-800">
+              Ton pays n&apos;est pas encore couvert par nos moyens de paiement
+            </p>
+            <p className="text-xs text-red-600 mt-0.5">Contacte-nous sur WhatsApp pour qu&apos;on regarde ensemble la meilleure solution</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-red-400 shrink-0" />
+        </a>
+      )}
 
       {/* Alerte commandes à traiter */}
       {pendingCount > 0 && (
