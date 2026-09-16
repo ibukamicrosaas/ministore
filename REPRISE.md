@@ -3077,3 +3077,26 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 **Erreurs de process notées pendant la session, pour ne pas les répéter** : deux commits ont embarqué des fichiers restés indexés d'un `git add` précédent (suppression d'`OnboardingForm.tsx` dans le commit Lot 8 ; migration 105 dans un commit censé ne contenir que push) — impact nul les deux fois, mais `git status` doit être vérifié avant chaque commit désormais, systématiquement.
 
 **En attente, non traité, pour une prochaine session** : correction Mali (frais de retrait non confirmés) ; email/Resend (plan figé — optionnel + relance checklist — pas encore codé) ; code de branchement Meta CAPI ; interface d'envoi push manuel/marketing (patron déjà existant pour cloche in-app et SMS, jamais branché sur le push) ; chantier `expire-pending`/`purge-draft-shops`.
+
+## 134. Retrait du paiement direct Bictorys (plan Pro) — commits `a9d91eb`, `6f39ea9`
+
+**Constat de départ** : 0 boutique, active ou non, n'a jamais configuré ses propres clés Bictorys — vérifié directement en base (`shop_payment_secrets` et le miroir public `shops.bictorys_key_configured`, tous deux vides) avant d'écrire la moindre ligne de code. Le retrait instantané depuis Revenus rendait de toute façon l'option redondante.
+
+**Recherche élargie avant tout retrait** (demandée explicitement, pas seulement `plans.ts:59`) : 9 emplacements dans 6 fichiers trouvés au-delà du premier repéré — `plans.ts`, `PricingV6.tsx` (4 emplacements, dont un tableau comparatif avec une astérisque de bas de page qui serait devenue orpheline), `FAQv6.tsx`, `produits-digitaux/page.tsx`, `aide/page.tsx`, et `ai/system-prompt.ts` (2 lignes d'instructions système empêchant l'assistant de survendre le 0% sans condition — devenues sans objet, supprimées entièrement plutôt que reformulées).
+
+**Découverte en creusant le code, pas seulement l'usage** : `bictorys_webhook_secret` n'a en réalité **jamais été consultée nulle part**, même avant ce retrait — la vérification de signature du webhook Bictorys (`api/webhooks/bictorys/route.ts`) n'a toujours utilisé que la clé plateforme (`BICTORYS_WEBHOOK_SECRET`). Ce n'était pas juste une fonctionnalité inutilisée par les marchands, mais une fonctionnalité jamais branchée à sa vraie fin, même en théorie.
+
+**Retrait complet, 7 points** :
+1. UI Paramètres (bloc "Recevoir l'argent directement", plan Pro) — retiré, testé réel (compte Pro jetable, bloc absent, reste de la page Ventes intact).
+2. Action serveur `updateShop()` — `bictorys_secret_key`/`bictorys_webhook_secret` retirés de `SECRETS_ALLOWED`, chiffrement et écriture du miroir `bictorys_key_configured` supprimés ; le formulaire principal de Paramètres ne soumet plus ces champs non plus (dead code trouvé et nettoyé au passage).
+3. `api/payments/bictorys/create/route.ts` — n'utilise plus que la clé plateforme (déjà le repli systématique puisque 0 boutique n'avait de clé propre) — testé réel jusqu'au bout : appel effectif à l'API Bictorys réelle confirmé (403 reçu, dû à l'URL de webhook `localhost` de l'environnement de test, pas une régression).
+4. `getCommissionRate()` simplifiée (paramètre `hasOwnBictorysKeys` retiré), répercuté sur ses **14 appelants** (paiements, commandes, revenus, admin finances, assistant IA) — comportement final identique (le paramètre valait déjà toujours `false` partout), juste sans le code mort. `.select()` nettoyés en cascade dans une dizaine de fichiers pour ne plus récupérer une colonne devenue inutile.
+5. 4 pages boutique publique (`[shop-slug]/page.tsx`, `produit/[id]/page.tsx`, `ShopHomeLayout.tsx`, `preview/[slug]/page.tsx`) — condition "paiement en ligne disponible" simplifiée, `stripe_connect_enabled` seul reste pertinent aux côtés des méthodes en ligne classiques.
+6. Textes marketing/aide/IA (les 9 + 1 emplacements trouvés) — tous retirés, reformulation ponctuelle là où la phrase perdait son sens sans la clause retirée (FAQv6.tsx).
+7. Migration `107_deprecate_bictorys_direct.sql` — colonnes **conservées, pas de `DROP COLUMN`** (choix retenu plutôt qu'une suppression : coût nul de les garder, réversible, laisse la porte ouverte à une future intégration différente type "vrai partenariat" plutôt qu'un champ à coller — même raisonnement que l'Option B Meta CAPI, §130), documentées obsolètes par `COMMENT ON COLUMN`.
+
+**Testé en conditions réelles** (boutique/client/produit/commande jetables) : page Paramètres, boutique publique, page produit et pages marketing (accueil, produits digitaux, aide) chargent toutes normalement ; la création de paiement Bictorys atteint bien l'API réelle par la clé plateforme, confirmant qu'aucune régression n'a été introduite sur le chemin déjà emprunté par 100% des boutiques.
+
+`tsc --noEmit` propre sur l'ensemble des 27 fichiers de code + la migration.
+
+**Suite** : mêmes points en attente qu'au §133 (Mali, email/Resend, Meta CAPI, push manuel, `expire-pending`/`purge-draft-shops`).
