@@ -3037,3 +3037,15 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` propre sur l'ensemble.
 
 **Suite** : avis à donner sur dry_run vs shop_id pour les crons ; interface d'envoi push manuel/marketing (patron déjà existant pour la cloche in-app `/admin/notifications` et le SMS `/api/admin/sms-campaign` sans UI, jamais branché sur le push) — gardée en tête, pas de chantier lancé ; Meta Pixel/CAPI et email/Resend toujours en pause.
+
+## 132. `?shop_id=` sur les 12 crons non filtrés — commit `6e0833b`
+
+**Décision** : `shop_id` retenu plutôt que `dry_run` (avis donné §131 — plus simple à ajouter partout, un seul appel `.eq()` par cron sans toucher chaque effet de bord, et permet un vrai test avec vrai envoi sur une boutique jetable plutôt qu'une simulation). Périmètre : les 12 crons de la catégorie A (recensement complet des 16 crons fait avant tout code) + `verify-subscription-payments` inclus malgré sa fenêtre de 24h (même coût d'ajout, risque réel qu'une vraie boutique en attente de paiement s'y trouve). Catégorie B (`expire-pending`, `purge-draft-shops` — passent par une fonction SQL RPC, pas une requête filtrable directement, `purge-draft-shops` supprime des données) explicitement **hors de ce commit** — chantier séparé, plan écrit d'abord, pas encore fait. Catégorie C (`cleanup`, `cron-health-check` — pas de notion de boutique concernée) : aucun changement.
+
+**Implémentation** : `const shopId = req.nextUrl.searchParams.get('shop_id')`, puis `.eq('id', shopId)` (crons scannant `shops`) ou `.eq('shop_id', shopId)` (crons scannant `orders`/`payments`/`payouts`/`subscription_transactions`), appliqué conditionnellement sur la requête de base de chacun des 12 — y compris ceux avec une requête par boucle (`subscription-reminder`, `trial-onboarding`, qui itèrent sur des fenêtres temporelles) et `subscription-expiry` (deux requêtes distinctes).
+
+**Testé en conditions réelles** (boutique + payout jetables, méthode `mtn` — chemin manuel, aucun vrai transfert Bictorys déclenché) : `process-pending-payouts?shop_id=<boutique test>` a traité exactement 1 payout (`total:1`, celui de la boutique de test, correctement annoté), confirmant que le filtre isole bien l'effet de bord — condition explicitement posée par l'utilisateur avant de considérer ce chantier clos. Boutique et payout de test supprimés après coup.
+
+`tsc --noEmit` propre sur les 12 fichiers.
+
+**Suite** : chantier séparé (plan à écrire, pas encore commencé) pour `expire-pending`/`purge-draft-shops` (catégorie B) ; sinon, mêmes points en attente qu'au §131.
