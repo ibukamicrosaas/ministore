@@ -236,7 +236,7 @@ export function PaymentMethodSelector({
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-sm text-red-700">
-          Impossible de détecter ton pays. Contacte le vendeur.
+          On ne peut pas encore traiter ce numéro pour un paiement en ligne — contacte le vendeur pour un autre moyen de paiement.
         </p>
       </div>
     )

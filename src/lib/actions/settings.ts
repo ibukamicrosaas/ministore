@@ -8,6 +8,7 @@ import { TRIAL_DAYS } from '@/constants'
 import { encryptApiKey } from '@/lib/crypto/encrypt'
 import { detectCountryFromPhone } from '@/lib/payments/bictorys'
 import { getCountryFromCityOrPhone } from '@/lib/locations/city-to-country'
+import { isSupportedCountry } from '@/lib/utils/country-groups'
 import type { UpdateShopInput } from '@/types'
 import { canHideTekkishopFooter, canUseCustomDomain, minimumPlanLabel } from '@/lib/plan-features'
 import { deleteOldStorageFiles } from '@/lib/storage/cleanup'
@@ -202,6 +203,12 @@ export async function createShop(formData: FormData) {
     return { error: 'Impossible de déterminer le pays. Veuillez sélectionner manuellement.' }
   }
 
+  // Garde serveur — qu'il vienne du formulaire ou de la détection automatique,
+  // un pays non supporté ne doit jamais atteindre l'insert (plan pays 2026-09).
+  if (!isSupportedCountry(country)) {
+    return { error: "Ce pays n'est pas encore couvert par TEKKIShop." }
+  }
+
   const baseSlug = name
     .toLowerCase()
     .normalize('NFD')
@@ -369,6 +376,14 @@ export async function updateShop(data: UpdateShopInput) {
   // l'état actuel en base pour ce contrôle.
   if (payload.accept_online_payment === false && payload.accept_cash_on_delivery === false) {
     return { error: 'Tu dois garder au moins un mode de paiement actif.' }
+  }
+
+  // Garde serveur — le sélecteur Pays ne propose plus que les pays supportés
+  // (SettingsForm.tsx), mais la vérification vit ici : un payload construit
+  // autrement qu'en passant par le sélecteur ne doit jamais pouvoir écrire un
+  // pays non supporté (plan pays 2026-09).
+  if (typeof payload.country === 'string' && payload.country && !isSupportedCountry(payload.country)) {
+    return { error: "Ce pays n'est pas encore couvert par TEKKIShop." }
   }
 
   // Chiffrer les clés Bictorys avant de les écrire en DB

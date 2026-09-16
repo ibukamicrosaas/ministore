@@ -141,12 +141,10 @@ function detectCountryFromPhone(phone: string | null): string {
   if (p.startsWith('+229')) return 'BJ'
   if (p.startsWith('+226')) return 'BK'
   if (p.startsWith('+223')) return 'ML'
-  if (p.startsWith('+237')) return 'CM'
-  if (p.startsWith('+224')) return 'GN'
-  if (p.startsWith('+243')) return 'CD'
-  if (p.startsWith('+241')) return 'GA'
-  if (p.startsWith('+261')) return 'MG'
-  if (p.startsWith('+212')) return 'MA'
+  // CM/GN/CD/GA/MG/MA retirés : pays non couverts (aucun chemin de paiement
+  // Bictorys/Stripe) — pré-remplir un de ces codes pré-inscrivait des
+  // marchands dans des pays sans issue de paiement, jamais rattrapé côté
+  // serveur. Un numéro non reconnu retombe sur SN, comme avant.
   return 'SN'
 }
 

@@ -68,6 +68,20 @@ export const ALL_PHONE_COUNTRIES = [
 ] as const
 
 /**
+ * Un pays est "supporté" s'il a un vrai chemin de paiement en production —
+ * les 6 pays africains couverts par Bictorys, ou un pays EU/CA (Stripe
+ * Connect). Ne PAS confondre avec "un marchand de ce pays a un compte
+ * fonctionnel" : un shop EU/CA sans Stripe Connect configuré est dans un
+ * pays supporté mais reste temporairement bloqué au paiement — cas normal,
+ * différent d'un pays qui ne sera jamais supporté (ex. Maroc, RDC).
+ * Source unique de vérité — ne jamais dupliquer cette liste ailleurs.
+ */
+export function isSupportedCountry(countryCode: string | null | undefined): boolean {
+  if (!countryCode) return false
+  return (ALL_PHONE_COUNTRIES as readonly { code: string }[]).some(c => c.code === countryCode)
+}
+
+/**
  * Formate un montant dans la devise du shop.
  * Les prix sont stockés en unités d'affichage (ex: 14.90 pour 14,90€ ; 5000 pour 5000 FCFA).
  */

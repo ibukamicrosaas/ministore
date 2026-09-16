@@ -42,6 +42,13 @@ const MARKET_COUNTRIES_EU_CA = [
   { code: 'CA', flag: '🇨🇦', name: 'Canada' },
 ]
 
+// Pays supportés uniquement (isSupportedCountry, country-groups.ts) — CM/GN/
+// CD/GA/MG/MA retirés le 2026-09 : aucun chemin de paiement (ni Bictorys ni
+// Stripe Connect) pour ces pays, les proposer ici ne faisait qu'exposer un
+// choix qui échouait silencieusement à l'usage (numéros de reversement sans
+// opérateur réel, devise par défaut incorrecte). Décision produit : rester
+// sur les 6 pays officiels + EU/CA tant qu'aucune solution d'encaissement
+// n'existe pour ces marchés, pas d'ouverture partielle.
 const COUNTRY_OPTIONS = [
   // Afrique
   { value: 'SN', label: '🇸🇳 Sénégal' },
@@ -50,12 +57,6 @@ const COUNTRY_OPTIONS = [
   { value: 'BK', label: '🇧🇫 Burkina Faso' },
   { value: 'TG', label: '🇹🇬 Togo' },
   { value: 'ML', label: '🇲🇱 Mali' },
-  { value: 'CM', label: '🇨🇲 Cameroun' },
-  { value: 'GN', label: '🇬🇳 Guinée' },
-  { value: 'CD', label: '🇨🇩 RDC' },
-  { value: 'GA', label: '🇬🇦 Gabon' },
-  { value: 'MG', label: '🇲🇬 Madagascar' },
-  { value: 'MA', label: '🇲🇦 Maroc' },
   // Europe & Canada
   { value: 'FR', label: '🇫🇷 France' },
   { value: 'BE', label: '🇧🇪 Belgique' },

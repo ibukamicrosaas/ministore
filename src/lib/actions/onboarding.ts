@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { TRIAL_DAYS } from '@/constants'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
-import { getCurrencyForCountry } from '@/lib/utils/country-groups'
+import { getCurrencyForCountry, isSupportedCountry } from '@/lib/utils/country-groups'
 import { assertProductLimit } from '@/lib/actions/product-limit'
 import { deleteOldStorageFiles, storagePathFromPublicUrl } from '@/lib/storage/cleanup'
 
@@ -32,6 +32,14 @@ export async function startOnboarding(name: string, country?: string): Promise<{
 
   const trimmed = name.trim()
   if (trimmed.length < 2) return { error: 'Le nom doit faire au moins 2 caractères.' }
+
+  // Garde serveur — le pays pré-rempli côté client (detectCountryFromPhone
+  // dans OnboardingWizard.tsx) ne doit jamais suffire à lui seul : un pays
+  // non supporté ne doit jamais atteindre l'insert, quelle que soit sa
+  // provenance (défense en profondeur, cf. TEKKIShop-plan-pays 2026-09).
+  if (country && !isSupportedCountry(country)) {
+    return { error: "Ce pays n'est pas encore couvert par TEKKIShop." }
+  }
 
   const { data: existing } = await supabase.from('profiles').select('shop_id').eq('id', user.id).single()
   if (existing?.shop_id) {
