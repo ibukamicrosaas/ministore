@@ -65,9 +65,12 @@ export function CancelSubscriptionButton({ cancelAtPeriodEnd, expiresAt }: Props
 
   return (
     <>
+      {/* Lien texte simple, jamais un bouton plein au même niveau visuel que
+          Renouveler/Changer de plan — accessible en un clic, mais discret
+          (section 10, SPEC-refonte-dashboard-marchand.md, Lot 8). */}
       <button
         onClick={() => setOpen(true)}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-500 hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-colors"
+        className="mt-3 flex w-full items-center justify-center text-xs font-medium text-red-600 hover:text-red-700 hover:underline transition-colors"
       >
         Annuler l&apos;abonnement
       </button>
