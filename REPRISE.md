@@ -2,7 +2,7 @@
 
 > Document factuel, sans récit. Objectif : qu'une session sans aucune mémoire des échanges puisse reprendre le travail depuis cet état, pas depuis un fil de conversation. Suivi en git depuis le 2026-08-10 (voir §1) — plus un fichier local uniquement, référencé depuis `AI_RULES.md` §0.1.
 >
-> Dernière mise à jour : 2026-09-12.
+> Dernière mise à jour : 2026-09-19.
 
 ---
 
@@ -3100,3 +3100,43 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` propre sur l'ensemble des 27 fichiers de code + la migration.
 
 **Suite** : mêmes points en attente qu'au §133 (Mali, email/Resend, Meta CAPI, push manuel, `expire-pending`/`purge-draft-shops`).
+
+---
+
+## 135. Branchement Meta Purchase CAPI (webhooks Bictorys/Stripe) — commit `d7f1f65`
+
+**Fondation posée en §130 (migration `105_meta_purchase_capi.sql` déjà appliquée), code de branchement écrit et testé dans cette session.** Option A confirmée (jeton Conversions API par boutique, collé dans Paramètres) — Option B (partenariat Meta "Conversions API as a Platform") reste hors dépôt, en parallèle, sans dépendance sur ce commit.
+
+**Plan écrit et validé avant tout code, deux corrections apportées à la relecture** : (1) la garde anti-doublon (`orders.meta_purchase_event_id`) ne devait pas s'écrire sur simple absence d'exception — `sendMetaConversionEvent` ne retournait jusqu'ici aucun signal de succès réel (`Promise<void>`), un jeton invalide aurait donc marqué une commande comme "envoyée à Meta" sans l'avoir jamais été, perte silencieuse et définitive de la conversion ; (2) le montant envoyé à Meta doit être celui réellement encaissé sur la transaction (`deposit_amount` sur une commande en acompte), jamais `total_price` brut, sous peine de surestimer le CA rapporté pour toute commande en acompte.
+
+**Implémentation** (`src/lib/meta/conversions-api.ts`) :
+- `sendMetaConversionEvent` retourne désormais `Promise<boolean>` — `true` uniquement si Meta confirme `events_received >= 1` dans sa réponse, jamais sur un simple `res.ok`. Étendue avec 4 paramètres optionnels rétrocompatibles (`pixelId`/`accessToken`/`fbp`/`fbc`/`eventSourceUrl`) — les deux appelants existants (`Lead`/`CompleteRegistration`, funnel inscription) restent inchangés, toujours sur le pixel plateforme.
+- Nouvelle fonction `sendPurchaseCapiEvent(admin, order)` : garde anti-doublon + garde de configuration (`meta_capi_configured`/`meta_pixel_id`), lecture et déchiffrement du jeton (`shop_payment_secrets.meta_conversions_api_token`, `decryptApiKey` — premier appelant réel de cette fonction depuis le retrait des clés Bictorys de septembre), `event_id` déterministe (`purchase_{order.id}`, pas de génération aléatoire — calculable indépendamment côté serveur et côté pixel navigateur, condition de la déduplication Meta), écriture de la garde uniquement si l'envoi est confirmé réussi.
+- Branchée en fire-and-forget (`void`, même convention que `sendPushToShop`/les e-mails) dans `api/webhooks/bictorys/route.ts` et `api/webhooks/stripe/route.ts`, juste après la confirmation de commande — jamais capable de retarder ou de faire échouer la réponse HTTP au webhook.
+- `PixelPurchase.tsx` : passe désormais `purchase_${orderId}` comme `eventID` à `trackMetaEvent` (absent jusqu'ici, malgré le support déjà présent côté `MetaPixelProvider`) — sans ça, la dédup navigateur/serveur promise par la migration 105 n'aurait jamais pu fonctionner.
+- `updateMetaConversionsApiToken` (`lib/actions/settings.ts`), calquée sur `updateMetaPixelId` : écrit le jeton chiffré dans `shop_payment_secrets`, jamais dans `shops` ; pose `shops.meta_capi_configured` dans le même appel ; **ne renvoie jamais le jeton déchiffré au client**, contrairement à `payout_wave_number`/`payout_om_number` — seul le booléen reflète l'état.
+
+**Correctif trouvé en testant, hors plan initial** : `event_source_url` envoyé à Meta retombait sur `NEXT_PUBLIC_APP_URL` (domaine plateforme TEKKIShop) faute de `referer` disponible en contexte serveur-à-serveur — jamais l'URL réelle de la boutique du marchand. Conséquence concrète observée : l'événement `Purchase` était bien accepté par Meta (`events_received:1`, `meta_purchase_event_id` posé en base) mais n'apparaissait pas dans la Vue d'ensemble du compte publicitaire, le domaine source ne correspondant à aucun domaine enregistré sur le Pixel testé. Corrigé : `sendPurchaseCapiEvent` construit désormais `${APP_URL}/${shop.slug}/commander/success?order_id=...` et le transmet explicitement.
+
+**Testé en conditions réelles, 7 scénarios, boutiques jetables (`shefa` SN, `dear-curvy` FR)** :
+1. Paiement Bictorys réel (Wave, sandbox) — `meta_purchase_event_id` posé, `fbp` capturé et propagé jusqu'au webhook, événement confirmé source Serveur côté Meta.
+2. Déduplication navigateur/serveur — le chemin serveur confirmé propre ; le pixel navigateur n'a pas pu être validé pour une raison indépendante (voir points ouverts, `currency` rejetée par le SDK Pixel sur `Purchase` spécifiquement).
+3. Chevauchement webhook — Bictorys a livré deux fois le même webhook (cause probable : deux `await sendWhatsApp` bloquants ralentissant la réponse au-delà du délai de patience de Bictorys, voir points ouverts). La garde `.eq('status','pending')`, atomique côté Postgres, a garanti qu'un seul des deux appels concurrents pouvait atteindre `sendPurchaseCapiEvent` — pas une garde applicative qui aurait pu faillir, une impossibilité structurelle pour le second appel d'y arriver. Confirmé par un unique `meta_purchase_event_id` en base.
+4. Résilience — jeton CAPI délibérément invalide, paiement réel mené à terme : commande confirmée normalement (statut, notifications), `meta_purchase_event_id` resté `NULL`, aucune erreur 500 sur le webhook.
+5. Commande en acompte (30 %) — `value` envoyé à Meta confirmé égal à `deposit_amount`, jamais `total_price`.
+6. Suppression du jeton — `meta_capi_configured` repasse à `false`, plus aucun appel CAPI tenté sur un paiement suivant.
+7. Paiement Stripe réel, boutique EU/CA (France, mode test) — webhook reçu, `meta_purchase_event_id` posé, devise `EUR` confirmée (pas `XOF`), montant correct.
+
+**Infrastructure de test, deux découvertes indépendantes du chantier lui-même** :
+- Tunnel VS Code Dev Tunnels utilisé pour recevoir les webhooks Bictorys/Stripe en local, sans déploiement. Next.js 16 exige deux réglages distincts pour un tunnel de dev (vérifié dans `node_modules/next/dist/docs/`, pas deviné) : `allowedDevOrigins` (assets/endpoints du serveur de dev) et `experimental.serverActions.allowedOrigins` (CSRF Server Actions) — les deux dérivés dynamiquement de `NEXT_PUBLIC_APP_URL` dans `next.config.ts`, strictement `NODE_ENV !== 'production'`. Anomalie non résolue en cours de route : l'en-tête `Origin` réel envoyé par le navigateur pour les Server Actions valait `localhost:<port>`, pas l'URL du tunnel — cause non élucidée, les deux valeurs possibles sont allowlistées en dev.
+- **Tranche la question ouverte depuis §27/§28** : Bictorys **ignore bel et bien le `webhookUrl` envoyé par requête** à la création de charge — seul un webhook enregistré statiquement dans le dashboard (section Développeurs, mode Sandbox distinct de Production) est réellement appelé. Confirmé après plusieurs paiements sandbox sans aucune trace de webhook jusqu'à cet enregistrement statique fait.
+
+**Deux quasi-incidents évités en tout début de test, avant tout paiement réel** : `BICTORYS_API_KEY`/`BICTORYS_API_URL`/`BICTORYS_WEBHOOK_SECRET` pointaient sur la production (repéré avant le premier paiement, basculé en sandbox) ; `STRIPE_SECRET_KEY` était une clé **`rk_live_`** de production active (repéré avant tout paiement carte, basculé vers `STRIPE_SECRET_KEY_TEST` déjà présente dans `.env.local` sous un nom différent). Aucun paiement réel n'a été tenté dans les deux cas. Les deux valeurs restaurées sur production avant ce commit, confirmé par l'utilisateur.
+
+**Points ouverts, signalés non corrigés dans ce chantier** :
+- **Meta Pixel navigateur rejette `currency: 'XOF'` spécifiquement sur `Purchase`** — `ViewContent`/`AddToCart` envoient la même valeur sans rejet (vérifié, mêmes call sites, même pattern). Cause interne au SDK Meta, non élucidable depuis ce dépôt ; scope confirmé limité à `Purchase`, pas une limitation générale du pixel sur les devises africaines.
+- **CSP `connect-src`** bloque des domaines de délivrance secondaires du SDK Meta (`mpc-prod-*.a.run.app`, `*.ecs.us-east-1.on.aws`) — décision explicite de ne pas élargir un header de sécurité pour des domaines cloud génériques multi-tenants ; le canal principal (`facebook.com/tr`, via `img-src`, §107) fonctionne déjà, ces domaines semblent redondants.
+- **Deux `await sendWhatsApp` bloquants dans `handleOrderWebhook`** (confirmation client + alerte marchand, jamais en `void` contrairement au reste), cause probable du chevauchement webhook observé (scénario 3 ci-dessus) — rattaché par l'utilisateur au chantier "Fiabilité SMS/WhatsApp" déjà identifié, pas un nouveau sujet.
+- **Chantier "audit `/start` EU/CA" à ouvrir, jamais fait depuis l'ajout du support Europe/Canada** — 4 symptômes trouvés en testant, jamais cherchés avant : devise `'FCFA'` affichée par défaut à l'étape prix du quiz `/start` pour un pays EU/CA (`StartFlow.tsx:167`, `s.pays` transitoirement `null`) ; `shops.target_countries` par défaut = les 6 pays africains pour **toute** nouvelle boutique quel que soit son pays (`/start` n'écrit jamais cette colonne, seul le défaut SQL s'applique — migration 093) ; champ `Ville` obligatoire en Paramètres mais jamais collecté par le parcours diaspora, bloquant silencieusement tout le formulaire (`required` HTML sur un champ caché dans un autre onglet, aucune erreur visible possible) ; méthodes de paiement mobile money africaines affichées par défaut sur l'écran "Comment tu paies" d'une boutique française avant que l'écran carte correct n'apparaisse.
+
+**Suite** : mêmes points en attente qu'au §133 (Mali, email/Resend, push manuel, `expire-pending`/`purge-draft-shops`) + audit `/start` EU/CA (nouveau, détails ci-dessus).
