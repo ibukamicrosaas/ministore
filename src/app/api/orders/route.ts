@@ -446,9 +446,17 @@ export async function POST(req: NextRequest) {
     p_email:      client_email?.trim() ?? '',
   })
 
+  // Cookies Meta (_fbp/_fbc) — capturés ici seulement : le webhook de
+  // confirmation de paiement (Bictorys/Stripe) est appelé serveur-à-serveur,
+  // sans aucun cookie du navigateur du client (voir 105_meta_purchase_capi.sql).
+  const fbp = req.cookies.get('_fbp')?.value ?? null
+  const fbc = req.cookies.get('_fbc')?.value ?? null
+
   // ── Phase 3 : Créer la commande (stock déjà réservé) ────────────────────
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
+  // fbp/fbc absents des types générés (comme meta_pixel_id ailleurs dans le
+  // dépôt) — cast nécessaire, colonnes réelles vérifiées en base (105_meta_purchase_capi.sql).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: order, error: orderError } = await (supabase.from('orders') as any)
     .insert({
       shop_id:          shopId,
       client_id:        clientId ?? null,
@@ -468,6 +476,8 @@ export async function POST(req: NextRequest) {
       promo_discount_pct: promoId ? discountPct : null,
       discount_amount:    discountAmount,
       deposit_percentage,
+      fbp,
+      fbc,
     })
     .select('id, client_token, is_held')
     .single()

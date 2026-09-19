@@ -16,6 +16,7 @@ import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { APP_URL } from '@/constants'
 import { setShopStatus } from '@/lib/billing/shop-status'
 import * as Sentry from '@sentry/nextjs'
+import { sendPurchaseCapiEvent } from '@/lib/meta/conversions-api'
 
 export const runtime = 'nodejs'
 
@@ -106,9 +107,10 @@ export async function POST(req: NextRequest) {
               id, shop_id, client_token, total_price, deposit_amount, payment_type,
               delivery_type, delivery_date, delivery_price, delivery_zone_name,
               promo_code, promo_discount_pct, discount_amount, is_held, released_at,
+              fbp, fbc, meta_purchase_event_id,
               clients(first_name, whatsapp, phone, email),
               order_items(product_name, quantity, line_total, product_id, products(product_type, digital_file_name)),
-              shops:shop_id(name, slug, currency, logo_url, primary_color, email, phone_whatsapp)
+              shops:shop_id(name, slug, currency, logo_url, primary_color, email, phone_whatsapp, meta_pixel_id, meta_capi_configured)
             `)
             .single()
 
@@ -132,10 +134,18 @@ export async function POST(req: NextRequest) {
               delivery_price: number | null; delivery_zone_name: string | null
               promo_code: string | null; promo_discount_pct: number | null; discount_amount: number | null
               is_held: boolean; released_at: string | null
+              fbp: string | null; fbc: string | null; meta_purchase_event_id: string | null
               clients: { first_name: string; whatsapp: string | null; phone: string; email: string | null } | null
               order_items: { product_name: string; quantity: number; line_total: number; product_id: string; products: { product_type: string | null; digital_file_name: string | null } | null }[]
-              shops: { name: string; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null; phone_whatsapp: string | null } | null
+              shops: { name: string; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null; phone_whatsapp: string | null; meta_pixel_id: string | null; meta_capi_configured: boolean } | null
             }
+
+            // Purchase Meta Conversions API — même raisonnement que le webhook
+            // Bictorys (fire-and-forget, montant réellement encaissé pas
+            // total_price brut) — voir src/app/api/webhooks/bictorys/route.ts.
+            const isDepositPayment = ord.payment_type === 'online_deposit' && (ord.deposit_amount ?? 0) > 0
+            const amountCharged    = isDepositPayment ? (ord.deposit_amount ?? 0) : ord.total_price
+            void sendPurchaseCapiEvent(supabase, { ...ord, amountCharged })
 
             const digitalItems = ord.order_items.filter(i => i.products?.product_type === 'digital')
             const digitalDownloads: { productName: string; downloadUrl: string }[] = []

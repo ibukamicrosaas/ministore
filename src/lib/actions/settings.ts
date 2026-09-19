@@ -11,6 +11,7 @@ import { isSupportedCountry } from '@/lib/utils/country-groups'
 import type { UpdateShopInput } from '@/types'
 import { canHideTekkishopFooter, canUseCustomDomain, minimumPlanLabel } from '@/lib/plan-features'
 import { deleteOldStorageFiles } from '@/lib/storage/cleanup'
+import { encryptApiKey } from '@/lib/crypto/encrypt'
 
 async function getPlanGatedShopId(
   check: (plan: string | null | undefined) => boolean,
@@ -650,6 +651,60 @@ export async function updateMetaPixelId(
     .eq('id', profile.shop_id)
 
   if (error) return { error: 'Impossible de mettre à jour le Pixel ID.' }
+
+  const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
+  revalidatePath('/dashboard/settings')
+  if (shopMeta?.slug) revalidatePath(`/${shopMeta.slug}`)
+  return {}
+}
+
+// Jeton d'accès système Meta Conversions API (Option A, 105_meta_purchase_capi.sql) —
+// colonne sensible, vit dans shop_payment_secrets (jamais shops), chiffrée
+// applicativement avant écriture (même principe que les anciennes clés
+// Bictorys, cf. audit sécurité §109). Ne renvoie JAMAIS le jeton déchiffré au
+// client, contrairement à payout_wave_number/payout_om_number — seul
+// shops.meta_capi_configured (booléen public) reflète l'état de config.
+export async function updateMetaConversionsApiToken(
+  token: string | null,
+): Promise<{ error?: string }> {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Non authentifié.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('shop_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.shop_id || profile.role !== 'owner') return { error: 'Accès non autorisé.' }
+
+  const cleaned = token ? token.trim() : null
+  if (cleaned && cleaned.length < 20) {
+    return { error: 'Jeton invalide — vérifie que tu as bien copié le jeton entier.' }
+  }
+
+  const admin = createAdminClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: secretsError } = await (admin.from('shop_payment_secrets') as any)
+    .update({
+      meta_conversions_api_token: cleaned ? encryptApiKey(cleaned) : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('shop_id', profile.shop_id)
+
+  if (secretsError) {
+    console.error('[updateMetaConversionsApiToken] shop_payment_secrets', secretsError.message)
+    return { error: 'Impossible de mettre à jour le jeton.' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin.from('shops') as any)
+    .update({ meta_capi_configured: !!cleaned, updated_at: new Date().toISOString() })
+    .eq('id', profile.shop_id)
+
+  if (error) return { error: 'Impossible de mettre à jour le jeton.' }
 
   const { data: shopMeta } = await supabase.from('shops').select('slug').eq('id', profile.shop_id).single()
   revalidatePath('/dashboard/settings')

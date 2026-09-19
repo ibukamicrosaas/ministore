@@ -4,13 +4,14 @@ import { useEffect } from 'react'
 import { trackMetaEvent } from '@/components/pwa/MetaPixelProvider'
 
 interface Props {
-  orderId: string
-  total:   number
-  items:   { productName: string; unitPrice: number; quantity: number }[]
+  orderId:  string
+  total:    number
+  currency: string
+  items:    { productName: string; unitPrice: number; quantity: number }[]
 }
 
 /** Déclenche l'événement Purchase Meta Pixel une fois la page de succès affichée */
-export function PixelPurchase({ orderId, total, items }: Props) {
+export function PixelPurchase({ orderId, total, currency, items }: Props) {
   useEffect(() => {
     trackMetaEvent('Purchase', {
       content_ids: items.map(i => i.productName),
@@ -21,9 +22,9 @@ export function PixelPurchase({ orderId, total, items }: Props) {
       })),
       content_type: 'product',
       value:        total,
-      currency:     'XOF',
+      currency,
       order_id:     orderId,
-    })
+    }, `purchase_${orderId}`) // même event_id que l'envoi serveur (webhooks) — déduplication Meta
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])
 

@@ -16,6 +16,7 @@ import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp
 import { sendPushToShop } from '@/lib/push/send'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
+import { sendPurchaseCapiEvent } from '@/lib/meta/conversions-api'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
@@ -368,9 +369,10 @@ async function handleOrderWebhook(
     .select(`
       id, shop_id, total_price, deposit_amount, payment_type, delivery_type, delivery_date, client_token, is_held, released_at,
       delivery_price, delivery_zone_name, promo_code, promo_discount_pct, discount_amount,
+      fbp, fbc, meta_purchase_event_id,
       clients(first_name, last_name, whatsapp, phone, email),
       order_items(product_name, quantity, line_total, product_id, products(product_type)),
-      shops(name, phone_whatsapp, slug, currency, logo_url, primary_color, email)
+      shops(name, phone_whatsapp, slug, currency, logo_url, primary_color, email, meta_pixel_id, meta_capi_configured)
     `)
     .single()
 
@@ -395,15 +397,28 @@ async function handleOrderWebhook(
     promo_code: string | null
     promo_discount_pct: number | null
     discount_amount: number | null
+    fbp: string | null
+    fbc: string | null
+    meta_purchase_event_id: string | null
     clients: { first_name: string; last_name: string | null; whatsapp: string | null; phone: string; email: string | null } | null
     order_items: { product_name: string; quantity: number; line_total: number; product_id: string | null; products: { product_type: string | null } | null }[]
-    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null } | null
+    shops: { name: string; phone_whatsapp: string | null; slug: string; currency: string | null; logo_url: string | null; primary_color: string | null; email: string | null; meta_pixel_id: string | null; meta_capi_configured: boolean } | null
   }
 
   if (!o.clients || !o.shops) {
     console.log('[handleOrderWebhook] Données client ou shop manquantes')
     return NextResponse.json({ ok: true })
   }
+
+  // Purchase Meta Conversions API — envoyé vers le pixel du MARCHAND, montant
+  // réellement encaissé sur cette transaction (acompte ou total, même calcul
+  // que la validation de montant plus haut — jamais total_price brut). Fire-
+  // and-forget comme les autres effets de bord post-confirmation
+  // (sendPushToShop, e-mails) : ne doit jamais retarder/casser la réponse
+  // HTTP au webhook Bictorys.
+  const isDepositPayment = o.payment_type === 'online_deposit' && (o.deposit_amount ?? 0) > 0
+  const amountCharged    = isDepositPayment ? o.deposit_amount : o.total_price
+  void sendPurchaseCapiEvent(supabase, { ...o, amountCharged })
 
   console.log('[handleOrderWebhook] Envoi des notifications — orderId:', o.id)
 

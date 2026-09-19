@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout, updateGridImageRatio } from '@/lib/actions/settings'
+import { updateShop, updateShopSlug, uploadShopLogo, updateHideBranding, updateCustomDomain, updateBusinessDesign, uploadCoverImage, uploadAboutPhoto, updateMetaPixelId, updateMetaConversionsApiToken, updateShopCurrency, verifyAndUpdatePayoutNumbers, updateProductLayout, updateGridImageRatio } from '@/lib/actions/settings'
 import toast from 'react-hot-toast'
 import { Camera, X, Plus, Trash2, Link2, CheckCircle2, XCircle, Loader2, Globe, EyeOff as EyeOffIcon, Crown, Sparkles, ChevronDown, Check, CreditCard, Lock } from 'lucide-react'
 import { isEuCaCountry, CURRENCY_LABEL, getPayoutMethods } from '@/lib/utils/country-groups'
@@ -250,6 +250,14 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
   )
   const [savingPixel, setSavingPixel]           = useState(false)
 
+  // Jeton Conversions API Meta (Purchase, envoi serveur) — jamais pré-rempli,
+  // le serveur ne renvoie jamais le jeton déchiffré (voir updateMetaConversionsApiToken)
+  const metaCapiConfiguredValue = (shop as unknown as Record<string, unknown>).meta_capi_configured
+  const [metaCapiConfigured, setMetaCapiConfigured] = useState<boolean>(metaCapiConfiguredValue === true)
+  const [showCapiTokenInput, setShowCapiTokenInput] = useState<boolean>(metaCapiConfiguredValue !== true)
+  const [capiToken, setCapiToken]                   = useState<string>('')
+  const [savingCapiToken, setSavingCapiToken]        = useState(false)
+
   // Devise du shop
   const [shopCurrency, setShopCurrency]         = useState<ShopCurrency>(
     (shopAny.currency as ShopCurrency | null) ?? 'XOF'
@@ -387,6 +395,35 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       window.dispatchEvent(new CustomEvent('shop-updated'))
     }
     setSavingPixel(false)
+  }
+
+  async function handleCapiTokenSave() {
+    if (!capiToken.trim()) return
+    setSavingCapiToken(true)
+    const result = await updateMetaConversionsApiToken(capiToken.trim())
+    if ('error' in result && result.error) toast.error(result.error)
+    else {
+      toast.success('Jeton Conversions API enregistré ✓')
+      setMetaCapiConfigured(true)
+      setShowCapiTokenInput(false)
+      setCapiToken('')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setSavingCapiToken(false)
+  }
+
+  async function handleCapiTokenDelete() {
+    setSavingCapiToken(true)
+    const result = await updateMetaConversionsApiToken(null)
+    if ('error' in result && result.error) toast.error(result.error)
+    else {
+      toast.success('Jeton Conversions API supprimé ✓')
+      setMetaCapiConfigured(false)
+      setShowCapiTokenInput(true)
+      setCapiToken('')
+      window.dispatchEvent(new CustomEvent('shop-updated'))
+    }
+    setSavingCapiToken(false)
   }
 
   async function handleSlugSave() {
@@ -1666,6 +1703,72 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       <p className="text-[11px] text-blue-600">
         💡 Besoin d'aide ? Consulte la <a href="https://developers.facebook.com/docs/facebook-pixel" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">documentation Meta Pixel</a>
       </p>
+    </div>
+
+    {/* Jeton Conversions API Meta — complète le Pixel par un envoi Purchase
+        depuis nos serveurs, plus fiable pour le paiement mobile money (le
+        retour vers la page de succès n'aboutit pas toujours). Même vocabulaire
+        simplifié que le bloc Pixel ci-dessus. */}
+    <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 text-blue-600 shrink-0 flex items-center justify-center text-xs font-bold">f</div>
+        <p className="text-sm font-medium text-gray-900">Suivi des ventes renforcé (Conversions API)</p>
+      </div>
+      <p className="text-xs text-gray-500">
+        En plus du Pixel ci-dessus, envoie la confirmation d&apos;achat directement depuis nos serveurs à Facebook — utile car le retour vers ta boutique après un paiement Wave/Orange Money/MTN n&apos;aboutit pas toujours dans le navigateur du client. Optionnel, ignore ce bloc si le Pixel te suffit.
+      </p>
+
+      <div className="space-y-3 pt-2 border-t border-blue-100">
+        {metaCapiConfigured && !showCapiTokenInput ? (
+          <div className="rounded-lg bg-white p-3 flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-green-700">✓ Jeton Conversions API configuré</p>
+            <button
+              type="button"
+              onClick={() => setShowCapiTokenInput(true)}
+              className="text-xs font-semibold text-blue-600 hover:underline shrink-0"
+            >
+              Remplacer
+            </button>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">Jeton d&apos;accès système</label>
+            <input
+              type="password"
+              value={capiToken}
+              onChange={e => setCapiToken(e.target.value)}
+              placeholder="Colle ton jeton ici"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono outline-none focus:border-blue-300 transition-colors"
+              autoComplete="off"
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Tu le trouves dans le Gestionnaire d&apos;événements Facebook → ton Pixel → Conversions API → Générer un jeton d&apos;accès
+            </p>
+          </div>
+        )}
+
+        {(!metaCapiConfigured || showCapiTokenInput) && (
+          <button
+            type="button"
+            onClick={handleCapiTokenSave}
+            disabled={savingCapiToken || !capiToken.trim()}
+            className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+          >
+            {savingCapiToken ? 'Enregistrement...' : 'Enregistrer le jeton'}
+          </button>
+        )}
+
+        {metaCapiConfigured && (
+          <button
+            type="button"
+            onClick={handleCapiTokenDelete}
+            disabled={savingCapiToken}
+            className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-60"
+          >
+            Supprimer le jeton
+          </button>
+        )}
+      </div>
     </div>
 
     </div>{/* /contenu */}

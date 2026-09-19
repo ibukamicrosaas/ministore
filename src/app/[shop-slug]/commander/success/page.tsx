@@ -169,6 +169,7 @@ export default async function SuccessPage({ params, searchParams }: Props) {
       <PixelPurchase
         orderId={order.id}
         total={order.total_price}
+        currency={currency}
         items={order.order_items.map(i => ({
           productName: i.product_name,
           unitPrice:   i.unit_price,
