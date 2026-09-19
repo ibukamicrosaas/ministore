@@ -3161,3 +3161,24 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : Lot 4 — Commandes (liste + détail, y compris la correction du stepper trompeur sur commande annulée déjà repérée au Lot 1 et volontairement laissée de côté à l'époque).
+
+---
+
+## 137. Boucle `/onboarding` — 18 comptes marchand débloqués manuellement, cause de fond en attente
+
+**Signalé par l'utilisateur** : une boutique créée via l'ancien `/onboarding` (remplacé depuis par `/start`) restait bloquée en boucle — clic sur "Activer mon site" renvoyait systématiquement vers `/onboarding` au lieu du choix de plan. Investigation demandée avant toute décision de priorité, aucun code écrit avant le déblocage manuel ci-dessous.
+
+**Mécanisme trouvé** : deux redirections indépendantes se contredisent. Le middleware (`middleware.ts:273`) renvoie vers `/onboarding` tant que `profiles.onboarding_completed` n'est pas `true` ; `/onboarding/page.tsx:47` renvoie lui vers `/dashboard` dès que `shops.onboarding_completed` est `true`. `completeOnboarding()` (`src/lib/actions/onboarding.ts:256-286`, déclenchée par "Activer mon site") écrit les deux colonnes dans un même `Promise.all` **sans jamais vérifier si l'une des deux écritures échoue**, et `handleActivate()` (`OnboardingWizard.tsx:314-319`) navigue vers `/dashboard/upgrade` **inconditionnellement**, succès ou non. Si l'écriture échoue silencieusement, le marchand revit la même boucle à chaque clic, sans jamais recevoir d'erreur.
+
+**Ampleur mesurée, pas supposée** : hypothèse initiale d'un décalage entre `shops.onboarding_completed` et `profiles.onboarding_completed` — **0 boutique dans cet état exact**, écartée. En élargissant : sur 1571 boutiques `trial_model='legacy'`, 273 n'ont jamais dépassé les étapes 2-4 (abandon probable, pas nécessairement un bug), et **18 sont bloquées exactement à l'étape 5**, les deux colonnes de complétion à `false` sur les deux tables. Vérifiées une à une : vrais marchands (noms réels, `status='active'`), 14 sur 18 avec un produit déjà configuré, créées entre le **7 juin et le 13 août** — pas un incident clos, le dernier cas date de 5 semaines avant cette session.
+
+**Déblocage manuel appliqué aujourd'hui, sur les 18 ID exacts, validés un par un avant exécution** (pas un `UPDATE` en masse à l'aveugle) :
+```sql
+update shops    set onboarding_completed = true where id in (<18 shop_id>);
+update profiles set onboarding_completed = true where id in (<18 profile_id>);
+```
+Revérifié après coup : 0 des 18 encore dans un état bloqué sur l'une ou l'autre table.
+
+**`/onboarding` vérifié mort comme point d'entrée pour un nouveau marchand — pas de garde-fou urgent posé, sur décision explicite de l'utilisateur.** Aucun lien vivant n'y mène (landing, nav, marketing — grep exhaustif) ; le bouton "Créer un compte" de `/login` pointe exclusivement vers `/start` (commenté comme tel dans le code) ; la seule action qui créait un compte puis redirigeait vers `/onboarding` (`signUp`, `auth.ts:72`) est confirmée morte, zéro appelant ; `/onboarding/page.tsx` exige une session déjà authentifiée, donc même un vieux lien indexé ne peut rien déclencher pour un visiteur sans compte existant. Le risque ne touche que la population historique ci-dessus, rien de neuf ne peut s'y ajouter par un chemin vivant de l'app aujourd'hui.
+
+**Suite, cause de fond toujours ouverte, pas corrigée** : pourquoi l'écriture de `completeOnboarding()` échoue silencieusement pour ces comptes précis (RLS, session, autre) reste à déterminer — nécessiterait une reproduction réelle. Correctif minimal identifié mais pas fait : vérifier les erreurs des deux appels du `Promise.all` et ne naviguer vers `/dashboard/upgrade` qu'en cas de succès réel, avec un message d'erreur explicite sinon plutôt qu'un rebond silencieux.
