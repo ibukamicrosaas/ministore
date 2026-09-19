@@ -11,7 +11,16 @@ type ImportResult = {
   errors:   string[]
 }
 
-export function CsvImportButton() {
+interface Props {
+  /**
+   * 'link' : rendu en simple lien texte secondaire (état vide, section 7 de
+   * la spec — "Importer CSV" n'est pas une action de premier niveau).
+   * 'button' (défaut, inchangé) : bouton bordé de la barre d'outils existante.
+   */
+  variant?: 'button' | 'link'
+}
+
+export function CsvImportButton({ variant = 'button' }: Props) {
   const router           = useRouter()
   const inputRef         = useRef<HTMLInputElement>(null)
   const [open, setOpen]  = useState(false)
@@ -64,13 +73,22 @@ export function CsvImportButton() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-      >
-        <Upload className="h-4 w-4" />
-        Importer CSV
-      </button>
+      {variant === 'link' ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="text-sm font-medium text-gray-500 underline decoration-gray-300 underline-offset-2 hover:text-gray-700 transition-colors"
+        >
+          ou importer une liste depuis un fichier CSV
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <Upload className="h-4 w-4" />
+          Importer CSV
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
-import { Plus, Package } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { CsvImportButton } from './CsvImportButton'
 import { ProductOrderList } from './ProductOrderList'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -91,23 +91,32 @@ export default async function ProductsPage() {
             {products.length} produit{products.length > 1 ? 's' : ''} configuré{products.length > 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <CsvImportButton />
-          <Link href="/dashboard/products/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
-              Ajouter
-            </Button>
-          </Link>
-        </div>
+        {/* État vide : un seul bouton principal dans l'illustration ci-dessous
+            (section 7 de la spec) — ce duo Importer/Ajouter redondant ne
+            s'affiche qu'une fois qu'il y a déjà des produits à gérer. */}
+        {products.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <CsvImportButton />
+            <Link href="/dashboard/products/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4" />
+                Ajouter
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       {!products.length ? (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white">
           <EmptyState
-            icon={Package}
-            title="Aucun produit configuré"
-            description="Ajoute tes produits pour que tes clients puissent passer commande."
+            illustration={
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--db-primary-soft,#E7EFFF)] text-3xl">
+                📦
+              </div>
+            }
+            title="Ajoute ton premier produit"
+            description="Une photo, un nom, un prix — ta boutique est prête à vendre en moins de 2 minutes."
             action={
               <Link href="/dashboard/products/new">
                 <Button size="sm">
@@ -116,6 +125,7 @@ export default async function ProductsPage() {
                 </Button>
               </Link>
             }
+            secondaryAction={<CsvImportButton variant="link" />}
           />
         </div>
       ) : (

@@ -3,16 +3,27 @@ import type { LucideIcon } from 'lucide-react'
 
 interface EmptyStateProps {
   icon?: LucideIcon
+  /**
+   * Remplace le cercle icône générique gris par un contenu libre (ex. emoji
+   * dans un cercle coloré) — section 7, SPEC-refonte-dashboard-marchand.md :
+   * "icône ou illustration simple, pas une icône générique grise" pour les
+   * écrans encourageants (premier produit, etc.). `icon` reste inchangé pour
+   * tous les autres appelants existants — purement additif.
+   */
+  illustration?: React.ReactNode
   title: string
   description?: string
   action?: React.ReactNode
+  secondaryAction?: React.ReactNode
   className?: string
 }
 
-export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, illustration, title, description, action, secondaryAction, className }: EmptyStateProps) {
   return (
     <div className={clsx('flex flex-col items-center justify-center py-12 text-center', className)}>
-      {Icon && (
+      {illustration ? (
+        <div className="mb-4">{illustration}</div>
+      ) : Icon && (
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
           <Icon className="h-7 w-7 text-gray-400" />
         </div>
@@ -20,6 +31,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       <h3 className="text-base font-semibold text-gray-900">{title}</h3>
       {description && <p className="mt-1 text-sm text-gray-500 max-w-sm">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
+      {secondaryAction && <div className="mt-3">{secondaryAction}</div>}
     </div>
   )
 }
