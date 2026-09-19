@@ -3140,3 +3140,24 @@ Données de test nettoyées, `tsc --noEmit`/`npm run build` propres.
 - **Chantier "audit `/start` EU/CA" à ouvrir, jamais fait depuis l'ajout du support Europe/Canada** — 4 symptômes trouvés en testant, jamais cherchés avant : devise `'FCFA'` affichée par défaut à l'étape prix du quiz `/start` pour un pays EU/CA (`StartFlow.tsx:167`, `s.pays` transitoirement `null`) ; `shops.target_countries` par défaut = les 6 pays africains pour **toute** nouvelle boutique quel que soit son pays (`/start` n'écrit jamais cette colonne, seul le défaut SQL s'applique — migration 093) ; champ `Ville` obligatoire en Paramètres mais jamais collecté par le parcours diaspora, bloquant silencieusement tout le formulaire (`required` HTML sur un champ caché dans un autre onglet, aucune erreur visible possible) ; méthodes de paiement mobile money africaines affichées par défaut sur l'écran "Comment tu paies" d'une boutique française avant que l'écran carte correct n'apparaisse.
 
 **Suite** : mêmes points en attente qu'au §133 (Mali, email/Resend, push manuel, `expire-pending`/`purge-draft-shops`) + audit `/start` EU/CA (nouveau, détails ci-dessus).
+
+---
+
+## 136. Refonte dashboard — Lot 5a (Produits), commit `11e5be6`
+
+**Prochain lot dans l'ordre déjà validé (§123 : Lot 1 → 2 → 3 → 8 → 5a → 4 → 6 → 7 → 9)**, précédé d'une revérification d'état des lieux avant tout code (les lots 1/2/3/8 confirmés livrés et inchangés, code live cohérent avec REPRISE.md).
+
+**Constat avant code : la liste de produits couvrait déjà l'essentiel de la section 7 de la spec** (photo, nom, prix, stock, badge "Inactif", toggle rapide activer/désactiver sans ouvrir la fiche) — `ProductOrderList.tsx` non touché. Le vrai écart avec la spec se limitait à l'état vide.
+
+**Livré** :
+- `EmptyState.tsx` : deux props optionnels ajoutés, purement additifs — `illustration` (remplace le cercle icône générique gris par un contenu libre) et `secondaryAction` (lien sous le bouton principal). Tous les autres appelants existants du composant, inchangés.
+- `CsvImportButton.tsx` : prop `variant` (`'button'` par défaut, inchangé ; `'link'` nouveau, simple lien texte pour l'état vide).
+- `products/page.tsx` : état vide entièrement refait — émoji 📦 dans un cercle aux tokens du dashboard (`--db-primary-soft`) au lieu de l'icône `Package` grise, titre "Ajoute ton premier produit", sous-titre concret ("Une photo, un nom, un prix — ta boutique est prête à vendre en moins de 2 minutes", repris du mockup), un seul bouton principal, import CSV redescendu en lien secondaire. Le duo Importer/Ajouter de l'en-tête, redondant avec ce bouton principal, ne s'affiche plus que lorsqu'il y a déjà des produits — condition nécessaire pour que "un seul bouton principal" soit vrai à la lettre sur l'écran vide, pas seulement en apparence.
+
+**Volontairement non touché** : `ProductForm.tsx` (aucune spécification du formulaire d'ajout/édition ni de l'upload d'image dans la spec ni dans le mockup, vérifié par recherche exhaustive des deux documents) — la question de la compression d'image avant upload, soulevée en amont, reste un chantier séparé à trancher explicitement, pas glissée dans ce lot.
+
+**Testé en conditions réelles** (boutique de test) : état vide confirmé conforme par capture (émoji, titre, sous-titre, bouton unique, lien CSV) ; état avec produit confirmé par capture (en-tête Importer/Ajouter réapparu, carte produit inchangée — photo, prix, variantes, partage, toggle).
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : Lot 4 — Commandes (liste + détail, y compris la correction du stepper trompeur sur commande annulée déjà repérée au Lot 1 et volontairement laissée de côté à l'époque).
