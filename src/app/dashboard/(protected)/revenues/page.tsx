@@ -1,11 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import { Wallet, TrendingUp, ArrowDownToLine, Clock, Link as LinkIcon, Lock } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Wallet, TrendingUp, ArrowDownToLine, Link as LinkIcon } from 'lucide-react'
 import { RequestPayoutButton } from './RequestPayoutButton'
+import { RevenueDetailAccordion } from './RevenueDetailAccordion'
 import { PAYOUT_MIN_AMOUNT } from '@/constants'
 import type { Profile, Payout } from '@/types'
 import { isEuCaCountry, getPayoutMethods, formatPrice, PAYOUT_METHODS_BY_COUNTRY } from '@/lib/utils/country-groups'
@@ -118,9 +116,13 @@ export default async function RevenuesPage() {
   const hasPayoutMethod = payoutMethodsWithNumbers.length > 0
   const canRequestPayout = !euCa && availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod
 
-  // Label lisible pour une méthode de payout (recherche dans toutes les définitions)
+  // Label lisible pour une méthode de payout (recherche dans toutes les
+  // définitions) — résolu ici, côté serveur : une fonction ne peut pas
+  // traverser la frontière Server → Client Component (RevenueDetailAccordion),
+  // seule une donnée sérialisable le peut.
   const allMethods = Object.values(PAYOUT_METHODS_BY_COUNTRY).flat()
   const getMethodLabel = (key: string) => allMethods.find(m => m.key === key)?.label ?? key
+  const payoutsWithLabel = payouts.map(p => ({ ...p, methodLabel: getMethodLabel(p.payout_method) }))
 
   return (
     <div className="space-y-5 pb-8">
@@ -129,20 +131,27 @@ export default async function RevenuesPage() {
         <p className="text-sm text-gray-500 mt-0.5">Paiements en ligne collectés via TekkiShop</p>
       </div>
 
-      {/* Solde disponible */}
-      <Card padding="lg">
+      {/* Carte portefeuille — section 8 de la spec : solde en grand, un seul
+          bouton principal blanc sur fond de couleur, deux indicateurs
+          secondaires seulement. Le reste (commission, répartition, fonds
+          bloqués, historique) est replié dans RevenueDetailAccordion.
+          Pas <Card> : ses classes de base (bg-white, border-gray-200) sont
+          en tête de la chaîne clsx() et gagnent la cascade Tailwind quelle
+          que soit la classe passée en className — un <div> nu évite ce
+          conflit plutôt que de forcer via !important. */}
+      <div className="rounded-xl p-6 shadow-sm bg-[var(--db-money,#128A4C)] text-white">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Wallet className="h-4 w-4 text-gray-400" />
-              <p className="text-xs text-gray-500">Solde disponible</p>
+              <Wallet className="h-4 w-4 text-white/70" />
+              <p className="text-xs text-white/80">Solde disponible</p>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-white">
               {formatPrice(Math.max(0, availableBalance), shopCurrency)}
             </p>
           </div>
           {euCa ? (
-            <span className="text-xs text-gray-400 max-w-[160px] text-right leading-relaxed">
+            <span className="text-xs text-white/80 max-w-[160px] text-right leading-relaxed">
               Paiements gérés via Stripe Connect — les fonds arrivent directement sur ton compte bancaire.
             </span>
           ) : (
@@ -158,9 +167,9 @@ export default async function RevenuesPage() {
         </div>
 
         {!euCa && !hasPayoutMethod && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
-            <LinkIcon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700">
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2.5">
+            <LinkIcon className="h-4 w-4 text-white shrink-0 mt-0.5" />
+            <p className="text-xs text-white">
               Ajoute un numéro mobile money dans tes{' '}
               <Link href="/dashboard/settings" className="font-semibold underline">Paramètres</Link>{' '}
               pour pouvoir retirer tes fonds.
@@ -169,138 +178,41 @@ export default async function RevenuesPage() {
         )}
 
         {!euCa && hasPayoutMethod && availableBalance < PAYOUT_MIN_AMOUNT && availableBalance > 0 && (
-          <p className="mt-3 text-xs text-gray-400">
+          <p className="mt-3 text-xs text-white/70">
             Minimum {formatPrice(PAYOUT_MIN_AMOUNT, shopCurrency)} requis pour effectuer un retrait.
           </p>
         )}
-      </Card>
 
-      {/* Fonds bloqués — commandes digitales retenues et payées, en attendant l'activation */}
-      {blockedNet > 0 && (
-        <Card padding="lg" className="border-amber-200 bg-amber-50">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-amber-600" />
-              <p className="text-sm font-semibold text-amber-800">Bloqué jusqu&apos;à activation</p>
+        {/* Deux indicateurs secondaires seulement, dans la carte */}
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/20 pt-4">
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <TrendingUp className="h-3.5 w-3.5 text-white/70" />
+              <p className="text-[11px] text-white/80">Total gagné</p>
             </div>
-            <p className="text-xl font-bold text-amber-800">{formatPrice(blockedNet, shopCurrency)}</p>
+            <p className="text-sm font-bold text-white">{formatPrice(totalNet, shopCurrency)}</p>
           </div>
-          <p className="mt-3 text-xs text-amber-700">
-            Ces {formatPrice(blockedNet, shopCurrency)} sont à toi. Choisis un plan pour les débloquer et les retirer.
-          </p>
-        </Card>
-      )}
-
-      {/* Métriques */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card padding="md">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-            <p className="text-xs text-gray-500">Total net gagné</p>
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <ArrowDownToLine className="h-3.5 w-3.5 text-white/70" />
+              <p className="text-[11px] text-white/80">Total retiré</p>
+            </div>
+            <p className="text-sm font-bold text-white">{formatPrice(totalPaidOut, shopCurrency)}</p>
           </div>
-          <p className="text-lg font-bold text-gray-900">{formatPrice(totalNet, shopCurrency)}</p>
-        </Card>
-
-        <Card padding="md">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
-            <p className="text-xs text-gray-500">Total retiré</p>
-          </div>
-          <p className="text-lg font-bold text-gray-900">{formatPrice(totalPaidOut, shopCurrency)}</p>
-        </Card>
-
-        <Card padding="md">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="h-3.5 w-3.5 text-amber-500" />
-            <p className="text-xs text-gray-500">En attente</p>
-          </div>
-          <p className="text-lg font-bold text-amber-600">{formatPrice(totalPending, shopCurrency)}</p>
-        </Card>
-
-        <Card padding="md">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-xs text-gray-500">Commission TekkiShop</p>
-          </div>
-          <p className="text-lg font-bold text-gray-900">{commissionRate}%</p>
-          <p className="text-xs text-gray-400">{formatPrice(commissionTotal, shopCurrency)} déduits</p>
-        </Card>
+        </div>
       </div>
 
-      {/* Répartition */}
-      {(totalCollected > 0 || blockedGross > 0) && (
-        <Card padding="md">
-          <p className="text-sm font-semibold text-gray-900 mb-3">Répartition</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Collecté en ligne</span>
-              <span className="font-medium text-gray-900">{formatPrice(totalCollected + blockedGross, shopCurrency)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Commission TekkiShop ({commissionRate}%)</span>
-              <span className="font-medium text-red-500">− {formatPrice(commissionTotal + (blockedGross - blockedNet), shopCurrency)}</span>
-            </div>
-            {blockedNet > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Bloqué jusqu&apos;à activation</span>
-                <span className="font-medium text-amber-600">− {formatPrice(blockedNet, shopCurrency)}</span>
-              </div>
-            )}
-            <div className="border-t border-gray-100 pt-2 flex justify-between text-sm">
-              <span className="font-semibold text-gray-900">Net disponible</span>
-              <span className="font-bold text-gray-900">{formatPrice(totalNet, shopCurrency)}</span>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Historique des retraits */}
-      <div>
-        <p className="text-sm font-semibold text-gray-900 mb-3">Historique des retraits</p>
-        {payouts.length === 0 ? (
-          <div className="rounded-xl border border-gray-100 bg-gray-50 py-10 text-center">
-            <p className="text-sm text-gray-400">Aucun retrait effectué pour le moment.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {payouts.map(payout => (
-              <div
-                key={payout.id}
-                className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4"
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-full shrink-0 ${
-                  payout.status === 'completed' ? 'bg-green-100' :
-                  payout.status === 'failed' ? 'bg-red-100' : 'bg-amber-100'
-                }`}>
-                  <ArrowDownToLine className={`h-4 w-4 ${
-                    payout.status === 'completed' ? 'text-green-600' :
-                    payout.status === 'failed' ? 'text-red-500' : 'text-amber-600'
-                  }`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {formatPrice(payout.net_amount, shopCurrency)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {getMethodLabel(payout.payout_method)} · {payout.payout_number}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {format(new Date(payout.requested_at), 'd MMMM yyyy', { locale: fr })}
-                  </p>
-                </div>
-                <span className={`text-xs font-semibold shrink-0 ${
-                  payout.status === 'completed' ? 'text-green-600' :
-                  payout.status === 'failed' ? 'text-red-500' :
-                  payout.status === 'processing' ? 'text-blue-600' : 'text-amber-600'
-                }`}>
-                  {payout.status === 'completed' ? 'Terminé' :
-                   payout.status === 'failed' ? 'Échoué' :
-                   payout.status === 'processing' ? 'En cours' : 'En attente'}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <RevenueDetailAccordion
+        currency={shopCurrency}
+        blockedNet={blockedNet}
+        totalPending={totalPending}
+        commissionRate={commissionRate}
+        commissionTotal={commissionTotal}
+        totalCollected={totalCollected}
+        blockedGross={blockedGross}
+        totalNet={totalNet}
+        payouts={payoutsWithLabel}
+      />
     </div>
   )
 }

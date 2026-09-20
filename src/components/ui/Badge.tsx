@@ -6,6 +6,11 @@ import { clsx } from 'clsx'
 export type OrderStatusVariant =
   'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed'
 
+// Statuts de retrait (colonne `payouts.status`) — 'pending'/'completed'
+// réutilisent les clés déjà posées pour les commandes (même sens de couleur),
+// seuls 'processing'/'failed' sont propres aux retraits (Lot 6).
+export type PayoutStatusVariant = 'processing' | 'failed'
+
 interface BadgeProps {
   children: React.ReactNode
   variant?:
@@ -14,6 +19,7 @@ interface BadgeProps {
     // (Lot 1). Repli littéral si jamais rendu hors de .dashboard-scope
     // (globals.css) — aujourd'hui Badge n'est utilisé que dans le dashboard.
     | OrderStatusVariant
+    | PayoutStatusVariant
   className?: string
 }
 
@@ -33,6 +39,10 @@ const variantClasses: Record<NonNullable<BadgeProps['variant']>, string> = {
   // le tableau de couleurs de la section 6 ; couleur reprise telle quelle de
   // l'ancien ORDER_STATUS_COLORS.completed (Lot 4).
   completed: 'bg-violet-100 text-violet-800',
+  // Retraits (Lot 6) — mêmes tokens que confirmed/cancelled côté commandes,
+  // même sens de couleur (bleu = en cours, rouge = échec).
+  processing: 'bg-[var(--db-primary-soft,#E7EFFF)] text-[var(--db-primary,#155EEF)]',
+  failed:     'bg-[var(--db-danger-soft,#FBEAE7)] text-[var(--db-danger,#C4321F)]',
 }
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {

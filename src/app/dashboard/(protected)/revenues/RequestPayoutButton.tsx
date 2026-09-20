@@ -55,13 +55,16 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
 
   return (
     <>
+      {/* Blanc sur fond de couleur (section 8 de la spec) — le bouton vit
+          désormais dans la carte portefeuille pleine couleur, plus sur fond
+          blanc. */}
       <button
         onClick={() => setOpen(true)}
         disabled={!canRequest}
-        className="flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40 active:opacity-80 transition-opacity shrink-0"
+        className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[var(--db-money,#128A4C)] disabled:opacity-40 active:opacity-80 transition-opacity shrink-0"
       >
         <ArrowDownToLine className="h-4 w-4" />
-        Retirer
+        Retirer mon argent
       </button>
 
       {open && (
