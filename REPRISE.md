@@ -3182,3 +3182,26 @@ Revérifié après coup : 0 des 18 encore dans un état bloqué sur l'une ou l'a
 **`/onboarding` vérifié mort comme point d'entrée pour un nouveau marchand — pas de garde-fou urgent posé, sur décision explicite de l'utilisateur.** Aucun lien vivant n'y mène (landing, nav, marketing — grep exhaustif) ; le bouton "Créer un compte" de `/login` pointe exclusivement vers `/start` (commenté comme tel dans le code) ; la seule action qui créait un compte puis redirigeait vers `/onboarding` (`signUp`, `auth.ts:72`) est confirmée morte, zéro appelant ; `/onboarding/page.tsx` exige une session déjà authentifiée, donc même un vieux lien indexé ne peut rien déclencher pour un visiteur sans compte existant. Le risque ne touche que la population historique ci-dessus, rien de neuf ne peut s'y ajouter par un chemin vivant de l'app aujourd'hui.
 
 **Suite, cause de fond toujours ouverte, pas corrigée** : pourquoi l'écriture de `completeOnboarding()` échoue silencieusement pour ces comptes précis (RLS, session, autre) reste à déterminer — nécessiterait une reproduction réelle. Correctif minimal identifié mais pas fait : vérifier les erreurs des deux appels du `Promise.all` et ne naviguer vers `/dashboard/upgrade` qu'en cas de succès réel, avec un message d'erreur explicite sinon plutôt qu'un rebond silencieux.
+
+## 138. Refonte dashboard — Lot 4 (Commandes), commit `2626221`
+
+**Prochain lot dans l'ordre déjà validé (§123 : 1 → 2 → 3 → 8 → 5a → 4 → 6 → 7 → 9)**, avec une contrainte explicite rappelée en amont : `orders/page.tsx` et `orders/[id]/page.tsx` sont couverts par `NOTE_MASQUAGE_COMMANDES.md` — le lot devait rester strictement visuel, sans toucher `loadOrdersForMerchant`/`loadOrderForMerchant`, `isOrderBlocked`, ni aucune des valeurs déjà dérivées (`merchantClient`, `visibleAddress`, `blocked`).
+
+**Livré** :
+- Badges de statut liste + détail branchés sur le composant `Badge` partagé (palette section 6, posée au Lot 1 mais jamais consommée jusqu'ici) au lieu des classes Tailwind en dur `ORDER_STATUS_COLORS`. Le point de couleur de la liste aligné sur la même palette.
+- `Badge` gagne une 7e variante, `completed` (fin de parcours des commandes digitales, `DIGITAL_STATUS_FLOW`), absente de la palette d'origine à 6 statuts — couleur reprise telle quelle de l'ancien `ORDER_STATUS_COLORS.completed` pour ne rien changer visuellement.
+- `Stepper.tsx` : un `currentStatus` absent de `steps` (commande annulée) n'affiche plus un stepper vierge — remplacé par un bandeau rouge "Commande annulée", conformément au bug repéré et volontairement laissé de côté au Lot 1.
+- `ORDER_STATUS_COLORS` conservé dans `src/constants/index.ts` : un troisième appelant non prévu au plan initial (`dashboard/(protected)/page.tsx`, widget commandes récentes de l'accueil) en dépend encore — hors périmètre de ce lot, non touché.
+
+**Testé en conditions réelles**, boutique de test dédiée ("TEST BOUTIK", jusque-là inutilisée, `trial_ends_at` temporairement repoussé le temps du test puis restauré à sa valeur d'origine) : 8 commandes créées, une par statut plus une commande digitale `completed` et une commande retenue (`is_held=true`, `released_at=null`). Trois anomalies trouvées et corrigées suite à ce test, toutes hors du diff initial :
+- Titre de page (H1) d'une commande retenue affichant le libellé de masquage lui-même ("Masqué jusqu'à l'activation") au lieu d'un titre — remplacé par la référence courte (`Commande #EBCB40`) déjà utilisée dans la liste, uniquement quand `blocked`.
+- Point de couleur de la liste manquant pour le statut `completed` (retombait sur le gris par défaut, incohérent avec le badge violet).
+- Commentaire de code inexact : disait "actions désactivées" alors que le comportement réel (préexistant, non modifié) est "actions masquées" — corrigé pour refléter le code.
+
+**Confirmé sans régression sur la commande retenue** : nom/téléphone client masqués, actions totalement absentes (comportement préexistant, intentionnel), bandeau "Commande retenue" présent.
+
+**Signalé, volontairement non traité dans ce lot** : le widget de chat flottant (`ChatWidget.tsx`, fixe en bas à droite, desktop uniquement) chevauche visuellement le badge de statut d'une commande dont la ligne tombe dans son emprise — chevauchement structurel préexistant, indépendant de ce lot, à traiter séparément (quelle(s) page(s), quelle mitigation).
+
+`tsc --noEmit` propre. Les 8 commandes, le client et le produit digital de test supprimés par ID exact après validation, `trial_ends_at` de TEST BOUTIK restauré — boutique conservée pour de futurs tests.
+
+**Suite** : Lot 6 — Revenus (le risque de filtrage par méthode de paiement Bictorys/Stripe déjà investigué en amont, cf. §123, à revérifier au démarrage du lot).
