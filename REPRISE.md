@@ -3205,3 +3205,21 @@ Revérifié après coup : 0 des 18 encore dans un état bloqué sur l'une ou l'a
 `tsc --noEmit` propre. Les 8 commandes, le client et le produit digital de test supprimés par ID exact après validation, `trial_ends_at` de TEST BOUTIK restauré — boutique conservée pour de futurs tests.
 
 **Suite** : Lot 6 — Revenus (le risque de filtrage par méthode de paiement Bictorys/Stripe déjà investigué en amont, cf. §123, à revérifier au démarrage du lot).
+
+## 139. Page d'édition produit — aperçu photo, lien public, compteur nom, commit `3b8a962`
+
+Hors de l'ordre des lots de refonte dashboard (§123) — demande directe sur `ProductForm.tsx` (`src/components/dashboard/ProductForm.tsx`, consommé par `products/[id]/page.tsx` et `products/new/page.tsx`).
+
+**Livré** :
+- Label "Photos" → "Photos du produit".
+- Bouton œil en overlay sur chaque photo (galerie principale et miniatures de variante) ouvrant `PhotoPreviewModal.tsx` (nouveau composant, Radix Dialog, lecture seule, pas d'édition). Point de vigilance trouvé avant de coder : le clic sur une photo fait déjà quelque chose aujourd'hui (galerie principale : définir comme principale ; variante : ouvrir le sélecteur de fichier, seul moyen d'en changer) — remplacer ce clic aurait cassé les deux. Bouton dédié ajouté à la place, comportements existants inchangés, confirmé en test réel.
+- Lien "Voir la page produit" (nouvel onglet) sur l'écran d'édition, à côté du titre — réutilise le `publicUrl` déjà calculé pour `CopyProductLinkButton`.
+- Compteur de caractères sur "Nom du produit" (`{productName.length}/80`, troncature à la saisie), même pattern que les champs SEO. Pas un cas théorique : le nom le plus long en base atteint **1120 caractères** — identifié précisément avant clôture, à la demande de l'utilisateur : produit "Ventilateur Rechargeable Portable" (id `2ed4a72e-64f9-4a66-8e6e-ff036464972f`), boutique **Sunulux tech** (`sunulux-tech`, plan Découverte, active), créé le 2026-07-18. Pas un résidu de test — un vrai marchand a collé toute son annonce (description, prix, livraison, contact WhatsApp) dans le champ Nom au lieu du champ Description. Toujours actif, non corrigé (pas demandé pour ce lot).
+
+**Volontairement exclu de ce lot, sur arbitrage explicite après investigation** : le retrait de la restriction Pro sur les images en description (`isPro` local à `ProductForm.tsx:50`, utilisé une seule fois, ligne ~650). Deux gates trouvés : ce check local côté éditeur, et `hasRichDescription(plan)` côté rendu vitrine publique (`src/app/[shop-slug]/produit/[id]/page.tsx`), tous deux dérivés de `src/lib/plan-features.ts`. Ce fichier porte déjà un TODO citant **REPRISE.md §5** : la décision "images de description ouvertes aux 3 plans" est actée, mais le commentaire dit explicitement de ne pas corriger isolément — d'attendre le chantier de la page Tarifs. Décision : respecter ce report, ne pas toucher `plan-features.ts` ni `ProductForm.tsx` sur ce point maintenant.
+
+**Non traité, sur demande explicite** : "Délai de livraison estimé" — sujet à creuser séparément (livraison dynamique façon Amazon), pas dans ce lot.
+
+`tsc --noEmit` et `npm run build` propres. Testé en conditions réelles : œil sur les deux types de photo, comportements de clic existants intacts, nom long, lien vers la page produit.
+
+**Suite** : retrait de la restriction Pro sur les images en description à ressortir explicitement quand le chantier page Tarifs s'ouvrira (cf. §5) ; correctif du nom de produit à 1120 caractères non fait (signalé, pas demandé) ; sujet livraison dynamique à documenter séparément.
