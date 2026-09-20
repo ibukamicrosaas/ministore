@@ -974,7 +974,11 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                         min="0"
                         value={v.price || ''}
                         onChange={e => updateVariant(i, 'price', parseInt(e.target.value, 10) || 0)}
-                        placeholder="0"
+                        // Vide (ou 0, jamais une vraie valeur à facturer —
+                        // REPRISE.md §140) hérite du prix de base : le
+                        // placeholder l'affiche explicitement plutôt que de
+                        // suggérer "0" comme prix valide.
+                        placeholder={product?.price ? String(product.price) : 'Prix de base'}
                         className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-9 text-sm outline-none focus:border-[var(--color-primary)]"
                       />
                       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">{currencySymbol}</span>

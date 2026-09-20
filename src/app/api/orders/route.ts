@@ -180,7 +180,10 @@ export async function POST(req: NextRequest) {
       if (variant && variant.product_id === it.product_id && variant.is_active) {
         matchedVariantId = variant.id
         matchedVariantLabel = variant.name
-        unit_price = variant.price ?? p.price // NULL = hérite du produit
+        // 0 (champ vide dans ProductForm.tsx, jamais NULL en pratique) ou
+        // NULL héritent tous les deux du prix du produit — un prix de
+        // variante à 0 n'est jamais un vrai prix à facturer (REPRISE.md §140).
+        unit_price = variant.price && variant.price > 0 ? variant.price : p.price
         if (variant.stock !== null) {
           if (variant.stock === 0) {
             return NextResponse.json({ error: `La variante "${variant.name}" de ${p.name} est en rupture de stock.` }, { status: 400 })
@@ -195,7 +198,7 @@ export async function POST(req: NextRequest) {
       const variant = (p.variants as { label: string; price: number; stock_count?: number | null }[]).find(v => v.label === it.variant_label)
       if (variant) {
         matchedVariantLabel = variant.label
-        unit_price = variant.price
+        unit_price = variant.price && variant.price > 0 ? variant.price : p.price
         if (variant.stock_count !== null && variant.stock_count !== undefined) {
           if (variant.stock_count === 0) {
             return NextResponse.json({ error: `La variante "${variant.label}" de ${p.name} est en rupture de stock.` }, { status: 400 })
