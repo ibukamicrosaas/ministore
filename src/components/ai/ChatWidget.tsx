@@ -128,6 +128,20 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose, initialPrompt, o
     onClose()
   }
 
+  // Transition d'entrée mobile (section 11 de la spec : "glissant depuis le
+  // bas") — autonome, ne dépend pas des classes d'animation globales déjà
+  // inertes ailleurs dans le repo (Modal.tsx/BottomSheet.tsx, plugin
+  // tailwindcss-animate absent). Monté à translate-y-full, bascule vers
+  // translate-y-0 une frame plus tard.
+  const [animateIn, setAnimateIn] = useState(false)
+  useEffect(() => {
+    if (isOpen) {
+      const raf = requestAnimationFrame(() => setAnimateIn(true))
+      return () => cancelAnimationFrame(raf)
+    }
+    setAnimateIn(false)
+  }, [isOpen])
+
   // Fonction centrale d'envoi — prend le texte directement
   const handleSend = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming || limitReached) return
@@ -227,14 +241,11 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose, initialPrompt, o
 
   return (
     <>
-      {/* ── Bouton flottant — desktop uniquement ─────────────────────── */}
-      <button
-        onClick={isOpen ? onClose : onOpen}
-        aria-label="Ouvrir l'assistant TEKKIShop"
-        className="hidden lg:flex fixed bottom-6 right-6 z-50 h-14 w-14 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+      {/* Pas de bouton flottant — l'entrée "Assistant IA" de Sidebar.tsx
+          (desktop) et le bouton central de BottomNav.tsx (mobile) sont déjà
+          les points d'entrée cohérents demandés par la section 11 de la
+          spec ; un bouton rond en plus serait redondant une fois le panneau
+          desktop ancré ci-dessous plutôt que flottant. */}
 
       {/* ── Panel de chat ────────────────────────────────────────────── */}
       {isOpen && (
@@ -248,10 +259,15 @@ export function ChatWidget({ shopName, isOpen, onOpen, onClose, initialPrompt, o
 
           <div
             className={[
-              'fixed z-50 flex flex-col bg-white',
-              'inset-0',
-              'lg:inset-auto lg:bottom-24 lg:right-6 lg:w-96 lg:rounded-2xl lg:border lg:border-gray-200 lg:shadow-2xl',
-              'lg:h-[500px] lg:max-h-[80vh]',
+              'fixed z-50 flex flex-col bg-white inset-0',
+              'transition-transform duration-300 ease-out',
+              animateIn ? 'translate-y-0' : 'translate-y-full',
+              // Desktop : panneau ancré en flux normal (frère flex de la
+              // zone de contenu dans DashboardShell.tsx), pas une carte
+              // flottante — pousse le contenu principal au lieu de le
+              // recouvrir (section 11 de la spec).
+              'lg:static lg:inset-auto lg:translate-y-0 lg:h-screen lg:w-96 lg:shrink-0',
+              'lg:rounded-none lg:border-l lg:border-gray-200 lg:shadow-none',
             ].join(' ')}
           >
             {/* Header */}
