@@ -3312,3 +3312,24 @@ Zéro changement sur la logique de masquage (`redact.ts`) — uniquement `total_
 `tsc --noEmit` et `npm run build` propres.
 
 **Suite** : Lot 9 — Assistant IA, dernier lot de contenu de la refonte dashboard (§123 : Lot 8 déjà livré en amont, cf. §126).
+
+## 144. Refonte dashboard — Lot 9 (Assistant IA), commit `4a98d85` — chantier §123 complet
+
+Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 5a → 4 → 6 → 7 → **9**). Spec section 11.
+
+**État des lieux avant code** (`src/components/ai/ChatWidget.tsx`) : mobile déjà plein écran et déjà déclenché par le bouton central de `BottomNav` (conforme) ; suggestions pré-remplies et compteur de messages restants déjà exactement le pattern demandé ("bon pattern déjà en place", rien touché). Deux écarts réels avec la spec :
+- Desktop : carte flottante ancrée en bas à droite (`fixed`, `rounded-2xl`, `shadow-2xl`) — exactement ce que la spec demande d'éviter.
+- Mobile : aucune transition, le panneau apparaissait/disparaissait instantanément.
+
+**Livré** :
+- Desktop : panneau en flux normal (`lg:static`, largeur fixe, bordure gauche), frère flex de la zone de contenu dans `DashboardShell.tsx` — la pousse naturellement à l'ouverture au lieu de la recouvrir. Répond directement à la question ouverte de la spec ("à trancher selon la largeur d'écran disponible dans le code existant") : le contenu était déjà fluide (`flex-1`), pousser était la voie naturelle, aucun changement nécessaire dans `DashboardShell.tsx` lui-même.
+- Bouton flottant rond desktop retiré — redondant avec l'entrée "Assistant IA" déjà dans `Sidebar.tsx` (même mécanisme `onChatOpen` → `setChatOpen`). **Vérifié en conditions réelles avant suppression, sur demande explicite de l'utilisateur, pas seulement déduit du code** : capture d'écran du clic sur l'entrée sidebar confirmant l'ouverture du panneau, avant tout retrait.
+- Mobile : vraie transition d'entrée (`translate-y-full` → `translate-y-0`, état local + `requestAnimationFrame`), autonome — ne dépend pas des classes d'animation globales déjà inertes repérées en cours d'exploration (`Modal.tsx`/`BottomSheet.tsx`, plugin `tailwindcss-animate` absent du projet). Signalé, non corrigé — dépasse ce lot.
+
+**Testé en conditions réelles par l'utilisateur**, desktop et mobile, via hot-reload sur son propre serveur de dev (pas le mien — port 3000 déjà occupé par sa session, pas touché, conformément à la mémoire posée au §140) : panneau ancré à droite avec contenu poussé, aucun bouton flottant résiduel, ouverture toujours fonctionnelle via la sidebar ; glissement depuis le bas, plein écran, fermeture propre sur mobile.
+
+`tsc --noEmit` et `npm run build` propres (un `SIGSEGV` du worker Next.js à la première tentative, transitoire — build propre au deuxième essai, non lié au code).
+
+**Chantier refonte dashboard marchand (§123) clos — les 9 lots livrés** : 1 Fondations (`dbeb98d`), 2 Navigation (`16045eb`), 3 Accueil (`e1da59b`), 8 Paramètres (`69d3c71`), 5a Produits (`11e5be6`), 4 Commandes (`2626221`), 6 Revenus (`b027a6b`), 7 Clients (`cb7e101`), 9 Assistant IA (`4a98d85`).
+
+**Suite** : rien dans l'immédiat sur ce chantier. Points ouverts sans rapport, à ne pas perdre : correctif de fond de `completeOnboarding()` (§137) ; 7e suppression de boutiques non attribuée (§142, limite d'investigation, pas clôture) ; retrait de la restriction Pro sur les images en description à ressortir au chantier page Tarifs (§5/§139) ; nom de produit à 1120 caractères non corrigé (§139) ; 292 lignes `product_variants` à prix historique 0 en réserve pour un futur nettoyage de données (§140) ; correctif d'animation global (`tailwindcss-animate` absent) trouvé au passage, hors périmètre (§144 ci-dessus).
