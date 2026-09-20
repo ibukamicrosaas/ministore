@@ -3223,3 +3223,27 @@ Hors de l'ordre des lots de refonte dashboard (§123) — demande directe sur `P
 `tsc --noEmit` et `npm run build` propres. Testé en conditions réelles : œil sur les deux types de photo, comportements de clic existants intacts, nom long, lien vers la page produit.
 
 **Suite** : retrait de la restriction Pro sur les images en description à ressortir explicitement quand le chantier page Tarifs s'ouvrira (cf. §5) ; correctif du nom de produit à 1120 caractères non fait (signalé, pas demandé) ; sujet livraison dynamique à documenter séparément.
+
+## 140. Prix de variante à 0 facturable — correctif, commit `4284ebc`
+
+**Signalé par l'utilisateur en suite du §139** ("corrige le prix de variante à 0"), investigation demandée avant tout code : 0 est-il déjà interprété comme "hérite du prix de base", ou une vraie valeur facturable ?
+
+**Confirmé avant de coder — risque réel, pas théorique.** Un seul mécanisme de repli existait (`variant.price ?? p.price`), qui ne traite que `null`/`undefined` comme "pas de surcharge" — jamais `0`, qui est une valeur numérique normale pour `??`. Or `0` est ce qui s'écrit réellement : le champ prix de variante de `ProductForm.tsx`, laissé vide, écrit `parseInt(...) || 0` → littéralement `0`, jamais `null`. Vérifié en base au 2026-09-20 : **302 lignes `product_variants` sur 781 actives (38,7 %) à `price=0`, 0 ligne à `price IS NULL`** — le repli "NULL hérite" ne s'est donc jamais produit en pratique. Ce `0` traversait sans garde jusqu'au panier (`VariantSelectorCta.tsx`, même motif `??`) ET jusqu'à la création de commande (`api/orders/route.ts`, systèmes A et B) — distinct du bug d'affichage déjà corrigé au §79 (qui ne touchait que le calcul "à partir de", pas le prix réellement facturé).
+
+**Correctif complet choisi** (option retenue explicitement, plutôt que le formulaire seul) :
+- `src/lib/products/effective-variants.ts` — nouvelle fonction `effectivePrice()`, prix ≤0 hérite du prix produit, appliquée aux deux branches (`product_variants` ET repli JSONB, ce dernier n'était même pas touché avant). Point central consommé par toutes les pages boutique/tunnel — neutralise aussi les 302 lignes déjà en base, sans avoir besoin d'y toucher.
+- `src/app/api/orders/route.ts` — même garde à la création de commande, chemin séparé qui ne passe pas par le helper ci-dessus.
+- `src/components/dashboard/ProductForm.tsx` — le placeholder du champ prix de variante affiche désormais le vrai prix de base au lieu du "0" trompeur, sans pré-remplir la valeur (le champ reste vide pour un prix non défini, afin qu'un marchand puisse toujours distinguer "non défini" d'"une vraie valeur saisie").
+
+**Testé en conditions réelles sur TEST BOUTIK**, pas seulement une relecture de diff (règle argent) :
+- Storefront flippé temporairement accessible (`is_active=true`, `plan='decouverte'`, tous deux restaurés après coup) pour pouvoir charger la page publique.
+- **Découverte à documenter — gate de la vitrine indépendant du gate dashboard.** `[shop-slug]/layout.tsx` bloque la vitrine publique via `isInactive = (trial_model !== 'free_orders' && plan === 'trial') || !is_active` — ce gate ne regarde jamais `trial_ends_at`, contrairement au blocage dashboard (`computeTrialStatus`, `src/lib/trial-status.ts`, §138). Repousser `trial_ends_at` (comme fait au §138 pour débloquer le dashboard) n'a donc aucun effet sur la vitrine : tant que `plan='trial'`, elle reste bloquée quelle que soit la date. Il faut changer `plan` pour un palier payant pour la rendre visible en test. À retenir pour toute future session de test sur une boutique `plan='trial'`.
+- Découverte annexe : "Chaussure Nike" (produit de test du Lot 4) avait déjà **10 vraies variantes de pointure (36 à 45) à `price=0`**, créées le **2026-09-03** (vérifié via `created_at`, pas supposé) — antérieures à cette session, probablement un résidu du chantier de bascule variantes (§76-82), pas quelque chose créé pendant le test du Lot 4 (qui n'a jamais touché `product_variants`). Pas une preuve externe du bug, mais un cas d'usage réel du même mécanisme, découvert par hasard en préparant ce test. Prix réglé à 25 000 FCFA (prix de base du produit) sur les 10, à la demande de l'utilisateur qui garde cette boutique pour de futurs tests.
+- Page produit réelle : variante JSONB "Rouge (prix 0)" affiche désormais **15 000 FCFA** (prix de base), plus jamais 0.
+- **Deux vraies commandes créées via `/api/orders`** (pas un appel de fonction isolé), une par système : système B (`Chaussure Nike`, variante à 0) → `unit_price`/`line_total` = **25 000**, pas 0. Système A (JSONB, `Rouge (prix 0)`) → `unit_price`/`line_total` = **15 000**, pas 0. Les deux commandes, leurs `notification_logs`, le produit et le client de test supprimés par ID exact après coup.
+
+**Incident annexe pendant le test, signalé par l'utilisateur** : le serveur `next dev` sur le port 3000 a été coupé (`kill -9`) avant de relancer un serveur de test, sans vérifier qui l'utilisait — c'était une session réelle de l'utilisateur (trafic navigateur visible dans les logs juste après). Sans conséquence ("rien de grave"), mais à ne pas refaire sans prévenir — mémoire ajoutée en conséquence.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : aucune, chantier clos.
