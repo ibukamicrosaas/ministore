@@ -3295,6 +3295,8 @@ Prochain lot dans l'ordre validé (§123 : 1 → 2 → 3 → 8 → 5a → 4 → 
 
 **Suite** : la 7e requête (2 boutiques supprimées par slug, non identifiées) reste un point ouvert — à reprendre via restauration PITR ciblée si elle redevient justifiée, ou si l'utilisateur reconnaît les slugs par un autre moyen. Lot 7 (Clients) reprend maintenant.
 
+**Réconciliation globale demandée après coup (total créé − suppressions connues vs total actuel) — confirmée impossible à obtenir de façon fiable, pas seulement non calculée.** Aucun compteur persistant "total de boutiques créées" n'existe dans le schéma : le compteur de la page d'accueil (`src/app/page.tsx:28-30`) est un `count(*) from shops` **en direct** (baisse à chaque suppression, remonté à 1802 depuis), pas un cumul ; `auth.users` a la même limite (`deleteMyAccount()` supprime la ligne) ; `pg_stat_statements` déjà écarté ci-dessus pour cette exacte raison ; pas de token d'API de gestion Supabase disponible pour des statistiques de compte. Conséquence assumée : impossible de confirmer si la 7e suppression est un cas isolé ou un symptôme plus large — c'est la seule anomalie trouvée par une recherche exhaustive dans la fenêtre partielle de `pg_stat_statements`, mais cette fenêtre étant elle-même incomplète, l'absence d'autres anomalies trouvées ne garantit pas leur absence réelle. Seule la restauration PITR vers un projet séparé donnerait une réponse fiable — jugée disproportionnée pour l'instant (voir plus haut).
+
 ## 143. Refonte dashboard — Lot 7 (Clients), commit `cb7e101`
 
 Prochain lot de contenu dans l'ordre validé (§123 : 1 → 2 → 3 → 8 → 5a → 4 → 6 → **7** → 9), repris après l'incident §142. Spec section 9.
