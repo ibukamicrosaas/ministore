@@ -10,11 +10,12 @@ import {
   uploadProductPhoto,
   syncProductVariants,
 } from '@/lib/actions/products'
-import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload, Percent, AlertTriangle } from 'lucide-react'
+import { Camera, X, Plus, Trash2, GripVertical, Video, Star, ImageIcon, Search, Loader2, Upload, Percent, AlertTriangle, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import type { Product, ProductVariant, ProductPhoto, QuantityDiscount } from '@/types'
 import { slugify } from '@/lib/utils/slugify'
+import { PhotoPreviewModal } from './PhotoPreviewModal'
 
 interface ProductFormProps {
   product?: Product
@@ -63,6 +64,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
   const [photos, setPhotos]               = useState<ProductPhoto[]>(initialPhotos)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [previewUrl, setPreviewUrl]       = useState<string | null>(null)
 
   // Variants
   const initialVariants = Array.isArray((product as Product & { variants?: ProductVariant[] | null })?.variants)
@@ -439,10 +441,11 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pb-8">
+      <PhotoPreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
 
       {/* Photos */}
       <Card>
-        <p className="text-sm font-semibold text-gray-900 mb-3">Photos</p>
+        <p className="text-sm font-semibold text-gray-900 mb-3">Photos du produit</p>
         <div className="flex gap-3 flex-wrap">
           {photos.map((photo, i) => (
             <div key={i} className="relative group">
@@ -460,6 +463,14 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                   principal
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => setPreviewUrl(photo.url)}
+                className="absolute -bottom-1.5 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-600 shadow-sm border border-gray-200"
+                title="Aperçu en grand"
+              >
+                <Eye className="h-3 w-3" />
+              </button>
               <button
                 type="button"
                 onClick={() => removePhoto(i)}
@@ -603,11 +614,12 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
             <input
               name="name"
               value={productName}
-              onChange={e => setProductName(e.target.value)}
+              onChange={e => setProductName(e.target.value.slice(0, 80))}
               required
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
               placeholder="Ex : Thiéboudienne, Robe wax..."
             />
+            <p className="mt-1 text-[10px] text-gray-400">{productName.length}/80 caractères recommandés</p>
           </div>
 
           {/* Slug URL */}
@@ -939,6 +951,16 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                         disabled={uploadingVariantImage === i}
                         className="absolute inset-0 opacity-0 cursor-pointer"
                       />
+                      {v.image_url && (
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); setPreviewUrl(v.image_url!) }}
+                          className="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-tl-md bg-white/90 text-gray-600"
+                          title="Aperçu en grand"
+                        >
+                          <Eye className="h-2.5 w-2.5" />
+                        </button>
+                      )}
                     </label>
                     <input
                       value={v.label}

@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ExternalLink } from 'lucide-react'
 import { ProductForm } from '@/components/dashboard/ProductForm'
 import { CopyProductLinkButton } from '@/components/dashboard/CopyProductLinkButton'
 import type { Product, Profile } from '@/types'
@@ -89,9 +89,22 @@ export default async function EditProductPage({
         <ChevronLeft className="h-4 w-4" />
         Produits
       </Link>
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Modifier le produit</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{product.name}</p>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Modifier le produit</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{product.name}</p>
+        </div>
+        {publicUrl && (
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Voir la page produit
+          </a>
+        )}
       </div>
 
       {publicUrl && (
