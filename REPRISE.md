@@ -3246,4 +3246,6 @@ Hors de l'ordre des lots de refonte dashboard (§123) — demande directe sur `P
 
 `tsc --noEmit` et `npm run build` propres.
 
-**Suite** : aucune, chantier clos.
+**Suite** : chantier clos sur la sécurité du paiement — le risque financier est neutralisé pour toute variante à prix 0, en base ou future. Reste en réserve, pas une action à mener maintenant : **nettoyage des données existantes**. Vérifié après coup, sur demande de l'utilisateur, que l'édition d'une variante déjà à 0 en base reste claire pour le marchand (champ vide + placeholder au prix de base, jamais "0" affiché littéralement — confirmé par lecture de `ProductForm.tsx`, `value={v.price || ''}`).
+
+**Ampleur mesurée** (après correctif sur les 10 variantes de Chaussure Nike, §140 ci-dessus) : **292 lignes `product_variants` actives à `price=0`, réparties sur 32 boutiques distinctes et 64 produits distincts** — pas un cas isolé comme Sunulux Tech (§139), un pattern répandu (marchand qui remplit le nom de variante mais laisse le prix vide, typiquement tailles/couleurs), majoritairement sur des boutiques `status='active'`, de vrais marchands en activité. Très concentré chez quatre boutiques : **Ouze collection (50 lignes), Elischa boutique (45), BLACK-SAP (38), Bamba-Apple (20)** — à elles quatre, plus de la moitié du total ; le reste dispersé en petites quantités (1 à 13) sur une trentaine d'autres boutiques. À reprendre séparément si un chantier de nettoyage de données devient prioritaire — pas urgent, le correctif de ce lot rend déjà ces 292 lignes sûres à l'usage.
