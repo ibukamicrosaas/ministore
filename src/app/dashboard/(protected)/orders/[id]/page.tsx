@@ -2,13 +2,14 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardHeader } from '@/components/ui/Card'
+import { Badge, type OrderStatusVariant } from '@/components/ui/Badge'
 import { Stepper } from '@/components/ui/Stepper'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
   ChevronLeft, MapPin, Home, MessageCircle, CreditCard, Clock, Download,
 } from 'lucide-react'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
+import { ORDER_STATUS_LABELS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { CancelOrderButton } from './CancelOrderButton'
@@ -207,15 +208,19 @@ export default async function OrderDetailPage({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            {order.clients ? merchantClient.clientName : 'Commande'}
+            {/* Commande retenue : le nom masqué (merchantClient.clientName ===
+                REDACTED_LABEL) ne doit pas devenir le titre de la page — on
+                retombe sur la référence courte, déjà utilisée dans la liste
+                (Lot 4, signalé en test réel). */}
+            {blocked ? `Commande #${id.slice(0, 6).toUpperCase()}` : order.clients ? merchantClient.clientName : 'Commande'}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {format(new Date(order.created_at), 'd MMMM yyyy à HH:mm', { locale: fr })}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ORDER_STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-600'}`}>
+        <Badge variant={order.status as OrderStatusVariant}>
           {ORDER_STATUS_LABELS[order.status] ?? order.status}
-        </span>
+        </Badge>
       </div>
 
       {/* Progression statut — composant partagé src/components/ui/Stepper.tsx
@@ -229,8 +234,8 @@ export default async function OrderDetailPage({
         />
       </Card>
 
-      {/* Commande retenue : toutes les actions sont désactivées tant que la
-          boutique n'est pas activée — un marchand ne doit pas pouvoir la
+      {/* Commande retenue : toutes les actions sont masquées (pas grisées) tant
+          que la boutique n'est pas activée — un marchand ne doit pas pouvoir la
           faire avancer (livraison, statut, annulation) en contournant le blocage. */}
       {blocked && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

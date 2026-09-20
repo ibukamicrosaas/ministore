@@ -2,11 +2,12 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
+import { Badge, type OrderStatusVariant } from '@/components/ui/Badge'
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { ShoppingBag, MapPin, Home, CreditCard, Clock, Download, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/constants'
+import { ORDER_STATUS_LABELS } from '@/constants'
 import type { Profile } from '@/types'
 import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
@@ -264,13 +265,16 @@ export default async function OrdersPage({
                 href={`/dashboard/orders/${order.id}`}
                 className="flex items-start gap-3 px-4 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
               >
-                {/* Status dot */}
+                {/* Status dot — mêmes tokens que le badge (section 6) pour ne plus
+                    afficher deux couleurs différentes pour un même statut. */}
                 <div className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${
-                  order.status === 'pending'   ? 'bg-yellow-400' :
-                  order.status === 'confirmed' ? 'bg-blue-400' :
-                  order.status === 'preparing' ? 'bg-purple-400' :
-                  order.status === 'ready'     ? 'bg-sky-400' :
-                  order.status === 'delivered' ? 'bg-green-400' :
+                  order.status === 'pending'   ? 'bg-[var(--db-amber,#B4740E)]' :
+                  order.status === 'confirmed' ? 'bg-[var(--db-primary,#155EEF)]' :
+                  order.status === 'preparing' ? 'bg-[var(--db-primary,#155EEF)]' :
+                  order.status === 'ready'     ? 'bg-[var(--db-money,#128A4C)]' :
+                  order.status === 'delivered' ? 'bg-[var(--db-money,#128A4C)]' :
+                  order.status === 'cancelled' ? 'bg-[var(--db-danger,#C4321F)]' :
+                  order.status === 'completed' ? 'bg-violet-500' :
                   'bg-gray-300'
                 }`} />
 
@@ -314,9 +318,9 @@ export default async function OrdersPage({
                         </span>
                       )}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${ORDER_STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <Badge variant={order.status as OrderStatusVariant} className="shrink-0">
                       {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               </Link>

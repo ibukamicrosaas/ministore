@@ -1,4 +1,4 @@
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
 
 interface StepperProps {
   /** Statuts dans l'ordre d'avancement (ex: ['pending','confirmed','preparing','ready','delivered']). */
@@ -12,13 +12,25 @@ interface StepperProps {
 
 /**
  * Extrait de src/app/dashboard/(protected)/orders/[id]/page.tsx (SPEC-refonte
- * -dashboard-marchand.md, Lot 1) — comportement inchangé à l'extraction, y
- * compris pour un currentStatus absent de `steps` (ex: 'cancelled'), où
- * aucune étape ne s'affiche comme faite. Le correctif de ce cas précis
- * (section 6 de la spec) est prévu au Lot 4, pas ici.
+ * -dashboard-marchand.md, Lot 1). Section 6, correctif Lot 4 : un
+ * `currentStatus` absent de `steps` (ex. commande annulée) n'affiche plus un
+ * stepper vierge qui donnerait l'impression qu'aucune étape n'a eu lieu —
+ * remplacé par un état terminal distinct, rouge, sans numéros de progression.
  */
 export function Stepper({ steps, labels, currentStatus, className }: StepperProps) {
   const idx = steps.indexOf(currentStatus)
+
+  if (idx === -1) {
+    return (
+      <div className={className}>
+        <div className="flex items-center gap-2 rounded-xl bg-[var(--db-danger-soft,#FBEAE7)] px-3 py-2.5 text-sm font-semibold text-[var(--db-danger,#C4321F)]">
+          <XCircle className="h-4 w-4 shrink-0" />
+          Commande annulée
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={className}>
       <div className="flex items-center gap-1">
