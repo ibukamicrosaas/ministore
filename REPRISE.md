@@ -3352,6 +3352,6 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 
 `tsc --noEmit` et `npm run build` propres.
 
-**Non exécuté, sur décision explicite de l'utilisateur** : les deux `UPDATE` pour `Best shop` (`52cdac36-2ec8-4dfc-b99c-bfb5435bd2b3`) et `Jozebla` (`f54ebd5e-c780-43b1-8592-c526edd4357c`) — incohérence dormante sans impact visible, pas pressée, à valider séparément si l'utilisateur le souhaite.
+**Exécuté le 2026-09-21, validé explicitement par l'utilisateur séparément du reste** : les deux `UPDATE` pour `Best shop` (`52cdac36-2ec8-4dfc-b99c-bfb5435bd2b3`) et `Jozebla` (`f54ebd5e-c780-43b1-8592-c526edd4357c`) — `shops.onboarding_completed` posé à `true`. Les deux dernières traces connues de ce bug sont closes.
 
 **Suite** : rien de pressant. Les écritures `profiles.update({onboarding_step: N})` en fin d'étapes 2/3/4 (`onboarding.ts`) ont le même défaut de vérification d'erreur mais sur une seule table, pas le risque de split-brain qui motivait ce correctif-ci — signalé, non traité.
