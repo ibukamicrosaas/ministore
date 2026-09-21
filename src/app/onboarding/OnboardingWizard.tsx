@@ -307,6 +307,7 @@ export function OnboardingWizard({ initialStep, userPhone, salon, initialName }:
   async function handleFinish() {
     setSaving(true)
     const result = await completeOnboarding()
+    if (result.error) { toast.error(result.error); setSaving(false); return }
     trackMetaEvent('CompleteRegistration', undefined, result.metaEventId)
     router.push('/dashboard')
   }
@@ -314,6 +315,7 @@ export function OnboardingWizard({ initialStep, userPhone, salon, initialName }:
   async function handleActivate() {
     setSaving(true)
     const result = await completeOnboarding()
+    if (result.error) { toast.error(result.error); setSaving(false); return }
     trackMetaEvent('CompleteRegistration', undefined, result.metaEventId)
     router.push('/dashboard/upgrade')
   }

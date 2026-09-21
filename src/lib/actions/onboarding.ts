@@ -253,25 +253,39 @@ export async function saveOnboardingProduct(input: {
 
 // ── COMPLÉTION ────────────────────────────────────────────────────────────────
 
-export async function completeOnboarding(): Promise<{ metaEventId?: string }> {
+export async function completeOnboarding(): Promise<{ error?: string; metaEventId?: string }> {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return {}
+  if (!user) return { error: 'Non authentifié.' }
 
   const { data: profile } = await supabase.from('profiles').select('shop_id').eq('id', user.id).single()
-  if (!profile?.shop_id) return {}
+  if (!profile?.shop_id) return { error: 'Boutique introuvable.' }
 
+  // Client admin (contourne RLS) — l'écriture shops.update() passait par le
+  // client de session, dont la policy shops_owner_update dépend d'une
+  // sous-requête sur profiles au moment de l'évaluation RLS ; l'utilisateur
+  // est déjà vérifié propriétaire de ce shop_id ci-dessus, admin élimine
+  // toute dépendance RLS pour cette écriture précise (même pattern que
+  // startOnboarding() plus haut dans ce fichier). Les deux résultats sont
+  // désormais vérifiés — REPRISE.md §137/§145 : Promise.all jetait les deux
+  // écritures sans jamais lire leur { error }, un échec passait inaperçu.
+  const admin = createAdminClient()
   const now = new Date().toISOString()
-  await Promise.all([
-    supabase
+  const [shopResult, profileResult] = await Promise.all([
+    admin
       .from('shops')
       .update({ onboarding_completed: true, onboarding_completed_at: now })
       .eq('id', profile.shop_id),
-    supabase
+    admin
       .from('profiles')
       .update({ onboarding_step: 5, onboarding_completed: true })
       .eq('id', user.id),
   ])
+
+  if (shopResult.error || profileResult.error) {
+    console.error('[completeOnboarding]', shopResult.error?.message, profileResult.error?.message)
+    return { error: "Impossible de finaliser l'activation. Réessaie." }
+  }
 
   const metaEventId = generateMetaEventId()
   await sendMetaConversionEvent({

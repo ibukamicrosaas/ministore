@@ -28,16 +28,20 @@ export function SetupWizard() {
 
     if ('error' in result && result.error) {
       toast.error(result.error)
-    } else {
-      toast.success('Produit ajouté ✓')
-      await completeOnboarding()
-      setDone(true)
+      setSaving(false)
+      return
     }
+
+    toast.success('Produit ajouté ✓')
+    const completeResult = await completeOnboarding()
+    if (completeResult.error) { toast.error(completeResult.error); setSaving(false); return }
+    setDone(true)
     setSaving(false)
   }
 
   async function handleSkip() {
-    await completeOnboarding()
+    const result = await completeOnboarding()
+    if (result.error) { toast.error(result.error); return }
     router.push('/dashboard')
   }
 
