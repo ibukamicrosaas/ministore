@@ -621,12 +621,11 @@ export function SettingsForm({ shop, section = 'boutique' }: Props & { section?:
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ville <span className="text-red-500">*</span>
+            Ville
           </label>
           <input
             name="city"
             defaultValue={shop.city ?? ''}
-            required
             className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)]"
           />
         </div>

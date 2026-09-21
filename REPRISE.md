@@ -3372,4 +3372,20 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 
 `tsc --noEmit` et `npm run build` propres.
 
+## 148. Audit `/start` EU/CA — 2 des 4 symptômes du §135 confirmés et corrigés
+
+**Suite du chantier ouvert au §135, avant la campagne diaspora.** Les 4 symptômes réinvestigués contre le code actuel (rien n'avait changé sur ces fichiers depuis §129, donc le diagnostic de §135 restait valide à re-tester, pas à supposer à jour) :
+
+- **`target_countries` par défaut = 6 pays africains, quel que soit le pays réel de la boutique — confirmé, corrigé.** `createDraftShop()` et `resolveShop()` (`src/app/start/actions.ts`) ne l'écrivaient jamais, seul le défaut SQL (migration 093) s'appliquait. Effet concret : `getPaymentMethodsForTargetCountries()` affichait Wave/Orange Money/MTN/Moov sur la vitrine publique d'un marchand français — visible par les clients, pas juste interne. Écrit désormais explicitement à la création : Afrique → même liste de 6 qu'avant (comportement inchangé, juste explicite) ; EU/CA → `[country]` (ex. `['FR']`).
+- **Piège trouvé en vérifiant, pas supposé** : la valeur EU/CA ne pouvait pas être `[]`. `OrderForm.tsx:266-268` (sélecteur pays du checkout) traite un tableau vide comme "aucun filtre" et retombe sur les 11 pays (6 Afrique + 5 EU/CA) au lieu du seul pays de la boutique — l'inverse de l'effet recherché. `[country]` (non-vide) filtre correctement, et ne change rien à `getPaymentMethodsForTargetCountries` (la boutique EU/CA n'est de toute façon pas un pays Bictorys). Recherché tous les lecteurs réels de la colonne dans `src/` avant de choisir la valeur, pas seulement l'appelant le plus évident.
+- **Champ `Ville` obligatoire en Paramètres, jamais collecté par `/start`, bloquait silencieusement tout le formulaire — confirmé, corrigé.** `SettingsForm.tsx` : boutique et ventes partagent le même `<form>` ; le `required` HTML sur `city`, caché (`display:none`) quand l'onglet actif est "ventes", bloquait la validation native du navigateur avant même l'exécution de `handleSubmit` — aucune erreur visible, aucun log. `updateShop()` (`lib/actions/settings.ts`) ne l'exige déjà pas côté serveur — seule la contrainte HTML5 posait problème. `required` retiré. Concerne en réalité toute boutique créée via `/start` (Afrique comme EU/CA), mais devient bloquant pour 100% des inscriptions diaspora puisqu'aucune ne collecte la ville.
+- **Devise FCFA par défaut à l'étape prix (`StartFlow.tsx:167`) — non reproductible en usage normal.** Le fallback `'FCFA'` existe toujours dans le code mais l'étape 4 (pays) bloque toute progression tant que `s.pays` n'est pas défini ; le seul chemin vers ce fallback est une fenêtre d'hydratation d'une frame au chargement de page, pas un blocage atteignable en déroulant le parcours. Non corrigé dans ce lot — nettoyage optionnel, pas un bloqueur de campagne.
+- **Méthodes de paiement mobile money par défaut sur un écran "Comment tu paies" — n'existe pas dans le code actuel.** Aucun écran de ce type dans les 12 étapes de `StartFlow.tsx` ; `getPaymentInfo()` (`src/app/start/data.ts`) bascule déjà correctement vers "Carte bancaire" pour tout pays EU/CA. Probablement déjà résolu par la refonte `/start` v4 (commit `c66503c`, antérieur au §135). Aucune action.
+
+**Testé en conditions réelles, pas seulement une relecture de diff** :
+- Insert direct en base reproduisant exactement le payload de `createDraftShop()` pour une boutique `country='FR'` → `target_countries` stocké et relu comme `['FR']`, confirmé. Boutique de test supprimée par ID exact retourné par l'insert.
+- Compte + boutique de test jetables (`country='FR'`, sans `city`), session authentifiée mintée, page Paramètres chargée avec `?tab=ventes` → HTML du champ `city` rendu confirmé sans l'attribut `required`. Compte et boutique supprimés par ID exact après coup.
+
+`tsc --noEmit` propre.
+
 **Suite** : aucune, correctif isolé et clos.

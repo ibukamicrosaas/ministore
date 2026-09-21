@@ -3,11 +3,26 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FREE_ORDERS_TRIAL_DAYS } from '@/constants'
-import { getCurrencyForCountry } from '@/lib/utils/country-groups'
+import { getCurrencyForCountry, isEuCaCountry } from '@/lib/utils/country-groups'
 import { sendMetaConversionEvent, generateMetaEventId } from '@/lib/meta/conversions-api'
 import { CAT_TO_SPECIALTY, makeSlug, type QuizCat, type QuizPays, type Segment, type Canal, type QuizBlocage } from './data'
 
 type AdminClient = ReturnType<typeof createAdminClient>
+
+// Même liste que le défaut SQL de shops.target_countries (migration 093) —
+// écrite explicitement ici pour une boutique africaine plutôt que laissée au
+// défaut implicite, et pour permettre la branche EU/CA ci-dessous (REPRISE.md
+// §135/§148) : le défaut SQL s'appliquait aussi aux boutiques EU/CA, faisant
+// apparaître des moyens de paiement mobile money africains sur leur vitrine
+// publique (getPaymentMethodsForTargetCountries) et proposant les 11 pays au
+// sélecteur du checkout au lieu du seul pays de la boutique (OrderForm.tsx —
+// un tableau vide y est traité comme "aucun filtre", d'où l'obligatoire
+// [country] à un élément plutôt que [] pour une boutique EU/CA).
+const AFRICA_TARGET_COUNTRIES = ['SN', 'CI', 'BJ', 'TG', 'ML', 'BK']
+
+function targetCountriesForShop(country: string): string[] {
+  return isEuCaCountry(country) ? [country] : AFRICA_TARGET_COUNTRIES
+}
 
 function phoneToEmail(phone: string): string {
   const digits = phone.replace(/\D/g, '')
@@ -66,6 +81,7 @@ export async function createDraftShop(
       name: trimmed,
       country: input.country,
       currency,
+      target_countries: targetCountriesForShop(input.country),
       status: 'draft',
       trial_model: 'free_orders',
       is_active: false, // ceinture et bretelles : shops_public_read exclut déjà status='draft'
@@ -75,7 +91,9 @@ export async function createDraftShop(
       seller_stage: input.sellerStage,
       selling_channel: input.sellingChannel,
       pain_point: input.painPoint,
-    })
+      // target_countries pas encore dans les types Supabase générés — même
+      // contournement que updateShop() dans lib/actions/settings.ts.
+    } as any)
     .select('id, slug')
     .single()
 
@@ -137,6 +155,7 @@ async function resolveShop(
       name: trimmedName,
       country: seg.country,
       currency,
+      target_countries: targetCountriesForShop(seg.country),
       status: 'draft',
       trial_model: 'free_orders',
       is_active: false,
@@ -147,7 +166,9 @@ async function resolveShop(
       selling_channel: seg.sellingChannel,
       pain_point: seg.painPoint,
       phone_whatsapp: normalizedPhone,
-    })
+      // target_countries pas encore dans les types Supabase générés — même
+      // contournement que updateShop() dans lib/actions/settings.ts.
+    } as any)
     .select('id, slug')
     .single()
 
