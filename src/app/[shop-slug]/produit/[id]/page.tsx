@@ -28,6 +28,7 @@ import { getVideoEmbedUrl } from '@/lib/utils/video'
 import { safeJsonLdString } from '@/lib/utils/json-ld'
 import { ProductGallery } from '@/components/pwa/ProductGallery'
 import { ReviewsList } from '@/components/pwa/ReviewsList'
+import { DigitalPreviewModal } from '@/components/pwa/DigitalPreviewModal'
 
 type Props = { params: Promise<{ 'shop-slug': string; id: string }> }
 
@@ -166,6 +167,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const isDigital     = (product as Product & { product_type?: string | null }).product_type === 'digital'
   const digitalFileName = (product as Product & { digital_file_name?: string | null }).digital_file_name ?? null
   const digitalFileSize = (product as Product & { digital_file_size?: number | null }).digital_file_size ?? null
+  const digitalPreviewText = (product as Product & { digital_preview_text?: string | null }).digital_preview_text?.trim() || null
 
   const rawPhotos = Array.isArray(product.photos) && (product.photos as unknown as ProductPhoto[]).length > 0
     ? (product.photos as unknown as ProductPhoto[])
@@ -391,6 +393,10 @@ export default async function ProductDetailPage({ params }: Props) {
               )}
             </div>
           </div>
+        )}
+
+        {isDigital && digitalPreviewText && (
+          <DigitalPreviewModal text={digitalPreviewText} coverUrl={primaryPhoto} productName={product.name} />
         )}
 
         {/* Avis agrégat */}

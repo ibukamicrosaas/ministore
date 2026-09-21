@@ -118,6 +118,7 @@ export interface CreateProductInput {
   digital_file_path?: string | null
   digital_file_name?: string | null
   digital_file_size?: number | null
+  digital_preview_text?: string | null
   quantity_discounts?: QuantityDiscount[] | null
 }
 

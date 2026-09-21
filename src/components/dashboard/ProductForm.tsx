@@ -134,6 +134,9 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
   const [digitalFileSize, setDigitalFileSize] = useState<number | null>(
     (product as Product & { digital_file_size?: number | null })?.digital_file_size ?? null
   )
+  const [digitalPreviewText, setDigitalPreviewText] = useState(
+    (product as Product & { digital_preview_text?: string | null })?.digital_preview_text ?? ''
+  )
   const [uploadingFile, setUploadingFile] = useState(false)
   const [isDraggingFile, setIsDraggingFile] = useState(false)
 
@@ -346,6 +349,7 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
       digital_file_path: productType === 'digital' ? digitalFilePath : null,
       digital_file_name: productType === 'digital' ? digitalFileName : null,
       digital_file_size: productType === 'digital' ? digitalFileSize : null,
+      digital_preview_text: productType === 'digital' ? (digitalPreviewText.trim() || null) : null,
       quantity_discounts: productType === 'digital' ? null : (
         qtyDiscounts.filter(d => d.min_qty >= 2 && d.discount_pct > 0 && d.discount_pct <= 80).length > 0
           ? qtyDiscounts.filter(d => d.min_qty >= 2 && d.discount_pct > 0 && d.discount_pct <= 80)
@@ -581,6 +585,26 @@ export function ProductForm({ product, shopSlug, shopPlan, shopCurrency = 'XOF' 
                 />
               </label>
             )}
+          </div>
+        )}
+
+        {productType === 'digital' && (
+          <div className="mt-4">
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Extrait <span className="text-xs font-normal text-gray-400">(optionnel)</span>
+            </label>
+            <textarea
+              name="digital_preview_text"
+              value={digitalPreviewText}
+              onChange={e => setDigitalPreviewText(e.target.value.slice(0, 3000))}
+              rows={6}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--color-primary)] resize-y"
+              placeholder="Colle ici quelques pages ou un passage choisi de ton ebook..."
+            />
+            <p className="mt-1 text-[10px] text-gray-400">{digitalPreviewText.length}/3000 caractères</p>
+            <p className="mt-1 text-xs text-gray-400">
+              Affiché aux visiteurs avant l&apos;achat, sous le bouton « Lire un extrait ». Le fichier livré après paiement n&apos;est pas modifié.
+            </p>
           </div>
         )}
       </Card>

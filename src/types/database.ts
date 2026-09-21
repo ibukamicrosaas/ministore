@@ -340,6 +340,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          digital_preview_text?: string | null
           cost_price?: number | null
           quantity_discounts?: Json | null
         }
@@ -367,6 +368,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          digital_preview_text?: string | null
           cost_price?: number | null
           quantity_discounts?: Json | null
         }
@@ -394,6 +396,7 @@ export type Database = {
           digital_file_path?: string | null
           digital_file_name?: string | null
           digital_file_size?: number | null
+          digital_preview_text?: string | null
           cost_price?: number | null
           quantity_discounts?: Json | null
         }

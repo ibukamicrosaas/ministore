@@ -66,12 +66,19 @@ async function getOwnerShopId() {
   return { error: null, shopId: profile.shop_id as string, shopSlug: shop?.slug as string | null, supabase }
 }
 
+const DIGITAL_PREVIEW_MAX = 3000
+
+function previewTextTooLong(text: string | null | undefined): boolean {
+  return typeof text === 'string' && text.trim().length > DIGITAL_PREVIEW_MAX
+}
+
 export async function createProduct(input: CreateProductInput) {
   const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
 
   if (!input.name?.trim()) return { error: 'Le nom est obligatoire.' }
   if (input.price < 0) return { error: 'Le prix doit être positif.' }
+  if (previewTextTooLong(input.digital_preview_text)) return { error: "L'extrait ne peut pas dépasser 3000 caractères." }
 
   const limitCheck = await assertProductLimit(shopId, 1)
   if (limitCheck.error) return { error: limitCheck.error }
@@ -123,6 +130,7 @@ export async function createProduct(input: CreateProductInput) {
     digital_file_path:     input.product_type === 'digital' ? (input.digital_file_path ?? null) : null,
     digital_file_name:     input.product_type === 'digital' ? (input.digital_file_name ?? null) : null,
     digital_file_size:     input.product_type === 'digital' ? (input.digital_file_size ?? null) : null,
+    digital_preview_text:  input.product_type === 'digital' ? (input.digital_preview_text?.trim() || null) : null,
     quantity_discounts:    input.quantity_discounts?.length ? input.quantity_discounts : null,
   }).select('id').single() as { data: { id: string } | null; error: Error | null }
 
@@ -177,6 +185,8 @@ async function notifyStockAlertSubscribers(
 export async function updateProduct(id: string, input: UpdateProductInput) {
   const { error: authError, shopId, shopSlug, supabase } = await getOwnerShopId()
   if (authError || !shopId || !supabase) return { error: authError ?? 'Erreur.' }
+
+  if (previewTextTooLong(input.digital_preview_text)) return { error: "L'extrait ne peut pas dépasser 3000 caractères." }
 
   // Snapshot du stock actuel pour détecter un retour en stock
   let previousStockCount: number | null = null
@@ -246,6 +256,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   if (input.digital_file_path !== undefined)  updates.digital_file_path  = input.product_type === 'digital' ? input.digital_file_path : null
   if (input.digital_file_name !== undefined)  updates.digital_file_name  = input.product_type === 'digital' ? input.digital_file_name : null
   if (input.digital_file_size !== undefined)  updates.digital_file_size  = input.product_type === 'digital' ? input.digital_file_size : null
+  if (input.digital_preview_text !== undefined) updates.digital_preview_text = input.product_type === 'digital' ? (input.digital_preview_text?.trim() || null) : null
   if (input.quantity_discounts !== undefined) updates.quantity_discounts = input.quantity_discounts?.length ? input.quantity_discounts : null
 
   if (input.slug !== undefined) {

@@ -3391,3 +3391,19 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 `tsc --noEmit` propre.
 
 **Suite** : aucune, correctif isolé et clos.
+
+## 149. Lot 5b — Extrait texte des produits digitaux, migration 108
+
+**Remplace la décision du §136** ("fichier téléchargeable séparé + bucket public distinct") : l'utilisateur a tranché pour un simple texte stocké, affiché dans un modal — pas de fichier, pas de bucket, pas de lecteur intégré. Une seule colonne suffit.
+
+**Migration `108_digital_preview_text.sql`, montrée puis validée explicitement par l'utilisateur avant exécution, appliquée en production par l'utilisateur** (`supabase db push --linked` refusé au mode auto pour cause de modification de la base partagée, non contourné) : `products.digital_preview_text TEXT` nullable, sans défaut (ajout instantané, les produits existants restent à NULL), avec `CHECK (digital_preview_text IS NULL OR char_length(digital_preview_text) <= 3000)`. Réversible par `DROP COLUMN`.
+
+**Livré** : formulaire produit (`ProductForm.tsx`) — zone de texte "Extrait (optionnel)" dans le bloc digital uniquement, compteur `n/3000`, valeur relue à l'édition. Actions (`lib/actions/products.ts`) — écrit seulement si `product_type='digital'`, remis à NULL sinon (même règle que `digital_file_*`) ; refus explicite côté serveur au-delà de 3000 caractères, la contrainte de la base restant la dernière garde. Fiche publique — nouveau composant client `DigitalPreviewModal.tsx` (bouton "Lire un extrait" + `Modal` existant), affiché uniquement si produit digital ET extrait renseigné ; couverture (photo principale) en haut, texte en dessous en `whitespace-pre-line`, **jamais `dangerouslySetInnerHTML`** (un `<b>` saisi s'affiche en clair). Aucun changement à la livraison numérique (tokens, e-mail, SMS, webhooks).
+
+**Testé en conditions réelles** : base — 3000 caractères acceptés, 3001 refusés par la contrainte. Page publique anonyme — "Lire un extrait" présent avec extrait, absent sans extrait, absent sur un produit physique même avec du texte en base (et texte non présent dans le HTML). Édition dashboard, session mintée — champ et compteur présents pour un produit digital, absents pour un physique. Rendu visuel du modal (desktop et mobile : couverture, retours à la ligne, défilement, `<b>` en texte brut) et apparition/disparition du champ au changement de type — **confirmés visuellement par l'utilisateur** sur des captures. Non testé en réel : le refus serveur à plus de 3000 caractères (une Server Action ne s'appelle pas sans navigateur) — relu dans le code, filet réel = contrainte DB. Données de test (boutique, produit, compte) supprimées par ID exact. Piège de harnais rencontré, pas de bug de code : une boutique de test en plan d'essai `legacy` est verrouillée ("pas encore active"), et `next/image` refuse un hôte non configuré (`example.com`) — d'où de faux négatifs avant correction du test.
+
+**Correction d'une affirmation de mon plan** : j'avais écrit que `digital_file_path` était lisible publiquement via `products_public_read`. Faux — la migration 053 en révoque déjà le `SELECT` pour `anon` et `authenticated`.
+
+**Signalé, non traité** : le modal s'ouvre sans transition (animations globales toujours inertes, plugin `tailwindcss-animate` absent — point ouvert connu depuis le Lot 9).
+
+`tsc --noEmit` propre.
