@@ -47,6 +47,7 @@ function buildPlans(commissionLabel: string) {
       { label: 'Tableau de bord pour suivre tes ventes' },
       { label: `${commissionLabel} sur les paiements en ligne, pour couvrir les frais des opérateurs` },
       { label: 'Produits illimités', locked: true },
+      { label: 'Tableau de bord avancé avec rapports de ventes', locked: true },
       { label: 'Image de couverture boutique', locked: true },
       { label: 'Domaine personnalisé (.com)', locked: true },
     ] as PlanFeature[],
@@ -66,7 +67,6 @@ function buildPlans(commissionLabel: string) {
       { label: 'Paiement mobile money et à la livraison' },
       { label: 'Assistant IA (50 messages/jour)' },
       { label: 'Envoi et confirmation de livraison en 1 clic' },
-      { label: 'Codes promo pour fidéliser tes clients' },
       { label: 'Tableau de bord avancé avec rapports de ventes' },
       { label: `${commissionLabel} sur les paiements en ligne, pour couvrir les frais des opérateurs` },
       { label: 'Image de couverture boutique', locked: true },
@@ -87,7 +87,7 @@ function buildPlans(commissionLabel: string) {
       { label: 'Tout ce qu\'offre Business' },
       { label: 'Assistant IA illimité pour ta boutique' },
       { label: 'Domaine personnalisé (tonsite.com)' },
-      { label: 'Image de couverture + produits Coups de cœur' },
+      { label: 'Image de couverture boutique' },
       { label: 'Marque TEKKIShop masquée — ta boutique, ta marque' },
       { label: 'Export Excel de tes commandes' },
       { label: 'Support prioritaire par WhatsApp' },
@@ -203,6 +203,7 @@ export function PricingV6({ country }: Props = {}) {
                 <tr><th scope="row">Paiement mobile money</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Paiement à la livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Envoi et confirmation livraison</th><td className="yes">✓</td><td className="yes">✓</td><td className="yes">✓</td></tr>
+                <tr><th scope="row">Tableau de bord avancé et rapports de ventes</th><td className="no">—</td><td className="yes">✓</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Image de couverture boutique</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Domaine personnalisé (.com)</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>
                 <tr><th scope="row">Marque TEKKIShop masquée</th><td className="no">—</td><td className="no">—</td><td className="yes">✓</td></tr>

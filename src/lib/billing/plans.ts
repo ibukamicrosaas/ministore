@@ -38,9 +38,7 @@ export const AFRICA_PLANS: Plan[] = [
     features: [
       'Tout du plan Découverte',
       'Produits illimités',
-      'Alertes retour en stock pour tes clients',
-      'Codes promo & réductions',
-      'Dashboard optimisé sur mobile',
+      'Tableau de bord avancé avec rapports de ventes',
       `${COMMISSION_MARKER} de commission sur paiements en ligne`,
     ],
     highlighted: true,
@@ -58,7 +56,6 @@ export const AFRICA_PLANS: Plan[] = [
       'Tout du plan Business',
       'Domaine personnalisé (tonsite.com)',
       'Section "À propos" avec photo de boutique',
-      'Statistiques avancées & analyses',
       'Export CSV de tes commandes',
       'Meta Pixel (suivi Facebook/Instagram Ads)',
       'Paiement par carte bancaire (Stripe Connect)',
