@@ -3362,7 +3362,7 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 
 **Distinct du futur paiement carte via Bictorys** (pas encore activé) : celui-là suivra la **même grille de commission par pays que le reste des encaissements** (`lib/billing/commission.ts`, SN/CI 3%, BJ/TG 4%, BK 5%…) — pas au sens strict d'une "commission" mais d'un prélèvement qui couvre les frais de l'agrégateur (Bictorys) et de l'opérateur, exactement comme pour le mobile money aujourd'hui. Les deux chemins ne doivent pas être confondus : Stripe Connect = argent qui ne transite jamais par la plateforme = 0% structurel ; Bictorys carte = même mécanique que Bictorys mobile money = commission normale du pays.
 
-## 147. Correctif Mali — frais de retrait, commit à suivre
+## 147. Correctif Mali — frais de retrait, commit `15f8655`
 
 **Signalé lors de l'état des lieux post-refonte** : `OPERATOR_PAYOUT_RATE_BY_COUNTRY` (`src/lib/billing/payout-fees.ts`) n'avait pas d'entrée `ML` — "grille Bictorys fournie le 2026-08-16 ne listait pas le Mali", pas une absence de frais réels côté Bictorys. Conséquence concrète : `getPayoutFeeRate('ML', ...)` renvoyait `null`, et `RequestPayoutButton.tsx:138` désactive "Confirmer le retrait" tant que `feeRate === null` — un marchand malien ne pouvait pas retirer ses fonds depuis le dashboard, pas juste "sans taux affiché".
 
