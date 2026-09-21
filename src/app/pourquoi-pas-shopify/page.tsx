@@ -318,7 +318,6 @@ export default function PourquoiPasShopifyPage() {
                 </div>
                 {[
                   { l: 'Abonnement Découverte', s: 'En FCFA, payable par mobile money', v: '2 900 FCFA' },
-                  { l: 'Notifications SMS automatiques', s: 'Clients, vendeur et livreur', v: 'Inclus' },
                   { l: 'Livreurs + paiement à la livraison', s: 'Avec réconciliation automatique', v: 'Inclus' },
                   { l: 'Wave, Orange Money, MTN, Moov', s: 'Selon ton pays', v: 'Inclus' },
                 ].map(item => (

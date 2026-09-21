@@ -84,7 +84,6 @@ export const EU_CA_PRO_PLAN_EUR: Plan = {
     'Section "À propos" avec photo de boutique',
     'Stripe Connect — recevez les paiements directement',
     'Statistiques avancées & export CSV',
-    'Notifications automatiques à vos clients',
     'Meta Pixel (Facebook/Instagram Ads)',
     '0% de commission sur vos ventes',
     'Support prioritaire WhatsApp',

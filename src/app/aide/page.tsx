@@ -109,7 +109,7 @@ const CATEGORIES: HelpCategory[] = [
     items: [
       {
         q: 'Comment je suis prévenu d’une nouvelle commande ?',
-        a: 'Tu reçois une notification dans ton espace vendeur, et un SMS si tu es sur un plan qui inclut les notifications automatiques.',
+        a: 'Tu reçois une notification dans ton espace vendeur.',
       },
       {
         q: 'Que veut dire "commande retenue" ?',

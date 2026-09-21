@@ -39,7 +39,7 @@ const AVEC_ITEMS = [
   { b: 'Une seule boutique', t: ', un seul catalogue, un seul tableau de bord' },
   { b: 'Tes clients d\'Europe et du Canada', t: ' paient par carte via Stripe — l\'argent va directement sur ton compte' },
   { b: 'Tes clients d\'Afrique', t: ' paient par mobile money ou à la livraison — comme ils ont l\'habitude' },
-  { b: 'Tous les outils TEKKIShop', t: ' restent inclus : livreurs, avis clients, notifications SMS' },
+  { b: 'Tous les outils TEKKIShop', t: ' restent inclus : livreurs, avis clients' },
 ]
 
 const PERSONAS = [

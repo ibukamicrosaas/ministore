@@ -618,8 +618,8 @@ export default async function LandingPage() {
             shopIds={[
               'e98a25ce-8258-41f6-93c6-6fae9656d303', // abi-co
               '12d6a93e-cf8a-41b5-aad0-4256a11725e7', // viensonsconnait
-              '0b08d0ab-038d-434a-83ff-96f422ce6855', // brico-shop
-              '139ca97a-7f35-40aa-873f-da15d649629d', // lateliersarene — encore en essai, exception délibérée (passage au plan payant prévu)
+              '4df9c0db-d1fe-4703-970a-b4b81a8a1c3a', // ibuka
+              '92d7fcbd-3d7e-4b50-9cf8-73c75e1385fe', // mkstore (TULstore)
             ]}
             eyebrow="Ils l'ont fait avant toi"
             headline={<>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></>}

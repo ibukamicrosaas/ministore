@@ -122,7 +122,6 @@ const PLANS = [
     features: [
       'Produits illimités',
       'Paiement mobile money et à la livraison',
-      'Notifications SMS automatiques',
       'Codes promo pour fidéliser tes clients',
       'Tableau de bord avancé',
       'Assistant IA (50 messages/jour)',
