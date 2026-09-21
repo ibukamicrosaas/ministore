@@ -3355,3 +3355,21 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 **Exécuté le 2026-09-21, validé explicitement par l'utilisateur séparément du reste** : les deux `UPDATE` pour `Best shop` (`52cdac36-2ec8-4dfc-b99c-bfb5435bd2b3`) et `Jozebla` (`f54ebd5e-c780-43b1-8592-c526edd4357c`) — `shops.onboarding_completed` posé à `true`. Les deux dernières traces connues de ce bug sont closes.
 
 **Suite** : rien de pressant. Les écritures `profiles.update({onboarding_step: N})` en fin d'étapes 2/3/4 (`onboarding.ts`) ont le même défaut de vérification d'erreur mais sur une seule table, pas le risque de split-brain qui motivait ce correctif-ci — signalé, non traité.
+
+## 146. Clarification — commission Stripe Connect vs futur paiement carte Bictorys
+
+**Complète la note du §5 (ligne 451), décision désormais tranchée, pas juste "à trancher".** L'utilisateur confirme explicitement : l'absence d'`application_fee_amount` sur Stripe Connect (`src/lib/payments/stripe.ts:181`) est définitive, pas un oubli en attente d'arbitrage — l'argent va directement sur le compte Stripe du marchand, TEKKIShop ne transite jamais par ce chemin, donc 0 % de commission dessus, point final.
+
+**Distinct du futur paiement carte via Bictorys** (pas encore activé) : celui-là suivra la **même grille de commission par pays que le reste des encaissements** (`lib/billing/commission.ts`, SN/CI 3%, BJ/TG 4%, BK 5%…) — pas au sens strict d'une "commission" mais d'un prélèvement qui couvre les frais de l'agrégateur (Bictorys) et de l'opérateur, exactement comme pour le mobile money aujourd'hui. Les deux chemins ne doivent pas être confondus : Stripe Connect = argent qui ne transite jamais par la plateforme = 0% structurel ; Bictorys carte = même mécanique que Bictorys mobile money = commission normale du pays.
+
+## 147. Correctif Mali — frais de retrait, commit à suivre
+
+**Signalé lors de l'état des lieux post-refonte** : `OPERATOR_PAYOUT_RATE_BY_COUNTRY` (`src/lib/billing/payout-fees.ts`) n'avait pas d'entrée `ML` — "grille Bictorys fournie le 2026-08-16 ne listait pas le Mali", pas une absence de frais réels côté Bictorys. Conséquence concrète : `getPayoutFeeRate('ML', ...)` renvoyait `null`, et `RequestPayoutButton.tsx:138` désactive "Confirmer le retrait" tant que `feeRate === null` — un marchand malien ne pouvait pas retirer ses fonds depuis le dashboard, pas juste "sans taux affiché".
+
+**Confirmé par l'utilisateur** : mêmes frais PAY IN/PAY OUT qu'au Burkina Faso. **Mais BK et le Mali n'offrent pas les mêmes méthodes de retrait** (`PAYOUT_METHODS_BY_COUNTRY`, `country-groups.ts:138-144`) — BK = Orange Money + Moov Money, Mali = Orange Money + **Mobicash** (pas Wave/Moov comme une première lecture rapide de "même que BK" aurait pu le laisser copier tel quel). Taux Mobicash confirmé séparément par l'utilisateur : identique à Moov. Ajouté : `ML: { orange_money: 1.70, mobicash: 1.50 }`. Le +0,5% Bictorys (`BICTORYS_PAYOUT_FEE`, constante unique appliquée à tous les pays dans `getPayoutFeeRate()`) n'a pas été touché — même formule déjà en place pour SN/CI/TG/BK/BJ, vérifié explicitement avant que l'utilisateur ne valide le commit.
+
+**Testé en conditions réelles, pas seulement une relecture de diff** : boutique de test `country='ML'` avec les deux numéros de retrait renseignés et un solde disponible réel (19 000 FCFA, via une vraie commande + un vrai paiement complété), session authentifiée mintée, page Revenus chargée — props exactes reçues par le bouton de retrait confirmées dans le payload : `{"label":"Orange Money","feeRate":2.2}`, `{"label":"Mobicash","feeRate":2}`, `canRequest:true`. Données de test supprimées par ID/slug exact après coup.
+
+`tsc --noEmit` et `npm run build` propres.
+
+**Suite** : aucune, correctif isolé et clos.

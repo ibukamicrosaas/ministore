@@ -20,14 +20,18 @@ const OPERATOR_PAYOUT_RATE_BY_COUNTRY: Record<string, Partial<Record<PayoutMetho
   TG: { tmoney: 1, flooz: 1 }, // tmoney = Togocell, flooz = Moov Togo dans la grille Bictorys
   BK: { orange_money: 1.70, wave: 2, moov: 1.50 },
   BJ: { moov: 0.50, mtn: 0.50 },
-  // ML absent de la grille Bictorys fournie — non confirmé, voir getPayoutFeeRate.
+  // ML confirmé par l'utilisateur le 2026-09-21 : mêmes frais PAY IN/PAY OUT
+  // qu'au Burkina Faso. Méthodes réelles du Mali (PAYOUT_METHODS_BY_COUNTRY.ML,
+  // country-groups.ts) sont Orange Money + Mobicash, pas Wave/Moov comme BK —
+  // taux Mobicash confirmé identique à Moov (REPRISE.md §146).
+  ML: { orange_money: 1.70, mobicash: 1.50 },
 }
 
 /**
  * Taux total de frais de retrait (opérateur + Bictorys), en pourcentage.
- * Retourne null si le taux n'est pas encore confirmé pour ce pays/méthode
- * (aujourd'hui : tout le Mali) — à afficher explicitement comme "à confirmer",
- * jamais comme 0% ou comme une valeur devinée.
+ * Retourne null si le taux n'est pas encore confirmé pour ce pays/méthode —
+ * à afficher explicitement comme "à confirmer", jamais comme 0% ou comme une
+ * valeur devinée.
  */
 export function getPayoutFeeRate(country: string | null | undefined, method: PayoutMethodKey): number | null {
   const operatorRate = OPERATOR_PAYOUT_RATE_BY_COUNTRY[country ?? '']?.[method]
