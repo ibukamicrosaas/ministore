@@ -62,9 +62,10 @@ export const SPECIALTY_TO_LABEL: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(CAT_TO_SPECIALTY).map(([cat, spec]) => [spec, CAT_LABEL[cat as QuizCat]])
   ),
-  // Valeur d'affichage seule, hors quiz /start (pas de QuizCat correspondant) :
-  // posée à la main sur shops.specialty pour des boutiques d'auteurs.
+  // Valeurs d'affichage seules, hors quiz /start (pas de QuizCat correspondant) :
+  // posées à la main sur shops.specialty pour la vitrine de la landing.
   literature: 'Littérature',
+  games:      'Jeux',
 }
 
 export const PREUVES_CAT: Record<QuizCat, string> = {
