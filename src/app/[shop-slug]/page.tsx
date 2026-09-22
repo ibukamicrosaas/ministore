@@ -100,7 +100,7 @@ export default async function ShopPage({ params }: Props) {
 
   return (
     <>
-      {shop.trial_model === 'free_orders' && <VisitBeacon shopId={shop.id} />}
+      <VisitBeacon shopId={shop.id} />
       <ShopHomeLayout shop={shop} products={products} shopSlug={slug} basePath={basePath} />
     </>
   )
