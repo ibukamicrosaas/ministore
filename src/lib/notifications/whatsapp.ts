@@ -42,7 +42,12 @@ export function buildStockBackMessage(params: {
   productName: string
   productUrl: string
 }): string {
-  return `${params.shopName}: "${params.productName}" est de nouveau disponible ! Commandez ici : ${params.productUrl}`
+  // Emoji retirés et nom tronqué : un emoji ou un "…" fait basculer le SMS en
+  // UCS-2 (70 caractères par segment au lieu de 160), donc plus de segments
+  // facturés et une remise moins fiable.
+  const cleaned = params.productName.replace(/[\p{Extended_Pictographic}️]/gu, '').replace(/\s+/g, ' ').trim()
+  const name = cleaned.length > 45 ? `${cleaned.slice(0, 44).trim()}...` : cleaned
+  return `${params.shopName}: "${name}" est de nouveau disponible ! Commandez ici : ${params.productUrl}`
 }
 
 export function buildOrderStatusMessage(params: {

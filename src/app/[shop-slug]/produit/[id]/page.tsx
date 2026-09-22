@@ -682,7 +682,7 @@ export default async function ProductDetailPage({ params }: Props) {
             <div className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-gray-400 bg-gray-100 cursor-not-allowed">
               Rupture de stock
             </div>
-            <StockAlertForm productId={product.id} primaryColor={color} />
+            <StockAlertForm productId={product.id} primaryColor={color} shopCountry={shop.country} />
           </div>
         </div>
       )}

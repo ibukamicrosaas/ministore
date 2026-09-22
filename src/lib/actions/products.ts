@@ -5,8 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { CreateProductInput, UpdateProductInput, ProductPhoto, ProductVariant } from '@/types'
 import { slugify } from '@/lib/utils/slugify'
-import { sendSMS, buildStockBackMessage } from '@/lib/notifications/whatsapp'
-import { APP_URL } from '@/constants'
+import { after } from 'next/server'
+import { notifyStockAlertSubscribers } from '@/lib/notifications/stock-back'
 import { assertProductLimit } from '@/lib/actions/product-limit'
 import { deleteOldStorageFiles } from '@/lib/storage/cleanup'
 
@@ -142,44 +142,6 @@ export async function createProduct(input: CreateProductInput) {
   revalidatePath('/dashboard/products')
   if (shopSlug) revalidatePath(`/${shopSlug}`)
   return { success: true, id: data?.id }
-}
-
-async function notifyStockAlertSubscribers(
-  productId: string,
-  productName: string,
-  shopName: string,
-  shopSlug: string,
-) {
-  try {
-    const admin = createAdminClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: alerts } = await (admin as any).from('stock_alerts')
-      .select('id, phone')
-      .eq('product_id', productId)
-      .is('notified_at', null)
-
-    if (!alerts || alerts.length === 0) return
-
-    const productUrl = `${APP_URL}/${shopSlug}/produit/${productId}`
-    const message = buildStockBackMessage({ shopName, productName, productUrl })
-
-    const notifiedIds: string[] = []
-    await Promise.allSettled(
-      alerts.map(async (alert: { id: string; phone: string }) => {
-        const result = await sendSMS(alert.phone, message)
-        if (result.success) notifiedIds.push(alert.id)
-      })
-    )
-
-    if (notifiedIds.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('stock_alerts')
-        .update({ notified_at: new Date().toISOString() })
-        .in('id', notifiedIds)
-    }
-  } catch (err) {
-    console.error('[notifyStockAlertSubscribers]', err)
-  }
 }
 
 export async function updateProduct(id: string, input: UpdateProductInput) {
@@ -319,19 +281,10 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     typeof newStock === 'number' && newStock > 0 &&
     shopSlug
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: shopData } = await (supabase.from('shops') as any)
-      .select('name')
-      .eq('id', shopId)
-      .single()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: productData } = await (supabase.from('products') as any)
-      .select('name')
-      .eq('id', id)
-      .single()
-    if (shopData?.name && productData?.name) {
-      void notifyStockAlertSubscribers(id, productData.name, shopData.name, shopSlug)
-    }
+    // after() : l'envoi doit se terminer même une fois la réponse renvoyée (un
+    // simple void peut être interrompu sur Vercel — REPRISE.md §152). Le cron
+    // notify-stock-back rattrape de toute façon ce qui échapperait à ce chemin.
+    after(() => notifyStockAlertSubscribers(id))
   }
 
   return { success: true }

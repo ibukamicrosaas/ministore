@@ -59,6 +59,10 @@
     {
       "path": "/api/cron/notify-held-orders",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/notify-stock-back",
+      "schedule": "0 10 * * *"
     }
   ]
 }
