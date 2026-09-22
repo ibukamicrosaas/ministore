@@ -27,17 +27,27 @@ function toE164(dial: string, rawPhone: string): string | null {
   return /^\+\d{8,15}$/.test(e164) ? e164 : null
 }
 
+// Validation minimale (format), pas de vérification MX/DNS — même niveau
+// d'exigence que le reste du formulaire.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export async function subscribeStockAlert(
   productId: string,
   name: string,
   dial: string,
   phone: string,
+  email?: string,
 ): Promise<{ error?: string; success?: boolean }> {
   const trimName = name.trim()
 
   if (!trimName || trimName.length < 2) return { error: 'Prénom invalide.' }
   const e164 = toE164(dial, phone)
   if (!e164) return { error: 'Numéro invalide. Vérifie l\'indicatif pays et le numéro.' }
+
+  // Facultatif — champ ajouté en plus du téléphone (qui reste obligatoire),
+  // pas une alternative (REPRISE.md §152 Phase 2).
+  const trimEmail = email?.trim() ?? ''
+  if (trimEmail && !EMAIL_RE.test(trimEmail)) return { error: 'E-mail invalide.' }
 
   // Rate limit anti-volume (5/heure/IP) — audit sécurité §109, finding
   // moyen #11. La policy RLS d'INSERT public a été retirée (migration 104) :
@@ -64,6 +74,7 @@ export async function subscribeStockAlert(
     shop_id:    product.shop_id,
     name:       trimName,
     phone:      e164,
+    email:      trimEmail || null,
   })
 
   if (error) {

@@ -21,6 +21,7 @@ export function StockAlertForm({ productId, primaryColor, shopCountry }: Props) 
   const [name, setName]       = useState('')
   const [dial, setDial]       = useState<string>(defaultDial)
   const [phone, setPhone]     = useState('')
+  const [email, setEmail]     = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone]       = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -29,7 +30,7 @@ export function StockAlertForm({ productId, primaryColor, shopCountry }: Props) 
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const result = await subscribeStockAlert(productId, name, dial, phone)
+    const result = await subscribeStockAlert(productId, name, dial, phone, email)
     setLoading(false)
     if (result.error) {
       setError(result.error)
@@ -99,6 +100,16 @@ export function StockAlertForm({ productId, primaryColor, shopCountry }: Props) 
           required
           className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-gray-400 placeholder:text-gray-400"
         />
+      </div>
+      <div>
+        <input
+          type="email"
+          placeholder="E-mail (optionnel)"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-gray-400 placeholder:text-gray-400"
+        />
+        <p className="mt-1 text-[11px] text-gray-400">Pour être sûr(e) de recevoir l&apos;alerte.</p>
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}

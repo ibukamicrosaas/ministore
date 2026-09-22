@@ -457,3 +457,66 @@ export async function sendCountryManagerInviteEmail(params: CountryManagerInvite
     console.error('[email] sendCountryManagerInviteEmail failed:', err)
   }
 }
+
+interface StockBackEmailParams {
+  toEmail: string
+  shopName: string
+  shopColor?: string | null
+  shopLogoUrl?: string | null
+  productName: string
+  productUrl: string
+}
+
+// Contrat volontairement différent des 5 gabarits ci-dessus (qui renvoient
+// tous void et n'inspectent que l'exception levée) : ici on renvoie
+// { success, error } comme sendSMS, pour pouvoir journaliser un statut fidèle
+// dans notification_logs (REPRISE.md §152/§155) — resend.emails.send() renvoie
+// { data, error } sans forcément lever, donc un simple try/catch laisserait
+// passer un échec silencieux.
+export async function sendStockBackEmail(params: StockBackEmailParams): Promise<{ success: boolean; error?: string }> {
+  if (!resend) return { success: false, error: 'RESEND_API_KEY non configurée' }
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+    ${buildBrandHeader(params.shopName, 'De nouveau disponible', params.shopColor, params.shopLogoUrl)}
+    <div style="padding:28px;">
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;">Bonjour,</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">
+        <strong>${escapeHtml(params.productName)}</strong> est de nouveau disponible chez ${escapeHtml(params.shopName)}.
+      </p>
+      <a href="${params.productUrl}"
+         style="display:block;text-align:center;background:${params.shopColor ?? '#0EA5E9'};color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:15px 24px;border-radius:12px;margin-bottom:18px;">
+        Voir le produit →
+      </a>
+      <p style="font-size:12px;color:#9ca3af;margin:0;text-align:center;">
+        Tu ne vois pas cet e-mail dans ta boîte de réception ? Vérifie tes spams.
+      </p>
+    </div>
+    <div style="border-top:1px solid #e5e7eb;padding:16px 28px;background:#f9fafb;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">TEKKIShop — ${COMPANY_ADDRESS}</p>
+    </div>
+  </div>
+</body>
+</html>`
+
+  try {
+    const { error } = await resend.emails.send({
+      from:    FROM_ADDRESS,
+      to:      [params.toEmail],
+      subject: `${params.shopName} : de nouveau disponible`,
+      html,
+    })
+    if (error) {
+      console.error('[email] sendStockBackEmail failed:', error.message)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue'
+    console.error('[email] sendStockBackEmail failed:', err)
+    return { success: false, error: message }
+  }
+}
