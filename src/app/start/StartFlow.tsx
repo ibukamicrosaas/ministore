@@ -662,6 +662,9 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
               <Link2 size={22} />
               <div><b>Copier mon lien</b><small>tekki.shop/{s.finalSlug ?? slugPreview}</small></div>
             </button>
+            <div className={styles.note}>
+              <b>Ta boutique est prête à vendre !</b> Mais TEKKIShop ne t&apos;apporte pas les clients automatiquement — c&apos;est à toi de les faire venir : WhatsApp, Instagram, TikTok, bouche-à-oreille. On te donne les outils pour vendre facilement ; trouver tes premiers clients, ça reste ton travail.
+            </div>
             <div className={styles.freebox}>
               <b>Tes 3 premières commandes sont offertes.</b> Ensuite, tu choisis un plan pour continuer à recevoir des commandes. Tu ne paies donc qu&apos;après avoir vendu.
             </div>
