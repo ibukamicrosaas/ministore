@@ -40,8 +40,10 @@ export default async function ReviewPage({ params }: Props) {
 
   if (!order.shops || order.shops.slug !== slug) notFound()
 
-  // On peut laisser un avis seulement pour les commandes confirmées ou livrées
-  if (!['confirmed', 'preparing', 'ready', 'delivered'].includes(order.status)) {
+  // On peut laisser un avis pour les commandes confirmées, livrées, ou
+  // complétées (produits digitaux — même liste que api/reviews/route.ts:29,
+  // qui accepte déjà 'completed' ; cette page ne l'avait jamais eu).
+  if (!['confirmed', 'preparing', 'ready', 'delivered', 'completed'].includes(order.status)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="max-w-sm w-full text-center py-12">

@@ -422,8 +422,9 @@ export default async function OrderTrackingPage({ params }: Props) {
           </div>
         )}
 
-        {/* Laisser un avis — commandes confirmées ou livrées */}
-        {['confirmed', 'preparing', 'ready', 'delivered'].includes(order.status) && (
+        {/* Laisser un avis — commandes confirmées, livrées, ou complétées
+            (produits digitaux) — même liste que avis/[token]/page.tsx */}
+        {['confirmed', 'preparing', 'ready', 'delivered', 'completed'].includes(order.status) && (
           <a
             href={`/${slug}/avis/${token}`}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 py-3.5 text-sm font-semibold transition-colors"
