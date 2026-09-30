@@ -100,12 +100,12 @@ export function RapportsClient({
         </div>
         <StatRow label="Total" value={orderStats.total} />
         <StatRow label="En cours" value={orderStats.confirmed} color={orderStats.confirmed > 0 ? 'text-blue-600' : 'text-gray-400'} />
-        <StatRow label="Livrées"  value={orderStats.delivered} color={orderStats.delivered > 0 ? 'text-green-600' : 'text-gray-400'} />
+        <StatRow label="Terminées"  value={orderStats.delivered} color={orderStats.delivered > 0 ? 'text-green-600' : 'text-gray-400'} />
         <StatRow label="Annulées" value={orderStats.cancelled} color={orderStats.cancelled > 0 ? 'text-red-500' : 'text-gray-400'} />
         <StatRow label="En attente" value={orderStats.pending} color={orderStats.pending > 0 ? 'text-amber-600' : 'text-gray-400'} />
         <div className="pt-2 mt-1 border-t border-gray-100 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-green-50 px-3 py-2.5 text-center">
-            <p className="text-xs text-gray-500 mb-0.5">Taux de livraison</p>
+            <p className="text-xs text-gray-500 mb-0.5">Taux de complétion</p>
             <p className={`text-lg font-bold ${completionRate > 0 ? 'text-green-600' : 'text-gray-400'}`}>{completionRate}%</p>
           </div>
           <div className="rounded-xl bg-red-50 px-3 py-2.5 text-center">

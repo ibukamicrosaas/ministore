@@ -3558,3 +3558,18 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 **Non traité, signalé pour mémoire** : le même bug (compteur à 0 sur la 1ʳᵉ commande) affecte très probablement d'autres boutiques que `ibuka` — aucune correction de données faite au-delà de `ibuka`, portée non demandée par l'utilisateur pour l'instant.
 
 `tsc --noEmit` et `npm run build` propres sur l'ensemble du lot.
+
+
+## 159. Extension du correctif §158 à toutes les boutiques, et correction de rapports/page.tsx
+
+**Suite directe du §158**, sur demande explicite de l'utilisateur : « Corrige aussi le problème sur les autres boutiques. Et corrige aussi rapports/page.tsx ».
+
+**Backfill toutes boutiques** : même script guardé que pour `ibuka` (recherche `total_orders=0 AND last_order_at IS NULL`, recalcul depuis les vraies commandes de chaque client, aucune valeur devinée), exécuté sur l'ensemble de la base cette fois. **431 clients réels corrigés**, 0 restant après vérification.
+
+**`rapports/page.tsx`** — la lacune signalée au §158 : `orderStats` ne comptait `completed` dans aucune sous-catégorie. Choix de libellé tranché en suivant la convention déjà en place dans `api/dashboard/revenue/route.ts` (qui traite déjà `completed` comme équivalent de `delivered` pour le CA) : `completed` est désormais compté dans le même seau que `delivered` (`page.tsx:117`). Comme ce seau n'est plus seulement une livraison physique, son libellé dans `RapportsClient.tsx` est renommé : "Livrées" → **"Terminées"**, "Taux de livraison" → **"Taux de complétion"**. Aucun changement structurel, uniquement l'inclusion de `completed` dans un filtre existant + deux libellés.
+
+**Vérifié sur données réelles (`ibuka`, mois en cours)**, avant/après :
+- Avant (logique d'origine) : 11 commandes `completed` invisibles → seau "Livrées" à 0, taux de complétion affiché à 0% malgré 11 ventes réelles.
+- Après : seau "Terminées" = 11, taux de complétion = 58% (19 commandes du mois, 8 annulées, 11 terminées) — cohérent avec la réalité.
+
+`tsc --noEmit` et `npm run build` propres.

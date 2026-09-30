@@ -114,7 +114,9 @@ export default async function RapportsPage() {
     total:     allMonthOrders.length,
     pending:   allMonthOrders.filter(o => o.status === 'pending').length,
     confirmed: allMonthOrders.filter(o => ['confirmed', 'preparing', 'ready'].includes(o.status)).length,
-    delivered: allMonthOrders.filter(o => o.status === 'delivered').length,
+    // 'completed' = statut terminal des commandes 100% digitales (pas de
+    // livraison physique) — même regroupement que api/dashboard/revenue/route.ts
+    delivered: allMonthOrders.filter(o => ['delivered', 'completed'].includes(o.status)).length,
     cancelled: allMonthOrders.filter(o => o.status === 'cancelled').length,
   }
   const prevTotal        = prevMonthOrders.length
