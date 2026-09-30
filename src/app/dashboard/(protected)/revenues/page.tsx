@@ -57,7 +57,11 @@ export default async function RevenuesPage() {
   // Méthodes de payout disponibles selon le pays, avec numéros résolus depuis
   // les slots DB, et frais de retrait réels (opérateur + Bictorys) par
   // méthode — affichés au marchand avant qu'il ne confirme un retrait.
-  const rawMethods = getPayoutMethods(shop.country)
+  // tmoney/mobicash/maxit exclues : non confirmées par Bictorys (audit
+  // payout, 2026-09-30) — voir le même blocage dans payouts/request/route.ts.
+  const UNCONFIRMED_PAYOUT_METHODS = new Set<PayoutMethodKey>(['tmoney', 'mobicash', 'maxit'])
+  const allMethodsForCountry = getPayoutMethods(shop.country)
+  const rawMethods = allMethodsForCountry.filter(m => !UNCONFIRMED_PAYOUT_METHODS.has(m.key))
   const payoutMethodsWithNumbers = rawMethods
     .map(m => ({
       label:  m.label,
@@ -116,6 +120,16 @@ export default async function RevenuesPage() {
   const hasPayoutMethod = payoutMethodsWithNumbers.length > 0
   const canRequestPayout = !euCa && availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod
 
+  // Cas où le marchand a bien configuré un numéro, mais uniquement pour une
+  // méthode non confirmée par Bictorys (ex. T-Money au Togo, Mobicash au
+  // Mali) — le message générique "ajoute un numéro" serait faux ici, il en a
+  // déjà un. On propose la méthode confirmée de son pays à la place.
+  const blockedMethodWithNumber = allMethodsForCountry.find(m =>
+    UNCONFIRMED_PAYOUT_METHODS.has(m.key) &&
+    !!(m.col === 'payout_wave_number' ? payoutNumbers?.payout_wave_number : payoutNumbers?.payout_om_number)
+  )
+  const confirmedMethodForCountry = allMethodsForCountry.find(m => !UNCONFIRMED_PAYOUT_METHODS.has(m.key))
+
   // Label lisible pour une méthode de payout (recherche dans toutes les
   // définitions) — résolu ici, côté serveur : une fonction ne peut pas
   // traverser la frontière Server → Client Component (RevenueDetailAccordion),
@@ -170,9 +184,20 @@ export default async function RevenuesPage() {
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2.5">
             <LinkIcon className="h-4 w-4 text-white shrink-0 mt-0.5" />
             <p className="text-xs text-white">
-              Ajoute un numéro mobile money dans tes{' '}
-              <Link href="/dashboard/settings" className="font-semibold underline">Paramètres</Link>{' '}
-              pour pouvoir retirer tes fonds.
+              {blockedMethodWithNumber ? (
+                <>
+                  Le retrait par {blockedMethodWithNumber.label} n&rsquo;est pas encore disponible. Ajoute un numéro{' '}
+                  {confirmedMethodForCountry?.label ?? 'mobile money confirmé'} dans tes{' '}
+                  <Link href="/dashboard/settings" className="font-semibold underline">Paramètres</Link>{' '}
+                  pour pouvoir retirer tes fonds.
+                </>
+              ) : (
+                <>
+                  Ajoute un numéro mobile money dans tes{' '}
+                  <Link href="/dashboard/settings" className="font-semibold underline">Paramètres</Link>{' '}
+                  pour pouvoir retirer tes fonds.
+                </>
+              )}
             </p>
           </div>
         )}

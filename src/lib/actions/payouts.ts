@@ -10,13 +10,17 @@ import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import { revalidatePath } from 'next/cache'
 import * as Sentry from '@sentry/nextjs'
 
-// Mapping clé interne → payment_type Bictorys
+// Mapping clé interne → payment_type Bictorys — méthodes confirmées par
+// Bictorys uniquement. tmoney/mobicash/maxit/celtis retirés : aucune
+// confirmée dans leur réponse écrite (audit payout, 2026-09-30), l'ancien
+// repli "?? 'wave_money'" aurait pu envoyer l'argent vers le mauvais
+// opérateur sans erreur visible. Bloquées explicitement plus bas plutôt
+// qu'un mapping deviné — voir le refus juste avant l'appel Bictorys.
 const PAYOUT_METHOD_MAP: Record<string, BictorysPayoutPaymentType> = {
   wave:         'wave_money',
   orange_money: 'orange_money',
   mtn:          'mtn_money',
   moov:         'moov',
-  tmoney:       'moov',  // Togocel/Flooz non nativement supportés → moov fallback
   flooz:        'moov',
 }
 
@@ -117,7 +121,10 @@ export async function processPayout(
   const payoutFeeAmount = Math.round(amountAfterCommission * (payoutFeeRate / 100))
   const netAmount = amountAfterCommission - payoutFeeAmount
 
-  const bictorysPaymentType: BictorysPayoutPaymentType = PAYOUT_METHOD_MAP[payoutMethod] ?? 'wave_money'
+  const bictorysPaymentType = PAYOUT_METHOD_MAP[payoutMethod]
+  if (!bictorysPaymentType) {
+    return { error: `Le retrait par "${payoutMethod}" n'est pas encore disponible — méthode non confirmée par Bictorys.` }
+  }
 
   // Créer ou mettre à jour le payout en DB — avant tout envoi d'argent.
   // Si cette écriture échoue, on n'a aucune trace fiable du reversement en

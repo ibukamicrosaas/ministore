@@ -10,15 +10,15 @@ import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import * as Sentry from '@sentry/nextjs'
 
+// Méthodes confirmées par Bictorys uniquement — tmoney/mobicash/maxit/celtis
+// retirés : aucune confirmée dans leur réponse écrite (audit payout,
+// 2026-09-30). Bloquées explicitement à la demande, voir plus bas.
 const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
   wave:         'wave_money',
   orange_money: 'orange_money',
   mtn:          'mtn_money',
   moov:         'moov',
   flooz:        'moov',
-  tmoney:       'togocell',
-  mobicash:     'mobicash',
-  maxit:        'maxit',
 }
 
 export async function POST(req: NextRequest) {
@@ -68,6 +68,17 @@ export async function POST(req: NextRequest) {
     : shopSecrets?.payout_om_number
   if (!payoutNumber) {
     return NextResponse.json({ error: 'Numéro de paiement non configuré' }, { status: 400 })
+  }
+
+  // Méthode non confirmée par Bictorys (tmoney/mobicash/maxit/celtis) :
+  // refus explicite avant tout calcul de solde ou toute écriture — aucune
+  // ligne payouts créée, solde intact. Suggestion adaptée au pays.
+  if (!PAYOUT_METHOD_BICTORYS[method]) {
+    const country = shop?.country ?? 'SN'
+    const suggestion = country === 'TG' ? 'Flooz' : country === 'ML' ? 'Orange Money' : 'une autre méthode'
+    return NextResponse.json({
+      error: `Le retrait par cette méthode n'est pas encore disponible — utilise ${suggestion}, ou contacte le support.`,
+    }, { status: 400 })
   }
 
   // Frais de retrait PAY OUT — un taux non confirmé (Mali aujourd'hui)
@@ -137,9 +148,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Impossible de créer la demande' }, { status: 500 })
   }
 
-  // Appel Bictorys immédiat — retrait automatique
+  // Appel Bictorys immédiat — retrait automatique. method déjà confirmé
+  // présent dans PAYOUT_METHOD_BICTORYS par le garde plus haut.
   const privateKey         = process.env.BICTORYS_PRIVATE_KEY
-  const bictorysPaymentType = PAYOUT_METHOD_BICTORYS[method] ?? 'wave_money'
+  const bictorysPaymentType = PAYOUT_METHOD_BICTORYS[method]
   const shopName = shop?.name ?? 'Boutique TekkiShop'
 
   if (privateKey) {

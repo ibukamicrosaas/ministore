@@ -7,15 +7,15 @@ import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
+// Méthodes confirmées par Bictorys uniquement — tmoney/mobicash/maxit/celtis
+// retirés : aucune confirmée dans leur réponse écrite (audit payout,
+// 2026-09-30). Bloquées explicitement plus bas, pas de mapping deviné.
 const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
   wave:         'wave_money',
   orange_money: 'orange_money',
   mtn:          'mtn_money',
   moov:         'moov',
   flooz:        'moov',
-  tmoney:       'togocell',
-  mobicash:     'mobicash',
-  maxit:        'maxit',
 }
 
 type AdminWithdrawal = { id: string }
@@ -38,6 +38,12 @@ export async function POST(req: NextRequest) {
   if (!amount || amount <= 0)  return NextResponse.json({ error: 'Montant invalide' }, { status: 400 })
   if (!method?.trim())         return NextResponse.json({ error: 'Méthode requise' }, { status: 400 })
   if (!phoneNumber?.trim())    return NextResponse.json({ error: 'Numéro requis' }, { status: 400 })
+
+  // Méthode non confirmée par Bictorys (tmoney/mobicash/maxit/celtis) :
+  // refus explicite avant tout calcul de solde ou toute écriture.
+  if (!PAYOUT_METHOD_BICTORYS[method]) {
+    return NextResponse.json({ error: `Le retrait par "${method}" n'est pas encore disponible — méthode non confirmée par Bictorys.` }, { status: 400 })
+  }
 
   const admin = createAdminClient()
 
@@ -82,7 +88,8 @@ export async function POST(req: NextRequest) {
   }
 
   const privateKey  = process.env.BICTORYS_PRIVATE_KEY
-  const bictorysType = PAYOUT_METHOD_BICTORYS[method] ?? 'wave_money'
+  // method déjà confirmé présent dans PAYOUT_METHOD_BICTORYS par le garde plus haut.
+  const bictorysType = PAYOUT_METHOD_BICTORYS[method]
   const country      = detectCountryFromPhone(phoneNumber) ?? 'SN'
 
   if (privateKey) {
