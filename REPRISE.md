@@ -3573,3 +3573,44 @@ Dernier lot de contenu de la refonte dashboard (§123 : 1 → 2 → 3 → 8 → 
 - Après : seau "Terminées" = 11, taux de complétion = 58% (19 commandes du mois, 8 annulées, 11 terminées) — cohérent avec la réalité.
 
 `tsc --noEmit` et `npm run build` propres.
+
+
+## 160. Audit payout, 2026-09-30
+
+Audit demandé en urgence sur les reversements (payouts) Bictorys, en lecture seule d'abord (aucun code, aucune migration, aucun appel Bictorys tant que l'utilisateur n'avait pas donné son feu vert point par point).
+
+**Constats confirmés** :
+- **Un `2xx`/`201` de Bictorys sur `POST /payouts` était traité comme un virement confirmé**, jamais comme un statut « initié » — `bictorys.ts` ne lit aucun champ de statut dans le corps de la réponse, uniquement le code HTTP. Confirmé faux par Bictorys eux-mêmes (réponse écrite du 2026-09-30, demandée par l'utilisateur pendant l'audit) : un `201` signifie « initié », le statut final se suit par identifiant ou par webhook.
+- **Aucune fonction de lecture de statut de payout, aucun webhook de payout n'existe** — `webhooks/bictorys/route.ts` (618 lignes) ne traite que des événements de charge (encaissement) et d'abonnement, zéro occurrence de payout.
+- **Trois implémentations indépendantes déclenchent un virement Bictorys**, pas deux comme documenté dans `NOTE_DUPLICATION_PAYOUT_BICTORYS.md` : `processPayout` (`lib/actions/payouts.ts`, cron + admin), `api/payouts/request` (bouton « Retirer » du marchand — le seul chemin réellement emprunté par les marchands), et un **troisième chemin découvert pendant l'audit**, `api/admin/finances/withdraw/route.ts` (retrait par l'admin des revenus d'abonnement de la plateforme elle-même, table `admin_withdrawals`, sans rapport avec les payouts marchands). Les trois avaient chacun leur propre copie du mapping méthode→opérateur Bictorys, avec un repli silencieux `?? 'wave_money'` pour toute méthode non reconnue — risque d'envoyer l'argent vers le mauvais opérateur sans erreur visible. Une divergence concrète trouvée entre elles sur le mapping T-Money (`moov` dans un fichier, `togocell` dans les deux autres).
+- **Aucun contrôle de boutique suspendue/inactive** dans les 4 routes de retrait (cron, admin, bouton marchand, panneau manuel) — une boutique avec `is_active=false` peut aujourd'hui demander et recevoir un retrait sans blocage. Signalé, pas corrigé (point (f), en plan).
+- **Panneau admin de retrait manuel** (`admin/payouts/manual`) : montant et numéro de destination totalement libres, solde réel calculé mais jamais utilisé pour bloquer (commentaire du code lui-même : « non bloquant — admin connaît son contexte »). Signalé, pas corrigé.
+
+**Chiffres mesurés (2026-09-30, sans numéro ni nom de client)** :
+- **18 payouts au total en base** : 16 `completed`, 2 `failed` — un du 2026-06-21 (suivi 13 minutes plus tard d'un nouveau payout réussi pour la même boutique, pas un doublon d'argent envoyé) et un du 2026-09-09 (46 224 FCFA brut, jamais retenté depuis) —, 0 `pending`, 0 `processing`.
+- Répartition par statut/pays/opérateur : quasi tout en SN/CI via Wave, un seul via Flooz (Togo, confirmé cohérent avec Bictorys). Aucun payout `tmoney`/`mobicash`/`maxit` n'a jamais été créé.
+- Un seul `completed` sans `bictorys_transfer_id` (note : « Retrait direct Bictorys — régularisation comptable ») — aucune colonne d'auteur dans `payouts`, impossible de déterminer qui l'a inséré depuis cette table seule.
+- Comparaison des 16 `completed` aux grilles actuelles (`getCommissionRate`/`getPayoutFeeRate`) : aucun écart réel — les `payout_fee_amount=0` s'expliquent par des payouts antérieurs au 2026-08-16 (date d'introduction des frais de retrait), les écarts de 1 FCFA par une divergence `Math.round`/`Math.floor` entre deux des implémentations.
+- **7 marchands réels exposés** au mapping non confirmé (3 avec un numéro T-Money configuré au Togo, 4 avec un numéro Mobicash au Mali) — **solde brut disponible de chacun : 0 FCFA** au moment de l'audit. Le correctif est préventif, aucun retrait réel n'était en attente.
+- Aucune paire de payouts de la même boutique créée à moins de 60 secondes d'écart (pas de doublon constaté à ce jour).
+
+**Livré (commit `09d896e`, pas encore poussé)** : les trois mappings (`payouts.ts`, `payouts/request/route.ts`, `admin/finances/withdraw/route.ts`) bloquent désormais explicitement `tmoney`/`mobicash`/`maxit`/`celtis` avant toute création de ligne ou tout calcul de solde, avec un message adapté au pays. `flooz → moov` reste autorisé (confirmé par Bictorys). `revenues/page.tsx` retire ces méthodes du sélecteur marchand et affiche un message spécifique si le marchand a déjà configuré un numéro pour une méthode désormais bloquée. Testé par extraction directe des mappings depuis les fichiers sur disque (aucun appel Bictorys, aucune clé), `tsc --noEmit`/`npm run build` propres.
+
+**Reste, en plan, sans go** :
+- (a) Statut intermédiaire `initiated` entre acceptation Bictorys et confirmation (schéma de migration à valider séparément).
+- (b) Lecture de statut par identifiant + traitement des webhooks de payout — à cadrer précisément après la réponse écrite de Bictorys sur le format exact.
+- Index unique partiel `payouts_one_open_per_shop` (`pending`/`processing`) pour empêcher deux retraits ouverts simultanés sur la même boutique.
+- (d) Verrou atomique (mise à jour conditionnelle) sur `processPayout` et sur la route admin `/complete`.
+- (e) Garde d'autorisation interne de `processPayout` (actuellement : « la vérification d'accès est à la charge du appelant ») + plafond/validation du panneau de retrait manuel.
+- (f) Contrôle de suspension sur les 4 routes de retrait — critère proposé : `suspended_at IS NOT NULL`, pas `is_active` (une boutique simplement expirée doit pouvoir retirer son argent).
+- Fusion des trois mappings dupliqués (reportée après les correctifs de sécurité, pas avant).
+- `admin/finances/withdraw/route.ts` : traitement du refus Bictorys ne distingue pas un refus explicite d'une non-réponse (marque `failed` dans les deux cas) — contrairement aux deux autres chemins. À cadrer avec (a)/(b), pas un correctif glissé dans le blocage des méthodes.
+- Cadence d'alerte de la branche « manuel requis » du cron : ré-annote et ré-alerte par SMS à chaque passage (6h UTC) tant qu'une ligne reste non traitée, sans dégressivité — à revoir avec (a)/(b).
+- BF/BK (migration 093, pays envoyé à Bictorys) : aucun changement tant que Bictorys n'a pas précisé son erreur par écrit.
+
+**En attente de mon côté (utilisateur)** :
+- Rapprocher les 16 payouts `completed` avec les transferts du tableau de bord Bictorys — statut final réel de chacun, pour confirmer qu'aucun n'a échoué après coup côté opérateur malgré son statut `completed` chez nous.
+- Vérifier spécifiquement le payout `completed` de ma boutique du 2026-07-31 (62 751 FCFA brut, sans `bictorys_transfer_id`, note « régularisation comptable ») et le `failed` du 2026-09-09 (46 224 FCFA brut) — confirmer si ces deux écritures correspondent à ce que je me rappelle avoir fait/constaté.
+- Réponse écrite de Bictorys aux trois questions posées : lecture du statut d'un payout par identifiant, existence et format des webhooks de payout, et BF ou BK pour le Burkina Faso dans `POST /payouts`. (a), (b) et BF/BK restent bloqués tant que ces réponses ne sont pas arrivées.
+
+Lot A landing (refonte de la page d'accueil) : en pause depuis le début de cet audit, reprise seulement sur demande explicite de l'utilisateur.
