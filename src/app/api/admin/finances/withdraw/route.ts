@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysPayout, detectCountryFromPhone } from '@/lib/payments/bictorys'
@@ -69,6 +70,29 @@ export async function POST(req: NextRequest) {
     }, { status: 400 })
   }
 
+  // Refuser tant qu'un retrait reste 'processing' — même principe que
+  // payouts.ts:59-62, adapté : ici chaque requête crée une nouvelle ligne
+  // (pas d'id de retrait existant à relire), donc on vérifie l'absence de
+  // toute ligne 'processing' plutôt qu'un id précis. Échec fermé : une
+  // erreur de lecture refuse aussi, jamais de continuation sur un état inconnu.
+  const { data: pendingWithdrawal, error: pendingError } = await admin
+    .from('admin_withdrawals')
+    .select('id')
+    .eq('status', 'processing')
+    .limit(1)
+    .maybeSingle()
+
+  if (pendingError) {
+    console.error('[admin/finances/withdraw] échec lecture retraits en cours', pendingError.message)
+    return NextResponse.json({ error: 'Impossible de vérifier les retraits en cours.' }, { status: 500 })
+  }
+
+  if (pendingWithdrawal) {
+    return NextResponse.json({
+      error: 'Un retrait est déjà en cours (statut "processing") — vérifiez-le avant d\'en lancer un nouveau.',
+    }, { status: 409 })
+  }
+
   // Créer l'enregistrement en 'processing'
   const { data: record, error: insertError } = await (admin
     .from('admin_withdrawals')
@@ -123,8 +147,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, auto: true })
     }
 
-    // Bictorys a refusé — on marque 'failed' pour ne pas déduire du solde
-    console.error('[admin/finances/withdraw] Bictorys failed:', result.error)
+    if (result.uncertain) {
+      // Aucune réponse exploitable de Bictorys (timeout réseau ou page
+      // illisible, ex. WAF/proxy) : le virement a pu partir malgré tout. On
+      // NE marque PAS 'failed' — ce statut n'est pas protégé par un garde
+      // d'idempotence ici, et le marquer autoriserait un rejeu qui pourrait
+      // envoyer une seconde fois le même argent. Le statut reste
+      // 'processing', ce qui bloque désormais tout nouveau retrait (voir la
+      // vérification juste avant l'insertion, plus haut dans ce fichier) tant
+      // qu'un humain n'a pas vérifié manuellement auprès de Bictorys (même
+      // modèle que lib/actions/payouts.ts:224-234).
+      console.error('[admin/finances/withdraw] INCERTAIN : aucune réponse exploitable de Bictorys — statut conservé à processing', record.id, result.error)
+      Sentry.captureException(new Error('admin/finances/withdraw: aucune réponse de Bictorys — statut du virement inconnu, réconciliation manuelle requise'), {
+        level: 'fatal',
+        extra: {
+          withdrawalId: record.id,
+          amount,
+          method,
+          bictorysIdempotencyKey: record.id,
+          bictorysError: result.error,
+          marcheASuivre: [
+            `1. Vérifier côté Bictorys (dashboard ou support) si un virement existe pour l'idempotency-key "${record.id}".`,
+            `2. Si confirmé : UPDATE admin_withdrawals SET status='completed', bictorys_transfer_id=<réf Bictorys>, withdrawn_at=now() WHERE id='${record.id}';`,
+            `3. Si introuvable côté Bictorys : ne rien conclure seul — contacter le support Bictorys avant toute action.`,
+            `4. Ne PAS relancer ce retrait ni en recréer un nouveau tant que le point 1 n'est pas tranché.`,
+          ].join(' '),
+        },
+      })
+      return NextResponse.json({
+        error: `Réponse Bictorys incertaine — vérification manuelle requise avant tout nouveau retrait. Référence : ${record.id.slice(0, 8)}.`,
+      }, { status: 502 })
+    }
+
+    // Refus explicite (réponse JSON lisible de Bictorys, pas une incertitude)
+    // — on marque 'failed' pour ne pas déduire du solde.
+    console.error('[admin/finances/withdraw] Bictorys a refusé:', result.error)
     await admin.from('admin_withdrawals').update({ status: 'failed' }).eq('id', record.id)
     return NextResponse.json({
       error: `Bictorys a refusé le virement : ${result.error}. Solde non débité. Retentez ou effectuez le retrait manuellement depuis Bictorys.`,
