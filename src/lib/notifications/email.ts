@@ -520,3 +520,54 @@ export async function sendStockBackEmail(params: StockBackEmailParams): Promise<
     return { success: false, error: message }
   }
 }
+
+interface CronAlertEmailParams {
+  to: string
+  jobName: string
+  lastRun: string | null // ISO, ou null si "aucune exécution enregistrée"
+  lastStatus: string | null
+  maxHours: number
+  hoursSince: number | null // null si lastRun est null
+}
+
+// Même contrat que sendStockBackEmail (lit { error } de Resend, jamais un
+// simple try/catch sur la seule exception) — PLAN-MIGRATIONS.md B15, Lot 2.
+// Jamais de numéro de téléphone ni de secret dans le corps : uniquement des
+// champs techniques dérivés de cron_health (nom de job, horodatages, statut).
+export async function sendCronAlertEmail(params: CronAlertEmailParams): Promise<{ success: boolean; error?: string }> {
+  if (!resend) return { success: false, error: 'RESEND_API_KEY non configurée' }
+
+  const lastRunLine = params.lastRun
+    ? `Dernière exécution connue : ${params.lastRun}`
+    : 'Dernière exécution connue : aucune exécution enregistrée'
+  const thresholdLine = params.hoursSince !== null
+    ? `Seuil dépassé : ${params.maxHours}h (écart mesuré : ${Math.round(params.hoursSince)}h)`
+    : `Seuil dépassé : ${params.maxHours}h (écart non calculable — aucune exécution enregistrée)`
+
+  const text = `TekkiShop — alerte santé cron
+
+Job concerné : ${params.jobName}
+${lastRunLine}
+${thresholdLine}
+Dernier statut : ${params.lastStatus ?? 'inconnu'}
+
+Ceci est une alerte de secours, envoyée en parallèle du SMS habituel.`
+
+  try {
+    const { error } = await resend.emails.send({
+      from:    FROM_ADDRESS,
+      to:      [params.to],
+      subject: `[TEKKIShop] Alerte cron — ${params.jobName} en retard`,
+      text,
+    })
+    if (error) {
+      console.error('[email] sendCronAlertEmail failed:', params.jobName, error.message)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue'
+    console.error('[email] sendCronAlertEmail failed:', params.jobName, message)
+    return { success: false, error: message }
+  }
+}
