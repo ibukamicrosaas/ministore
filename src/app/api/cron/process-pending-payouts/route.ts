@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processPayout } from '@/lib/actions/payouts'
 import { sendSMS } from '@/lib/notifications/whatsapp'
+import { recordCronRun } from '@/lib/cron/health'
 
 export const maxDuration = 300
 
@@ -39,10 +40,14 @@ export async function GET(req: NextRequest) {
 
   if (selectError) {
     console.error('[cron/process-payouts] Error fetching pending payouts:', selectError)
+    // recordCronRun protège déjà ses propres erreurs en interne (try/catch, health.ts) —
+    // jamais de message brut potentiellement sensible, seul un indicateur booléen.
+    await recordCronRun('process-pending-payouts', 'error', { selectFailed: true })
     return NextResponse.json({ error: selectError.message }, { status: 500 })
   }
 
   if (!pendingPayouts || pendingPayouts.length === 0) {
+    await recordCronRun('process-pending-payouts', 'ok', { processed: 0, manual: 0, failed: 0 })
     return NextResponse.json({ message: '0 payouts à traiter', processed: 0, manual: 0, failed: 0, results: [] })
   }
 
@@ -133,6 +138,16 @@ export async function GET(req: NextRequest) {
   }
 
   console.log(`[cron/process-payouts] Terminé — auto:${processed} manuel:${manualCount} échec:${failed}`)
+
+  // Statut : 'error' si au moins un payout est en échec (failed > 0), qu'il
+  // s'agisse d'un refus Bictorys explicite (result.error) ou d'une exception
+  // technique (catch) — les deux incrémentent `failed` de la même façon
+  // aujourd'hui, choix délibéré, non distingué dans ce lot (cf. PLAN-MIGRATIONS.md
+  // B16) : à ne pas changer sans accord explicite, un refus métier (ex. solde
+  // insuffisant côté Bictorys) n'est pas forcément une panne du cron lui-même.
+  await recordCronRun('process-pending-payouts', failed > 0 ? 'error' : 'ok', {
+    processed, manual: manualCount, failed, total: pendingPayouts.length,
+  })
 
   return NextResponse.json({
     message: `Auto: ${processed}, Manuel: ${manualCount}, Échec: ${failed}`,
