@@ -1,0 +1,291 @@
+/* Styles additifs, propres à /preview/landing-v7 — ne modifie jamais
+   landing-v6.css (fichier partagé avec /, les pages pays, /produits-digitaux,
+   /europe-canada, /pourquoi-pas-shopify, /licence). Chargé après
+   landing-v6.css : ne redéfinit aucune règle existante, n'ajoute que des
+   classes nouvelles. Réutilise les tokens de couleur déjà définis par
+   landing-v6.css (--ink, --muted, --border, --display, --shadow-md, etc.)
+   et le @keyframes floaty déjà déclaré dans ce fichier partagé. */
+
+/* ════════════════════════════════════════════════════════════════════
+   LOT 1 (Temps 2) — socle visuel : header, hero, boutons pilule,
+   transitions en dégradé, badges paiement. Prototype de comparaison
+   typographique A/B — à nettoyer (garder une seule direction) une fois
+   le choix fait. ════════════════════════════════════════════════════ */
+
+/* Variable de police d'en-tête/hero, par direction — défaut = Bricolage
+   Grotesque (déjà chargée). .v7-dir-b la redéfinit pour la 2ᵉ direction. */
+.lv6 { --v7-head-font: var(--display) }
+.lv6 .v7-dir-b { --v7-head-font: var(--v7-dir-b-font, var(--display)) }
+
+/* ── Header dédié (remplace .nav/.nav-wrap partagés, jamais modifiés) ── */
+.lv6 .nav-v7-wrap { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.82); backdrop-filter: blur(14px); border-bottom: 1px solid transparent }
+.lv6 .nav-v7 { display: flex; align-items: center; justify-content: space-between; height: 76px; gap: 24px; font-family: var(--v7-head-font) }
+.lv6 .nav-v7-links { display: flex; align-items: center; gap: 30px; font-size: 14.5px; font-weight: 600; color: var(--ink) }
+.lv6 .nav-v7-links a { opacity: .78; transition: opacity .2s }
+.lv6 .nav-v7-links a:hover { opacity: 1 }
+.lv6 .nav-v7-actions { display: flex; align-items: center; gap: 18px }
+.lv6 .nav-v7-login { font-size: 14.5px; font-weight: 600; color: var(--ink); opacity: .78 }
+.lv6 .nav-v7-login:hover { opacity: 1 }
+.lv6 .nav-v7-toggle { display: none; width: 44px; height: 44px; border: 1px solid var(--border); background: #fff; border-radius: 999px; cursor: pointer }
+.lv6 .nav-v7-mobile { display: flex; flex-direction: column; gap: 4px; padding: 10px 0 18px }
+.lv6 .nav-v7-mobile a, .lv6 .nav-v7-mobile > a.btn { padding: 13px 4px; font-weight: 600; font-size: 15.5px; border-bottom: 1px solid #f0f4fa }
+@media (max-width: 860px) {
+  .lv6 .nav-v7-links { display: none }
+  .lv6 .nav-v7-actions .nav-v7-login { display: none }
+  .lv6 .nav-v7-toggle { display: grid; place-items: center }
+}
+
+/* ── Boutons pilule, hover avec élan (override additif de .btn) ── */
+.lv6 .btn { border-radius: 999px; transition: transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s, background-color .2s }
+.lv6 .btn:hover { transform: translateY(-2px) }
+.lv6 .btn-primary:hover { box-shadow: 0 16px 34px -12px rgba(29,92,230,.45) }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .btn { transition: none }
+  .lv6 .btn:hover { transform: none }
+}
+
+/* ── Transitions en dégradé entre sections (hero → bandeau paiements),
+   plus de ligne de séparation nette. ── */
+.lv6 .hero--v7 { background: linear-gradient(180deg, #f7f9ff 0%, #fff 72%, #fff 100%) }
+.lv6 .strip--v7 { background: linear-gradient(180deg, #fff 0%, #f7f9ff 100%); border: none; padding-top: 36px }
+
+/* ── Badges paiement — pilule, hover, texte seul (pas de logo tant
+   qu'aucune autorisation écrite n'est obtenue, cf. réponse écrite). ── */
+.lv6 .pay--v7 { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 14px; transition: transform .2s, box-shadow .2s, border-color .2s }
+.lv6 .pay--v7 svg { width: 18px; height: 18px; flex: none; color: var(--ink-2) }
+.lv6 .pay--v7:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: #c9d4e8 }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .pay--v7 { transition: none }
+  .lv6 .pay--v7:hover { transform: none }
+}
+
+/* ── Hero direction comparée — titre imposant, sous-titre 2 lignes max. ── */
+.lv6 .hero-v7-h1 { font-family: var(--v7-head-font); font-weight: 800; letter-spacing: -.03em; line-height: 1.04; font-size: clamp(34px, 4.6vw, 60px); margin-bottom: 22px }
+.lv6 .hero-v7-sub { font-family: var(--display); font-weight: 400; font-size: clamp(17px, 1.7vw, 21px); line-height: 1.5; color: var(--ink-2); max-width: 620px }
+
+/* ── Badge preuve sociale du hero — texte seul, sans pastille (corrigé
+   2026-10-08 : la version pilule/bordure a été jugée trop appuyée). ── */
+.lv6 .hero-badge-v7 {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--blue-2);
+  font-family: var(--v7-head-font);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+  margin-bottom: 16px;
+}
+.lv6 .hero-badge-v7-icon { flex: none; display: inline-flex; margin-top: 1px }
+.lv6 .hero-badge-v7-icon svg { width: 17px; height: 17px; color: var(--blue) }
+/* Texte court/long du badge — une seule ligne garantie à chaque largeur. */
+.lv6 .hero-badge-v7-text--full { display: inline; white-space: nowrap }
+.lv6 .hero-badge-v7-text--short { display: none; white-space: nowrap }
+@media (max-width: 600px) {
+  .lv6 .hero-badge-v7-text--full { display: none }
+  .lv6 .hero-badge-v7-text--short { display: inline }
+}
+
+/* ── Bouton CTA du header — tient sur une ligne y compris sur mobile
+   (point 2026-10-09) : padding/texte resserrés, jamais de retour à la
+   ligne forcé par la place disponible entre le logo et le menu. ── */
+@media (max-width: 860px) {
+  .lv6 .nav-v7-actions .btn-primary {
+    white-space: nowrap;
+    padding: 0 16px;
+    font-size: 13.5px;
+    min-height: 46px;
+  }
+}
+
+/* ── "Ton business grandit." sur une seule ligne en desktop uniquement —
+   aucun effet sur mobile, qui garde son retour à la ligne naturel. ── */
+@media (min-width: 768px) {
+  .lv6 .hero-v7-h1 .nowrap-lg { white-space: nowrap }
+}
+.lv6 .v7-dir-label { display: block; font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .08em; color: var(--muted); margin-bottom: 18px; text-transform: uppercase }
+
+/* ── Titre choc — comparaison Bricolage Grotesque / Anton (Temps 1) ──
+   Bloc temporaire : les deux options restent visibles côte à côte tant
+   que la police finale n'est pas choisie. À retirer (garder une seule
+   option) une fois la décision prise. */
+.lv6 .statement-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 8px;
+}
+@media (max-width: 860px) {
+  .lv6 .statement-compare { grid-template-columns: 1fr; gap: 56px }
+}
+.lv6 .statement-option { text-align: center }
+.lv6 .statement-tag {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.lv6 .statement {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  font-size: clamp(30px, 6.4vw, 72px);
+  text-align: center;
+}
+.lv6 .statement span { display: block }
+.lv6 .statement--anton {
+  letter-spacing: -.005em;
+  line-height: .98;
+  text-transform: uppercase;
+  font-size: clamp(30px, 7.2vw, 80px);
+}
+
+/* ── Titre de transition ("Mêmes produits...") — vrai poids de titre,
+   plus un <p> stylé en ligne. ── */
+.lv6 .transition-heading {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+  font-size: clamp(22px, 2.6vw, 32px);
+  color: var(--ink);
+}
+
+/* ── Vidéo — habillage "poster" avec chrono, aucun fichier vidéo réel
+   (lot C, inchangé) : approximation visuelle statique du mockup. ── */
+.lv6 .video-poster {
+  margin-top: 40px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  aspect-ratio: 16/9;
+  background: linear-gradient(160deg, var(--navy), #132a55);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.lv6 .video-poster-phone {
+  width: 86px;
+  height: 160px;
+  border-radius: 20px;
+  border: 5px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.06);
+}
+.lv6 .video-poster-play {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,.5);
+}
+.lv6 .chrono {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-family: var(--mono);
+  font-size: clamp(14px, 1.8vw, 20px);
+  font-weight: 600;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: #fff;
+}
+.lv6 .chrono small {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  opacity: .7;
+  font-weight: 500;
+}
+.lv6 .video-poster-note {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(255,255,255,.7);
+  white-space: nowrap;
+}
+
+/* ── Hero — 3ᵉ carte flottante (cycle), en plus de .float-1/.float-2
+   déjà définies dans landing-v6.css. Données liées à la boutique
+   d'exemple "Maison Awa", jamais de vraie donnée marchande/cliente. ── */
+.lv6 .float-3 { top: 44%; right: -17%; animation: floaty 3.6s ease-in-out infinite; animation-delay: -2.2s }
+.lv6 .float-3 i { background: var(--blue) }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .float-3 { animation: none }
+}
+@media (max-width: 720px) {
+  .lv6 .float-3 { display: none }
+}
+/* Cycle d'apparition : une seule carte visible à la fois, contrôlé en JS
+   (HeroFloatingCards.tsx). prefers-reduced-motion : la boucle ne démarre
+   jamais, la première carte reste affichée en continu (voir le composant). */
+.lv6 .float.cycle-item { opacity: 0; transition: opacity .5s ease }
+.lv6 .float.cycle-item.is-visible { opacity: 1 }
+
+/* ── Bulles de messages flottantes sur la photo de la vendeuse ──
+   .scene a déjà position:relative en style inline (page.tsx) — redéclaré
+   ici en garde-fou si cet inline style venait à être retiré par erreur. */
+.lv6 .scene { position: relative }
+.lv6 .scene-bubble {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #fff;
+  border-radius: 18px 18px 18px 6px;
+  padding: 9px 14px 9px 9px;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(10px) scale(.94);
+  transition: opacity .45s, transform .45s;
+  max-width: 72%;
+  z-index: 3;
+}
+.lv6 .scene-bubble.show { opacity: 1; transform: none }
+.lv6 .scene-bubble.lost { background: #eef1f5 }
+.lv6 .scene-bubble.lost p { color: var(--muted); font-style: italic }
+.lv6 .scene-bubble .sb-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff; font-weight: 700; font-size: 11.5px; flex: none;
+}
+.lv6 .scene-bubble p { font-weight: 600; color: var(--ink); font-size: 14px; line-height: 1.2; margin: 0 }
+.lv6 .scene-bubble small { display: block; font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 2px }
+.lv6 .scene-unread {
+  position: absolute;
+  top: 46%; left: 46%;
+  background: #e5484d;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 18px rgba(229,72,77,.4);
+  opacity: 0;
+  transition: opacity .45s;
+  z-index: 4;
+}
+.lv6 .scene-unread.show { opacity: 1 }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .scene-bubble, .lv6 .scene-unread { opacity: 1; transform: none; transition: none }
+}
+@media (max-width: 720px) {
+  .lv6 .scene-bubble { max-width: 82%; padding: 7px 11px 7px 7px }
+  .lv6 .scene-bubble p { font-size: 13px }
+  .lv6 .scene-bubble .sb-av { width: 24px; height: 24px; font-size: 10px }
+}
