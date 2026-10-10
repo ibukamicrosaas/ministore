@@ -45,19 +45,26 @@ const PAYMENT_LOGOS: { name: string; src: string }[] = [
 
 function PaymentBadgesV7() {
   return (
-    <div className="pay-row">
-      {PAYMENT_LOGOS.map(p => (
-        <span key={p.name} className="pay--v7">
-          <Image src={p.src} alt={p.name} width={20} height={20} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-          {p.name}
+    // Défilement horizontal réservé au mobile (voir media query dans
+    // landing-v7.css) : desktop inchangé, .pay-row reste centrée sur une
+    // seule ligne comme avant. Le wrapper ne sert qu'à poser les fondus de
+    // bord gauche/droit (::before/::after), qui ont besoin d'un conteneur
+    // positionné distinct de .pay-row elle-même (qui, elle, défile).
+    <div className="pay-row-wrap--v7">
+      <div className="pay-row">
+        {PAYMENT_LOGOS.map(p => (
+          <span key={p.name} className="pay--v7">
+            <Image src={p.src} alt={p.name} width={20} height={20} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+            {p.name}
+          </span>
+        ))}
+        <span className="pay--v7">
+          <Image src="/logo-payments-v7/visa.svg" alt="" aria-hidden width={24} height={16} style={{ width: 24, height: 16, objectFit: 'contain' }} />
+          <Image src="/logo-payments-v7/Mastercard-Logo.wine.svg" alt="" aria-hidden width={20} height={16} style={{ width: 20, height: 16, objectFit: 'contain' }} />
+          Carte bancaire
         </span>
-      ))}
-      <span className="pay--v7">
-        <Image src="/logo-payments-v7/visa.svg" alt="" aria-hidden width={24} height={16} style={{ width: 24, height: 16, objectFit: 'contain' }} />
-        <Image src="/logo-payments-v7/Mastercard-Logo.wine.svg" alt="" aria-hidden width={20} height={16} style={{ width: 20, height: 16, objectFit: 'contain' }} />
-        Carte bancaire
-      </span>
-      <span className="pay--v7">{IC.truck} À la livraison</span>
+        <span className="pay--v7">{IC.truck} À la livraison</span>
+      </div>
     </div>
   )
 }
@@ -114,10 +121,16 @@ export default function LandingPreviewV7() {
         ['--mono' as string]: geist.style.fontFamily,
       }}
     >
-      <LandingV7Nav />
+      {/* ── Fond ciel : englobe le header ET le hero, pour que le dégradé
+          démarre tout en haut de la page (derrière le header flottant),
+          pas seulement à partir du hero. Pourcentages du dégradé relatifs
+          à CETTE hauteur (header + hero), pas à la page entière — sinon
+          "milieu du hero" tomberait bien plus bas que prévu. ── */}
+      <div className="hero-sky-wrap">
+        <LandingV7Nav />
 
-      {/* ── Hero — Lot 1 finalisé (header/hero/boutons pilule/dégradé) ──── */}
-      <section className="hero hero--v7">
+        {/* ── Hero — Lot 1 finalisé (header/hero/boutons pilule/dégradé) ──── */}
+        <section className="hero hero--v7">
         <div className="container hero-grid">
           <div className="hero-copy">
             <div className="hero-badge-v7">
@@ -163,7 +176,8 @@ export default function LandingPreviewV7() {
             <HeroFloatingCards />
           </div>
         </div>
-      </section>
+        </section>
+      </div>
 
       {/* ── Bandeau paiements — logos (Wave, Orange Money, Moov Money,
           Airtel, Visa/Mastercard), optimisés SVGO, copies propres à cette
@@ -191,10 +205,13 @@ export default function LandingPreviewV7() {
 
       {/* ── Problème ──────────────────────────────────────────────────── */}
       <section className="section" id="probleme">
+        {/* Image recadrée en paysage (5/4), hauteur contenue sur la hauteur
+            du texte (direction A retenue le 2026-10-10, la direction B
+            empilée n'est pas conservée). Pas de petit titre "LE VRAI
+            PROBLÈME" (retiré comme demandé) : le texte seul, sans .label. */}
         <div className="container problem-grid">
           <div className="reveal">
-            <span className="label">Le vrai problème</span>
-            <p className="lead" style={{ marginTop: 20 }}>
+            <p className="lead" style={{ marginTop: 0 }}>
               Renvoyer les mêmes photos, répéter les prix, vérifier le stock, noter l&rsquo;adresse, confirmer le paiement, appeler le livreur… <strong>Chaque vente te coûte une demi-heure de messages.</strong>
             </p>
             <p className="lead">
@@ -204,13 +221,16 @@ export default function LandingPreviewV7() {
               Recruter quelqu&rsquo;un pour répondre ? C&rsquo;est un salaire de plus, pour une personne qui ne sera jamais disponible 24h/24.
             </p>
           </div>
-          {/* Image vendeuse : recadrage confirmé le 2026-10-02 (laptop retiré). */}
-          <div className="scene reveal" style={{ position: 'relative', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          {/* Image vendeuse : recadrage confirmé le 2026-10-02 (laptop retiré).
+              border/radius/overflow portés par scene--v7 (landing-v7.css),
+              pas en style inline — cohérent avec le reste des overrides
+              additifs de cette route (.pay--v7, .scene--v7-img, etc.). */}
+          <div className="scene reveal scene--v7">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/vendeuse-debordee.jpg"
               alt="Vendeuse débordée par les messages WhatsApp de ses clientes"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              className="scene--v7-img"
             />
             {/* Écart n°5 : bulles de messages flottantes */}
             <SceneBubbles />

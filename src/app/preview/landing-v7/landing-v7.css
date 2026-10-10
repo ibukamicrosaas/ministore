@@ -17,9 +17,29 @@
 .lv6 { --v7-head-font: var(--display) }
 .lv6 .v7-dir-b { --v7-head-font: var(--v7-dir-b-font, var(--display)) }
 
-/* ── Header dédié (remplace .nav/.nav-wrap partagés, jamais modifiés) ── */
-.lv6 .nav-v7-wrap { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.82); backdrop-filter: blur(14px); border-bottom: 1px solid transparent }
-.lv6 .nav-v7 { display: flex; align-items: center; justify-content: space-between; height: 76px; gap: 24px; font-family: var(--v7-head-font) }
+/* ── Header dédié (remplace .nav/.nav-wrap partagés, jamais modifiés) ──
+   Révisé le 2026-10-10 : barre détachée en pilule (référence visuelle
+   fournie), pas une barre pleine largeur. .nav-v7-wrap ne sert plus qu'au
+   positionnement (sticky, transparent) ; le verre dépoli/l'ombre/les
+   coins arrondis sont portés par .container à l'intérieur. ── */
+.lv6 .nav-v7-wrap { position: sticky; top: 14px; z-index: 50; background: transparent }
+/* .nav-v7-bar seul porte le verre dépoli — pas .nav-v7-wrap > .container
+   générique, qui aurait aussi ciblé à tort le panneau mobile déroulant
+   (même structure .container, radius 999px cassant sur une liste). */
+.lv6 .nav-v7-bar {
+  background: rgba(255,255,255,.58);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: 999px;
+  box-shadow: 0 10px 34px -14px rgba(23,40,70,.22);
+}
+/* Repli sans flou — navigateurs sans backdrop-filter (ex. anciens
+   Firefox) : fond quasi opaque, toujours lisible, mêmes coins/ombre. */
+@supports not (backdrop-filter: blur(1px)) {
+  .lv6 .nav-v7-bar { background: rgba(255,255,255,.94) }
+}
+.lv6 .nav-v7 { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 24px; padding: 0 22px; font-family: var(--v7-head-font) }
 .lv6 .nav-v7-links { display: flex; align-items: center; gap: 30px; font-size: 14.5px; font-weight: 600; color: var(--ink) }
 .lv6 .nav-v7-links a { opacity: .78; transition: opacity .2s }
 .lv6 .nav-v7-links a:hover { opacity: 1 }
@@ -27,12 +47,40 @@
 .lv6 .nav-v7-login { font-size: 14.5px; font-weight: 600; color: var(--ink); opacity: .78 }
 .lv6 .nav-v7-login:hover { opacity: 1 }
 .lv6 .nav-v7-toggle { display: none; width: 44px; height: 44px; border: 1px solid var(--border); background: #fff; border-radius: 999px; cursor: pointer }
+/* Panneau mobile — même langage verre dépoli que la pilule, coins moins
+   arrondis (une liste n'a pas la même lisibilité en pilule complète). */
+.lv6 .nav-v7-wrap > .container:not(.nav-v7-bar) {
+  margin-top: 10px;
+  background: rgba(255,255,255,.72);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: 24px;
+  box-shadow: 0 16px 40px -16px rgba(23,40,70,.25);
+  padding: 4px 22px;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .lv6 .nav-v7-wrap > .container:not(.nav-v7-bar) { background: rgba(255,255,255,.97) }
+}
 .lv6 .nav-v7-mobile { display: flex; flex-direction: column; gap: 4px; padding: 10px 0 18px }
-.lv6 .nav-v7-mobile a, .lv6 .nav-v7-mobile > a.btn { padding: 13px 4px; font-weight: 600; font-size: 15.5px; border-bottom: 1px solid #f0f4fa }
+.lv6 .nav-v7-mobile a, .lv6 .nav-v7-mobile > a.btn { padding: 13px 4px; font-weight: 600; font-size: 15.5px; border-bottom: 1px solid rgba(223,231,243,.7) }
 @media (max-width: 860px) {
   .lv6 .nav-v7-links { display: none }
   .lv6 .nav-v7-actions .nav-v7-login { display: none }
   .lv6 .nav-v7-toggle { display: grid; place-items: center }
+}
+
+/* ── Verre dépoli — cartes flottantes du hero (override additif de .float,
+   défini dans landing-v6.css partagé : position/padding/ombre hérités,
+   seul le fond devient translucide ici, propre à cette route). ── */
+.lv6 .float {
+  background: rgba(255,255,255,.62);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border-color: rgba(255,255,255,.7);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .lv6 .float { background: rgba(255,255,255,.95) }
 }
 
 /* ── Boutons pilule, hover avec élan (override additif de .btn) ── */
@@ -44,19 +92,89 @@
   .lv6 .btn:hover { transform: none }
 }
 
-/* ── Transitions en dégradé entre sections (hero → bandeau paiements),
-   plus de ligne de séparation nette. ── */
-.lv6 .hero--v7 { background: linear-gradient(180deg, #f7f9ff 0%, #fff 72%, #fff 100%) }
-.lv6 .strip--v7 { background: linear-gradient(180deg, #fff 0%, #f7f9ff 100%); border: none; padding-top: 36px }
+/* ── Fond ciel — englobe header + hero (voir .hero-sky-wrap dans
+   page.tsx), remplace les dégradés radiaux du 2026-10-09 (retirés : la
+   consigne du 2026-10-10 demande UN SEUL dégradé continu, sans aucune
+   ligne/limite visible, pas plusieurs taches de couleur superposées).
+   Bleu de marque très éclairci (#dce9ff, pas --blue/#176bff directement
+   qui serait trop saturé), fondu en blanc pur avant la fin du hero —
+   au-delà de ce point, le fond reste blanc jusqu'au bandeau de paiement,
+   qui démarre lui-même en blanc : aucune couture entre les deux. ── */
+.lv6 .hero-sky-wrap {
+  background: linear-gradient(180deg, #dce9ff 0%, #eef4ff 28%, #fff 62%);
+}
+/* overflow:visible annule .hero (partagé, landing-v6.css:222, jamais
+   modifié) qui tronquait net l'ombre portée du téléphone (box-shadow
+   0 40px 100px) à la limite basse de la section — c'était la cause
+   réelle de la ligne visible avant le bandeau de paiement (diagnostic du
+   2026-10-10 : mesuré, pas supposé). Le bandeau suivant (.strip--v7)
+   peint par-dessus en flux normal, aucune couture. */
+.lv6 .hero--v7 { position: relative; background: transparent; overflow: visible }
+/* Diagnostic du 2026-10-10 (mesuré via getComputedStyle, pas supposé) :
+   le dégradé #fff -> #f7f9ff se terminait SUR #f7f9ff, alors que la
+   section suivante (le titre "WhatsApp t'a aidé...") n'a aucun fond
+   propre et affiche donc le blanc du <body> — l'écart de couleur entre
+   #f7f9ff et #fff à la jonction, bien que ténu, créait une ligne nette
+   (confirmé par capture zoomée). Règle appliquée partout sur cette route
+   depuis : toute section se termine sur la couleur de départ de la
+   suivante par un dégradé, jamais par un arrêt net. Ici, le dégradé
+   revient à #fff avant la fin de la section (contrairement à
+   .hero-sky-wrap, qui n'a qu'une seule transition à gérer, celui-ci
+   "respire" puis revient). */
+.lv6 .strip--v7 { background: linear-gradient(180deg, #fff 0%, #f7f9ff 50%, #fff 100%); border: none; padding-top: 36px }
 
 /* ── Badges paiement — pilule, hover, texte seul (pas de logo tant
-   qu'aucune autorisation écrite n'est obtenue, cf. réponse écrite). ── */
-.lv6 .pay--v7 { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 14px; transition: transform .2s, box-shadow .2s, border-color .2s }
+   qu'aucune autorisation écrite n'est obtenue, cf. réponse écrite).
+   Verre dépoli RETIRÉ le 2026-10-10 : gain visuel nul sur ce fond
+   presque blanc, coût GPU réel pour rien — fond clair et bordé, uni. ── */
+.lv6 .pay--v7 {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 14px;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
 .lv6 .pay--v7 svg { width: 18px; height: 18px; flex: none; color: var(--ink-2) }
 .lv6 .pay--v7:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: #c9d4e8 }
 @media (prefers-reduced-motion: reduce) {
   .lv6 .pay--v7 { transition: none }
   .lv6 .pay--v7:hover { transform: none }
+}
+
+/* ── Bandeau paiement, mobile : une seule ligne défilante (2026-10-10) ──
+   .pay-row (partagée, landing-v6.css) passe de flex-wrap à un défilement
+   horizontal sous 640px seulement — desktop non touché (règle générique,
+   pas de media query, ne s'applique donc jamais au-delà de 640px). Le
+   fondu de bord est porté par le wrapper .pay-row-wrap--v7 (::before/
+   ::after), pas par .pay-row elle-même, qui doit rester scrollable sans
+   qu'un pseudo-élément n'intercepte le geste de swipe. */
+@media (max-width: 640px) {
+  .lv6 .pay-row-wrap--v7 { position: relative }
+  .lv6 .pay-row-wrap--v7 .pay-row {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 20px;
+    margin: 0 -20px;
+    /* Fait disparaître la barre de défilement (geste tactile uniquement,
+       jamais de défilement automatique) tout en gardant le scroll actif. */
+    scrollbar-width: none;
+  }
+  .lv6 .pay-row-wrap--v7 .pay-row::-webkit-scrollbar { display: none }
+  .lv6 .pay-row-wrap--v7 .pay--v7 { flex: none; scroll-snap-align: start }
+  /* Fondus de bord : indiquent qu'il y a une suite à faire défiler. Fond
+     uni blanc (pas un dégradé transparent sur .strip--v7, dont le fond
+     n'est presque jamais blanc pur à cet endroit) — imprécision minime
+     acceptée, la bande fait 28px de large. */
+  .lv6 .pay-row-wrap--v7::before,
+  .lv6 .pay-row-wrap--v7::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 28px;
+    pointer-events: none; z-index: 2;
+  }
+  .lv6 .pay-row-wrap--v7::before { left: 0; background: linear-gradient(90deg, #fff, rgba(255,255,255,0)) }
+  .lv6 .pay-row-wrap--v7::after  { right: 0; background: linear-gradient(270deg, #fff, rgba(255,255,255,0)) }
 }
 
 /* ── Hero direction comparée — titre imposant, sous-titre 2 lignes max. ── */
@@ -65,8 +183,14 @@
 
 /* ── Badge preuve sociale du hero — texte seul, sans pastille (corrigé
    2026-10-08 : la version pilule/bordure a été jugée trop appuyée). ── */
+/* Revirement assumé le 2026-10-10 : remis en pastille (le 2026-10-08,
+   j'étais passé en texte seul sur demande explicite, jugé "trop appuyé"
+   en pilule pleine/bordure nette) — redemandé cette fois en verre dépoli
+   sur référence visuelle fournie, traitement différent du précédent
+   (translucide, pas une pilule blanche opaque), donc pas une simple
+   annulation du premier changement. */
 .lv6 .hero-badge-v7 {
-  display: flex;
+  display: inline-flex;
   align-items: flex-start;
   gap: 8px;
   color: var(--blue-2);
@@ -75,6 +199,16 @@
   font-size: 15px;
   line-height: 1.35;
   margin-bottom: 16px;
+  background: rgba(255,255,255,.55);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 999px;
+  padding: 9px 16px;
+  box-shadow: 0 8px 24px -12px rgba(23,107,255,.18);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .lv6 .hero-badge-v7 { background: rgba(255,255,255,.92) }
 }
 .lv6 .hero-badge-v7-icon { flex: none; display: inline-flex; margin-top: 1px }
 .lv6 .hero-badge-v7-icon svg { width: 17px; height: 17px; color: var(--blue) }
@@ -219,6 +353,41 @@
   white-space: nowrap;
 }
 
+/* ── Règle de transition, appliquée à toutes les sections à fond propre
+   de cette route (2026-10-10) : jamais de couleur unie qui s'arrête net à
+   la jonction avec la section suivante — chaque bloc à fond distinct
+   (sombre, ou sky uni) porte ses propres bandes de fondu en haut/bas,
+   superposées à son fond réel via des calques background-image
+   supplémentaires (jamais en remplaçant le fond existant, ni en touchant
+   landing-v6.css). Diagnostiqué par mesure (getComputedStyle sur chaque
+   jonction) avant correction : .timeline-sec et .testi-sec changeaient de
+   couleur en un seul pixel de transition, sans dégradé, ce qui créait une
+   ligne nette au même titre que la jonction bandeau/titre ci-dessus. ── */
+.lv6 .timeline-sec {
+  background-image:
+    linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 100%),
+    linear-gradient(0deg,   #fff 0%, rgba(255,255,255,0) 100%),
+    radial-gradient(circle at 85% 8%, rgba(255,176,32,.14), transparent 34%),
+    radial-gradient(circle at 8% 82%, rgba(23,107,255,.2), transparent 38%),
+    linear-gradient(170deg, var(--navy), #040d1e);
+  background-size: 100% 120px, 100% 120px, auto, auto, auto;
+  background-position: top, bottom, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+}
+.lv6 .testi-sec {
+  background: linear-gradient(180deg, #fff 0%, var(--sky) 90px, var(--sky) calc(100% - 90px), #fff 100%);
+}
+/* Jonction CTA final (blanc) -> pied de page (--navy uni) : même principe,
+   fondu en haut du footer seulement (pas de section après lui). */
+.lv6 footer {
+  background-image:
+    linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 100%),
+    linear-gradient(170deg, var(--navy), var(--navy));
+  background-size: 100% 110px, auto;
+  background-position: top, 0 0;
+  background-repeat: no-repeat, no-repeat;
+}
+
 /* ── Hero — 3ᵉ carte flottante (cycle), en plus de .float-1/.float-2
    déjà définies dans landing-v6.css. Données liées à la boutique
    d'exemple "Maison Awa", jamais de vraie donnée marchande/cliente. ── */
@@ -235,6 +404,22 @@
    jamais, la première carte reste affichée en continu (voir le composant). */
 .lv6 .float.cycle-item { opacity: 0; transition: opacity .5s ease }
 .lv6 .float.cycle-item.is-visible { opacity: 1 }
+
+/* ── Section "Le vrai problème" — image vendeuse recadrée en paysage
+   (2026-10-10, direction retenue) : l'image portrait d'origine, sans
+   contrainte de hauteur, dépassait largement le bloc de texte et laissait
+   un vide visible dessous (mesuré, pas supposé). Grille 2 colonnes
+   inchangée, mais centrée verticalement : c'est l'image qui s'adapte à la
+   hauteur du texte, pas l'inverse. ── */
+.lv6 .scene--v7 { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 5 / 4; height: auto }
+.lv6 .scene--v7-img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: 50% 42% }
+.lv6 .problem-grid { align-items: center }
+@media (max-width: 1060px) {
+  /* .problem-grid repasse déjà à 1 colonne sous 1060px (landing-v6.css) —
+     le 5/4 desktop devient trop serré une fois la colonne perdue (la
+     largeur de l'image double). */
+  .lv6 .scene--v7 { aspect-ratio: 4 / 3 }
+}
 
 /* ── Bulles de messages flottantes sur la photo de la vendeuse ──
    .scene a déjà position:relative en style inline (page.tsx) — redéclaré

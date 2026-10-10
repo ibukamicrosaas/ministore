@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -9,10 +9,26 @@ import Image from 'next/image'
 // modifié — même contenu/liens, nouvelle présentation uniquement.
 export function LandingV7Nav() {
   const [open, setOpen] = useState(false)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+
+  // Échap referme le menu et rend le focus au bouton qui l'a ouvert — sans
+  // ça, un utilisateur clavier perdrait le focus dans le vide à la
+  // fermeture (ajouté 2026-10-10, jamais présent avant).
+  useEffect(() => {
+    if (!open) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        toggleRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   return (
     <div className="nav-v7-wrap">
-      <div className="container">
+      <div className="container nav-v7-bar">
         <nav className="nav-v7" aria-label="Navigation principale">
           <Link href="/" aria-label="TEKKIShop — Accueil">
             <Image src="/logo.svg" alt="TEKKIShop" width={140} height={40} style={{ height: 36, width: 'auto' }} />
@@ -29,6 +45,7 @@ export function LandingV7Nav() {
             <Link href="/login" className="nav-v7-login">Connexion</Link>
             <Link href="/start" className="btn btn-primary">Créer ma boutique</Link>
             <button
+              ref={toggleRef}
               className="nav-v7-toggle"
               aria-expanded={open}
               aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
