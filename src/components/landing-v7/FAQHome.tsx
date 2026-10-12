@@ -40,11 +40,11 @@ function buildFaqs(commissionRange: string) {
         },
         {
           q: 'Comment je reçois l\'argent que mes clients paient sur ma boutique ?',
-          a: 'Quand un client paie par mobile money ou par carte, l\'argent arrive dans ta page Revenus, et tu le retires sur ton compte mobile money. Pour le paiement à la livraison, c\'est toi ou ton livreur qui encaissez, comme aujourd\'hui.',
+          a: 'Quand un client paie par mobile money, l\'argent arrive dans ta page Revenus, et tu le retires sur ton compte mobile money. Pour un paiement par carte (plan Pro), l\'argent va directement sur ton propre compte Stripe. Pour le paiement à la livraison, c\'est toi ou ton livreur qui encaissez, comme aujourd\'hui.',
         },
         {
           q: 'Dans quels pays TEKKIShop fonctionne ?',
-          a: 'Dans 6 pays d\'Afrique (Sénégal, Côte d\'Ivoire, Togo, Bénin, Burkina Faso, Mali) avec les paiements mobiles locaux de chaque pays, ainsi que dans 5 pays de la diaspora (France, Belgique, Luxembourg, Suisse, Canada) avec paiement par carte bancaire.',
+          a: 'Dans 6 pays d\'Afrique (Sénégal, Côte d\'Ivoire, Togo, Bénin, Burkina Faso, Mali) avec les paiements mobiles locaux de chaque pays, ainsi que dans 5 pays de la diaspora (France, Belgique, Luxembourg, Suisse, Canada) avec paiement par carte bancaire via Stripe, à connecter à ta boutique.',
         },
         {
           q: 'Est-ce que je peux vendre des produits digitaux ?',

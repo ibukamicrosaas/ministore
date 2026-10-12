@@ -278,114 +278,94 @@
   font-size: clamp(30px, 7.2vw, 80px);
 }
 
-/* ── Titre de transition ("Mêmes produits...") — vrai poids de titre,
-   plus un <p> stylé en ligne. ── */
-.lv6 .transition-heading {
-  font-family: var(--display);
-  font-weight: 800;
-  letter-spacing: -.03em;
-  line-height: 1.15;
-  font-size: clamp(22px, 2.6vw, 32px);
-  color: var(--ink);
-}
-
-/* ── Vidéo — habillage "poster" avec chrono, aucun fichier vidéo réel
-   (lot C, inchangé) : approximation visuelle statique du mockup. ── */
-.lv6 .video-poster {
-  margin-top: 40px;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  aspect-ratio: 16/9;
-  background: linear-gradient(160deg, var(--navy), #132a55);
+/* ── Vidéo réelle (2026-10-11) — remplace l'habillage "poster" statique
+   (téléphone + chrono, retiré). Ratio 9/16 réservé via `aspect-ratio` dès
+   le rendu initial (plus les attributs width/height sur <video> lui-même,
+   doublon volontaire pour le cas où aspect-ratio ne serait pas supporté) :
+   aucun saut de mise en page au chargement, avant même que le poster
+   n'apparaisse. Mobile (<900px) : largeur pleine (marges déjà posées par
+   .container center), hauteur dérivée du ratio. Desktop (≥900px) :
+   hauteur plafonnée (72vh, jamais plus de 760px) pour ne jamais dépasser
+   un écran, largeur dérivée du ratio, centrée. */
+.lv6 .video-poster--v7 {
+  margin: 40px auto 0;
+  aspect-ratio: 9 / 16;
+  width: 100%;
+  max-width: 420px;
   border-radius: var(--radius-lg);
-  position: relative;
   overflow: hidden;
-  display: grid;
-  place-items: center;
-  color: #fff;
+  background: var(--navy);
+  position: relative;
 }
-.lv6 .video-poster-phone {
-  width: 86px;
-  height: 160px;
-  border-radius: 20px;
-  border: 5px solid rgba(255,255,255,.25);
-  background: rgba(255,255,255,.06);
+@media (min-width: 900px) {
+  .lv6 .video-poster--v7 {
+    width: auto;
+    height: min(72vh, 760px);
+    max-width: 100%;
+  }
 }
-.lv6 .video-poster-play {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #fff;
-  color: var(--navy);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 18px 40px -14px rgba(0,0,0,.5);
-}
-.lv6 .chrono {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  font-family: var(--mono);
-  font-size: clamp(14px, 1.8vw, 20px);
-  font-weight: 600;
-  background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 12px;
-  padding: 8px 14px;
-  color: #fff;
-}
-.lv6 .chrono small {
+.lv6 .video-poster-el {
+  width: 100%;
+  height: 100%;
   display: block;
-  font-size: 9.5px;
-  letter-spacing: .14em;
-  opacity: .7;
-  font-weight: 500;
-}
-.lv6 .video-poster-note {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: rgba(255,255,255,.7);
-  white-space: nowrap;
+  object-fit: cover;
+  background: var(--navy);
 }
 
-/* ── Règle de transition, appliquée à toutes les sections à fond propre
-   de cette route (2026-10-10) : jamais de couleur unie qui s'arrête net à
-   la jonction avec la section suivante — chaque bloc à fond distinct
-   (sombre, ou sky uni) porte ses propres bandes de fondu en haut/bas,
-   superposées à son fond réel via des calques background-image
-   supplémentaires (jamais en remplaçant le fond existant, ni en touchant
-   landing-v6.css). Diagnostiqué par mesure (getComputedStyle sur chaque
-   jonction) avant correction : .timeline-sec et .testi-sec changeaient de
-   couleur en un seul pixel de transition, sans dégradé, ce qui créait une
-   ligne nette au même titre que la jonction bandeau/titre ci-dessus. ── */
-.lv6 .timeline-sec {
-  background-image:
-    linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 100%),
-    linear-gradient(0deg,   #fff 0%, rgba(255,255,255,0) 100%),
-    radial-gradient(circle at 85% 8%, rgba(255,176,32,.14), transparent 34%),
-    radial-gradient(circle at 8% 82%, rgba(23,107,255,.2), transparent 38%),
-    linear-gradient(170deg, var(--navy), #040d1e);
-  background-size: 100% 120px, 100% 120px, auto, auto, auto;
-  background-position: top, bottom, 0 0, 0 0, 0 0;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+/* Bouton de lecture central — masqué par défaut (sécurité sans JS : un
+   bouton qui ne répond à aucun clic ne doit jamais être visible), révélé
+   uniquement quand #top porte .js-ready (même mécanisme que .reveal--v7,
+   posé par le script inline de page.tsx). Ne couvre jamais la barre de
+   contrôles native du <video> (positionné/dimensionné pour rester dans la
+   zone centrale, pointer-events uniquement sur le bouton lui-même). */
+.lv6 .video-play-btn { display: none }
+#top.js-ready .video-play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  color: var(--navy);
+  cursor: pointer;
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,.5);
+  transition: transform .2s ease, background-color .2s ease;
 }
+#top.js-ready .video-play-btn svg { width: 28px; height: 28px; margin-left: 3px }
+#top.js-ready .video-play-btn:hover { transform: translate(-50%, -50%) scale(1.06); background: #fff }
+@media (prefers-reduced-motion: reduce) {
+  #top.js-ready .video-play-btn { transition: none }
+  #top.js-ready .video-play-btn:hover { transform: translate(-50%, -50%) }
+}
+
+/* Étapes sous la vidéo — rendu incohérent mesuré le 2026-10-11 : à 390px,
+   le retour à la ligne naturel (flex-wrap) casse en 2+1 (①② sur une ligne,
+   ③ seul en dessous) ; à 360px, chaque étape finit seule (1+1+1) — deux
+   comportements différents pour une largeur quasi identique. Sous 480px
+   (même seuil que les autres ruptures de cette route), un seul rendu
+   cohérent : empilées, centrées, une par ligne. Au-dessus de 480px,
+   .steps-line garde son display:flex en ligne inchangé (style inline,
+   page.tsx). */
+@media (max-width: 480px) {
+  .lv6 .steps-line--v7 { flex-direction: column; align-items: center }
+}
+
+/* ── Règle de transition (2026-10-10) : jamais de couleur unie qui
+   s'arrête net à la jonction avec la section suivante, sur les fonds
+   clairs/intermédiaires de cette route (bandeau de paiement, hero,
+   .testi-sec). Revu le même jour : la règle ne s'applique PAS aux blocs à
+   fond sombre franc (.timeline-sec, footer) — un dégradé vers le blanc y
+   avait été ajouté puis retiré sur demande explicite : ces deux blocs
+   gardent leur bord net, fond sombre plein, comme avant toute
+   intervention sur les transitions. ── */
 .lv6 .testi-sec {
   background: linear-gradient(180deg, #fff 0%, var(--sky) 90px, var(--sky) calc(100% - 90px), #fff 100%);
-}
-/* Jonction CTA final (blanc) -> pied de page (--navy uni) : même principe,
-   fondu en haut du footer seulement (pas de section après lui). */
-.lv6 footer {
-  background-image:
-    linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 100%),
-    linear-gradient(170deg, var(--navy), var(--navy));
-  background-size: 100% 110px, auto;
-  background-position: top, 0 0;
-  background-repeat: no-repeat, no-repeat;
 }
 
 /* ── Hero — 3ᵉ carte flottante (cycle), en plus de .float-1/.float-2
@@ -411,14 +391,72 @@
    un vide visible dessous (mesuré, pas supposé). Grille 2 colonnes
    inchangée, mais centrée verticalement : c'est l'image qui s'adapte à la
    hauteur du texte, pas l'inverse. ── */
+/* Texte en 3 blocs courts (2026-10-10, remplace les paragraphes denses) —
+   accroche en gras + 1-2 phrases, séparés par un filet fin, conclusion en
+   gras hors-bloc. Contenu exclusivement issu du texte déjà validé, aucun
+   chiffre ajouté. */
+.lv6 .problem-blocks--v7 { display: flex; flex-direction: column }
+.lv6 .problem-block--v7 { padding: 18px 0; border-top: 1px solid var(--border) }
+.lv6 .problem-block--v7:first-child { padding-top: 0; border-top: none }
+.lv6 .problem-block--v7 strong { display: block; font-family: var(--display); font-size: 17.5px; font-weight: 700; color: var(--ink); margin-bottom: 7px; line-height: 1.3 }
+.lv6 .problem-block--v7 p { font-size: 15px; color: var(--ink-2); line-height: 1.55; margin: 0 }
+.lv6 .problem-conclusion--v7 { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); font-family: var(--display); font-size: 17.5px; color: var(--ink) }
 .lv6 .scene--v7 { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 5 / 4; height: auto }
 .lv6 .scene--v7-img { width: 100%; height: 100%; object-fit: cover; display: block; object-position: 50% 42% }
 .lv6 .problem-grid { align-items: center }
 @media (max-width: 1060px) {
-  /* .problem-grid repasse déjà à 1 colonne sous 1060px (landing-v6.css) —
-     le 5/4 desktop devient trop serré une fois la colonne perdue (la
-     largeur de l'image double). */
-  .lv6 .scene--v7 { aspect-ratio: 4 / 3 }
+  /* .problem-grid repasse déjà à 1 colonne sous 1060px (landing-v6.css) : il
+     n'y a alors plus de hauteur de texte à égaler (l'image n'est plus à
+     côté du texte, mais en dessous, pleine largeur) — rien n'empêche de la
+     garder plus haute que le 5/4 desktop, qui rendait les bulles de
+     SceneBubbles trop serrées verticalement (chevauchement mesuré et
+     confirmé par capture le 2026-10-10 sous 390/360px). 4/5 (portrait
+     modéré) leur rend la place nécessaire. */
+  .lv6 .scene--v7 { aspect-ratio: 4 / 5 }
+}
+
+/* ── Comparatif (2026-10-11) — fond ciel continu, cartes plus vivantes.
+   0 élément avec backdrop-filter : le fond de section est une couleur
+   plate en dégradé, pas une photo/texture, un flou n'ajouterait rien. ── */
+/* Écart comparatif -> vidéo mesuré le 2026-10-11 :
+   desktop 290px (100px padding-bottom de #probleme + 90px propres à
+   .compare-section--v7 + 100px padding-top de la section vidéo) ;
+   mobile 218px (64+90+64 avant un 1er correctif à 36px -> 164px, voir
+   historique). Jugé trop grand aux deux largeurs. Au lieu d'une valeur
+   arbitraire, calé sur le rythme déjà établi ailleurs sur cette même
+   route entre deux sections standard adjacentes (mesuré : 200px desktop,
+   128px mobile, ex. vidéo -> côté client, côté client -> 24h/24) — le
+   padding-bottom propre à .compare-section--v7 repasse donc à 0 aux deux
+   largeurs, laissant les deux .section (partagées avec le reste de la
+   route) produire le même espacement que partout ailleurs sur la page.
+   Résultat mesuré après coup : 200px desktop, 128px mobile. */
+.lv6 .compare-section--v7 {
+  background: linear-gradient(180deg, #fff 0%, var(--sky) 70px, var(--sky) calc(100% - 70px), #fff 100%);
+}
+.lv6 .compare--v7 { gap: 28px }
+.lv6 .cmp--v7 { border-radius: 26px; border: none; padding: 32px 28px 28px; box-shadow: 0 24px 56px -28px rgba(23,40,70,.22) }
+.lv6 .cmp--v7.cmp-bad  { background: rgba(255,241,242,.82) }
+.lv6 .cmp--v7.cmp-good { background: rgba(230,251,242,.82) }
+/* Texte de liste agrandi (2026-10-11, mini-visuel retiré) : 14,5px ->
+   16.5px desktop, 15.5px sous 1060px (étape intermédiaire déjà prévue par
+   landing-v6.css) et 15px sous 480px — vérifié sans retour à la ligne
+   cassé ni débordement à 360/390px. */
+.lv6 .cmp--v7 li { font-size: 16.5px; line-height: 1.55 }
+@media (max-width: 1060px) {
+  .lv6 .cmp--v7 { padding: 26px 22px 22px }
+  .lv6 .cmp--v7 li { font-size: 15.5px }
+}
+@media (max-width: 480px) {
+  .lv6 .cmp--v7 li { font-size: 15px }
+}
+
+/* ── Section vidéo — fond ambre très clair, dérivé de --amber (#ffb020),
+   déjà la couleur d'accent du 24h/24 et du CTA final sur cette route
+   (pas une teinte nouvelle). Casse la continuité blanche comparatif ->
+   vidéo -> côté client. Dégradé avec marge blanche aux deux bords, même
+   principe que .testi-sec plus bas sur la page. ── */
+.lv6 .video-sec--v7 {
+  background: linear-gradient(180deg, #fff 0%, #fff7ea 80px, #fff7ea calc(100% - 80px), #fff 100%);
 }
 
 /* ── Bulles de messages flottantes sur la photo de la vendeuse ──
@@ -452,7 +490,12 @@
 .lv6 .scene-bubble small { display: block; font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 2px }
 .lv6 .scene-unread {
   position: absolute;
-  top: 46%; left: 46%;
+  /* Repositionné une 2ᵉ fois le 2026-10-10 : l'étagement des bulles a été
+     revu pour qu'aucune bulle ne chevauche une autre (voir
+     SceneBubbles.tsx), ce qui ne laisse plus que des bandes de ~3% entre
+     elles — trop étroit pour le badge. Déplacé sous la dernière bulle
+     (b6 se termine ~79%), vérifié sans chevauchement à 360/390/1440px. */
+  top: 84%; left: 42%;
   background: #e5484d;
   color: #fff;
   font-weight: 800;
@@ -473,4 +516,40 @@
   .lv6 .scene-bubble { max-width: 82%; padding: 7px 11px 7px 7px }
   .lv6 .scene-bubble p { font-size: 13px }
   .lv6 .scene-bubble .sb-av { width: 24px; height: 24px; font-size: 10px }
+}
+/* Sous 480px, le fond disponible après le passage à 4/5 (voir plus haut)
+   reste plus étroit qu'un desktop — resserre encore un cran, en plus de
+   l'étagement vertical déjà corrigé sur SceneBubbles.tsx (écarts entre
+   bulles augmentés pour cette route le 2026-10-10). */
+@media (max-width: 480px) {
+  .lv6 .scene-bubble { max-width: 68%; padding: 6px 10px 6px 6px; gap: 7px }
+  .lv6 .scene-bubble p { font-size: 12px }
+  .lv6 .scene-bubble small { font-size: 9px }
+  .lv6 .scene-bubble .sb-av { width: 21px; height: 21px; font-size: 9px }
+}
+
+/* ── Apparitions animées au scroll, propres à cette route (2026-10-11) —
+   écart n°8. .reveal--v7 n'est JAMAIS caché par défaut : seul le sélecteur
+   #top.js-ready (posé par le script inline dans page.tsx, voir ce fichier)
+   active le masquage initial. Sans JavaScript, ou si le script échoue
+   avant de s'exécuter, #top ne porte jamais .js-ready => le contenu reste
+   visible en permanence, jamais cette page ne dépend du JS pour être
+   lisible. RevealV7Init.tsx (IntersectionObserver, seuil 0.1, unobserve
+   après déclenchement) ajoute .visible une fois l'élément dans le
+   viewport ; si IntersectionObserver n'existe pas, il ajoute .visible à
+   tout de suite à tous les éléments concernés (voir ce composant). ── */
+.lv6 .reveal--v7 { opacity: 1 }
+/* #top porte déjà .lv6 sur ce même élément (pas un ancêtre séparé) — le
+   sélecteur descendant correct est #top.js-ready .reveal--v7, jamais
+   "#top.js-ready .lv6 ...", qui ne matcherait jamais rien (bug détecté et
+   corrigé le 2026-10-11 : testé avec JS activé, l'ancienne règle ne
+   s'appliquait jamais, confirmé via getComputedStyle). */
+#top.js-ready .reveal--v7 {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+#top.js-ready .reveal--v7.visible { opacity: 1; transform: none }
+@media (prefers-reduced-motion: reduce) {
+  #top.js-ready .reveal--v7 { opacity: 1; transform: none; transition: none }
 }

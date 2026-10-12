@@ -17,13 +17,20 @@ type Bubble = {
   lost?: boolean
 }
 
+/* Étagement revu le 2026-10-10 : chaque bulle occupe une bande verticale
+   qui ne chevauche celle d'aucune autre (mesuré : hauteur réelle d'une
+   bulle ≈ 9,4 à 10,5% de la hauteur du cadre selon la largeur d'écran,
+   390/360/1440 testés), plutôt que de dépendre de l'espace horizontal
+   restant entre bulle gauche et bulle droite (qui, lui, varie trop selon
+   la largeur pour garantir une séparation nette partout — c'est ce qui
+   créait le contact de coin entre MT et FD avant correction). */
 const BUBBLES: Bubble[] = [
-  { id: 'b1', initials: 'AK', color: '#be123c', text: 'C’est combien ?', time: '10:24', style: { top: '6%', left: '5%' } },
-  { id: 'b2', initials: 'MT', color: '#1d4ed8', text: 'Dispo en taille L ?', time: '10:28', style: { top: '19%', left: '14%' } },
-  { id: 'b3', initials: 'FD', color: '#0f766e', text: 'Vous livrez à Angré ?', time: '10:32', style: { top: '12%', right: '4%' } },
-  { id: 'b4', initials: 'SB', color: '#7c3aed', text: 'Toujours dispo ??', time: '10:35', style: { top: '30%', right: '3%' } },
-  { id: 'b5', initials: 'OA', color: '#c2410c', text: 'Vous êtes là ??', time: '10:37', style: { top: '44%', right: '5%' } },
-  { id: 'b6', initials: 'AK', color: '#94a3b8', text: 'Bon, laissez tomber.', time: '10:41', style: { top: '57%', right: '7%' }, lost: true },
+  { id: 'b1', initials: 'AK', color: '#be123c', text: 'C’est combien ?', time: '10:24', style: { top: '4%', left: '5%' } },
+  { id: 'b2', initials: 'MT', color: '#1d4ed8', text: 'Dispo en taille L ?', time: '10:28', style: { top: '30%', left: '14%' } },
+  { id: 'b3', initials: 'FD', color: '#0f766e', text: 'Vous livrez à Angré ?', time: '10:32', style: { top: '17%', right: '4%' } },
+  { id: 'b4', initials: 'SB', color: '#7c3aed', text: 'Toujours dispo ??', time: '10:35', style: { top: '43%', right: '3%' } },
+  { id: 'b5', initials: 'OA', color: '#c2410c', text: 'Vous êtes là ??', time: '10:37', style: { top: '56%', right: '5%' } },
+  { id: 'b6', initials: 'AK', color: '#94a3b8', text: 'Bon, laissez tomber.', time: '10:41', style: { top: '69%', right: '7%' }, lost: true },
 ]
 
 export function SceneBubbles() {

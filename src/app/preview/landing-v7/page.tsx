@@ -13,6 +13,7 @@ import { SceneBubbles } from '@/components/landing-v7/SceneBubbles'
 import { VideoPoster } from '@/components/landing-v7/VideoPoster'
 import { LandingV7Nav } from '@/components/landing-v7/LandingV7Nav'
 import { AnimatedCounter } from '@/components/landing-v7/AnimatedCounter'
+import { RevealV7Init } from '@/components/landing-v7/RevealV7Init'
 import '@/app/landing-v6.css'
 import './landing-v7.css'
 
@@ -108,6 +109,16 @@ export default function LandingPreviewV7() {
     <div
       className={`lv6 ${geist.className}`}
       id="top"
+      // Le script inline juste en dessous modifie classList APRÈS le rendu
+      // serveur, avant l'hydratation React — un vrai avertissement
+      // d'hydratation a été constaté en dev (confirmé le 2026-10-11,
+      // console réelle : "A tree hydrated but some attributes..."),
+      // silencieux en prod mais sans conséquence fonctionnelle (js-ready
+      // survit à l'hydratation dans les deux cas, vérifié). Fix standard
+      // React pour ce patron (identique à next-themes et autres scripts
+      // anti-FOUC) : suppressHydrationWarning sur ce seul nœud, pas sur
+      // l'arbre entier.
+      suppressHydrationWarning
       style={{
         ['--display' as string]: geist.style.fontFamily,
         ['--body' as string]: geist.style.fontFamily,
@@ -121,6 +132,37 @@ export default function LandingPreviewV7() {
         ['--mono' as string]: geist.style.fontFamily,
       }}
     >
+      {/* Anti-FOUC pour les apparitions au scroll (.reveal--v7, écart n°8,
+          2026-10-11) : script inline synchrone, propre à cette route
+          (jamais dans app/layout.tsx, partagé) — doit rester le tout
+          premier enfant de ce <div id="top">, avant tout élément
+          .reveal--v7, pour bloquer le parsing HTML à cet endroit précis et
+          poser la classe avant que le navigateur n'atteigne ces éléments
+          (sinon : flash visible-puis-caché). Sans JS (ou JS qui échoue
+          avant ce point), #top ne reçoit jamais .js-ready — voir
+          landing-v7.css : .reveal--v7 reste visible par défaut dans ce
+          cas, jamais caché.
+
+          Filet de sécurité ajouté le 2026-10-11 : sur une connexion lente,
+          le HTML peut arriver et ce script s'exécuter bien avant que le
+          bundle React ne soit téléchargé/exécuté et que RevealV7Init.tsx
+          ne monte — le contenu resterait caché (opacity:0) sans jamais se
+          révéler. Si RevealV7Init n'a pas signalé qu'il a démarré (en
+          posant window.__v7RevealReady = true dans son effet) au bout de
+          3s, .js-ready est retirée : tout redevient visible, dégradation
+          sans animation plutôt que sections vides. Testé en navigateur
+          réel en empêchant volontairement l'hydratation (JS désactivé
+          après le chargement initial du HTML) — voir conversation. */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        document.getElementById('top').classList.add('js-ready');
+        setTimeout(function () {
+          if (!window.__v7RevealReady) {
+            var el = document.getElementById('top');
+            if (el) el.classList.remove('js-ready');
+          }
+        }, 3000);
+      ` }} />
+
       {/* ── Fond ciel : englobe le header ET le hero, pour que le dégradé
           démarre tout en haut de la page (derrière le header flottant),
           pas seulement à partir du hero. Pourcentages du dégradé relatifs
@@ -210,22 +252,26 @@ export default function LandingPreviewV7() {
             empilée n'est pas conservée). Pas de petit titre "LE VRAI
             PROBLÈME" (retiré comme demandé) : le texte seul, sans .label. */}
         <div className="container problem-grid">
-          <div className="reveal">
-            <p className="lead" style={{ marginTop: 0 }}>
-              Renvoyer les mêmes photos, répéter les prix, vérifier le stock, noter l&rsquo;adresse, confirmer le paiement, appeler le livreur… <strong>Chaque vente te coûte une demi-heure de messages.</strong>
-            </p>
-            <p className="lead">
-              Avec 10 clients par jour, ça passe. Avec 100, c&rsquo;est impossible : les messages s&rsquo;accumulent, les clients attendent, et ceux qui attendent trop achètent ailleurs.
-            </p>
-            <p className="lead">
-              Recruter quelqu&rsquo;un pour répondre ? C&rsquo;est un salaire de plus, pour une personne qui ne sera jamais disponible 24h/24.
-            </p>
+          <div className="reveal--v7 problem-blocks--v7">
+            <div className="problem-block--v7">
+              <strong>Chaque vente te prend un fil de messages.</strong>
+              <p>Tu renvoies les mêmes photos, tu répètes les prix, tu vérifies le stock, tu notes l&rsquo;adresse, tu confirmes le paiement, tu appelles le livreur…</p>
+            </div>
+            <div className="problem-block--v7">
+              <strong>Quand les clients arrivent en nombre, c&rsquo;est ingérable.</strong>
+              <p>Les messages s&rsquo;accumulent, les clients attendent, et ceux qui attendent trop achètent ailleurs.</p>
+            </div>
+            <div className="problem-block--v7">
+              <strong>Recruter quelqu&rsquo;un pour répondre, c&rsquo;est un coût en plus.</strong>
+              <p>Cette personne ne pourra jamais être disponible 24h/24, alors que tes clients t&rsquo;écrivent à toute heure.</p>
+            </div>
+            <p className="problem-conclusion--v7"><strong>C&rsquo;est pour ça qu&rsquo;il est temps de vendre autrement.</strong></p>
           </div>
           {/* Image vendeuse : recadrage confirmé le 2026-10-02 (laptop retiré).
               border/radius/overflow portés par scene--v7 (landing-v7.css),
               pas en style inline — cohérent avec le reste des overrides
               additifs de cette route (.pay--v7, .scene--v7-img, etc.). */}
-          <div className="scene reveal scene--v7">
+          <div className="scene reveal--v7 scene--v7">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/vendeuse-debordee.jpg"
@@ -237,46 +283,67 @@ export default function LandingPreviewV7() {
           </div>
         </div>
 
-        <h2 className="transition-heading" style={{ textAlign: 'center', marginTop: 56 }}>
-          Mêmes produits, mêmes clients. <span className="grad">Une autre façon de vendre.</span>
-        </h2>
+        {/* Comparatif — décisions du 2026-10-11 : fond ciel continu (voir
+            .compare-section--v7 dans landing-v7.css), cartes plus vivantes
+            (grand rayon, ombre douce, fond translucide uni — 0
+            backdrop-filter, le fond de section est une couleur plate, pas
+            une photo). Mini-visuel "commandes" retiré le 2026-10-11 :
+            les deux cartes ne contiennent plus que leurs 5 points, en plus
+            grand (voir .cmp--v7 ul li dans landing-v7.css), hauteur
+            naturelle égale des deux côtés sans ce bloc en plus. */}
+        <div className="compare-section--v7">
+        {/* Taille et largeur alignées sur les autres titres de section
+            (h2 par défaut + .container center, même structure que la
+            section vidéo juste en dessous) — .transition-heading (plus
+            petite, clamp 22-32px, non contenue en largeur) retirée de cet
+            usage le 2026-10-11, elle ne sert plus nulle part sur cette
+            route. */}
+        <div className="container center" style={{ marginTop: 132 }}>
+          <h2>Ce qui change <span className="grad">dans ta façon de vendre.</span></h2>
+        </div>
 
         <div className="container">
-          <div className="compare reveal">
-            <div className="cmp cmp-bad">
+          <div className="compare reveal--v7 compare--v7">
+            <div className="cmp cmp-bad cmp--v7">
               <span className="cmp-tag">Vendre comme à tes débuts</span>
               <h3>Tes ventes dépendent de ta disponibilité</h3>
               <ul>
-                <li><b>✕</b> Tes photos et tes prix sont éparpillés dans les statuts et les discussions.</li>
+                <li><b>✕</b> Les photos de tes produits et leurs prix sont éparpillés dans tes statuts et tes discussions.</li>
                 <li><b>✕</b> Tu répètes la même chose à chaque client.</li>
                 <li><b>✕</b> Une commande se perd vite entre deux conversations.</li>
                 <li><b>✕</b> Tu vérifies chaque paiement toi-même.</li>
                 <li><b>✕</b> Plus tu as de clients, plus tu en fais attendre.</li>
               </ul>
             </div>
-            <div className="cmp cmp-good">
-              <span className="cmp-tag">Vendre au niveau de ton business</span>
+            <div className="cmp cmp-good cmp--v7">
+              <span className="cmp-tag">Vendre avec une vraie boutique en ligne</span>
               <h3>Tes clients achètent sans t&rsquo;attendre</h3>
               <ul>
-                <li><b>✓</b> Tous tes produits sont dans un seul lien.</li>
+                <li><b>✓</b> Tous tes produits sont dans ta boutique en ligne, avec un seul lien à partager.</li>
                 <li><b>✓</b> Le client voit le prix, la description, le stock et la livraison.</li>
                 <li><b>✓</b> Les commandes arrivent au même endroit, bien rangées.</li>
-                <li><b>✓</b> Le client paie par mobile money, par carte ou à la livraison, et tu es notifié.</li>
-                <li><b>✓</b> Que tu aies 10 ou 100 clients, chacun peut commander, même quand tu n&rsquo;es pas en ligne.</li>
+                <li><b>✓</b> Le client paie par mobile money ou à la livraison, et tu es notifié.</li>
+                <li><b>✓</b> Tes clients peuvent commander même quand tu n&rsquo;es pas en ligne.</li>
               </ul>
             </div>
           </div>
         </div>
+        </div>
       </section>
 
-      {/* ── Vidéo — emplacements prévus, aucun fichier intégré (lot C) ──── */}
-      <section className="section soft" id="comment">
+      {/* ── Vidéo — emplacements prévus, aucun fichier intégré (lot C).
+          Fond ambre très clair (voir .video-sec--v7, landing-v7.css) :
+          casse la continuité blanche entre le comparatif et cette section,
+          dégradé continu vers les sections voisines de part et d'autre —
+          réutilise --amber, déjà la couleur d'accent du 24h/24 et du CTA
+          final sur cette route, plutôt qu'une teinte nouvelle. ──────────── */}
+      <section className="section video-sec--v7" id="comment">
         <div className="container center">
           <span className="label">Aussi simple que ça</span>
-          <h2>Ta nouvelle façon de vendre, <span className="grad">prête en 5 minutes.</span></h2>
+          <h2 style={{ textWrap: 'balance' }}>Ta boutique en moins de 5&nbsp;minutes, <span className="grad">depuis ton téléphone.</span></h2>
           <p className="lead">Pas besoin d&rsquo;ordinateur, ni de développeur. Tu gères tout depuis ton téléphone.</p>
           <VideoPoster />
-          <div className="steps-line" style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 34, flexWrap: 'wrap' }}>
+          <div className="steps-line steps-line--v7" style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 34, flexWrap: 'wrap' }}>
             <span>① Ajoute tes produits</span>
             <span>② Mets ton lien en bio</span>
             <span>③ Reçois tes commandes</span>
@@ -287,16 +354,16 @@ export default function LandingPreviewV7() {
       {/* ── Côté client — état statique (écran produit), animation = lot B ── */}
       <section className="section">
         <div className="container split">
-          <div className="split-media reveal">
+          <div className="split-media reveal--v7">
             <div className="db-wrap"><MaisonAwaMockup /></div>
           </div>
           <div>
             <span className="label">Côté client</span>
-            <h2>Pour tes clients, tu n&rsquo;es plus un numéro WhatsApp. <span className="grad">Tu es une marque.</span></h2>
+            <h2>Plus besoin de <span className="grad">t&rsquo;écrire pour commander.</span></h2>
             <p className="lead" style={{ marginTop: 20 }}>Ton client ouvre ton lien et trouve tout : tes produits, tes prix, ce qu&rsquo;il reste en stock, tes délais de livraison. Il choisit, remplit son adresse et paie comme il veut.</p>
             <ul className="checks">
-              <li>{IC.checkCircle}<div><b>Tout ce qu&rsquo;il veut savoir, avant même de demander</b><p>Prix, stock, livraison : fini les 10 photos envoyées une par une.</p></div></li>
-              <li>{IC.checkCircle}<div><b>Du produit au paiement, sans quitter la page</b><p>Wave, Orange Money, carte ou paiement à la livraison.</p></div></li>
+              <li>{IC.checkCircle}<div><b>Tout ce qu&rsquo;il veut savoir, avant même de demander</b><p>Prix, stock, délai de livraison si tu l&rsquo;as renseigné : fini les 10 photos envoyées une par une.</p></div></li>
+              <li>{IC.checkCircle}<div><b>Il choisit, commande et paie sans avoir à t&rsquo;écrire</b><p>Wave, Orange Money ou à la livraison, selon ton pays et tes réglages.</p></div></li>
               <li>{IC.checkCircle}<div><b>Ton WhatsApp reste là</b><p>Ceux qui préfèrent te parler avant d&rsquo;acheter peuvent toujours le faire.</p></div></li>
             </ul>
           </div>
@@ -306,13 +373,13 @@ export default function LandingPreviewV7() {
       {/* ── 24h/24 — étiquetée comme exemple illustratif ─────────────────── */}
       <section className="timeline-sec">
         <div className="container">
-          <div className="section-head center reveal">
+          <div className="section-head center reveal--v7">
             <span className="label label--dark">Pendant que tu vis ta vie</span>
             <h2>Tes ventes ne s&rsquo;arrêtent plus quand tu <span style={{ color: 'var(--amber)' }}>poses ton téléphone.</span></h2>
             <p className="lead">Une journée type, à titre d&rsquo;exemple illustratif d&rsquo;un vendeur TEKKIShop.</p>
           </div>
           <div className="tl-grid">
-            <div className="tl reveal">
+            <div className="tl reveal--v7">
               {[
                 { time: '07:12', bold: 'Tu mets ton lien dans ton statut', text: 'Une seule adresse à partager, au lieu de dix photos envoyées une par une.' },
                 { time: '09:40', bold: 'Déjà 4 commandes, toutes payées', text: 'Tes clients ont choisi, commandé et payé par Wave. Tu n’as répondu à aucun message.' },
@@ -331,7 +398,7 @@ export default function LandingPreviewV7() {
                 </div>
               ))}
             </div>
-            <aside className="tl-aside reveal">
+            <aside className="tl-aside reveal--v7">
               <div className="tl-card">
                 <div className="tl-stat">1 commande sur 3</div>
                 <p>est passée entre 20h et 8h (heure UTC) — mesuré le 2026-09-30, 34,4% sur 355 commandes non annulées.</p>
@@ -349,7 +416,7 @@ export default function LandingPreviewV7() {
       {/* ── Tableau de bord — données Maison Awa, pas d'animation ────────── */}
       <section className="section">
         <div className="container split">
-          <div className="split-media reveal">
+          <div className="split-media reveal--v7">
             <div className="db-wrap">
               <div className="phone">
                 <div className="phone-notch" />
@@ -392,7 +459,7 @@ export default function LandingPreviewV7() {
         <div className="container center">
           <span className="label">Physique ou digital</span>
           <h2>Colis ou fichiers, <span className="grad">tes clients commandent seuls.</span></h2>
-          <div className="cards-3 reveal" style={{ gridTemplateColumns: '1fr 1fr', maxWidth: 760, margin: '40px auto 0' }}>
+          <div className="cards-3 reveal--v7" style={{ gridTemplateColumns: '1fr 1fr', maxWidth: 760, margin: '40px auto 0' }}>
             <article className="card">
               <div className="card-ico" style={{ background: '#ffeee3', color: '#e4572e' }}>{IC.shoppingBag}</div>
               <h3>Produits à livrer</h3>
@@ -421,7 +488,7 @@ export default function LandingPreviewV7() {
             eyebrow="Des boutiques TEKKIShop, en ligne aujourd'hui"
             headline={<>Voici à quoi ça ressemble, <span className="grad">concrètement.</span></>}
           />
-          <div className="stats-bar reveal" style={{ gridTemplateColumns: '1fr 1fr 1fr', maxWidth: 640, margin: '40px auto 0' }}>
+          <div className="stats-bar reveal--v7" style={{ gridTemplateColumns: '1fr 1fr 1fr', maxWidth: 640, margin: '40px auto 0' }}>
             <div className="stat"><b>{ORDERS_PLACED_COUNT}+</b><small>commandes passées</small></div>
             <div className="stat"><b>6</b><small>pays d&rsquo;Afrique</small></div>
             <div className="stat"><b>5</b><small>pays de la diaspora</small></div>
@@ -434,13 +501,13 @@ export default function LandingPreviewV7() {
       {/* ── Fondateur ─────────────────────────────────────────────────────── */}
       <section className="section soft">
         <div className="container founder">
-          <div className="founder-card reveal">
+          <div className="founder-card reveal--v7">
             <div className="founder-ava" style={{ background: 'var(--navy)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 28 }}>IN</div>
             <b>Ibuka Ndjoli</b>
             <small>Fondateur de TEKKIShop</small>
             <p style={{ marginTop: 14, fontSize: 13.5, opacity: .85 }}>Vend ses livres et ses jeux sur TEKKIShop.</p>
           </div>
-          <div className="reveal">
+          <div className="reveal--v7">
             <span className="label">Conçu à partir du terrain</span>
             <h2>Fait par des gens qui ont vendu en ligne ici, avant toi.</h2>
             <p className="quote">« Quand les ventes de mes jeux ont décollé, j&rsquo;ai compris que le problème n&rsquo;était plus de trouver des clients. C&rsquo;était de pouvoir tous les servir. »</p>
@@ -454,7 +521,7 @@ export default function LandingPreviewV7() {
       {/* ── CTA final ─────────────────────────────────────────────────────── */}
       <section className="cta-sec">
         <div className="container">
-          <div className="cta-card reveal">
+          <div className="cta-card reveal--v7">
             <h2>Ta prochaine vidéo virale mérite une boutique <span style={{ color: 'var(--amber)' }}>prête à encaisser.</span></h2>
             <p>Crée ta boutique en 5 minutes, mets ton lien en bio, et tes clients commandent à toute heure.</p>
             <div className="cta-actions">
@@ -467,6 +534,7 @@ export default function LandingPreviewV7() {
 
       <LandingFooter />
       <LandingV6Init />
+      <RevealV7Init />
     </div>
   )
 }
