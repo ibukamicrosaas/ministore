@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { WAITLIST_SUFFIX } from '@/app/licence/prices'
 import { FileText, Mail, Phone } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -58,7 +59,14 @@ export default async function LicenceApplicationsPage() {
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
                       <p className="text-sm font-bold text-gray-900">{a.full_name}</p>
-                      <p className="text-xs font-semibold text-sky-600 mt-0.5">{a.country}</p>
+                      <p className="text-xs font-semibold text-sky-600 mt-0.5">
+                        {a.country}
+                        {a.country.endsWith(WAITLIST_SUFFIX) && (
+                          <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                            Liste d&apos;attente
+                          </span>
+                        )}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${status.className}`}>
