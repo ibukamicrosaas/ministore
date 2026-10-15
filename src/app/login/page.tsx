@@ -228,7 +228,7 @@ export default async function LoginPage({
               {/* Heading */}
               <div className="lp-heading">
                 <div className="lp-mini">
-                  <Image src="/icone-tekkishop.svg" alt={APP_NAME} width={38} height={38} />
+                  <Image src="/icone-tekkishop-fallback.png" alt={APP_NAME} width={38} height={38} />
                 </div>
                 <h1 className="lp-h2">Heureux de te revoir</h1>
                 <p className="lp-sub2">Connecte-toi avec ton numéro de téléphone et ton code PIN.</p>

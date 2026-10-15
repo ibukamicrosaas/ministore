@@ -10,7 +10,7 @@ export default function NotFound() {
       <header className="border-b border-gray-100 px-6 py-4">
         <div className="max-w-5xl mx-auto">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <Image src="/icone-tekkishop.svg" alt="TEKKIShop" width={28} height={28} />
+            <Image src="/icone-tekkishop-fallback.png" alt="TEKKIShop" width={28} height={28} />
             <span className="font-bold text-gray-900 text-lg">TEKKIShop</span>
           </Link>
         </div>

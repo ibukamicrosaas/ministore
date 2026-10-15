@@ -35,7 +35,7 @@ export default function ResetPinPage() {
           <div className="rp-wrap">
             <div className="rp-heading">
               <div className="rp-mini">
-                <Image src="/icone-tekkishop.svg" alt={APP_NAME} width={34} height={34} />
+                <Image src="/icone-tekkishop-fallback.png" alt={APP_NAME} width={34} height={34} />
               </div>
               <h1 className="rp-h1">Réinitialiser ton PIN</h1>
               <p className="rp-sub">

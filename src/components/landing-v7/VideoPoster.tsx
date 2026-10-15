@@ -57,6 +57,11 @@ export function VideoPoster() {
       >
         <source src="/landing-v7/video-tekki-opt.mp4" type="video/mp4" />
       </video>
+      {/* Voile ~22% (2026-10-15), uniquement tant que le poster est affiché
+          (même condition que le bouton, jamais sur la vidéo en lecture) —
+          CSS seul, cover-tekki.webp n'est pas modifié. pointer-events:none
+          pour ne jamais intercepter le clic destiné au bouton/à la vidéo. */}
+      {showButton && <div className="video-poster-scrim" aria-hidden="true" />}
       {showButton && (
         <button
           type="button"

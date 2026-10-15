@@ -230,7 +230,9 @@ export default async function LandingPreviewV7() {
             </div>
             )}
             <h1 className="hero-v7-h1">
-              <span className="nowrap-lg">Ton business grandit.</span> <span className="grad">Ta façon de vendre</span> devrait suivre.
+              <span className="hero-v7-line">Ton business grandit.</span>
+              <span className="hero-v7-line grad">Ta façon de vendre</span>
+              <span className="hero-v7-line">devrait suivre.</span>
             </h1>
             <p className="hero-v7-sub">
               Crée ta boutique en ligne en 5 minutes et vends tes produits physiques ou digitaux sans avoir à répondre à 10 messages.
@@ -485,7 +487,17 @@ export default async function LandingPreviewV7() {
       <section className="section">
         <div className="container split split--activity-v7">
           <div className="split-media reveal--v7">
-            <div className="db-wrap">
+            {/* width:100% en ligne (2026-10-15) — même bug que l'autre usage
+                de .db-wrap plus haut sur cette page (ligne ~420, déjà
+                corrigé) : mesuré via Playwright, ce mockup restait à 259px
+                de large pour 624px de haut (cadre visiblement écrasé) au
+                lieu des 300px de large des deux autres mockups téléphone
+                (Hero, Côté client) à la même largeur d'écran — même cause,
+                .db-wrap/.split-media en grid/flex "auto" ne donnaient
+                aucune largeur déterminée à .phone (width:100% retombant sur
+                le min-content de .phone-notch, 92px, avant d'être repris
+                par d'autres contraintes). */}
+            <div className="db-wrap" style={{ width: '100%' }}>
               <div className="phone">
                 <div className="phone-notch" />
                 <div className="phone-screen">

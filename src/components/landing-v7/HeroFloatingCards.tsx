@@ -69,7 +69,7 @@ export function HeroFloatingCards() {
         >
           {card.kind === 'order' ? (
             <>
-              <Image src="/icone-tekkishop.svg" alt="" width={34} height={34} className="float-push-icon--v7" />
+              <Image src="/icone-tekkishop-fallback.png" alt="" width={34} height={34} className="float-push-icon--v7" />
               <div>
                 <small>TEKKISHOP · maintenant</small>
                 <b>{card.title}</b>
