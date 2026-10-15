@@ -1,470 +1,456 @@
-import { createAdminClient } from '@/lib/supabase/admin'
-import { createServerClient } from '@/lib/supabase/server'
-import Link  from 'next/link'
+import Link from 'next/link'
 import Image from 'next/image'
-import { LandingNav }    from '@/components/landing-v6/LandingNav'
-import { PricingV6 }     from '@/components/landing-v6/PricingV6'
-import { FAQv6 }         from '@/components/landing-v6/FAQv6'
-import { DemoModal }     from '@/components/landing-v6/DemoModal'
-import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
-import { ShopMockup }    from '@/components/landing-v6/ShopMockup'
+import { Geist } from 'next/font/google'
+import { APP_URL } from '@/constants'
 import { LandingFooter } from '@/components/landing-v6/LandingFooter'
-import { RealShopsShowcase } from '@/components/landing-v6/RealShopsShowcase'
-import { IC }            from '@/components/landing-v6/icons'
-import './landing-v6.css'
+import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
+import { RealShopsShowcaseV7 } from '@/components/landing-v7/RealShopsShowcaseV7'
+import { IC } from '@/components/landing-v6/icons'
+import { PricingHome } from '@/components/landing-v7/PricingHome'
+import { FAQHome } from '@/components/landing-v7/FAQHome'
+import { MaisonAwaHome } from '@/components/landing-v7/MaisonAwaHome'
+import { ClientJourney } from '@/components/landing-v7/ClientJourney'
+import { HeroFloatingCards } from '@/components/landing-v7/HeroFloatingCards'
+import { SceneBubbles } from '@/components/landing-v7/SceneBubbles'
+import { VideoPoster } from '@/components/landing-v7/VideoPoster'
+import { LandingV7Nav } from '@/components/landing-v7/LandingV7Nav'
+import { AnimatedCounter } from '@/components/landing-v7/AnimatedCounter'
+import { RevealV7Init } from '@/components/landing-v7/RevealV7Init'
+import { SmoothAnchorsInit } from '@/components/landing-v7/SmoothAnchorsInit'
+import { getPublicOrdersCount } from '@/lib/public-stats'
+import '@/app/landing-v6.css'
+// Bascule du 2026-10-15 : ce fichier était /preview/landing-v7/page.tsx,
+// landing-v7.css n'a pas été déplacé (reste dans son dossier d'origine,
+// /preview/landing-v7/page.tsx devient un simple redirect vers /) — import
+// corrigé en conséquence (était relatif './landing-v7.css', invalide
+// depuis ce nouvel emplacement).
+import '@/app/preview/landing-v7/landing-v7.css'
 
-export const metadata = {
-  title: 'TEKKIShop — Crée ta boutique en ligne en 5 minutes, depuis ton téléphone',
-  description: 'Mets tes produits en ligne, partage ton lien sur WhatsApp et reçois ton argent par Wave, Orange Money ou à la livraison. Déjà 1 400+ boutiques créées. Sans ordinateur, sans développeur.',
+// Lot 1 finalisé — Geist retenu pour TOUT le texte de cette route (plus de
+// Bricolage Grotesque, plus d'Inter), en remplaçant --display et --body
+// (définies par landing-v6.css, partagé, jamais modifié) au niveau de la
+// racine .lv6 de cette page uniquement — voir le style inline sur le <div
+// className="lv6"> plus bas. Tous les poids réellement utilisés dans ce
+// fichier/landing-v7.css/les composants landing-v7 sont chargés (400 corps
+// de texte, 500/600 emphases, 700/800 titres) : en charger moins aurait
+// forcé un poids unique sur tout le texte (c'est ce qui avait rendu le
+// sous-titre gras par erreur au tour précédent).
+const geist = Geist({ weight: ['400', '500', '600', '700', '800'], subsets: ['latin'], display: 'swap' })
+
+// Les 7 moyens de paiement réels (un badge par id unique de PaymentMethod
+// dans src/lib/payment-methods.ts, pas par pays — un même id peut
+// apparaître dans plusieurs pays avec un libellé différent, ex.
+// moov_money = "Moov Money" en CI/BK/BJ mais "Flooz" au Togo ; on choisit
+// le libellé le plus répandu). Logos = fichiers réels de
+// public/logo-payments/ (jamais modifiés, jamais copiés — next/image les
+// redimensionne/optimise à l'affichage sans toucher au fichier source).
+// maxit : seul logo mobile au format .webp, label "MaxIt" (PAYMENT_
+// METHODS_BY_COUNTRY.SN). togocell : label "T-Money", icône tmoney.png
+// (PAYMENT_METHODS_BY_COUNTRY.TG — togocell.jpg existe aussi dans le
+// dossier mais n'est référencé nulle part dans payment-methods.ts,
+// jamais utilisé ici). Carte bancaire et "à la livraison" restent hors
+// de ce compte de 7 (cohérent avec le chiffre "7 moyens de paiement"
+// affiché plus bas dans la page, qui ne les comptait déjà pas avant).
+const PAYMENT_LOGOS: { name: string; src: string; w: number; h: number }[] = [
+  { name: 'Wave', src: '/logo-payments/wave_1.svg', w: 20, h: 20 },
+  { name: 'Orange Money', src: '/logo-payments/om_1.svg', w: 20, h: 20 },
+  { name: 'MaxIt', src: '/logo-payments/maxit.webp', w: 20, h: 20 },
+  { name: 'MTN Money', src: '/logo-payments/mtn_1.svg', w: 20, h: 20 },
+  { name: 'Moov Money', src: '/logo-payments/moov_1.svg', w: 20, h: 20 },
+  { name: 'Mobicash', src: '/logo-payments/mobicash.png', w: 20, h: 20 },
+  { name: 'T-Money', src: '/logo-payments/tmoney.png', w: 20, h: 20 },
+]
+
+function PaymentBadge({ duplicate }: { duplicate?: boolean }) {
+  return (
+    <div className="pay-marquee-set--v7" aria-hidden={duplicate || undefined}>
+      {PAYMENT_LOGOS.map(p => (
+        <span key={p.name} className="pay--v7">
+          <Image src={p.src} alt={p.name} width={p.w} height={p.h} style={{ width: p.w, height: p.h, objectFit: 'contain' }} />
+          {p.name}
+        </span>
+      ))}
+      <span className="pay--v7">
+        <Image src="/logo-payments/visa.svg" alt="" aria-hidden width={24} height={16} style={{ width: 24, height: 16, objectFit: 'contain' }} />
+        <Image src="/logo-payments/Mastercard-Logo.wine.svg" alt="" aria-hidden width={20} height={16} style={{ width: 20, height: 16, objectFit: 'contain' }} />
+        Carte bancaire
+      </span>
+      <span className="pay--v7">{IC.truck} À la livraison</span>
+    </div>
+  )
 }
 
-// ── Icônes SVG (zéro emoji sur la landing page) ─────────────────────────────
-// Partagées avec les pages pays (ex. /togo) — voir landing-v6/icons.tsx
-
-export default async function LandingPage() {
-  const supabase = await createServerClient()
-  const admin    = createAdminClient()
-
-  const { count: totalShopsCount } = await admin
-    .from('shops')
-    .select('id', { count: 'exact', head: true })
-
-  const { data: allShops } = await supabase
-    .from('shops')
-    .select('id, name, slug, plan, city, logo_url, is_active, created_at')
-    .eq('is_active', true)
-    .in('plan', ['pro', 'business'])
-    .order('plan', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(8)
-
-  const shops      = allShops ?? []
-  const shopsCount = totalShopsCount ?? 0
-
+// Défilement infini CSS pur, même technique que RealShopsShowcaseV7
+// (liste dupliquée aria-hidden, pause au survol/focus, désactivée sous
+// prefers-reduced-motion, pleine largeur hors du conteneur centré).
+function PaymentBadgesV7() {
   return (
-    <div className="lv6" id="top">
-
-      {/* ── Bannière d'annonce ─────────────────────────────────────── */}
-      <div className="announcement-bar">
-        <span>3 premières commandes offertes</span>
-        <Link href="/start">
-          Je me lance →
-        </Link>
+    <div className="pay-marquee-fullbleed-wrap--v7">
+      <div className="pay-marquee-track--v7">
+        <PaymentBadge />
+        <PaymentBadge duplicate />
       </div>
+    </div>
+  )
+}
 
-      {/* ── Navigation ──────────────────────────────────────────────── */}
-      <LandingNav />
+// title.absolute (2026-10-15) : le layout racine applique un template
+// `%s — TekkiShop` à tout title défini comme simple chaîne (confirmé par
+// rendu réel, Playwright : un title en chaîne devient bien suffixé). Avec
+// `absolute`, le titre affiché reste exactement les 56 caractères voulus,
+// sans quoi le titre réel ferait 68 caractères (vérifié avec un compteur).
+// og-tekkishop-2026.jpg (1200x630, 145 Ko, JPEG, confirmé ffprobe/file)
+// remplace og-ministore.png ici et dans le layout racine. robots
+// index/follow (retrait du noindex) : bascule du 2026-10-15, cette page
+// est désormais `/`.
+const LANDING_V7_DESCRIPTION = "Tu vends déjà sur WhatsApp, Instagram ou TikTok ? Passe au niveau supérieur : crée ta boutique en ligne et laisse tes clients commander sans t'écrire."
 
-      {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="hero">
+export const metadata = {
+  title: { absolute: 'Crée ta boutique en ligne et vends autrement, en Afrique' },
+  description: LANDING_V7_DESCRIPTION,
+  robots: { index: true, follow: true },
+  alternates: { canonical: APP_URL },
+  openGraph: {
+    title: 'TEKKIShop : crée ta boutique en ligne et vends autrement, en Afrique',
+    description: LANDING_V7_DESCRIPTION,
+    url: APP_URL,
+    siteName: 'TEKKIShop',
+    images: [{ url: '/og-tekkishop-2026.jpg', width: 1200, height: 630, alt: 'TEKKIShop : crée ta boutique en ligne et vends autrement, en Afrique', type: 'image/jpeg' }],
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TEKKIShop : crée ta boutique en ligne et vends autrement, en Afrique',
+    description: LANDING_V7_DESCRIPTION,
+    images: ['/og-tekkishop-2026.jpg'],
+  },
+}
+
+// Liste validée le 2026-10-21 après relecture sur /preview/landing-v7-
+// boutiques (page de prévisualisation conservée, non indexée, non
+// commitée — ne pas supprimer). Marchands tiers d'abord, boutiques du
+// fondateur (viensonsconnait, ibuka — jamais présentées comme des
+// témoignages ou des clientes) en fin de liste. Pour retirer une
+// boutique (ex. propriétaire qui refuse) : supprimer sa seule ligne
+// ci-dessous, aucun autre fichier à toucher — RealShopsShowcaseV7 retombe
+// automatiquement sur la grille simple si moins de 6 lignes restent.
+const SHOWCASE_SHOP_IDS = [
+  'e98a25ce-8258-41f6-93c6-6fae9656d303', // abi-co
+  'd0effa08-c3d5-42c2-95c3-7555c987f897', // utiles-pepites
+  'af5ca60f-f48e-42e1-adb0-cb6fb2363da6', // veliashop
+  '6cf8da9f-ad1d-4de4-8fc5-d7fe937e8309', // dp-confection
+  'a95c1d79-68e6-46d1-8de1-2bf0dbc68bc9', // backy-business
+  '92d7fcbd-3d7e-4b50-9cf8-73c75e1385fe', // mkstore (TULstore)
+  '8567556d-6e80-4482-89a7-599b02be87ae', // jewado
+  '62c09103-06c0-4a71-9b71-7be693d8e737', // diana-s-concept
+  '12d6a93e-cf8a-41b5-aad0-4256a11725e7', // viensonsconnait — boutique du fondateur
+  '4df9c0db-d1fe-4703-970a-b4b81a8a1c3a', // ibuka — boutique du fondateur
+]
+
+// Badge du Hero (écart n°2), réutilisée aussi dans la barre de stats —
+// une seule constante depuis le 2026-10-12 (ORDERS_PLACED_COUNT, qui
+// portait une définition légèrement différente — commandes non annulées
+// hors pending >7j, mesurée le 2026-10-01 à 258 — a été retirée, les deux
+// usages affichant désormais la même mesure). Remplacée le 2026-10-19 par
+// getPublicOrdersCount() (src/lib/public-stats.ts) — même définition de
+// statuts, calculée en direct à chaque revalidation (revalidate=3600 sur
+// cette page) plutôt que figée à la main. null si la requête échoue :
+// chaque emplacement se masque alors entièrement, jamais de repli chiffré.
+
+export const revalidate = 3600
+
+export default async function LandingPreviewV7() {
+  const ordersCount = await getPublicOrdersCount()
+  return (
+    <div
+      className={`lv6 ${geist.className}`}
+      id="top"
+      // Le script inline juste en dessous modifie classList APRÈS le rendu
+      // serveur, avant l'hydratation React — un vrai avertissement
+      // d'hydratation a été constaté en dev (confirmé le 2026-10-11,
+      // console réelle : "A tree hydrated but some attributes..."),
+      // silencieux en prod mais sans conséquence fonctionnelle (js-ready
+      // survit à l'hydratation dans les deux cas, vérifié). Fix standard
+      // React pour ce patron (identique à next-themes et autres scripts
+      // anti-FOUC) : suppressHydrationWarning sur ce seul nœud, pas sur
+      // l'arbre entier.
+      suppressHydrationWarning
+      style={{
+        ['--display' as string]: geist.style.fontFamily,
+        ['--body' as string]: geist.style.fontFamily,
+        // --mono (IBM Plex Mono par défaut) également remplacée par Geist
+        // sur cette route : affecte tout texte jusqu'ici en monospace —
+        // le bandeau "TES CLIENTS PAIENT...", les prix du mockup (.st-fav
+        // span), mais aussi les horaires de la section 24h/24 (.tl-time),
+        // les petites étiquettes "label" et autres usages de var(--mono)
+        // dans landing-v6.css. Signalé explicitement : "Geist partout"
+        // appliqué à la lettre, pas seulement aux deux exemples cités.
+        ['--mono' as string]: geist.style.fontFamily,
+      }}
+    >
+      {/* .js-ready ne sert plus qu'au bouton de lecture vidéo personnalisé
+          (.video-play-btn, landing-v7.css) — le reveal au scroll ne dépend
+          plus de cette classe du tout depuis le 2026-10-13 (voir
+          RevealV7Init.tsx et landing-v7.css : .reveal--v7 est toujours
+          visible par défaut, seul JS peut ajouter .reveal-pending aux
+          éléments sous la ligne de flottaison, jamais l'inverse). Plus
+          besoin de filet de sécurité à 3s ici : si JS ne tourne jamais,
+          .video-play-btn reste simplement masqué pour toujours — dégradé
+          acceptable puisque les contrôles natifs <video controls> du
+          lecteur restent fonctionnels sans lui. */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        document.getElementById('top').classList.add('js-ready');
+      ` }} />
+
+      {/* ── Fond ciel : englobe le header ET le hero, pour que le dégradé
+          démarre tout en haut de la page (derrière le header flottant),
+          pas seulement à partir du hero. Pourcentages du dégradé relatifs
+          à CETTE hauteur (header + hero), pas à la page entière — sinon
+          "milieu du hero" tomberait bien plus bas que prévu. ── */}
+      <div className="hero-sky-wrap">
+        <LandingV7Nav />
+
+        {/* ── Hero — Lot 1 finalisé (header/hero/boutons pilule/dégradé) ──── */}
+        <section className="hero hero--v7">
         <div className="container hero-grid">
-          {/* Texte */}
           <div className="hero-copy">
-            <div className="social-proof">
-              <div className="avatars">
-                <Image src="/avatars/1.jpg" alt="" width={36} height={36} className="avatar" />
-                <Image src="/avatars/2.jpg" alt="" width={36} height={36} className="avatar" />
-                <Image src="/avatars/3.jpg" alt="" width={36} height={36} className="avatar" />
-                <Image src="/avatars/4.jpg" alt="" width={36} height={36} className="avatar" />
-                <Image src="/avatars/5.jpg" alt="" width={36} height={36} className="avatar" />
-              </div>
-              <div>
-                <b>+{shopsCount} boutiques créées</b>
-                <span>par des marchands dans 6 pays</span>
-              </div>
+            {/* Badge masqué entièrement si le comptage échoue (ordersCount
+                null) — jamais de repli chiffré. Deux variantes, une seule
+                visible à la fois (display:none, donc exclue de l'arbre
+                d'accessibilité automatiquement — pas de double lecture par
+                un lecteur d'écran). */}
+            {ordersCount !== null && (
+            <div className="hero-badge-v7">
+              <span className="hero-badge-v7-icon">{IC.shoppingBag}</span>
+              <span className="hero-badge-v7-text hero-badge-v7-text--full">
+                +<AnimatedCounter target={ordersCount} /> commandes passées sur des boutiques TEKKIShop
+              </span>
+              <span className="hero-badge-v7-text hero-badge-v7-text--short">
+                +<AnimatedCounter target={ordersCount} /> commandes passées
+              </span>
             </div>
-
-            <h1>
-              Crée ta boutique en ligne en <span className="grad">5&nbsp;minutes,</span> avec ton téléphone.
+            )}
+            <h1 className="hero-v7-h1">
+              <span className="hero-v7-line">Ton business grandit.</span>
+              <span className="hero-v7-line grad">Ta façon de vendre</span>
+              <span className="hero-v7-line">devrait suivre.</span>
             </h1>
-
-            <p className="lead">
-              Ajoute tes produits, partage ton lien, et c&rsquo;est tout. Tes clients commandent seuls, paient par mobile money ou à la livraison, et tu retires ton argent sur ton mobile money ou compte bancaire.
+            <p className="hero-v7-sub">
+              Crée ta boutique en ligne en 5 minutes et vends tes produits physiques ou digitaux sans avoir à répondre à 10 messages.
             </p>
-
-            <div className="hero-ctas">
+            <div className="hero-ctas" style={{ marginTop: 28 }}>
               <Link href="/start" className="btn btn-primary">
-                Créer ma boutique gratuitement
-                {IC.arrowRight}
+                Créer ma boutique gratuitement {IC.arrowRight}
               </Link>
-              <a href="#probleme" className="btn btn-secondary">Voir comment ça marche</a>
+              <a href="#comment" className="btn btn-secondary">Voir comment ça marche</a>
             </div>
-
             <div className="objections">
               <span>{IC.check} Pas besoin de développeur</span>
-              <span>{IC.check} Pas besoin d&rsquo;ordinateur</span>
+              <span>{IC.check} 14 jours d&rsquo;essai gratuits</span>
               <span>{IC.check} 3 commandes offertes</span>
             </div>
           </div>
 
-          {/* Téléphone */}
           <div className="hero-stage">
-            <ShopMockup />
+            {/* Accueil Maison Awa (nouveau design, point 2 du chantier
+                mockups) — remplace MaisonAwaMockup DANS LE HERO
+                uniquement ; MaisonAwaMockup reste utilisé telle quelle
+                plus bas (section "Côté client", pas encore ce lot). */}
+            <MaisonAwaHome />
+            {/* Écart n°4 : cycle de 3 cartes flottantes en boucle, données
+                d'exemple liées à la boutique fictive Maison Awa. */}
+            <HeroFloatingCards />
+          </div>
+        </div>
+        </section>
+      </div>
 
-            <div className="float float-1">
-              <i style={{ background: '#fff', overflow: 'hidden', padding: 4, boxSizing: 'border-box' }}>
-                <Image src="/logo-payments/wave_1.svg" alt="Wave" width={21} height={21} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </i>
-              <div>
-                <b>Paiement reçu</b>
-                <small>Wave · 14 000 FCFA</small>
-              </div>
-            </div>
-            <div className="float float-2">
-              <i style={{ background: '#176bff' }}>{IC.shoppingBag}</i>
-              <div>
-                <b>Nouvelle commande</b>
-                <small>2 articles · il y a 1 min</small>
-              </div>
-            </div>
+      {/* ── Bandeau paiements — logos (Wave, Orange Money, Moov Money,
+          Airtel, Visa/Mastercard), optimisés SVGO, copies propres à cette
+          route (public/logo-payments-v7/, jamais public/logo-payments/
+          utilisé en production). MTN MoMo retiré : ses propres directives
+          de marque interdisent cet usage hors étape de paiement. ───────── */}
+      <div className="strip strip--v7">
+        <div className="strip-label">Tes clients paient comme ils veulent :</div>
+        <PaymentBadgesV7 />
+      </div>
+
+      {/* ── Titre choc — Bricolage Grotesque retenu (comparaison Anton
+          retirée sur demande explicite, sauf si la police du header/hero
+          en cours d'arbitrage (Lot 1) change ce choix). ─────────────────── */}
+      <section className="section" style={{ paddingBottom: 0 }}>
+        <div className="container">
+          <div className="statement-option">
+            <h2 className="statement">
+              <span><span className="whatsapp-word--v7">WhatsApp</span> t&rsquo;a aidé à démarrer.</span>
+              <span className="grad">Il ne peut pas t&rsquo;aider à grandir.</span>
+            </h2>
           </div>
         </div>
       </section>
 
-      {/* ── Bandeau paiements ──────────────────────────────────────── */}
-      <div className="strip">
-        <div className="strip-label">Tes clients paient comme ils veulent :</div>
-        <div className="pay-row">
-          <span className="pay">
-            <Image src="/logo-payments/wave_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
-            Wave
-          </span>
-          <span className="pay">
-            <Image src="/logo-payments/om_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
-            Orange Money
-          </span>
-          <span className="pay">
-            <Image src="/logo-payments/mtn_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
-            MTN MoMo
-          </span>
-          <span className="pay">
-            <Image src="/logo-payments/moov_1.svg" alt="" aria-hidden width={60} height={20} style={{ height: 20, width: 'auto' }} />
-            Moov Money
-          </span>
-          <span className="pay">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
-              <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/>
-              <circle cx="15" cy="5" r="1"/>
-              <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
-            </svg>
-            À la livraison
-          </span>
-          <span className="pay">
-            <Image src="/logo-payments/visa.svg" alt="" aria-hidden width={40} height={20} style={{ height: 20, width: 'auto' }} />
-            <Image src="/logo-payments/Mastercard-Logo.wine.svg" alt="" aria-hidden width={40} height={20} style={{ height: 20, width: 'auto' }} />
-            Carte bancaire
-          </span>
-        </div>
-      </div>
-
-      {/* ── Le problème ──────────────────────────────────────────── */}
-      <section className="section" id="probleme">
+      {/* ── Problème ──────────────────────────────────────────────────── */}
+      <section className="section" id="probleme" tabIndex={-1}>
+        {/* Image recadrée en paysage (5/4), hauteur contenue sur la hauteur
+            du texte (direction A retenue le 2026-10-10, la direction B
+            empilée n'est pas conservée). Pas de petit titre "LE VRAI
+            PROBLÈME" (retiré comme demandé) : le texte seul, sans .label. */}
         <div className="container problem-grid">
-          <div className="reveal">
-            <span className="label">Le vrai problème</span>
-            <h2>WhatsApp t&rsquo;aide à commencer. Mais il t&rsquo;oblige à <span className="grad">tout faire toi-même.</span></h2>
-            <p className="lead">Renvoyer les mêmes photos, répéter les prix, vérifier ce qu&rsquo;il te reste en stock, noter l&rsquo;adresse, confirmer que le client a bien payé, appeler le livreur, attendre qu&rsquo;il confirme le paiement et la livraison. Chaque vente te coûte une demi-heure de messages.</p>
-            <div className="callout"><strong>Avec TEKKIShop, ta boutique se gère toute seule : ton client voit tout, choisit et paie tout seul. Toi, tu prépares la commande.</strong></div>
+          <div className="reveal--v7 problem-blocks--v7">
+            <div className="problem-block--v7">
+              <strong>Une seule vente te demande beaucoup de messages.</strong>
+              <p>Tu renvoies les mêmes photos, tu répètes les prix, tu vérifies le stock, tu notes l&rsquo;adresse, tu confirmes le paiement, tu appelles le livreur…</p>
+            </div>
+            <div className="problem-block--v7">
+              <strong>Difficile de répondre à tous les messages</strong>
+              <p>Les messages s&rsquo;accumulent, les clients attendent, et ceux qui attendent trop achètent ailleurs.</p>
+            </div>
+            <div className="problem-block--v7">
+              <strong>Recruter quelqu&rsquo;un pour répondre, c&rsquo;est un coût en plus.</strong>
+              <p>Cette personne ne pourra jamais être disponible 24h/24, alors que tes clients t&rsquo;écrivent à toute heure.</p>
+            </div>
+            <p className="problem-conclusion--v7"><strong>La solution est de <span className="grad">changer ta façon de vendre</span>.</strong></p>
           </div>
-          <div className="compare reveal">
-            <div className="cmp cmp-bad">
-              <span className="cmp-tag">Aujourd&rsquo;hui, sans TEKKIShop</span>
-              <h3>Ta journée dépend de tes messages</h3>
+          {/* Image vendeuse : recadrage confirmé le 2026-10-02 (laptop retiré).
+              border/radius/overflow portés par scene--v7 (landing-v7.css),
+              pas en style inline — cohérent avec le reste des overrides
+              additifs de cette route (.pay--v7, .scene--v7-img, etc.). */}
+          <div className="scene reveal--v7 scene--v7">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/vendeuse-debordee.jpg"
+              alt="Vendeuse débordée par les messages WhatsApp de ses clientes"
+              className="scene--v7-img"
+            />
+            {/* Écart n°5 : bulles de messages flottantes */}
+            <SceneBubbles />
+          </div>
+        </div>
+
+        {/* Comparatif — décisions du 2026-10-11 : fond ciel continu (voir
+            .compare-section--v7 dans landing-v7.css), cartes plus vivantes
+            (grand rayon, ombre douce, fond translucide uni — 0
+            backdrop-filter, le fond de section est une couleur plate, pas
+            une photo). Mini-visuel "commandes" retiré le 2026-10-11 :
+            les deux cartes ne contiennent plus que leurs 5 points, en plus
+            grand (voir .cmp--v7 ul li dans landing-v7.css), hauteur
+            naturelle égale des deux côtés sans ce bloc en plus. */}
+        <div className="compare-section--v7">
+        {/* Taille et largeur alignées sur les autres titres de section
+            (h2 par défaut + .container center, même structure que la
+            section vidéo juste en dessous) — .transition-heading (plus
+            petite, clamp 22-32px, non contenue en largeur) retirée de cet
+            usage le 2026-10-11, elle ne sert plus nulle part sur cette
+            route. */}
+        <div className="container center" style={{ marginTop: 132 }}>
+          <h2>Ce qui change <span className="grad">dans ta façon de vendre.</span></h2>
+        </div>
+
+        <div className="container">
+          <div className="compare reveal--v7 compare--v7">
+            <div className="cmp cmp-bad cmp--v7">
+              <span className="cmp-tag">Vendre comme à tes débuts</span>
+              <h3>Tes ventes dépendent de ta disponibilité</h3>
               <ul>
-                <li><b>✕</b> Tes photos et tes prix sont éparpillés dans les statuts et les discussions.</li>
+                <li><b>✕</b> Les photos de tes produits et leurs prix sont éparpillés dans tes statuts et tes discussions.</li>
                 <li><b>✕</b> Tu répètes la même chose à chaque client.</li>
                 <li><b>✕</b> Une commande se perd vite entre deux conversations.</li>
                 <li><b>✕</b> Tu vérifies chaque paiement toi-même.</li>
-                <li><b>✕</b> Si tu n&rsquo;es pas en ligne, la vente n&rsquo;avance pas.</li>
+                <li><b>✕</b> Plus tu as de clients, plus tu en fais attendre.</li>
               </ul>
             </div>
-            <div className="cmp cmp-good">
-              <span className="cmp-tag">Demain, avec TEKKIShop</span>
-              <h3>Ta boutique fait le premier travail</h3>
+            <div className="cmp cmp-good cmp--v7">
+              <span className="cmp-tag">Vendre avec une vraie boutique en ligne</span>
+              <h3>Tes clients achètent sans t&rsquo;attendre</h3>
               <ul>
-                <li><b>✓</b> Tous tes produits sont dans un seul lien.</li>
-                <li><b>✓</b> Le client voit le prix, la description et ce qu&rsquo;il reste en stock.</li>
+                <li><b>✓</b> Tous tes produits sont dans ta boutique en ligne, avec un seul lien à partager.</li>
+                <li><b>✓</b> Le client voit le prix, la description, le stock et la livraison.</li>
                 <li><b>✓</b> Les commandes arrivent au même endroit, bien rangées.</li>
-                <li><b>✓</b> Le client peut payer par mobile money ou à la livraison.</li>
-                <li><b>✓</b> Tu gères tout depuis ton téléphone, n&rsquo;importe où.</li>
+                <li><b>✓</b> Le client paie par mobile money ou à la livraison, et tu es notifié.</li>
+                <li><b>✓</b> Tes clients peuvent commander même quand tu n&rsquo;es pas en ligne.</li>
               </ul>
             </div>
           </div>
         </div>
+        </div>
       </section>
 
-      {/* ── Les 5 étapes ──────────────────────────────────────────── */}
-      <section className="section" id="etapes" style={{ background: 'var(--sky)' }}>
-        <div className="container">
-          <div className="section-head center reveal">
-            <span className="label">Aussi simple que ça</span>
-            <h2>Ta boutique est prête en <span className="grad">5 étapes.</span></h2>
-            <p className="lead">Pas besoin d&rsquo;ordinateur, ni de développeur. Tu gères tout depuis ton téléphone.</p>
-          </div>
-
-          {/* Étape 1 */}
-          <div className="step-row reveal">
-            <div className="step-media">
-              <div className="app">
-                <div className="app-bar">
-                  <span className="app-logo">TEKKI<span>Shop</span></span>
-                  <span className="app-step">Étape 1/5</span>
-                </div>
-                <div className="app-in">
-                  <div className="prog"><i data-prog="20:400,40:2900" /></div>
-                  <div className="qtitle">Comment s&rsquo;appelle ton business ?</div>
-                  <div className="qsub">C&rsquo;est le nom que tes clients verront. Tu pourras le changer plus tard.</div>
-                  <div className="qinput"><span data-type="Nala Store" data-delay="900" data-caret="1" /></div>
-                  <div className="qchips"><span>Nala Store</span><span>Maison Kora</span><span>Elite Sneakers</span></div>
-                  <div className="tip" data-appear="1900">L&rsquo;URL de ta boutique sera : <b>tekki.shop/nala-store</b>. Choisis un nom court et mémorable que tes clients retiendront facilement.</div>
-                  <div className="qbtn" data-ready="2600">Continuer</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="step-num"><i>01</i><span>60 secondes chrono</span></div>
-              <h3>Réponds à 5 questions</h3>
-              <p>Pas de blabla, pas de formulaire compliqué. Tu réponds, et ta boutique se construit pendant ce temps.</p>
-              <ul className="step-pts">
-                <li>{IC.check} Le nom de ton business, et ton adresse tekki.shop/tonnom est réservée</li>
-                <li>{IC.check} Ce que tu vends, où tu vends déjà, dans quel pays tu es</li>
-                <li>{IC.check} Quel est ton plus gros blocage pour vendre en ligne aujourd&rsquo;hui</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Étape 2 */}
-          <div className="step-row reveal flip">
-            <div className="step-media">
-              <div className="app">
-                <div className="app-bar">
-                  <span className="app-logo">TEKKI<span>Shop</span></span>
-                  <span className="app-step">Ton compte</span>
-                </div>
-                <div className="app-in">
-                  <div className="prog"><i data-prog="100:400" /></div>
-                  <div className="qtitle">Crée ton compte</div>
-                  <div className="qsub">Pour retrouver ta boutique depuis n&rsquo;importe quel téléphone.</div>
-                  <div className="fld" style={{ marginBottom: 11 }}>
-                    <small>Ton numéro WhatsApp</small>
-                    <b data-type="+221 77 123 46 78" data-delay="800" />
-                  </div>
-                  <span className="pinlab">Choisis un code PIN à 6 chiffres</span>
-                  <div className="pin" data-pin="6" data-delay="1900"><i /><i /><i /><i /><i /><i /></div>
-                  <div className="trust" data-appear="3450"><span>Création gratuite</span><span>Aucun engagement</span></div>
-                  <div className="qbtn green" data-ready="3700">Ouvrir ma boutique</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="step-num"><i>02</i><span>Environ 30 secondes</span></div>
-              <h3>Crée ton compte</h3>
-              <p>Insère ton numéro WhatsApp et choisis un code PIN de 6 chiffres. Pas de mot de passe à retenir, pas d&rsquo;e-mail à confirmer.</p>
-              <ul className="step-pts">
-                <li>{IC.check} Ton numéro te sert d&rsquo;identifiant, comme sur ton mobile money</li>
-                <li>{IC.check} Ton code PIN à 6 chiffres te sert de mot de passe</li>
-                <li>{IC.check} Ta boutique existe déjà : le compte sert juste à y accéder</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Étape 3 */}
-          <div className="step-row reveal">
-            <div className="step-media">
-              <div className="app">
-                <div className="app-bar">
-                  <span className="app-back">←</span>
-                  <b>Nouveau produit</b>
-                  <span className="app-step">Brouillon</span>
-                </div>
-                <div className="app-in">
-                  {/* Type de produit */}
-                  <div className="type-tabs">
-                    <span className="on">Physique</span>
-                    <span>Digital</span>
-                  </div>
-                  {/* Zone upload */}
-                  <div className="upload" style={{ height: 52, flexDirection: 'row', gap: 7 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, opacity: 0.45 }}>
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                      <circle cx="12" cy="13" r="4"/>
-                    </svg>
-                    <span style={{ fontSize: 10, color: 'var(--muted)' }}>Ajouter des photos (max 5 · JPG, PNG)</span>
-                  </div>
-                  {/* Thumbnails (photos en cours d'ajout) */}
-                  <div className="thumbs" style={{ marginTop: 7 }}>
-                    <i data-appear="250" /><i data-appear="420" /><i data-appear="590" />
-                  </div>
-                  {/* Champs */}
-                  <div className="fld"><small>Nom du produit *</small><b data-type="Pour Les Amoureux" data-delay="900" /></div>
-                  <div className="fld-row">
-                    <div className="fld"><small>Prix de base (FCFA) *</small><b data-count="14000" data-suffix=" FCFA" data-delay="1600">5 000 FCFA</b></div>
-                    <div className="fld"><small>Stock</small><b data-count="12" data-delay="1900">0</b></div>
-                  </div>
-                  {/* Produit en vedette */}
-                  <div className="feat-row" data-appear="2150">
-                    <span>Produit en vedette — Coups de cœur</span>
-                    <div className="toggle-sw" />
-                  </div>
-                  <div className="app-btn" data-ready="2500">Créer le produit</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="step-num"><i>03</i><span>Environ 1 minute par produit</span></div>
-              <h3>Ajoute tes produits</h3>
-              <p>Une photo, un prix, une description. Exactement comme quand tu publies un statut, sauf que là, ça se vend tout seul.</p>
-              <ul className="step-pts">
-                <li>{IC.check} Prends la photo directement avec ton téléphone</li>
-                <li>{IC.check} Indique ton stock : tes clients voient ce qu&rsquo;il reste</li>
-                <li>{IC.check} Produits à livrer ou fichiers à télécharger, au choix</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Étape 4 */}
-          <div className="step-row reveal flip">
-            <div className="step-media">
-              <div className="app">
-                <div className="app-bar">
-                  <span className="app-back">←</span>
-                  <b>Paramètres</b>
-                  <span className="app-step">Boutique</span>
-                </div>
-                <div className="app-in">
-                  {/* Logo + Nom */}
-                  <div className="sett-logo-row" data-appear="300">
-                    <span className="bl on" style={{ background: 'linear-gradient(145deg,#7c3aed,#5b21b6)', width: 36, height: 36, borderRadius: '50%', display: 'block', flexShrink: 0 }} />
-                    <div className="sett-logo-info">
-                      <b>Chez Fatou</b>
-                      <small>Logo de la boutique</small>
-                      <span className="sett-change">Changer le logo</span>
-                    </div>
-                  </div>
-                  {/* Nom + Ville */}
-                  <div className="fld"><small>Nom de la boutique *</small><b>Chez Fatou</b></div>
-                  <div className="fld-row">
-                    <div className="fld"><small>Ville *</small><b>Dakar</b></div>
-                    <div className="fld"><small>Pays</small><b>Sénégal</b></div>
-                  </div>
-                  {/* Couleur principale */}
-                  <div className="brandbox" style={{ marginBottom: 0 }}>
-                    <b style={{ fontSize: 10.5, display: 'block', marginBottom: 8 }}>Couleur principale</b>
-                    <div className="swatches" data-swatch="3:1100,2:1450,0:1800">
-                      <i style={{ background: '#002568' }} />
-                      <i style={{ background: '#e4572e' }} />
-                      <i style={{ background: '#12b981' }} />
-                      <i style={{ background: '#1f6fd0' }} />
-                      <i style={{ background: '#ffb020' }} />
-                      <i style={{ background: '#f0575f' }} />
-                      <i style={{ background: '#7c3aed' }} />
-                      <i style={{ background: '#374151' }} />
-                    </div>
-                    <div className="saved" data-appear="2250">Enregistré</div>
-                  </div>
-                  <div className="app-btn" data-ready="2700">Enregistrer les modifications</div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="step-num"><i>04</i><span>Environ 2 minutes</span></div>
-              <h3>Personnalise ta boutique</h3>
-              <p>Ton logo, ta photo de couverture, tes couleurs, tes zones de livraison. Ta boutique ressemble à ta marque, pas à un modèle.</p>
-              <ul className="step-pts">
-                <li>{IC.check} Logo, couverture et couleurs en quelques clics</li>
-                <li>{IC.check} Tes boutons Appeler, Écrire, Instagram et TikTok</li>
-                <li>{IC.check} Tes zones et tes frais de livraison</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Étape 5 */}
-          <div className="step-row reveal">
-            <div className="step-media">
-              <div className="app">
-                <div className="app-bar">
-                  <span className="app-back">←</span>
-                  <b>Ma boutique</b>
-                  <span className="app-step">En ligne</span>
-                </div>
-                <div className="app-in">
-                  <div className="db-link" data-appear="200">
-                    <div className="db-link-head">
-                      <i>↗</i>
-                      <div><b>Lien de ton site</b><small>Partage-le à tes clients</small></div>
-                    </div>
-                    <div className="db-url">https://www.tekki.shop/chez-fatou <span>↗</span></div>
-                    <div className="db-btns"><span className="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
-                    <div className="db-btns"><span>Copier le lien</span><span className="blue">Voir mon site</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="step-num"><i>05</i><span>Une fois, puis c&rsquo;est fait</span></div>
-              <h3>Partage ton lien et commence à vendre</h3>
-              <p>Ta boutique est en ligne dès que tu publies ton premier produit. Tu partages ton lien, tes clients commandent, et tes 3 premières commandes sont offertes.</p>
-              <ul className="step-pts">
-                <li>{IC.check} Ta boutique est publique dès ton premier produit publié</li>
-                <li>{IC.check} Tes 3 premières commandes sont offertes, sans rien payer</li>
-                <li>{IC.check} Partage ton lien, ton QR code, et commence à recevoir des commandes</li>
-              </ul>
-            </div>
+      {/* ── Vidéo — emplacements prévus, aucun fichier intégré (lot C).
+          Fond ambre très clair (voir .video-sec--v7, landing-v7.css) :
+          casse la continuité blanche entre le comparatif et cette section,
+          dégradé continu vers les sections voisines de part et d'autre —
+          réutilise --amber, déjà la couleur d'accent du 24h/24 et du CTA
+          final sur cette route, plutôt qu'une teinte nouvelle. ──────────── */}
+      <section className="section video-sec--v7" id="comment" tabIndex={-1}>
+        <div className="container center">
+          <span className="label">Aussi simple que ça</span>
+          <h2 style={{ textWrap: 'balance' }}>Ta boutique en moins de 5&nbsp;minutes, <span className="grad">depuis ton téléphone.</span></h2>
+          <p className="lead">Pas besoin d&rsquo;ordinateur, ni de développeur. Tu gères tout depuis ton téléphone.</p>
+          <VideoPoster />
+          <div className="steps-line steps-line--v7" style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 34, flexWrap: 'wrap' }}>
+            <span>① Ajoute tes produits</span>
+            <span>② Mets ton lien en bio</span>
+            <span>③ Reçois tes commandes</span>
           </div>
         </div>
       </section>
 
-      {/* ── La vitrine vue par tes clients ──────────────────────────── */}
+      {/* ── Côté client — TEMPS 1/2 (2026-10-23) : ClientJourney (5 écrans,
+          navigation manuelle + lecture automatique). Titre et texte
+          d'accompagnement RESTAURÉS le 2026-10-24 à la demande explicite
+          de l'utilisateur — exactement le texte de HEAD au moment où ce
+          lot a commencé (git show HEAD:src/app/preview/landing-v7/
+          page.tsx, confirmé identique, pas réécrit de mémoire). Les deux
+          tentatives intermédiaires ("Tes clients commandent seuls, toi tu
+          es libre" puis "...depuis leur téléphone, sans que tu
+          répondes.") sont abandonnées, pas gardées en commentaire cette
+          fois (l'utilisateur n'a pas demandé à les conserver). ── */}
       <section className="section">
         <div className="container split">
-          <div className="split-media reveal">
-            <div className="db-wrap">
-              <div style={{ position: 'relative', zIndex: 2 }}>
-                <ShopMockup />
-              </div>
-            </div>
+          <div className="split-media reveal--v7">
+            {/* width:100% en ligne (cette instance seulement, .db-wrap
+                partagé non touché) : corrige une ambiguïté de taille CSS
+                mesurée via Playwright — .phone a "width:100%" à cette
+                largeur d'écran (landing-v6.css), mais .db-wrap/.split-media
+                ne lui donnaient aucune largeur déterminée (grid/flex en
+                "auto" shrink-to-fit), donc ce 100% retombait sur le
+                min-content de .phone-notch (92px) au lieu de la largeur
+                réelle disponible. Sans effet sur l'autre usage de
+                .db-wrap (mockup tableau de bord, plus bas sur cette page,
+                non touché par ce style en ligne). */}
+            <div className="db-wrap" style={{ width: '100%' }}><ClientJourney /></div>
           </div>
-          <div className="reveal">
-            <span className="label">Une vraie boutique</span>
-            <h2>Une boutique qui inspire confiance. <span className="grad">Sans rien faire de technique.</span></h2>
-            <p className="lead">Ton client ouvre ton lien, voit tous tes produits avec les prix, choisit, remplit son adresse et paie. Il n&rsquo;a pas besoin de t&rsquo;écrire pour acheter.</p>
+          <div>
+            <span className="label">Côté client</span>
+            <h2>Plus besoin de <span className="grad">t&rsquo;écrire pour commander.</span></h2>
+            <p className="lead" style={{ marginTop: 20 }}>Ton client ouvre ton lien et trouve tout : tes produits, tes prix, ce qu&rsquo;il reste en stock, tes délais de livraison. Il choisit, remplit son adresse et paie comme il veut.</p>
             <ul className="checks">
-              <li>
-                {IC.checkCircle}
-                <div><b>Un seul lien pour toute ta boutique</b><p>Fini les 10 photos et les prix envoyés un par un dans la discussion WhatsApp ou en DM Instagram/TikTok.</p></div>
-              </li>
-              <li>
-                {IC.checkCircle}
-                <div><b>Du produit au paiement, sans sortir de la page</b><p>Ton client choisit le produit, commande et paie par mobile money ou à la livraison.</p></div>
-              </li>
-              <li>
-                {IC.checkCircle}
-                <div><b>Tes boutons Appeler et WhatsApp restent là</b><p>Ceux qui préfèrent te parler avant d&rsquo;acheter peuvent toujours le faire en un clic.</p></div>
-              </li>
+              <li>{IC.checkCircle}<div><b>Tout ce qu&rsquo;il veut savoir, avant même de demander</b><p>Prix, stock, délai de livraison si tu l&rsquo;as renseigné : fini les 10 photos envoyées une par une.</p></div></li>
+              <li>{IC.checkCircle}<div><b>Il choisit, commande et paie sans avoir à t&rsquo;écrire</b><p>Wave, Orange Money ou à la livraison, selon ton pays et tes réglages.</p></div></li>
+              <li>{IC.checkCircle}<div><b>Ton WhatsApp reste là</b><p>Ceux qui préfèrent te parler avant d&rsquo;acheter peuvent toujours le faire.</p></div></li>
             </ul>
-            <a className="btn btn-secondary" href="https://viensonsconnait.com" target="_blank" rel="noopener noreferrer">Voir une vraie boutique</a>
           </div>
         </div>
       </section>
 
-      {/* ── Timeline 24h/24 ──────────────────────────────────────── */}
+      {/* ── 24h/24 — étiquetée comme exemple illustratif ─────────────────── */}
       <section className="timeline-sec">
         <div className="container">
-          <div className="section-head center reveal">
+          <div className="section-head center reveal--v7">
             <span className="label label--dark">Pendant que tu vis ta vie</span>
-            <h2>Ta boutique travaille pour toi, <span style={{ color: 'var(--amber)' }}>24h/24.</span></h2>
-            <p className="lead">Une journée réelle d&rsquo;un vendeur TEKKIShop. Regarde bien l&rsquo;heure de la vente la plus intéressante.</p>
+            <h2>Tes ventes ne s&rsquo;arrêtent plus quand tu <span style={{ color: 'var(--amber)' }}>poses ton téléphone.</span></h2>
+            <p className="lead">Une journée type, à titre d&rsquo;exemple illustratif d&rsquo;un vendeur TEKKIShop.</p>
           </div>
           <div className="tl-grid">
-            <div className="tl reveal">
+            <div className="tl reveal--v7">
               {[
-                { time: '07:12', bold: 'Tu mets ton lien dans ton statut', text: 'Une seule adresse à partager, au lieu de dix photos envoyées une par une.', night: false },
-                { time: '09:40', bold: 'Première commande, déjà payée', text: 'Le client a choisi, commandé et payé par Wave. Tu n\'as répondu à aucun message.', night: false },
-                { time: '12:05', bold: 'Pendant que tu es occupé, ta boutique répond', text: 'Le prix, les couleurs, ce qu\'il reste en stock, les frais de livraison : le client voit déjà tout sur ta boutique.', night: false },
-                { time: '16:30', bold: 'Tu prépares toutes tes livraisons d\'un coup', text: 'Les commandes du jour sont dans un seul écran, avec toutes les infos nécessaires.', night: false },
-                { time: '21:18', bold: 'Le livreur a reçu les commandes et validé les livraisons', text: 'Chaque commande est envoyée en 1 clic au livreur, et il valide chaque livraison en 1 clic, ce qui met à jour automatiquement le statut de la commande.', night: false },
-                { time: '02:47', bold: 'Tu dors. Une cliente commande depuis Abidjan.', text: 'Elle regarde ton catalogue, paie par Orange Money et reçoit son reçu. Tu découvriras la commande au réveil.', night: true, badge: 'Ça, tu ne peux pas le faire toi-même' },
-                { time: '08:00', bold: 'Tu retires ton argent', text: 'Ton argent arrive dans ta page Revenus, et tu le retires sur ton mobile money de manière instantanée.', night: false },
+                { time: '07:12', bold: 'Tu mets ton lien dans ton statut', text: 'Une seule adresse à partager, au lieu de dix photos envoyées une par une.' },
+                { time: '09:40', bold: 'Déjà 4 commandes, toutes payées', text: 'Tes clients ont choisi, commandé et payé par Wave. Tu n’as répondu à aucun message.' },
+                { time: '16:30', bold: 'Tu prépares les commandes du jour d’un coup', text: 'Tout est dans un seul écran, avec les adresses et les paiements.' },
+                { time: '21:18', bold: 'Le livreur valide chaque livraison en 1 clic', text: 'Le statut de la commande se met à jour automatiquement.' },
+                { time: '02:47', bold: 'Tu dors. Une cliente commande depuis Abidjan.', text: 'Elle paie par Orange Money et reçoit son reçu. Tu découvriras la commande au réveil.', night: true, badge: 'Ça, tu ne peux pas le faire toi-même' },
+                { time: '08:00', bold: 'Tu retires ton argent', text: 'Ton argent arrive dans ta page Revenus, et tu le retires sur ton mobile money.' },
               ].map((row) => (
                 <div key={row.time} className={`tl-row${row.night ? ' night' : ''}`}>
                   <div className="tl-time">{row.time}</div>
@@ -476,14 +462,22 @@ export default async function LandingPage() {
                 </div>
               ))}
             </div>
-            <aside className="tl-aside reveal">
+            {/* "1 commande sur 3" — mesuré le 2026-09-30 : commandes passées
+                sur des boutiques TEKKIShop (orders.status != 'cancelled'),
+                jamais des commandes WhatsApp — entre 20h et 8h, heure UTC.
+                Résultat exact ce jour-là : 34,4 % sur 355 commandes non
+                annulées. Requête d'origine non retrouvée dans ce fichier
+                (aucun commentaire ne la documentait à l'époque, contrairement
+                à getPublicOrdersCount ci-dessus) — à remesurer avant mise
+                à jour ou mise en ligne réelle. */}
+            <aside className="tl-aside reveal--v7">
               <div className="tl-card">
                 <div className="tl-stat">1 commande sur 3</div>
-                <p>arrive en dehors de tes heures de travail. Sans boutique en ligne, ce sont des ventes que tu ne verras jamais.</p>
+                <p>est passée entre 20h et 8h. Ta boutique en ligne prend ces commandes, même quand tu ne peux pas répondre.</p>
                 <hr />
                 <div className="tl-mini"><i>{IC.moon}</i> Ta boutique reste ouverte la nuit</div>
                 <div className="tl-mini"><i>{IC.globe}</i> Tes clients commandent même quand tu dors</div>
-                <div className="tl-mini"><i>{IC.bolt}</i> Le paiement se fait sans toi</div>
+                <div className="tl-mini"><i>{IC.bolt}</i> Les paiements mobile money arrivent sans toi</div>
                 <div className="tl-mini"><i>{IC.inbox}</i> La commande t&rsquo;attend au réveil</div>
               </div>
             </aside>
@@ -491,76 +485,83 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Espace vendeur ──────────────────────────────────────────── */}
+      {/* ── Tableau de bord — données Maison Awa, pas d'animation ────────── */}
       <section className="section">
-        <div className="container split">
-          <div className="split-media reveal">
-            <div className="db-wrap">
-              <div className="phone" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="container split split--activity-v7">
+          <div className="split-media reveal--v7">
+            {/* width:100% en ligne (2026-10-15) — même bug que l'autre usage
+                de .db-wrap plus haut sur cette page (ligne ~420, déjà
+                corrigé) : mesuré via Playwright, ce mockup restait à 259px
+                de large pour 624px de haut (cadre visiblement écrasé) au
+                lieu des 300px de large des deux autres mockups téléphone
+                (Hero, Côté client) à la même largeur d'écran — même cause,
+                .db-wrap/.split-media en grid/flex "auto" ne donnaient
+                aucune largeur déterminée à .phone (width:100% retombant sur
+                le min-content de .phone-notch, 92px, avant d'être repris
+                par d'autres contraintes). */}
+            <div className="db-wrap" style={{ width: '100%' }}>
+              <div className="phone">
                 <div className="phone-notch" />
                 <div className="phone-screen">
                   <div className="db-screen">
-                    <div className="db-top">
-                      <span className="db-burger">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ width: 14, height: 14 }}>
-                          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                        </svg>
-                      </span>
-                      <div className="db-icons">
-                        <span style={{ position: 'relative' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                            <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <i className="db-dot" />
-                        </span>
-                        <span className="db-bell">{IC.bell}</span>
-                        <span>{IC.eye}</span>
-                      </div>
-                    </div>
                     <div className="db-body">
                       <div className="db-date">Lundi 3 Août</div>
-                      <div className="db-hello">Bonsoir, Viens on s&rsquo;connaît</div>
-                      <div className="db-sales">
-                        <div className="db-sales-head">Ventes &mdash; Auj. · 1 vente <i>↗</i></div>
+                      <div className="db-hello">Bonsoir, Maison Awa</div>
+                      {/* Carte de ventes + onglets Aujourd'hui/Semaine/Mois
+                          — reprend RevenueCard.tsx (src/components/
+                          dashboard/RevenueCard.tsx:11-15,61-75), réellement
+                          présente sur l'accueil (page.tsx:322). "Aujourd'hui"
+                          seul actif ici, statique (pas d'interaction dans ce
+                          mockup). */}
+                      <div className="db-sales db-sales-v7">
+                        <div className="db-sales-head">Ventes — Auj. · 11 ventes<i>{IC.dollarSign}</i></div>
                         <div className="db-amount">154 000 <small>F</small></div>
-                        <div className="db-chips">
-                          <span className="on">Auj.</span><span>Hier</span><span>Semaine</span><span>Mois</span><span>Trimestre</span>
+                        <div className="db-sales-tabs">
+                          <span className="db-sales-tab on">Aujourd&rsquo;hui</span>
+                          <span className="db-sales-tab">Semaine</span>
+                          <span className="db-sales-tab">Mois</span>
                         </div>
                       </div>
                       <div className="db-two">
-                        <div className="db-mini"><small>Produits</small><b>7</b><span>actifs</span><i>{IC.box}</i></div>
-                        <div className="db-mini"><small>En attente</small><b>3</b><span>commandes</span><i>{IC.shoppingCart}</i></div>
+                        <div className="db-mini"><small>Produits</small><b>24</b><span>actifs</span><i>{IC.box}</i></div>
+                        <div className="db-mini"><small>En attente</small><b>1</b><span>commande</span><i>{IC.shoppingCart}</i></div>
                       </div>
-                      <div className="db-link">
-                        <div className="db-link-head">
-                          <i>↗</i>
-                          <div><b>Lien de ton site</b><small>Partage ce lien à tes clients</small></div>
-                        </div>
-                        <div className="db-url">https://www.tekki.shop/viensonsconnait <span>↗</span></div>
-                        <div className="db-btns"><span className="wa">Partager sur WhatsApp</span><span>Carte</span><span>QR</span></div>
-                        <div className="db-btns"><span>Copier le lien</span><span className="blue">Voir mon site</span></div>
+                      {/* "Commandes en cours" — aligné sur la vraie ligne de
+                          commande de l'accueil (src/app/dashboard/
+                          (protected)/page.tsx:407-441, relu le 2026-10-12) :
+                          pastille de statut (mêmes couleurs : amber=pending,
+                          bleu=confirmed/preparing, vert=ready), nom + référence
+                          courte, produits, montant, puis un badge de statut
+                          réel (ORDER_STATUS_LABELS) OU "Xh en attente" si
+                          pending depuis ≥1h — jamais les deux. Mode de
+                          paiement retiré (absent de la vraie ligne, rejeté
+                          le 2026-10-12). Catalogue aligné sur la vraie
+                          boutique tekki.shop/maison-awa (captures du
+                          2026-10-12) : Pagne WAX Hollantex 14 000 FCFA,
+                          Robe Adjoa à partir de 45 000 FCFA — montants =
+                          quantité × prix réel. Prénoms fictifs, aucun vrai
+                          client, aucune référence réelle. */}
+                      <div className="db-orders-head">Commandes en cours</div>
+                      <div className="db-order-row">
+                        <span className="db-order-dot" style={{ background: 'var(--db-amber,#B4740E)' }} />
+                        <div className="db-order-info"><b>Aïcha K. <i>#4F2A91</i></b><small>Pagne WAX Hollantex ×2</small></div>
+                        <div className="db-order-right"><b>28 000 F</b><span className="db-order-urgent">2h en attente</span></div>
                       </div>
-                      <div className="db-oh"><b>Commandes en cours</b><span>Voir toutes →</span></div>
-                      <div className="db-orders">
-                        <div className="db-order">
-                          <i /><div><b>Ndeye Marie Diaw <em>#B1DF87</em></b><p>Pour les Mariés</p></div>
-                          <div className="db-order-right"><strong>14 000 F</strong><span className="db-badge">Confirmée</span></div>
-                        </div>
-                        <div className="db-order">
-                          <i /><div><b>Moïse Junior <em>#0B8132</em></b><p>Et Pourtant, on s&rsquo;aimait</p></div>
-                          <div className="db-order-right"><strong>225 F</strong><span className="db-badge">Confirmée</span></div>
-                        </div>
-                        <div className="db-order">
-                          <i /><div><b>Penda Barhama <em>#ABFBAC</em></b><p>Et Pourtant, on s&rsquo;aimait</p></div>
-                          <div className="db-order-right"><strong>4 500 F</strong><span className="db-badge">Confirmée</span></div>
-                        </div>
+                      <div className="db-order-row">
+                        <span className="db-order-dot" style={{ background: 'var(--db-primary,#155EEF)' }} />
+                        <div className="db-order-info"><b>Moussa D. <i>#7C118E</i></b><small>Robe Adjoa</small></div>
+                        <div className="db-order-right"><b>45 000 F</b><span className="db-order-badge db-order-badge--confirmed">Confirmée</span></div>
+                      </div>
+                      <div className="db-order-row">
+                        <span className="db-order-dot" style={{ background: 'var(--db-primary,#155EEF)' }} />
+                        <div className="db-order-info"><b>Fatou S. <i>#A93D06</i></b><small>Pagne WAX Hollantex</small></div>
+                        <div className="db-order-right"><b>14 000 F</b><span className="db-order-badge db-order-badge--preparing">En préparation</span></div>
                       </div>
                     </div>
                     <div className="db-nav">
                       <div className="on"><i>{IC.home}</i>Accueil</div>
                       <div><i>{IC.shoppingCart}</i>Commandes</div>
-                      <div className="db-ia"><i>{IC.sparkle}</i></div>
+                      <div className="db-ia db-ia-v7"><i>{IC.sparkle}</i></div>
                       <div><i>{IC.box}</i>Produits</div>
                       <div><i>{IC.gear}</i>Paramètres</div>
                     </div>
@@ -571,138 +572,207 @@ export default async function LandingPage() {
           </div>
           <div>
             <span className="label">Ton activité dans ta poche</span>
-            <h2>La même boutique, vue de ton côté.</h2>
-            <p className="lead">Tes ventes du jour, tes commandes, tes produits, tes clients, tes revenus, tes codes promo, ton suivi livreur : tout tient dans un écran, sur le même téléphone que tu as déjà dans la main.</p>
-            <div className="feat-list">
-              <div className="feat"><span className="feat-n">01</span><b>Tes ventes du jour</b><p>Aujourd&rsquo;hui, hier, la semaine, le mois. Tu sais toujours où tu en es.</p></div>
-              <div className="feat"><span className="feat-n">02</span><b>Tes commandes en cours</b><p>Qui a commandé, quel produit, combien, et si c&rsquo;est confirmé.</p></div>
-              <div className="feat"><span className="feat-n">03</span><b>Ton lien, prêt à partager</b><p>Un bouton pour l&rsquo;envoyer sur WhatsApp, un QR code à imprimer, une carte à publier.</p></div>
-              <div className="feat"><span className="feat-n">04</span><b>Ton Assistant IA</b><p>Il t&rsquo;explique ce que tu ne comprends pas, te guide pas à pas et te conseille pour vendre plus.</p></div>
+            <h2>Gère 100 commandes <span className="grad">comme tu en gérais 10.</span></h2>
+            <p className="lead" style={{ marginTop: 20 }}>Tes ventes, tes commandes, tes clients, tes revenus : tout est dans une seule appli, sur le téléphone que tu as déjà dans la main.</p>
+            {/* 4 cartes — écrites et vérifiées le 2026-10-16 (push/e-mail,
+                Assistant IA disponible sur tous les plans avec plafond par
+                plan, enregistrement client systématique via
+                upsert_client_from_order — voir tours précédents). Jamais
+                "SMS" (canal réel mais jamais nommé ainsi dans la copie),
+                jamais "tu es toujours notifié" (dépend de l'e-mail/push
+                configurés par le marchand, pas automatique). */}
+            <div className="cards-3 activity-cards--v7 reveal--v7">
+              <article className="card activity-card--v7">
+                <span className="activity-card-num--v7">01</span>
+                <div className="card-ico">{IC.dollarSign}</div>
+                <h3>Tes ventes du jour</h3>
+                {/* 2e phrase vérifiée (2026-10-17) : RevenueCard.tsx (dashboard
+                    réel) ne pousse rien en direct — les chiffres viennent de
+                    props serveur recalculées à chaque chargement de page,
+                    jamais d'un polling/websocket pendant que l'écran reste
+                    ouvert. "Actualisés à chaque fois que tu ouvres ton
+                    tableau de bord" est vrai ; "mis à jour à chaque
+                    commande" ne l'est pas, retiré. */}
+                <p>Aujourd&rsquo;hui, la semaine, le mois : tu sais toujours où tu en es. Ton chiffre d&rsquo;affaires et tes ventes, actualisés à chaque fois que tu ouvres ton tableau de bord.</p>
+              </article>
+              <article className="card activity-card--v7">
+                <span className="activity-card-num--v7">02</span>
+                <div className="card-ico">{IC.bell}</div>
+                <h3>Une notification à chaque commande</h3>
+                <p>Active les notifications et renseigne ton e-mail : tu es alerté dès qu&rsquo;un client commande, et tu ne rates plus une vente.</p>
+              </article>
+              <article className="card activity-card--v7">
+                <span className="activity-card-num--v7">03</span>
+                <div className="card-ico">{IC.shoppingCart}</div>
+                <h3>Tes commandes en cours</h3>
+                <p>Qui a commandé, quel produit, et si c&rsquo;est payé ou à la livraison. Chaque acheteur est enregistré.</p>
+              </article>
+              <article className="card activity-card--v7">
+                <span className="activity-card-num--v7">04</span>
+                <div className="card-ico">{IC.sparkle}</div>
+                <h3>Ton Assistant IA</h3>
+                <p>Il t&rsquo;explique ce que tu ne comprends pas et te guide pas à pas.</p>
+              </article>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Ce que tu peux vendre ──────────────────────────────────── */}
-      <section className="section" style={{ background: 'var(--sky)' }}>
-        <div className="container">
-          <div className="section-head center reveal">
-            <span className="label">Une boutique pour ton commerce</span>
-            <h2>Vends ce que tu sais créer, fabriquer ou revendre.</h2>
-            <p className="lead">Que tu vendes des objets à livrer ou des fichiers à télécharger, ça marche pareil.</p>
-          </div>
-          <div className="cards-3 reveal">
+      {/* ── Physique ou digital ──────────────────────────────────────────── */}
+      <section className="section digital-section--v7">
+        <div className="container center">
+          <span className="label">Physique ou digital</span>
+          <h2>Vends des produits <span className="grad">physiques ou digitaux.</span></h2>
+          {/* gridTemplateColumns inline retiré (2026-10-15) : il écrasait la
+              règle responsive partagée .cards-3 (landing-v6.css, repasse à 1
+              colonne sous 760px) par spécificité, cassant déjà le mobile
+              avant ce lot (repéré sur capture). Le 2-colonnes/1-colonne
+              nécessaire pour 2 cartes exactement est maintenant géré par
+              .digital-section--v7 .cards-3, scopé à cette section dans
+              landing-v7.css, jamais par un style inline ni par le défaut
+              partagé à 3 colonnes (pensé pour 3 cartes ailleurs). */}
+          <div className="cards-3 reveal--v7" style={{ maxWidth: 760, margin: '40px auto 0' }}>
             <article className="card">
-              <div className="card-ico" style={{ background: '#ffeee3', color: '#e4572e' }}>{IC.shoppingBag}</div>
+              {/* Illustration SVG en code (2026-10-16) — sac à main générique,
+                  teintes orange clair de la carte (déjà utilisées ici avant),
+                  aucun logo, aucune marque, aucun produit réel reconnaissable. */}
+              <svg className="card-illustration--v7" viewBox="0 0 120 100" width="96" height="80" fill="none" aria-hidden="true">
+                <path d="M40 40 Q40 18 60 18 Q80 18 80 40" stroke="#e4572e" strokeWidth="5" strokeLinecap="round" />
+                <rect x="26" y="40" width="68" height="50" rx="11" fill="#ffeee3" />
+                <rect x="26" y="40" width="68" height="50" rx="11" stroke="#e4572e" strokeWidth="2.5" />
+                <circle cx="60" cy="58" r="5.5" fill="#e4572e" opacity=".3" />
+                <rect x="44" y="70" width="32" height="5.5" rx="2.75" fill="#e4572e" opacity=".22" />
+              </svg>
               <h3>Produits à livrer</h3>
-              <p>Mode, beauté, alimentation, décoration, accessoires, artisanat, électronique.</p>
+              <p>Mode, beauté, alimentation, décoration, accessoires, électronique.</p>
+              <p className="card-detail--v7">Ton client commande et paie, tu reçois la commande complète, tu livres.</p>
             </article>
-            <article className="card">
-              <div className="card-ico" style={{ background: '#e9ecff', color: '#4039c9' }}>{IC.smartphone}</div>
-              <h3>Produits à télécharger</h3>
-              <p>Ebooks, guides, formations, modèles. Le client les reçoit juste après avoir payé.</p>
-            </article>
-            <article className="card">
-              <div className="card-ico" style={{ background: '#e3f9ee', color: '#078959' }}>{IC.store}</div>
-              <h3>Boutiques et commerces</h3>
-              <p>Mets ton catalogue en ligne et transforme tes abonnés en vrais clients.</p>
+            <article className="card card--featured-v7">
+              <span className="card-badge--v7">Zéro livraison</span>
+              {/* Couverture d'ebook générique, teintes bleu clair déjà
+                  utilisées ici — coin corné + blocs abstraits (jamais du
+                  texte lisible), aucun titre, aucune marque. */}
+              <svg className="card-illustration--v7" viewBox="0 0 120 100" width="96" height="80" fill="none" aria-hidden="true">
+                <rect x="28" y="10" width="64" height="80" rx="6" fill="#e9ecff" />
+                <rect x="28" y="10" width="64" height="80" rx="6" stroke="#4039c9" strokeWidth="2.5" />
+                <path d="M92 76 L92 90 L78 90 Z" fill="#c7cdfb" />
+                <rect x="40" y="28" width="40" height="5" rx="2.5" fill="#4039c9" opacity=".3" />
+                <rect x="40" y="40" width="40" height="5" rx="2.5" fill="#4039c9" opacity=".3" />
+                <rect x="40" y="52" width="24" height="5" rx="2.5" fill="#4039c9" opacity=".3" />
+                <circle cx="60" cy="70" r="10" fill="#4039c9" opacity=".12" />
+                <path d="M55 70 l4 4 l8 -9" stroke="#4039c9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <h3>Produits digitaux</h3>
+              <p>Ebooks, formations, guides, modèles.</p>
+              {/* "Tu n'as rien à envoyer" : vrai sans promettre un délai —
+                  le client reçoit son fichier via la page de confirmation
+                  (sondage automatique, token lié à sa commande, pas besoin
+                  d'e-mail) et par e-mail s'il en a donné un à la commande.
+                  Vérifié dans webhooks/bictorys/route.ts et webhooks/stripe/
+                  route.ts : les deux créent le download_token puis l'e-mail
+                  seulement après confirmation réelle du paiement — jamais
+                  "immédiatement" ni "même à 3h du matin" affirmé ici, aucun
+                  délai n'est garanti par le code. */}
+              <p className="card-detail--v7">Ton client paie et télécharge son fichier. Tu n&rsquo;as rien à envoyer.</p>
+              <Link href="/produits-digitaux" className="btn btn-secondary" style={{ marginTop: 14 }}>En savoir plus</Link>
             </article>
           </div>
         </div>
       </section>
 
-      {/* ── Vraies boutiques ─────────────────────────────────────── */}
+      {/* ── Preuve sociale — boutiques réelles, pas des "témoignages" ──────
+          2026-10-17 : RealShopsShowcase (partagé avec `src/app/page.tsx` et
+          CountryLandingV6.tsx) remplacé par RealShopsShowcaseV7, variante
+          locale à ce fichier — le titre/lead est donc écrit ici directement
+          plutôt que via les props eyebrow/headline du composant partagé,
+          qui n'existent plus dans la variante locale. Aucun fichier partagé
+          touché. */}
       <section className="section testi-sec">
         <div className="container">
-          <RealShopsShowcase
-            shopIds={[
-              'e98a25ce-8258-41f6-93c6-6fae9656d303', // abi-co
-              '12d6a93e-cf8a-41b5-aad0-4256a11725e7', // viensonsconnait
-              '4df9c0db-d1fe-4703-970a-b4b81a8a1c3a', // ibuka
-              '92d7fcbd-3d7e-4b50-9cf8-73c75e1385fe', // mkstore (TULstore)
-            ]}
-            eyebrow="Ils l'ont fait avant toi"
-            headline={<>Vendre en ligne n&rsquo;a jamais été <span className="grad">aussi simple.</span></>}
-          />
-
-          {shops.length > 0 && (
-            <div className="merchants reveal">
-              {shops.map(s => <span key={s.id}>{s.name}</span>)}
-            </div>
-          )}
-
-          <div className="stats-bar reveal">
-            <div className="stat"><b>{shopsCount.toLocaleString('fr-FR')}</b><small>boutiques créées</small></div>
-            <div className="stat"><b>6</b><small>pays d&rsquo;Afrique</small></div>
-            <div className="stat"><b>5</b><small>pays d&rsquo;Occident</small></div>
-            <div className="stat"><b>4,7<span style={{ fontSize: '.5em' }}>/5</span></b><small>note des vendeurs</small></div>
+          <div className="section-head center reveal--v7">
+            <span className="label">Ils l&rsquo;ont fait avant toi</span>
+            <h2>Aujourd&rsquo;hui, leur boutique <span className="grad">prend les commandes pour eux.</span></h2>
+            <p className="lead">Des boutiques qui reçoivent des commandes pendant que leur propriétaire s&rsquo;occupe d&rsquo;autre chose.</p>
+          </div>
+          <RealShopsShowcaseV7 shopIds={SHOWCASE_SHOP_IDS} />
+          {/* Ligne diaspora remise le 2026-10-17, libellé "couverts" (on peut
+              y créer sa boutique, pas que des marchands y vendent déjà) —
+              vérifié : les 5 pays (FR/BE/LU/CH/CA) sont bien dans
+              EU_CA_PHONE_COUNTRIES (country-groups.ts:47-53), utilisé
+              directement par /start via DIASPORA_QUIZ_COUNTRIES
+              (app/start/data.ts:168), et isEuCaCountry (même fichier:20-21)
+              route bien ces 5 vers EUR/CAD + Stripe (stripe/subscription/
+              create/route.ts:58, plans.ts EU_CA_PRO_PLAN_EUR/CAD). 4ᵉ
+              donnée : nombre de moyens de paiement réels, dédupliqués par
+              id sur les 6 pays Bictorys (payment-methods.ts) — 7 au total
+              (wave, maxit, orange_money, mtn_money, moov_money, mobicash,
+              togocell). Paiement à la livraison volontairement exclu de ce
+              chiffre (décision explicite du 2026-10-19 — c'est un
+              payment_type de commande, pas une entrée de ce fichier).
+              1ʳᵉ case masquée entièrement si getPublicOrdersCount() échoue
+              (ordersCount null), jamais les 3 autres : elles ne dépendent
+              pas du comptage. */}
+          <div className="stats-bar reveal--v7" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', maxWidth: 820, margin: '40px auto 0' }}>
+            {ordersCount !== null && <div className="stat"><b>+{ordersCount}</b><small>commandes passées</small></div>}
+            <div className="stat"><b>6</b><small>pays d&rsquo;Afrique couverts</small></div>
+            <div className="stat"><b>5</b><small>pays de la diaspora couverts</small></div>
+            <div className="stat"><b>7</b><small>moyens de paiement</small></div>
           </div>
         </div>
       </section>
 
-      {/* ── Tarifs ──────────────────────────────────────────────────── */}
-      <PricingV6 />
+      <PricingHome />
 
-      {/* ── Fondateur ───────────────────────────────────────────────── */}
-      <section className="section" style={{ background: 'var(--sky)' }}>
-        <div className="container founder">
-          <div className="founder-card reveal">
-            <div className="founder-ava" style={{ overflow: 'hidden' }}>
-              <Image src="/avatars/ibuka.jpg" alt="Ibuka Ndjoli" width={100} height={100} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <b>Ibuka Ndjoli</b>
-            <small>Fondateur de TEKKIShop &amp; entrepreneur e-commerce</small>
-          </div>
-          <div className="reveal">
-            <span className="label">Conçu à partir du terrain</span>
-            <h2>Fait par des gens qui ont vendu en ligne ici, avant toi.</h2>
-            <p className="quote">« Vendre en ligne depuis l&rsquo;Afrique ne devrait pas nécessiter un ordinateur, un développeur ou des connaissances techniques poussées. »</p>
-            <p className="lead">TEKKIShop est né de plusieurs années passées à vendre en ligne et à accompagner des marques africaines. Notre travail, c&rsquo;est de faire disparaître la partie technique pour que tu t&rsquo;occupes de tes produits, de tes clients et de ton argent.</p>
+      {/* ── Fondateur — citation seule (2026-10-20) ─────────────────────────
+          Remplace l'ancienne carte sombre "IN" + paragraphe "TEKKIShop est
+          né de..." par une citation centrée + photo ronde + nom. Classes
+          neuves, scopées à cette page : .founder, .founder-card,
+          .founder-ava (landing-v6.css:656-661) restent intactes, utilisées
+          telles quelles par les pages pays (CountryLandingV6.tsx:576),
+          jamais touchées ici. Étiquette de section conservée (reste
+          cohérente : une citation du fondateur est justement "conçue à
+          partir du terrain") — à retirer si tu préfères, dis-le. */}
+      <section className="section founder-quote-sec--v7">
+        <div className="container center founder-quote-section--v7 reveal--v7">
+          <span className="label">Conçu à partir du terrain</span>
+          <p className="founder-quote--v7">« Vendre en ligne depuis l&rsquo;Afrique ne devrait pas être une galère. Notre mission&nbsp;: simplifier la vente pour les marchands, et l&rsquo;achat pour les clients. »</p>
+          <div className="founder-quote-attribution--v7">
+            <Image
+              src="/avatars/ibuka.jpg"
+              alt="Ibuka Ndjoli"
+              width={88}
+              height={88}
+              className="founder-quote-photo--v7"
+            />
+            <p>
+              Ibuka Ndjoli&nbsp;&#8211; Fondateur de TEKKIShop
+              <br />
+              <span className="founder-quote-sub--v7">11&nbsp;ans d&rsquo;expérience en e&#8209;commerce</span>
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ─────────────────────────────────────────────────────── */}
-      <FAQv6 />
+      <FAQHome />
 
-      {/* ── CTA final ──────────────────────────────────────────────── */}
+      {/* ── CTA final ─────────────────────────────────────────────────────── */}
       <section className="cta-sec">
         <div className="container">
-          <div className="cta-card reveal">
-            <h2>Ton téléphone peut devenir ta boutique. Aujourd&rsquo;hui.</h2>
-            <p>Crée ta boutique, ajoute tes produits, partage ton lien, et commence à vendre sans prise de tête.</p>
+          <div className="cta-card reveal--v7">
+            <h2>Ta prochaine vidéo virale mérite une boutique <span style={{ color: 'var(--amber)' }}>prête à encaisser.</span></h2>
+            <p>Crée ta boutique en 5 minutes, ajoute tes produits, partage ton lien, et laisse tes clients commander à toute heure.</p>
             <div className="cta-actions">
               <Link href="/start" className="btn btn-light">Créer ma boutique gratuitement</Link>
-              <a className="btn btn-ghost" href="https://viensonsconnait.com" target="_blank" rel="noopener noreferrer">Voir une vraie boutique</a>
             </div>
-            <p className="cta-micro">Lance-toi aujourd&rsquo;hui · Tes 3 premières commandes sont offertes</p>
+            <p className="cta-micro">14 jours gratuits · Tes 3 premières commandes offertes</p>
           </div>
         </div>
       </section>
 
-      {/* ── Pied de page ───────────────────────────────────────────── */}
       <LandingFooter />
-
-      {/* ── Éléments flottants / modale ─────────────────────────────── */}
-      <DemoModal />
-
-      {/* ── Initialisation JS (IntersectionObserver + animations) ────── */}
       <LandingV6Init />
-
-      {/* ── Données structurées ─────────────────────────────────────── */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          mainEntity: [
-            { '@type': 'Question', name: 'Faut-il choisir un plan pour pouvoir vendre ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. La boutique est en ligne et peut recevoir des commandes dès la publication du premier produit. Les 3 premières commandes sont offertes ; un plan n\'est nécessaire que pour continuer à en recevoir au-delà.' } },
-            { '@type': 'Question', name: 'Faut-il un ordinateur pour utiliser TEKKIShop ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. Tout se fait depuis un téléphone, sans connaissance technique et sans développeur.' } },
-            { '@type': 'Question', name: 'Combien de temps faut-il pour créer sa boutique ?', acceptedAnswer: { '@type': 'Answer', text: 'Environ 5 minutes pour ouvrir la boutique et publier les premiers produits.' } },
-            { '@type': 'Question', name: 'Comment les clients paient-ils ?', acceptedAnswer: { '@type': 'Answer', text: 'Par Wave, Orange Money, MTN MoMo, Moov Money, carte bancaire ou paiement à la livraison, selon le pays.' } },
-          ],
-        })}}
-      />
+      <RevealV7Init />
+      <SmoothAnchorsInit />
     </div>
   )
 }
