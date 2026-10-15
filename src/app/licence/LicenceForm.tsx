@@ -1,29 +1,30 @@
 'use client'
 import { useState } from 'react'
 import { submitLicenceApplication } from '@/lib/actions/licence'
+import { WAITLIST_SUFFIX } from './prices'
 
 interface TerritoryOption {
   name: string
-  hasMerchants: boolean
-  isReserved: boolean
+  group: 'open' | 'waitlist'
 }
 
 interface Props {
   territories: TerritoryOption[]
 }
 
-// Libellé de l'option — dérivé de la donnée reçue de licence_territories
-// (page.tsx), jamais d'une liste dupliquée ici (§1.1 : le Togo redevient
-// sélectionnable dès que son statut passe à 'reserve' en base, sans qu'il y
-// ait de second endroit à mettre à jour).
-function optionLabel(t: TerritoryOption): string {
-  if (t.hasMerchants) return `${t.name} — marchands déjà actifs`
-  if (t.isReserved) return `${t.name} — en cours de finalisation`
-  return t.name
+// Valeur enregistrée dans licence_applications.country. Convention existante
+// (« <pays> — <précision> ») : les pays ouverts gardent leur nom seul, les
+// pays en liste d'attente portent WAITLIST_SUFFIX (prices.ts, partagé avec
+// l'admin), ce qui les rend identifiables sans migration.
+const OTHER_COUNTRY = 'Autre pays (à préciser ci-dessous)'
+
+function optionValue(t: TerritoryOption): string {
+  return t.group === 'waitlist' ? `${t.name}${WAITLIST_SUFFIX}` : t.name
 }
 
 export function LicenceForm({ territories }: Props) {
   const [submitted, setSubmitted] = useState(false)
+  const [waitlisted, setWaitlisted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,8 +34,9 @@ export function LicenceForm({ territories }: Props) {
     setSubmitting(true)
 
     const fd = new FormData(e.currentTarget)
+    const countryValue = (fd.get('country') as string) ?? ''
     const result = await submitLicenceApplication({
-      country:         (fd.get('country') as string) ?? '',
+      country:         countryValue,
       fullName:        (fd.get('name') as string)?.trim() ?? '',
       whatsappPhone:   (fd.get('phone') as string)?.trim() ?? '',
       email:           (fd.get('email') as string)?.trim() ?? '',
@@ -47,6 +49,7 @@ export function LicenceForm({ territories }: Props) {
       setError(result.error)
       return
     }
+    setWaitlisted(countryValue.endsWith(WAITLIST_SUFFIX))
     setSubmitted(true)
   }
 
@@ -65,8 +68,9 @@ export function LicenceForm({ territories }: Props) {
           Candidature envoyée
         </h3>
         <p style={{ margin: 0, color: '#697893', fontSize: 15, lineHeight: 1.65 }}>
-          Merci. Nous avons bien reçu votre candidature — vous recevrez une réponse motivée
-          sous cinq jours ouvrés, que nous poursuivions ou non.
+          {waitlisted
+            ? "Votre candidature est enregistrée. Ce pays n'est pas encore ouvert : nous vous prévenons dès l'intégration du paiement mobile."
+            : 'Merci. Nous avons bien reçu votre candidature — vous recevrez une réponse motivée sous cinq jours ouvrés, que nous poursuivions ou non.'}
         </p>
       </div>
     )
@@ -82,8 +86,13 @@ export function LicenceForm({ territories }: Props) {
       <div className="lic-field">
         <label htmlFor="f-country">Pays que vous souhaitez ouvrir</label>
         <select id="f-country" name="country" required>
-          {territories.map(t => <option key={t.name}>{optionLabel(t)}</option>)}
-          <option>Autre pays (à préciser ci-dessous)</option>
+          <optgroup label="Ouvert">
+            {territories.filter(t => t.group === 'open').map(t => <option key={t.name} value={optionValue(t)}>{t.name}</option>)}
+          </optgroup>
+          <optgroup label="Liste d'attente : paiement mobile non intégré">
+            {territories.filter(t => t.group === 'waitlist').map(t => <option key={t.name} value={optionValue(t)}>{t.name}</option>)}
+          </optgroup>
+          <option value={OTHER_COUNTRY}>Autre pays (à préciser ci-dessous)</option>
         </select>
       </div>
       <div className="lic-frow">
@@ -123,7 +132,7 @@ export function LicenceForm({ territories }: Props) {
         {submitting ? 'Envoi en cours…' : 'Envoyer ma candidature'}
       </button>
       <p className="lic-form-legal">
-        En envoyant ce formulaire, vous acceptez que Dukka utilise ces informations pour étudier
+        En envoyant ce formulaire, vous acceptez que TEKKIShop utilise ces informations pour étudier
         votre candidature. Aucune donnée ne sera transmise à un tiers.
       </p>
     </form>

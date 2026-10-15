@@ -40,7 +40,7 @@ function buildFaqs(commissionRange: string) {
         },
         {
           q: 'Comment je reçois l\'argent que mes clients paient sur ma boutique ?',
-          a: 'Quand un client paie par mobile money, l\'argent arrive dans ta page Revenus, et tu le retires sur ton compte mobile money. Pour un paiement par carte (plan Pro), l\'argent va directement sur ton propre compte Stripe. Pour le paiement à la livraison, c\'est toi ou ton livreur qui encaissez, comme aujourd\'hui.',
+          a: 'Quand un client paie par mobile money, l\'argent arrive dans ta page Revenus. Tu le retires vers ton compte Wave, Orange Money, MTN ou Moov (Flooz au Togo), selon ton pays : le virement est automatique avec Wave et Orange Money, et traité par notre équipe avec MTN et Moov. Pour un paiement par carte (plan Pro), l\'argent va directement sur ton propre compte Stripe. Pour le paiement à la livraison, c\'est toi ou ton livreur qui encaissez, comme aujourd\'hui.',
         },
         {
           q: 'Dans quels pays TEKKIShop fonctionne ?',
@@ -61,7 +61,7 @@ function buildFaqs(commissionRange: string) {
         },
         {
           q: 'Quelle est la différence entre les plans ?',
-          a: 'Business convient à la plupart des vendeurs : produits illimités, paiement mobile money et à la livraison, tableau de bord avancé avec rapports de ventes. Pro ajoute tout ce qu\'il faut pour une image 100% professionnelle : ton propre nom de domaine, une image de couverture, la marque TEKKIShop masquée, le paiement par carte et un support prioritaire.',
+          a: 'Business convient à la plupart des vendeurs : produits illimités, paiement mobile money et à la livraison, tableau de bord avancé avec rapports de ventes. Pro ajoute tout ce qu\'il faut pour une image 100% professionnelle : ton propre nom de domaine, une image de couverture, la marque TEKKIShop masquée, le paiement par carte et le support par WhatsApp.',
         },
         {
           q: 'Pourquoi je dois payer chaque mois pour utiliser TEKKIShop ?',
@@ -86,7 +86,7 @@ export function FAQHome() {
   const [openKey, setOpenKey] = useState<string>('0-0')
 
   return (
-    <section className="section" id="faq">
+    <section className="section" id="faq" tabIndex={-1}>
       <div className="container faq-grid">
         <div className="faq-side reveal">
           <span className="label">Questions fréquentes</span>

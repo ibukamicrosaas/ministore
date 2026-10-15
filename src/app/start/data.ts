@@ -40,9 +40,9 @@ export const CAT_EXAMPLE: Record<QuizCat, string> = {
 // 'chaussures' → 'shoes' : nouvelle valeur, séparée de 'fashion' dès maintenant.
 // Les 333 lignes 'fashion' existantes ne sont pas rétro-réparties (décision actée).
 // 'services' correspond à la même valeur que /onboarding (coaching, réparation,
-// livraison, prestations) — TekkiShop ne vend pas de services numériques complexes
+// livraison, prestations) — TEKKIShop ne vend pas de services numériques complexes
 // au sens SaaS (ça, c'est TekkiPro), mais les prestations locales type coaching/
-// réparation/livraison sont bien vendables en boutique TekkiShop.
+// réparation/livraison sont bien vendables en boutique TEKKIShop.
 export const CAT_TO_SPECIALTY: Record<QuizCat, string> = {
   mode:        'fashion',
   chaussures:  'shoes',
@@ -69,9 +69,13 @@ export const SPECIALTY_TO_LABEL: Record<string, string> = {
 }
 
 export const PREUVES_CAT: Record<QuizCat, string> = {
-  mode:        "Bon choix. La mode est l'une des <b>catégories les plus vendues sur TekkiShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
+  mode:        "Bon choix. La mode est l'une des <b>catégories les plus vendues sur TEKKIShop</b>. Tes clientes pourront voir tailles et couleurs, et commander sans te poser 10 questions.",
   chaussures:  "Top. Photos par modèle, pointures en stock visibles : <b>fini le « il reste quelle pointure ? »</b> en boucle sur WhatsApp.",
-  beaute:      "Excellent. Les vendeuses de cosmétiques reçoivent souvent leurs <b>premières commandes en quelques jours</b> — leurs clientes rachètent régulièrement.",
+  // "en quelques jours" retiré le 2026-10-24 (même motif que REVEAL.A plus
+  // bas : délai de première vente non défendable). Le point sur le
+  // réachat régulier reste, lui, un fait sur la nature du produit, pas une
+  // promesse de délai.
+  beaute:      "Excellent. Les cosmétiques se prêtent bien à la revente régulière : <b>une fois convaincues, tes clientes reviennent</b> commander à nouveau.",
   cheveux:     "Top choix. Photos par modèle, longueurs et textures affichées : <b>fini les mêmes questions en boucle</b> sur WhatsApp.",
   alimentaire: "Miam. Menus, prix et zones de livraison affichés : tes clients <b>commandent directement</b>, toi tu cuisines.",
   electro:     "Excellent choix. Accessoires, gadgets, électronique : tes clients voient le stock disponible et <b>commandent directement</b> sans avoir à te déranger pour chaque question.",
@@ -118,9 +122,16 @@ export interface BlocageOption {
 }
 
 export const BLOCAGES: BlocageOption[] = [
+  // proof réécrit le 2026-10-24 : "génère des visuels prêts à publier"
+  // n'est backé par aucun outil du code (les 6 tools de l'Assistant IA
+  // sont tous en lecture seule — infos boutique, checklist, commandes,
+  // produits, clients, revenus — voir src/lib/ai/tools.ts ; aucune
+  // génération d'image ni de plan structuré). Reformulé pour ne décrire
+  // que ce que le chat peut réellement faire : en discuter si on le lui
+  // demande.
   { value: 'clients',  label: 'Trouver et attirer des clients',
     sous:  'Je ne sais pas à qui vendre, ni comment les faire venir',
-    proof: 'Ta boutique génère des visuels prêts à publier, et ton Assistant IA te propose quoi poster, à qui, et quand.' },
+    proof: "Ton Assistant IA peut t'aider à savoir quoi poster, à qui, et quand, pour attirer tes premiers clients." },
   { value: 'auto',     label: 'Vendre même quand je ne suis pas là',
     sous:  'Sans moi, rien ne se passe : je dois répondre à chaque message',
     proof: 'Ton client choisit, commande et paie tout seul. Tu découvres la commande quand tu reprends ton téléphone.' },
@@ -138,13 +149,48 @@ export const BLOCAGES: BlocageOption[] = [
 // du HTML injecté). `texte` reste un texte HTML statique, entièrement défini par
 // le développeur — sûr à utiliser avec dangerouslySetInnerHTML.
 export const REVEAL: Record<Segment, { texte: string }> = {
-  A: { texte: "Tu as déjà des clients. Les vendeurs comme toi font leur première vente sur TekkiShop <b>en moins de 48 heures</b> — il suffit de leur envoyer un lien." },
-  B: { texte: "Ta boutique ne se contente pas d'exister : ton <b>Assistant IA</b> te donne un plan d'acquisition, une action par jour, jusqu'à ta première vente." },
+  // "48 heures" puis "1 à 2 jours" retirés le 2026-10-24 : tout délai
+  // chiffré de première vente reste non défendable (seules 44 boutiques
+  // sur 1000 ont un jour reçu une commande confirmée — voir mesure du
+  // 2026-10-23). Remplacé par une formulation sans aucun chiffre de délai.
+  A: { texte: "Tu as déjà des clients. Plus vite tu partages le lien de ta boutique, plus vite tu peux recevoir ta première commande." },
+  // "un plan d'acquisition, une action par jour" retiré le 2026-10-24 —
+  // même motif que BLOCAGES.clients plus haut : aucun outil de l'Assistant
+  // IA ne génère de plan structuré ni d'action quotidienne
+  // (src/lib/ai/tools.ts, 6 tools en lecture seule). Reformulé pour ne
+  // décrire que ce que le chat peut réellement faire.
+  B: { texte: "Ta boutique ne se contente pas d'exister : ton <b>Assistant IA</b> peut t'aider à savoir quoi poster, à qui, et quand, pour trouver tes premiers clients." },
   C: { texte: "Une seule action à la fois, jamais deux. Tu n'as rien à savoir d'avance, et ton <b>Assistant IA</b> répond à tes questions quand tu bloques." },
 }
 
+// Vérifié ligne par ligne contre le code le 2026-10-24 — seules les 2
+// lignes de "clients" retirées ci-dessous étaient fausses, rien d'autre
+// touché :
+// - auto : "Commande et paiement enchaînés sans toi" vrai (tunnel
+//   commander/pay en libre-service, vérifié dans ce lot) ; "Confirmation
+//   envoyée automatiquement" vrai (sendOrderConfirmationEmail appelé sans
+//   action marchand, api/orders/route.ts:637) ; "Ta boutique ouverte
+//   24h/24" plausible (page publique, aucune fenêtre de maintenance
+//   trouvée dans le code — non vérifiable avec certitude à 100%, mais pas
+//   faux).
+// - gestion : "Toutes tes commandes dans un seul écran" vrai (page
+//   dashboard/orders) ; "Adresses et numéros déjà remplis" vrai (champs du
+//   formulaire de commande) ; "Statuts de livraison à jour" vrai (stepper
+//   Reçue→Confirmée→Préparation→Prête→Livrée, commande/[token]/page.tsx).
+// - paiement : "Tes moyens de paiement déjà branchés" vrai
+//   (PAYMENT_METHODS_BY_COUNTRY pré-configuré par pays) ; "Le paiement à
+//   la livraison activé" vrai (accept_cash_on_delivery, colonne shops,
+//   DEFAULT TRUE — supabase/migrations/016_accept_cash_on_delivery.sql:3) ;
+//   "Le retrait sur ton mobile money" vrai (payout_wave_number/
+//   payout_om_number, vérifié dans ce lot).
+// - clients : "Ton plan d'acquisition sur 7 jours" et "Des visuels prêts à
+//   publier" retirés (aucun outil de l'Assistant IA ne génère de visuel ni
+//   de plan structuré, src/lib/ai/tools.ts). "Ton Assistant IA en première
+//   page" gardé : vrai — le bouton "Assistant IA" du BottomNav est monté
+//   globalement par DashboardShell (dashboard/layout.tsx:166), donc
+//   visible dès la première page du dashboard (BottomNav.tsx:114).
 export const PREP: Record<QuizBlocage, string[]> = {
-  clients:  ['Ton plan d’acquisition sur 7 jours', 'Des visuels prêts à publier', 'Ton Assistant IA en première page'],
+  clients:  ['Ton Assistant IA en première page'],
   auto:     ['Commande et paiement enchaînés sans toi', 'Confirmation envoyée automatiquement', 'Ta boutique ouverte 24 h/24'],
   gestion:  ['Toutes tes commandes dans un seul écran', 'Adresses et numéros déjà remplis', 'Statuts de livraison à jour'],
   paiement: ['Tes moyens de paiement déjà branchés', 'Le paiement à la livraison activé', 'Le retrait sur ton mobile money'],

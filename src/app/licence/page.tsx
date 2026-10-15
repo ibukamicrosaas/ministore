@@ -6,6 +6,8 @@ import { LandingFooter } from '@/components/landing-v6/LandingFooter'
 import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { LicenceSimulator } from './LicenceSimulator'
 import { LicenceForm } from './LicenceForm'
+import { MIN_COMMISSION_RATE, MAX_COMMISSION_RATE } from '@/lib/billing/commission'
+import { LICENSE_PRICE_FCFA, OPEN_COUNTRIES, formatFcfa, formatNumberFr, indicativeEquivalents, sectionForTerritory } from './prices'
 
 // Aligné sur le rythme de la page d'accueil (compromis validé, pas une parité
 // stricte : la page d'accueil est intégralement dynamique — cookies() via
@@ -16,7 +18,7 @@ export const revalidate = 90
 
 export const metadata = {
   title: `Devenir licencié TEKKIShop — Lancez TEKKIShop dans votre pays — ${APP_NAME}`,
-  description: "Devenez Country Manager de TEKKIShop dans votre pays. Un SaaS e-commerce déjà construit, exclusivité nationale, 100 % des abonnements pour vous.",
+  description: "Devenez Country Manager de TEKKIShop dans votre pays. Un SaaS e-commerce déjà construit, exclusivité nationale, 100 % des abonnements des marchands rattachés à votre licence, moins les frais d'encaissement et de retrait, selon les conditions du contrat.",
 }
 
 const Chk = ({ size = 19, color = '#12b981' }: { size?: number; color?: string }) => (
@@ -41,11 +43,10 @@ interface Territory {
   country_code: string
   name: string
   status: TerritoryStatus
-  merchant_count: number | null
   position: number
 }
 
-type Section = 'disponible' | 'a-ouvrir' | 'en-cours' | 'ferme'
+type Section = 'disponible' | 'attente' | 'ferme'
 
 // Emoji de drapeau — dérivé du code, jamais stocké en base (migration 095,
 // colonne non demandée dans le schéma).
@@ -55,21 +56,7 @@ const FLAG_BY_CODE: Record<string, string> = {
 }
 
 const STATUS_LABEL: Record<TerritoryStatus, string> = {
-  libre: 'libre', reserve: 'réservé', attribue: 'attribué', dukka: 'Dukka',
-}
-
-// Les 3 seuls pays avec des marchands réels à ce jour : la requête reste live
-// sur `shops` (jamais dupliquée dans licence_territories.merchant_count, qui
-// vaut NULL pour ces 3 codes — voir migration 095).
-const LIVE_COUNT_CODES = new Set(['BJ', 'ML', 'BK'])
-
-// Section déduite de status + nombre affiché — jamais une colonne séparée,
-// qui pourrait diverger du statut réel (validé avant implémentation, voir
-// REPRISE.md, chantier /licence).
-function sectionFor(t: Territory, count: number | null): Section {
-  if (t.status === 'reserve') return 'en-cours'
-  if (t.status === 'attribue' || t.status === 'dukka') return 'ferme'
-  return count !== null ? 'disponible' : 'a-ouvrir'
+  libre: 'libre', reserve: 'réservé', attribue: 'attribué', dukka: 'TEKKIShop',
 }
 
 export default async function LicencePage() {
@@ -77,44 +64,44 @@ export default async function LicencePage() {
   const { count: shopCount } = await admin
     .from('shops')
     .select('id', { count: 'exact', head: true })
-  const shopCountDisplay = shopCount ? shopCount.toLocaleString('fr-FR') : '1 400+'
+  // Comptage brut de toute la table shops. Si le comptage échoue, le chiffre et
+  // les phrases qui le contiennent sont masqués (aucun repli inventé).
+  const shopCountDisplay = shopCount ? formatNumberFr(shopCount) : null
 
-  // Total de marchands par pays — aucun filtre is_active, sur demande
-  // explicite (ce compteur veut refléter tous les marchands déjà présents
-  // dans le pays, pas seulement ceux dont la boutique est publiquement
-  // visible aujourd'hui). Burkina Faso unifié sur le code 'BK' (migration
-  // 093, REPRISE.md §4) — plus de duplication BF/BK à gérer ici.
-  const [{ count: beninCount }, { count: maliCount }, { count: burkinaCount }] = await Promise.all([
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BJ'),
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'ML'),
-    admin.from('shops').select('id', { count: 'exact', head: true }).eq('country', 'BK'),
-  ])
-
-  const liveCountByCode: Record<string, number> = {
-    BJ: beninCount ?? 0,
-    ML: maliCount ?? 0,
-    BK: burkinaCount ?? 0,
-  }
+  // Inscrits par pays ouvert : comptage brut de toutes les boutiques du pays
+  // (brouillons compris), mêmes règles que le chiffre du hero. Burkina Faso
+  // unifié sur le code 'BK' (migration 093, REPRISE.md §4). Si le comptage d'un
+  // pays échoue, sa ligne de chiffre est masquée (aucun repli).
+  const registeredByCode: Record<string, number | null> = Object.fromEntries(
+    await Promise.all(OPEN_COUNTRIES.map(async c => {
+      const { count, error } = await admin
+        .from('shops')
+        .select('id', { count: 'exact', head: true })
+        .eq('country', c.code)
+      return [c.code, error || count === null ? null : count] as const
+    })),
+  )
 
   // Statuts de territoire — modifiables sans redéploiement (migration 095).
   const { data: territoriesRaw } = await admin
     .from('licence_territories' as never)
-    .select('country_code, name, status, merchant_count, position')
+    .select('country_code, name, status, position')
     .eq('is_visible', true)
     .order('position')
 
   const territories = (territoriesRaw ?? []) as unknown as Territory[]
 
-  function displayCount(t: Territory): number | null {
-    return LIVE_COUNT_CODES.has(t.country_code) ? liveCountByCode[t.country_code] : t.merchant_count
+  const bySection: Record<Section, Territory[]> = { disponible: [], attente: [], ferme: [] }
+  for (const t of territories) {
+    const section = sectionForTerritory(t)
+    if (section !== 'masque') bySection[section].push(t)
   }
 
-  const bySection: Record<Section, Territory[]> = { disponible: [], 'a-ouvrir': [], 'en-cours': [], ferme: [] }
-  for (const t of territories) bySection[sectionFor(t, displayCount(t))].push(t)
-
-  // Pays éligibles à une candidature : libres ou réservés (le Togo,
-  // « en cours de finalisation », redevient sélectionnable — §1.1).
-  const applicableTerritories = territories.filter(t => t.status === 'libre' || t.status === 'reserve')
+  // Pays éligibles à une candidature : ouverts, ou en liste d'attente.
+  const formTerritories = [
+    ...bySection.disponible.map(t => ({ name: t.name, group: 'open' as const })),
+    ...bySection.attente.map(t => ({ name: t.name, group: 'waitlist' as const })),
+  ]
 
   return (
     <>
@@ -246,7 +233,7 @@ export default async function LicencePage() {
         .lic-range::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;
           cursor:pointer;border:4px solid #176bff}
         .lic-sim-scale{display:flex;justify-content:space-between;font-size:10px;color:#7f96bb;margin-bottom:26px}
-        .lic-plan-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+        .lic-plan-pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}
         .lic-plan-pick button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
           color:#cbd9ef;border-radius:12px;padding:12px 6px;cursor:pointer;font-size:13px;font-weight:600;
           transition:.2s;min-height:60px;font-family:inherit}
@@ -427,7 +414,7 @@ export default async function LicencePage() {
                 Lancez TEKKIShop <span className="lic-grad">dans votre pays.</span>
               </h1>
               <p className="lic-lead">
-                Un SaaS e-commerce déjà construit, déjà utilisé par {shopCountDisplay}{' '}marchands.
+                {shopCountDisplay && <>Un SaaS e-commerce déjà construit, déjà utilisé par {shopCountDisplay}{' '}boutiques.{' '}</>}
                 Vous en devenez le Country Manager exclusif, vous encaissez 100% des abonnements,
                 et vous n&apos;écrivez pas une ligne de code.
               </p>
@@ -451,11 +438,11 @@ export default async function LicencePage() {
               </div>
               <div className="lic-offer-line">
                 <Chk />
-                <div><b>100 % des abonnements pour vous</b><small>Aucune commission prélevée sur votre chiffre d&apos;affaires</small></div>
+                <div><b>100 % des abonnements rattachés à votre licence</b><small>Moins les frais d&apos;encaissement et de retrait</small></div>
               </div>
               <div className="lic-offer-line">
                 <Chk />
-                <div><b>Technique entièrement prise en charge</b><small>Hébergement, maintenance et évolutions par Dukka</small></div>
+                <div><b>Technique entièrement prise en charge</b><small>Hébergement, maintenance et évolutions par TEKKIShop</small></div>
               </div>
               <div className="lic-offer-line">
                 <Chk />
@@ -463,9 +450,8 @@ export default async function LicencePage() {
               </div>
               <div className="lic-offer-price">
                 <div>
-                  <span className="lic-price-from">À partir de</span>
-                  <b>1 200 000 F</b>
-                  <small>CFA pour 12 mois &middot; selon le marché ouvert</small>
+                  <b>{formatFcfa(LICENSE_PRICE_FCFA)}</b>
+                  <small>CFA pour 12 mois</small>
                 </div>
                 <a href="#investissement" style={{ fontSize: 13.5, fontWeight: 600, color: '#0d54d8' }}>Détail →</a>
               </div>
@@ -476,9 +462,9 @@ export default async function LicencePage() {
         {/* ── STATS STRIP ─────────────────────────────────────── */}
         <section className="lic-strip">
           <div className="lic-wrap lic-strip-grid">
-            <div className="lic-stat"><b>{shopCountDisplay}</b><small>boutiques déjà créées</small></div>
-            <div className="lic-stat"><b>6</b><small>pays d&apos;Afrique actifs</small></div>
-            <div className="lic-stat"><b>100 %</b><small>des abonnements pour le licencié</small></div>
+            {shopCountDisplay && <div className="lic-stat"><b>{shopCountDisplay}</b><small>boutiques déjà créées</small></div>}
+            <div className="lic-stat"><b>4</b><small>pays ouverts aujourd&apos;hui</small></div>
+            <div className="lic-stat"><b>100 %</b><small>des abonnements rattachés à votre licence, hors frais</small></div>
             <div className="lic-stat"><b>0</b><small>ligne de code à écrire</small></div>
           </div>
         </section>
@@ -519,10 +505,9 @@ export default async function LicencePage() {
               {[
                 { ico: '🗺️', h: "L'exclusivité de votre pays", p: "Pendant toute la durée de l'accord, aucune autre licence TEKKIShop ne sera accordée sur votre territoire. Vous êtes le seul interlocuteur de la marque dans votre pays." },
                 { ico: '🛠️', h: 'Votre déclinaison nationale', p: "Votre plateforme s'appelle « TEKKIShop <votre pays> ». Nous configurons votre adresse locale, vos coordonnées, vos moyens de paiement et vos tarifs convertis dans votre devise. Le nom et l'identité de la marque restent ceux de TEKKIShop." },
-                { ico: '🔐', h: 'Votre espace administrateur', p: "Vous pilotez vos marchands, leurs abonnements et votre activité depuis un tableau de bord dédié, accessible depuis un téléphone." },
-                { ico: '⚙️', h: 'Toute la technique, à notre charge', p: "Hébergement, sécurité, maintenance, corrections et nouvelles fonctionnalités : Dukka s'en occupe pendant toute la durée de la licence. Vous n'avez aucune dette technique." },
+                { ico: '⚙️', h: 'Toute la technique, à notre charge', p: "Hébergement, sécurité, maintenance, corrections et nouvelles fonctionnalités : TEKKIShop s'en occupe pendant toute la durée de la licence. Vous n'avez aucune dette technique." },
                 { ico: '🎓', h: "4 semaines d'accompagnement", p: "Configuration initiale, prise en main, support technique et conseils de positionnement, avec une réponse garantie sous 48 heures ouvrées." },
-                { ico: '🏷️', h: 'La marque et sa preuve', p: `Vous exploitez sous « TEKKIShop <votre pays> » et vous appuyez dès le premier jour sur les ${shopCountDisplay} boutiques déjà créées. Vous n'avez pas de marque à inventer.` },
+                { ico: '🏷️', h: 'La marque et sa preuve', p: `Vous exploitez sous « TEKKIShop <votre pays> »${shopCountDisplay ? ` et vous bénéficiez d'un produit déjà en production, qui compte déjà ${shopCountDisplay} boutiques créées, ce qui montre l'intérêt pour le produit. Votre licence démarre à zéro` : ''}. Vous n'avez pas de marque à inventer.` },
               ].map(c => (
                 <article key={c.h} className="lic-card">
                   <div className="lic-card-ico">{c.ico}</div>
@@ -548,10 +533,9 @@ export default async function LicencePage() {
                 <ul>
                   <li><Chk /> Le droit d&apos;exploiter commercialement TEKKIShop dans votre pays</li>
                   <li><Chk /> L&apos;exclusivité territoriale pendant la durée de l&apos;accord</li>
-                  <li><Chk /> L&apos;intégralité des revenus d&apos;abonnement de vos marchands</li>
-                  <li><Chk /> Un export de vos données au format CSV en fin d&apos;accord</li>
+                  <li><Chk /> 100&nbsp;% des abonnements rattachés à votre licence, moins les frais d&apos;encaissement et de retrait, dont les conditions sont précisées dans le contrat.</li>
                 </ul>
-                <p className="lic-hbox-note">Vous êtes propriétaire de votre activité commerciale et de votre relation client.</p>
+                <p className="lic-hbox-note">Vous développez votre propre activité commerciale, dans le cadre des conditions du contrat.</p>
               </div>
               <div className="lic-hbox lic-hbox-out">
                 <h3 className="lic-h3">Ce que vous n&apos;obtenez pas</h3>
@@ -562,7 +546,7 @@ export default async function LicencePage() {
                   <li><XMark /> Un accès aux serveurs ou à la base de données</li>
                   <li><XMark /> La liberté de fixer vos propres tarifs d&apos;abonnement</li>
                 </ul>
-                <p className="lic-hbox-note">C&apos;est une licence d&apos;exploitation, pas une cession. Les tarifs sont définis par Dukka et adaptés à votre devise locale.</p>
+                <p className="lic-hbox-note">C&apos;est une licence d&apos;exploitation, pas une cession. Les tarifs sont définis par TEKKIShop et adaptés à votre devise locale.</p>
               </div>
             </div>
           </div>
@@ -573,8 +557,8 @@ export default async function LicencePage() {
           <div className="lic-wrap">
             <div className="lic-head lic-center reveal">
               <span className="lic-label lic-label-dark">Votre modèle économique</span>
-              <h2 className="lic-h2">Vos marchands s&apos;abonnent. <span style={{ color: '#ffb020' }}>Vous encaissez.</span></h2>
-              <p className="lic-lead">Chaque marchand de votre pays paie un abonnement mensuel pour garder sa boutique active. Cet argent vous revient intégralement. Déplacez le curseur pour voir ce que ça donne.</p>
+              <h2 className="lic-h2">Les marchands que vous recrutez s&apos;abonnent. <span style={{ color: '#ffb020' }}>Vous encaissez, selon les conditions du contrat.</span></h2>
+              <p className="lic-lead">Chaque marchand rattaché à votre licence paie un abonnement mensuel pour garder sa boutique active. Vous touchez 100&nbsp;% de ces abonnements, moins les frais d&apos;encaissement et de retrait, selon les conditions du contrat. Déplacez le curseur pour voir ce que ça donne.</p>
             </div>
             <div className="reveal">
               <LicenceSimulator />
@@ -594,53 +578,48 @@ export default async function LicencePage() {
               {bySection.disponible.length > 0 && (
                 <article className="lic-mk lic-mk-open">
                   <span className="lic-mk-tag">Disponible maintenant</span>
-                  <h3 className="lic-h3">Marchands déjà actifs</h3>
-                  <p>TEKKIShop compte déjà des utilisateurs dans ces pays. Vous ne démarrez pas d&apos;une page blanche.</p>
-                  <ul>
-                    {bySection.disponible.map(t => (
-                      <li key={t.country_code}>
-                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} ({displayCount(t) ?? 0} marchands) <em>{STATUS_LABEL[t.status]}</em>
-                      </li>
-                    ))}
+                  <h3 className="lic-h3">Pays ouverts</h3>
+                  <p>TEKKIShop compte déjà des inscrits dans ces pays. Les paiements en ligne des marchands passent par notre partenaire Bictorys.</p>
+                  <ul style={{ gap: 14 }}>
+                    {bySection.disponible.map(t => {
+                      const registered = registeredByCode[t.country_code]
+                      return (
+                        <li key={t.country_code} style={{ flexWrap: 'wrap' }}>
+                          <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
+                          {registered != null && (
+                            <span style={{ flexBasis: '100%', fontWeight: 500, fontSize: 13, color: '#26385a' }}>
+                              {formatNumberFr(registered)} inscrits
+                            </span>
+                          )}
+                        </li>
+                      )
+                    })}
                   </ul>
-                  <p className="lic-mk-foot">Les marchands existants vous sont transférés au lancement.</p>
+                  <p className="lic-mk-foot">
+                    Ces chiffres montrent l&apos;intérêt pour TEKKIShop dans le pays&nbsp;: les boutiques déjà inscrites restent à TEKKIShop. Votre licence démarre à zéro, et les boutiques qui s&apos;inscrivent dans votre pays après le début de votre licence lui sont rattachées, selon le contrat.
+                  </p>
                 </article>
               )}
-              {bySection['a-ouvrir'].length > 0 && (
+              {bySection.attente.length > 0 && (
                 <article className="lic-mk lic-mk-soon">
-                  <span className="lic-mk-tag">Ouvert sur dossier</span>
-                  <h3 className="lic-h3">Marchés à ouvrir</h3>
-                  <p>Aucun utilisateur pour l&apos;instant. À vous de construire le marché, avec notre appui technique.</p>
+                  <span className="lic-mk-tag">Liste d&apos;attente</span>
+                  <h3 className="lic-h3">Pays en liste d&apos;attente</h3>
+                  <p>Le paiement mobile money n&apos;y est pas encore intégré. Rejoignez la liste d&apos;attente&nbsp;: nous vous prévenons dès l&apos;ouverture.</p>
                   <ul>
-                    {bySection['a-ouvrir'].map(t => (
+                    {bySection.attente.map(t => (
                       <li key={t.country_code}>
-                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
+                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>Liste d&apos;attente</em>
                       </li>
                     ))}
                   </ul>
                   <p className="lic-mk-foot">Un autre pays vous intéresse ? Indiquez-le dans votre candidature.</p>
                 </article>
               )}
-              {bySection['en-cours'].length > 0 && (
-                <article className="lic-mk lic-mk-reserved">
-                  <span className="lic-mk-tag">En cours d&apos;attribution</span>
-                  <h3 className="lic-h3">Territoire en cours de finalisation</h3>
-                  <p>Une candidature peut encore être déposée sur ces territoires.</p>
-                  <ul>
-                    {bySection['en-cours'].map(t => (
-                      <li key={t.country_code}>
-                        <i>{FLAG_BY_CODE[t.country_code] ?? '🌍'}</i> {t.name} <em>{STATUS_LABEL[t.status]}</em>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="lic-mk-foot">Territoire en cours de finalisation. Une candidature peut encore être déposée.</p>
-                </article>
-              )}
               {bySection.ferme.length > 0 && (
                 <article className="lic-mk lic-mk-closed">
                   <span className="lic-mk-tag">Non disponible</span>
                   <h3 className="lic-h3">Territoires fermés</h3>
-                  <p>Déjà attribués, ou exploités directement par Dukka.</p>
+                  <p>Déjà attribués, ou exploités directement par TEKKIShop.</p>
                   <ul>
                     {bySection.ferme.map(t => (
                       <li key={t.country_code}>
@@ -648,7 +627,7 @@ export default async function LicencePage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="lic-mk-foot">Le Sénégal, la Côte d&apos;Ivoire et les marchés de la diaspora restent exploités directement par Dukka.</p>
+                  <p className="lic-mk-foot">Le Sénégal, la Côte d&apos;Ivoire et les marchés de la diaspora restent exploités directement par TEKKIShop.</p>
                 </article>
               )}
             </div>
@@ -668,7 +647,7 @@ export default async function LicencePage() {
                 { n: '01', h: 'Candidature', p: 'Vous indiquez le pays visé, votre parcours et votre plan pour vos cent premiers marchands.', t: '10 minutes' },
                 { n: '02', h: 'Entretien', p: 'Un échange d\'une heure pour valider votre projet, votre marché et répondre à vos questions.', t: 'Sous 5 jours' },
                 { n: '03', h: 'Accord et acompte', p: 'Signature du contrat de licence et versement de la moitié du montant. Votre pays est réservé.', t: '1 à 3 jours' },
-                { n: '04', h: 'Configuration', p: 'Nous préparons votre plateforme : domaine, moyens de paiement, visuels, espace administrateur.', t: '1 à 2 semaines' },
+                { n: '04', h: 'Configuration', p: 'Nous préparons votre plateforme : domaine, moyens de paiement, visuels.', t: '1 à 2 semaines' },
                 { n: '05', h: 'Lancement', p: 'Vous ouvrez, vous recrutez vos marchands, et nous vous accompagnons pendant 4 semaines.', t: 'Jour J' },
               ].map(s => (
                 <article key={s.n} className="lic-pstep">
@@ -704,7 +683,7 @@ export default async function LicencePage() {
                 </div>
               </div>
               <p className="lic-expect-note">
-                <strong>Si l&apos;objectif des six mois n&apos;est pas atteint</strong>, Dukka peut convertir votre licence exclusive en licence non exclusive pour la durée restante, après notification écrite. Vous conservez votre plateforme et vos marchands, mais votre pays peut alors être ouvert à d&apos;autres acteurs. Nous préférons que vous le sachiez avant de signer plutôt qu&apos;après.
+                <strong>Si l&apos;objectif des six mois n&apos;est pas atteint</strong>, TEKKIShop peut convertir votre licence exclusive en licence non exclusive pour la durée restante, après notification écrite. Vous conservez votre plateforme, mais votre pays peut alors être ouvert à d&apos;autres acteurs. Nous préférons que vous le sachiez avant de signer plutôt qu&apos;après.
               </p>
             </div>
           </div>
@@ -727,6 +706,7 @@ export default async function LicencePage() {
                   <li><b>✓</b> Vous êtes à l&apos;aise avec la vente, le terrain et la relation client.</li>
                   <li><b>✓</b> Vous pouvez consacrer à ce projet du temps et un budget d&apos;acquisition.</li>
                   <li><b>✓</b> Vous acceptez de porter une marque existante plutôt que d&apos;en créer une.</li>
+                  <li><b>✓</b> Vous visez des marchands qui vendent déjà sur WhatsApp, Instagram, TikTok ou Facebook et qui ont besoin de changer de façon de vendre, pas des débutants qui veulent se lancer.</li>
                 </ul>
               </div>
               <div className="lic-fitbox lic-fit-no">
@@ -748,20 +728,19 @@ export default async function LicencePage() {
           <div className="lic-wrap">
             <div className="lic-head lic-center reveal">
               <span className="lic-label">Investissement</span>
-              <h2 className="lic-h2">Un montant qui dépend <span className="lic-grad">du marché que vous ouvrez.</span></h2>
-              <p className="lic-lead">Tous les pays ne se valent pas&nbsp;: population commerçante, pénétration du mobile money, présence déjà installée de TEKKIShop. Le prix de la licence en tient compte. Nous vous communiquons le montant exact de votre territoire lors de l&apos;entretien.</p>
+              <h2 className="lic-h2">Un prix unique, <span className="lic-grad">le même dans les quatre pays ouverts.</span></h2>
+              <p className="lic-lead">La licence coûte {formatFcfa(LICENSE_PRICE_FCFA)} CFA pour 12 mois, quel que soit le pays ouvert que vous choisissez.</p>
             </div>
             <div className="lic-invest reveal">
               <div className="lic-price-card">
-                <span className="lic-price-from">À partir de</span>
-                <div className="lic-price-top"><b>1 200 000 F</b><span>CFA · 12 mois</span></div>
+                <div className="lic-price-top"><b>{formatFcfa(LICENSE_PRICE_FCFA)}</b><span>CFA · 12 mois</span></div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, alignItems: 'center', margin: '8px 0 4px' }}>
-                  {['≈ 1 830 €', '≈ 2 000 $ US', '≈ 1 550 £'].map(c => (
-                    <span key={c} style={{ fontFamily: 'monospace', fontSize: 12, background: '#f5f9ff', border: '1px solid #e3ecfa', borderRadius: 9, padding: '7px 11px' }}>{c}</span>
+                  {indicativeEquivalents(LICENSE_PRICE_FCFA).map(e => (
+                    <span key={e} style={{ fontFamily: 'monospace', fontSize: 12, background: '#f5f9ff', border: '1px solid #e3ecfa', borderRadius: 9, padding: '7px 11px' }}>{e}</span>
                   ))}
-                  <span style={{ fontSize: 11.5, color: '#697893' }}>taux indicatifs</span>
+                  <span style={{ fontSize: 11.5, color: '#697893' }}>indicatif, parité fixe du franc CFA</span>
                 </div>
-                <p className="lic-price-sub">Montant plancher, applicable aux marchés à ouvrir. Payable en deux fois.</p>
+                <p className="lic-price-sub">12 mois, payable en deux fois (50 % à la signature, 50 % sous 30 jours).</p>
                 <div className="lic-pay-split">
                   <div className="lic-pay-item">
                     <i>50%</i>
@@ -795,30 +774,14 @@ export default async function LicencePage() {
                   <ul>
                     <li className="no"><Dash size={16} /> Nom de domaine local et frais associés</li>
                     <li className="no"><Dash size={16} /> SMS, WhatsApp Business et emailing</li>
-                    <li className="no"><Dash size={16} /> Frais des prestataires de paiement</li>
+                    <li className="no"><Dash size={16} /> Frais d&apos;encaissement et de retrait sur vos abonnements</li>
                     <li className="no"><Dash size={16} /> Budget publicitaire et prospection</li>
-                    <li className="no"><Dash size={16} /> Le support de vos propres marchands</li>
+                    <li className="no"><Dash size={16} /> Le support des marchands, réparti selon les conditions du contrat</li>
                   </ul>
                 </div>
               </div>
             </div>
 
-            <div className="lic-vary-grid reveal">
-              {[
-                { ico: '👥', h: 'La taille du marché', p: "Le nombre de commerçants susceptibles d'ouvrir une boutique dans votre pays." },
-                { ico: '📲', h: 'La maturité du mobile money', p: 'Plus les paiements mobiles sont installés, plus la conversion est rapide.' },
-                { ico: '🌱', h: 'La présence déjà acquise', p: "Un pays où TEKKIShop compte déjà des marchands vaut davantage qu'un marché à créer." },
-              ].map(c => (
-                <div key={c.h} style={{ background: '#fff', border: '1px solid #dfe7f3', borderRadius: 16, padding: '18px 16px' }}>
-                  <div style={{ fontSize: 19, marginBottom: 10 }}>{c.ico}</div>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 6, color: '#0b1830' }}>{c.h}</div>
-                  <p style={{ margin: 0, fontSize: 13, color: '#697893', lineHeight: 1.55 }}>{c.p}</p>
-                </div>
-              ))}
-            </div>
-            <p className="lic-center reveal" style={{ maxWidth: 640, margin: '28px auto 0', fontSize: 14.5, color: '#697893' }}>
-              Indiquez votre pays dans votre candidature&nbsp;: nous vous communiquons le montant exact avant tout engagement de votre part.
-            </p>
           </div>
         </section>
 
@@ -836,18 +799,17 @@ export default async function LicencePage() {
               </div>
               <div className="lic-faq-list reveal">
                 {[
-                  { q: 'Est-ce que je garde vraiment 100 % des abonnements ?', a: 'Oui. Dukka ne prélève aucune commission sur le chiffre d\'affaires généré dans votre pays. Votre seul coût envers nous est le prix de la licence. Les frais des prestataires de paiement restent à votre charge, comme pour toute activité commerciale.' },
-                  { q: 'Sous quelle marque est-ce que j\'exploite ?', a: 'Sous la marque TEKKIShop, déclinée à votre pays. C\'est un avantage : vous vous appuyez dès le premier jour sur un produit qui compte déjà des milliers de boutiques dans six pays, plutôt que de construire une notoriété à partir de zéro.' },
-                  { q: 'Faut-il des compétences techniques ?', a: 'Non. Dukka assure l\'hébergement, la maintenance, la sécurité et les évolutions du logiciel. Vous n\'avez ni serveur à gérer, ni code à écrire, ni développeur à recruter. Votre travail est commercial : trouver et accompagner des marchands.' },
-                  { q: 'Qui s\'occupe du support de mes marchands ?', a: 'Vous. Vos marchands sont vos clients : vous gérez la relation, les questions d\'usage et la facturation. De notre côté, nous vous soutenons sur tout ce qui relève du fonctionnement technique de la plateforme, avec une réponse garantie sous 48 heures ouvrées.' },
-                  { q: 'Puis-je fixer mes propres tarifs d\'abonnement ?', a: 'Non. Les tarifs sont définis par Dukka afin de garder une cohérence entre les pays. Ils sont en revanche adaptés à votre devise et au pouvoir d\'achat de votre marché : un même plan n\'affiche pas le même montant partout.' },
-                  { q: 'Que se passe-t-il au bout des douze mois ?', a: 'La licence est renouvelable par accord écrit conclu avant l\'échéance. Le renouvellement est proposé à la moitié du tarif de votre première année. Sans renouvellement, l\'exploitation cesse et nous vous remettons un export de vos données au format CSV sous quinze jours.' },
-                  { q: 'Et si je n\'atteins pas les 30 boutiques en six mois ?', a: 'Dukka peut convertir votre licence exclusive en licence non exclusive pour la durée restante, après notification écrite. Vous conservez votre plateforme, vos marchands et vos revenus, mais votre pays peut être ouvert à d\'autres acteurs. Aucun remboursement n\'est dû dans ce cas.' },
+                  { q: 'Est-ce que je garde vraiment 100 % des abonnements ?', a: 'Oui, sur les abonnements des marchands rattachés à votre licence, selon les conditions du contrat : TEKKIShop les collecte et vous en reverse 100 %, moins les frais d\'encaissement et de retrait. Votre autre coût envers nous est le prix de la licence.' },
+                  { q: 'Sous quelle marque est-ce que j\'exploite ?', a: `Sous la marque TEKKIShop, déclinée à votre pays. C'est un avantage : vous exploitez un produit déjà en production${shopCountDisplay ? `, qui compte déjà ${shopCountDisplay} boutiques créées, ce qui montre l'intérêt pour le produit` : ''}, plutôt que de construire une notoriété à partir de zéro. Votre licence démarre à zéro.` },
+                  { q: 'Faut-il des compétences techniques ?', a: 'Non. TEKKIShop assure l\'hébergement, la maintenance, la sécurité et les évolutions du logiciel. Vous n\'avez ni serveur à gérer, ni code à écrire, ni développeur à recruter. Votre travail est commercial : trouver et accompagner des marchands.' },
+                  { q: 'Qui s\'occupe du support des marchands ?', a: 'Le support des marchands est réparti entre vous et TEKKIShop selon les conditions du contrat. Pour le fonctionnement technique de la plateforme, nous vous répondons sous 48 heures ouvrées.' },
+                  { q: 'Puis-je fixer mes propres tarifs d\'abonnement ?', a: 'Non. Les tarifs sont définis par TEKKIShop afin de garder une cohérence entre les pays. Ils sont en revanche adaptés à votre devise et au pouvoir d\'achat de votre marché : un même plan n\'affiche pas le même montant partout.' },
+                  { q: 'Que se passe-t-il au bout des douze mois ?', a: 'La licence est renouvelable par accord écrit conclu avant l\'échéance. Le renouvellement est proposé à la moitié du tarif de votre première année. Sans renouvellement, l\'exploitation cesse. Les conditions de fin d\'accord, y compris le sort des données, sont précisées dans le contrat.' },
+                  { q: 'Et si je n\'atteins pas les 30 boutiques en six mois ?', a: 'TEKKIShop peut convertir votre licence exclusive en licence non exclusive pour la durée restante, après notification écrite. Vous conservez votre plateforme, mais votre pays peut être ouvert à d\'autres acteurs. Aucun remboursement n\'est dû dans ce cas.' },
                   { q: 'Est-ce que je peux revendre ou céder ma licence ?', a: 'Pas sans notre accord écrit préalable. La licence est accordée à une personne ou une structure identifiée, en considération de son projet. Toute cession, sous-licence ou revente du logiciel est exclue.' },
-                  { q: 'À qui appartiennent les données de mes marchands ?', a: 'Les données sont hébergées sur notre infrastructure pendant la durée de l\'accord. En fin d\'accord, nous vous remettons un export CSV sous quinze jours.' },
+                  { q: 'Qu\'en est-il de la commission sur les paiements en ligne des marchands ?', a: `TEKKIShop prélève une commission de ${MIN_COMMISSION_RATE} % à ${MAX_COMMISSION_RATE} % selon le pays sur les paiements en ligne des marchands, et supporte notamment les frais du processeur de paiement et des opérateurs. Elle n'est pas partagée avec le licencié : vous percevez les abonnements des marchands rattachés à votre licence, selon les conditions du contrat.` },
                   { q: 'Combien de temps avant de pouvoir lancer ?', a: 'Comptez trois à quatre semaines entre votre candidature et l\'ouverture commerciale : quelques jours pour l\'entretien et la signature, puis une à deux semaines de configuration de votre plateforme.' },
-                  { q: 'Pourquoi le prix n\'est-il pas le même pour tous les pays ?', a: 'Parce que les marchés ne se valent pas. Un pays comptant plusieurs millions de commerçants et un mobile money déjà installé n\'offre pas le même potentiel qu\'un marché à créer. Le montant plancher de 1 200 000 FCFA s\'applique aux territoires à ouvrir ; il augmente selon la taille du marché et la présence déjà acquise par TEKKIShop. Nous vous communiquons le montant exact de votre pays lors de l\'entretien, avant tout engagement.' },
-                  { q: 'Comment se fait le paiement depuis l\'étranger ?', a: 'Par mobile money ou par carte bancaire via Stripe. Nous confirmons par écrit la réception de chaque versement dans les 24 heures ouvrées.' },
+                  { q: 'Comment se fait le paiement depuis l\'étranger ?', a: 'Par mobile money ou par carte bancaire via Stripe. Nous confirmons par écrit la réception de chaque versement.' },
                   { q: 'Est-ce que je concurrence TEKKIShop ?', a: 'Non, vous le représentez. Votre territoire vous est réservé, et nous nous engageons à ne pas accorder d\'autre licence sur votre pays pendant la durée de l\'accord. En contrepartie, vous vous engagez à ne pas lancer d\'activité directement concurrente sur ce même territoire pendant la licence et les douze mois qui suivent.' },
                 ].map((item, i) => (
                   <details key={i} className="lic-faq-item">
@@ -893,11 +855,7 @@ export default async function LicencePage() {
             </div>
             <div className="reveal">
               <LicenceForm
-                territories={applicableTerritories.map(t => ({
-                  name: t.name,
-                  hasMerchants: displayCount(t) !== null,
-                  isReserved: t.status === 'reserve',
-                }))}
+                territories={formTerritories}
               />
             </div>
           </div>

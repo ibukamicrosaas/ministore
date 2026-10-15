@@ -6,6 +6,106 @@
    landing-v6.css (--ink, --muted, --border, --display, --shadow-md, etc.)
    et le @keyframes floaty déjà déclaré dans ce fichier partagé. */
 
+/* ── Défilement doux vers les ancres de la navbar (2026-10-24) ───────────
+   Pourquoi TEKKIShop/Comment ça marche/Tarifs/FAQ → #probleme/#comment/
+   #tarifs/#faq. scroll-behavior:smooth est posé sur <html>, MAIS seulement
+   quand la classe .lv7-smooth-scroll y est présente — classe ajoutée par
+   SmoothAnchorsInit.tsx (JS) UNIQUEMENT pendant que cette route est
+   montée, retirée au démontage (y compris en navigation client-side Next,
+   donc jamais de fuite vers une autre page même sans rechargement complet).
+   landing-v6.css (partagé avec /, les pages pays, etc.) n'est jamais
+   touché — aucune règle html{scroll-behavior:smooth} globale.
+   prefers-reduced-motion : défilement instantané (scroll-behavior:auto),
+   la classe peut rester posée, seul le comportement change. Repli sans JS :
+   les liens restent de vrais <a href="#id">, le saut instantané natif du
+   navigateur fonctionne déjà sans ce composant (scroll-behavior:auto par
+   défaut tant que la classe n'est jamais ajoutée). */
+html.lv7-smooth-scroll { scroll-behavior: smooth }
+@media (prefers-reduced-motion: reduce) {
+  html.lv7-smooth-scroll { scroll-behavior: auto }
+}
+/* Espace de respiration pour les 4 cibles — le header n'est pas fixe (il
+   défile avec la page, voir .nav-v7-wrap), donc pas de recouvrement à
+   compenser : juste une marge légère pour que le titre ne colle pas au
+   bord haut de l'écran à l'arrivée. outline retiré par défaut (une
+   section n'a pas besoin d'un anneau de focus visible au clic souris),
+   restauré uniquement sous :focus-visible (déplacement de focus clavier/
+   scripté après le saut — voir LandingV7Nav.tsx). */
+.lv6 #probleme, .lv6 #comment, .lv6 #tarifs, .lv6 #faq {
+  scroll-margin-top: 28px;
+  outline: none;
+}
+.lv6 #probleme:focus-visible, .lv6 #comment:focus-visible,
+.lv6 #tarifs:focus-visible, .lv6 #faq:focus-visible {
+  outline: 2px solid var(--blue, #176bff);
+  outline-offset: 4px;
+}
+
+/* MaisonAwaHome.tsx — débordement mobile corrigé (2026-10-23, mesuré via
+   Playwright/getBoundingClientRect, pas supposé) : le canevas était à
+   largeur fixe 390px réduite par un seul "transform:scale()" calculé pour
+   la largeur desktop de .phone-screen (292px). Or .phone (landing-v6.css,
+   partagé, non modifié) rétrécit lui-même sous 860px (300px) et 600px
+   (270px) — à ces largeurs, .phone-screen fait 280/250px réels mais le
+   canevas restait rendu à sa taille scale(292/390) fixe : le surplus
+   (10 à 42px) n'était pas réduit, juste rogné par overflow:hidden — d'où
+   la cover coupée net côté droit et la grille catégories/produits
+   invisible (hors du cadre). Remplacé par des unités de container query
+   (cqw) sur CHAQUE dimension du canevas (MaisonAwaHome.tsx) : 1 unité du
+   design à 390px = (100/390)cqw, donc le canevas fait toujours très
+   exactement 100% de la largeur réelle de .maw-stage, quel que soit son
+   nombre de px — aucun JS, aucune mesure au runtime. .maw-stage doit être
+   le seul enfant direct de .phone-screen pour que cqw se base sur SA
+   largeur (celle de .phone-screen), pas sur celle d'un ancêtre plus large. */
+.lv6 .maw-stage { container-type: inline-size; width: 100%; height: 100%; position: relative }
+
+/* Défilement vertical en boucle du contenu du mockup (2026-10-23).
+   Distances mesurées via Playwright (getBoundingClientRect sur le
+   canevas réel moins la hauteur fixe de .phone-screen, 604px, jamais
+   deviné) : 1437px à 390px de large, 1524px à 1280px (.phone fait 312px
+   de large à partir de 1024px et au-delà, donc une seule valeur desktop
+   couvre 1024/1280/1440/1920 — mesure faite aux 2 largeurs demandées
+   seulement, appliquée par palier plutôt qu'une formule continue).
+   Cycle 14s : 10% pause en haut, 35% descente, 10% pause en bas, 35%
+   remontée, retour à 10% pause en haut (boucle sans à-coup, 0%=100%).
+   Démarre 1.5s après le chargement (animation-delay), pause au survol
+   (règle juste après), coupée sous prefers-reduced-motion (tout en bas
+   de ce fichier avec les autres réductions de mouvement). Les bulles de
+   notification (HeroFloatingCards, position absolute dans .hero-stage,
+   jamais un enfant de .phone) et le badge "Exemple de boutique"
+   (enfant de .phone mais hors de .phone-screen) ne sont jamais
+   concernés : seul .maw-scroll bouge. */
+@keyframes maw-scroll-y-mobile {
+  0%, 10% { transform: translateY(0) }
+  45%, 55% { transform: translateY(-1437px) }
+  90%, 100% { transform: translateY(0) }
+}
+@keyframes maw-scroll-y-desktop {
+  0%, 10% { transform: translateY(0) }
+  45%, 55% { transform: translateY(-1524px) }
+  90%, 100% { transform: translateY(0) }
+}
+.lv6 .maw-scroll {
+  animation: maw-scroll-y-mobile 14s ease-in-out 1.5s infinite;
+  will-change: transform;
+}
+@media (min-width: 1024px) {
+  .lv6 .maw-scroll { animation-name: maw-scroll-y-desktop }
+}
+.lv6 .phone:hover .maw-scroll { animation-play-state: paused }
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .maw-scroll { animation: none }
+}
+
+/* MaisonAwaHome.tsx : icônes en SVG
+   inline sans width/height propre (comme tout le reste du site), on les
+   dimensionne via le conteneur .maw-ic. Barre de réassurance défilable
+   horizontalement : scrollbar masquée (même technique que .noscroll dans
+   Main.dc.html), désactivée nulle part ailleurs ⇒ nom de classe dédié. */
+.lv6 .maw-ic svg { width: 100%; height: 100%; display: block }
+.lv6 .maw-noscroll::-webkit-scrollbar { display: none }
+.lv6 .maw-noscroll { scrollbar-width: none }
+
 /* ════════════════════════════════════════════════════════════════════
    LOT 1 (Temps 2) — socle visuel : header, hero, boutons pilule,
    transitions en dégradé, badges paiement. Prototype de comparaison
@@ -20,9 +120,26 @@
 /* ── Header dédié (remplace .nav/.nav-wrap partagés, jamais modifiés) ──
    Révisé le 2026-10-10 : barre détachée en pilule (référence visuelle
    fournie), pas une barre pleine largeur. .nav-v7-wrap ne sert plus qu'au
-   positionnement (sticky, transparent) ; le verre dépoli/l'ombre/les
-   coins arrondis sont portés par .container à l'intérieur. ── */
-.lv6 .nav-v7-wrap { position: sticky; top: 14px; z-index: 50; background: transparent }
+   positionnement ; le verre dépoli/l'ombre/les coins arrondis sont
+   portés par .container à l'intérieur.
+   2026-10-21 : essai position:fixed puis annulé sur demande explicite
+   (gênait la lecture au scroll sur desktop) — retour à une position
+   statique dans le flux, comportement d'origine. Le padding-top de
+   compensation sur .hero--v7, l'état "scrolled" et le scroll-margin-top
+   des ancres n'ont plus de raison d'être sans position fixed/sticky,
+   retirés avec ce même commit.
+   2026-10-23 — régression corrigée (diagnostic git diff HEAD) : passer de
+   sticky à static a aussi fait disparaître le détachement du haut de page.
+   Avec position:sticky, "top:14px" décalait visuellement la pilule de 14px
+   dès le chargement (contrainte sticky active immédiatement en haut de
+   page, sans attendre un scroll), sans rien réserver dans le flux — ce que
+   "static" seul ne reproduit pas.
+   2026-10-23 (suite) : un premier correctif avait mis ce même 14px en
+   margin-top ICI, sur l'enfant — collapse avec .hero-sky-wrap (parent sans
+   padding/bordure), d'où une bande blanche au-dessus du fond teinté
+   (mesuré, voir .hero-sky-wrap ci-dessus). Déplacé en padding-top sur le
+   parent : plus de margin ici. ── */
+.lv6 .nav-v7-wrap { position: static; z-index: 50; background: transparent }
 /* .nav-v7-bar seul porte le verre dépoli — pas .nav-v7-wrap > .container
    générique, qui aurait aussi ciblé à tort le panneau mobile déroulant
    (même structure .container, radius 999px cassant sur une liste). */
@@ -82,6 +199,33 @@
 @supports not (backdrop-filter: blur(1px)) {
   .lv6 .float { background: rgba(255,255,255,.95) }
 }
+/* ── Cartes flottantes restructurées en vraie notification push
+   (2026-10-21) : icône app ronde + 3 lignes de texte (en-tête gris,
+   titre gras, détail) au lieu de l'icône colorée générique + 2 lignes
+   d'avant. .float (ci-dessus) garde position/fond verre dépoli/ombre ;
+   ces règles ne touchent que le contenu interne, propre à .float-push--v7
+   pour ne jamais affecter un autre usage éventuel de .float. ── */
+/* Largeur recalculée (2026-10-21) : la ligne de détail ("Payée par Orange
+   Money · 45 000 FCFA", la plus longue des 3) passait sur 2 lignes dans
+   un max-width:220px — mesuré avec Range.getClientRects() avant/après.
+   width:max-content + nowrap sur le texte, pas de troncature ni de
+   réduction de police sous 13px (toutes les tailles internes remontées
+   à 13px, contre 10.5/11.5px avant). */
+.lv6 .float-push--v7 { align-items: flex-start; width: max-content; max-width: 340px }
+.lv6 .float-push-icon--v7 { width: 34px; height: 34px; border-radius: 9px; flex: none; object-fit: cover }
+/* float-1/float-2 rapprochés de -15% à -4% (2026-10-21) — même cause que
+   .float-3 ci-dessous : les cartes élargies pour tenir sur une ligne
+   dépassaient le bord du viewport à 1024/1280px (float-2 mesuré à
+   right:1311px pour une fenêtre de 1280px, soit 31px hors champ, texte
+   visuellement coupé). Override scopé à cette route (landing-v7.css
+   n'est jamais chargé par / ni les pages pays, où .float-1/.float-2
+   gardent leur position -15% d'origine, inchangée). */
+.lv6 .float-1 { left: -1% }
+.lv6 .float-2 { right: -4% }
+.lv6 .float-push--v7 > div { display: flex; flex-direction: column; gap: 1px }
+.lv6 .float-push--v7 small { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .01em; white-space: nowrap }
+.lv6 .float-push--v7 b { font-size: 13px; line-height: 1.3; white-space: nowrap }
+.lv6 .float-push--v7 span { font-size: 13px; color: var(--ink-2); white-space: nowrap }
 
 /* ── Boutons pilule, hover avec élan (override additif de .btn) ── */
 .lv6 .btn { border-radius: 999px; transition: transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s, background-color .2s }
@@ -102,6 +246,14 @@
    qui démarre lui-même en blanc : aucune couture entre les deux. ── */
 .lv6 .hero-sky-wrap {
   background: linear-gradient(180deg, #dce9ff 0%, #eef4ff 28%, #fff 62%);
+  /* 2026-10-23 — régression n°2 (mesurée via getBoundingClientRect, pas
+     supposée) : le margin-top:14px posé sur .nav-v7-wrap (son 1er enfant,
+     sans bordure/padding entre les deux) collapsait avec ce conteneur —
+     .hero-sky-wrap commençait donc lui-même à y=14, laissant 14px de blanc
+     du <body> au-dessus du dégradé. padding-top ici (jamais margin sur
+     l'enfant) ne collapse pas : le dégradé couvre tout, y compris les 14px
+     avant la pilule. */
+  padding-top: 14px;
 }
 /* overflow:visible annule .hero (partagé, landing-v6.css:222, jamais
    modifié) qui tronquait net l'ombre portée du téléphone (box-shadow
@@ -141,40 +293,45 @@
   .lv6 .pay--v7:hover { transform: none }
 }
 
-/* ── Bandeau paiement, mobile : une seule ligne défilante (2026-10-10) ──
-   .pay-row (partagée, landing-v6.css) passe de flex-wrap à un défilement
-   horizontal sous 640px seulement — desktop non touché (règle générique,
-   pas de media query, ne s'applique donc jamais au-delà de 640px). Le
-   fondu de bord est porté par le wrapper .pay-row-wrap--v7 (::before/
-   ::after), pas par .pay-row elle-même, qui doit rester scrollable sans
-   qu'un pseudo-élément n'intercepte le geste de swipe. */
+/* ── Bandeau paiement — défilement infini CSS pur (2026-10-21), même
+   technique que .shops-marquee-* (RealShopsShowcaseV7) : liste dupliquée,
+   pause au survol/focus, désactivé sous prefers-reduced-motion, plein
+   viewport (sort du conteneur centré). Remplace l'ancien défilement
+   tactile manuel mobile-only — ici actif desktop ET mobile, les badges
+   étant trop petits/nombreux (7 + carte + livraison) pour tenir sur une
+   ligne lisible même en desktop large. */
+.lv6 .pay-marquee-fullbleed-wrap--v7 {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+  overflow: hidden;
+  padding: 4px 0;
+}
+.lv6 .pay-marquee-track--v7 {
+  display: flex;
+  width: max-content;
+  animation: payMarqueeV7 32s linear infinite;
+}
+.lv6 .pay-marquee-set--v7 { display: flex; gap: 14px; padding-right: 14px }
+.lv6 .pay-marquee-track--v7 .pay--v7 { white-space: nowrap }
+@keyframes payMarqueeV7 {
+  from { transform: translateX(0) }
+  to   { transform: translateX(-50%) }
+}
+.lv6 .pay-marquee-fullbleed-wrap--v7:hover .pay-marquee-track--v7,
+.lv6 .pay-marquee-fullbleed-wrap--v7:focus-within .pay-marquee-track--v7 {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .pay-marquee-track--v7 { animation: none; width: auto; flex-wrap: wrap; justify-content: center }
+  .lv6 .pay-marquee-fullbleed-wrap--v7 { overflow: visible; width: auto; left: auto; right: auto; margin: 0 }
+  .lv6 .pay-marquee-set--v7[aria-hidden] { display: none }
+}
 @media (max-width: 640px) {
-  .lv6 .pay-row-wrap--v7 { position: relative }
-  .lv6 .pay-row-wrap--v7 .pay-row {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding: 2px 20px;
-    margin: 0 -20px;
-    /* Fait disparaître la barre de défilement (geste tactile uniquement,
-       jamais de défilement automatique) tout en gardant le scroll actif. */
-    scrollbar-width: none;
-  }
-  .lv6 .pay-row-wrap--v7 .pay-row::-webkit-scrollbar { display: none }
-  .lv6 .pay-row-wrap--v7 .pay--v7 { flex: none; scroll-snap-align: start }
-  /* Fondus de bord : indiquent qu'il y a une suite à faire défiler. Fond
-     uni blanc (pas un dégradé transparent sur .strip--v7, dont le fond
-     n'est presque jamais blanc pur à cet endroit) — imprécision minime
-     acceptée, la bande fait 28px de large. */
-  .lv6 .pay-row-wrap--v7::before,
-  .lv6 .pay-row-wrap--v7::after {
-    content: ''; position: absolute; top: 0; bottom: 0; width: 28px;
-    pointer-events: none; z-index: 2;
-  }
-  .lv6 .pay-row-wrap--v7::before { left: 0; background: linear-gradient(90deg, #fff, rgba(255,255,255,0)) }
-  .lv6 .pay-row-wrap--v7::after  { right: 0; background: linear-gradient(270deg, #fff, rgba(255,255,255,0)) }
+  .lv6 .pay-marquee-fullbleed-wrap--v7 { overflow-x: auto; -webkit-overflow-scrolling: touch }
 }
 
 /* ── Hero direction comparée — titre imposant, sous-titre 2 lignes max. ── */
@@ -253,6 +410,12 @@
   .lv6 .statement-compare { grid-template-columns: 1fr; gap: 56px }
 }
 .lv6 .statement-option { text-align: center }
+/* Mot "WhatsApp" en vert — candidat en cours d'arbitrage (2026-10-12),
+   voir réponse écrite pour les deux options mesurées (#128C7E, #1DA851)
+   et leur ratio de contraste réel contre le fond blanc à cet endroit
+   (mesuré, pas supposé). #128C7E posé ici par défaut (meilleure marge),
+   à remplacer par #1DA851 si retenu à la place. */
+.lv6 .whatsapp-word--v7 { color: #128C7E }
 .lv6 .statement-tag {
   display: block;
   font-family: var(--mono);
@@ -271,6 +434,22 @@
   text-align: center;
 }
 .lv6 .statement span { display: block }
+/* Deux exceptions, ajoutées le 2026-10-12 pour corriger à la racine deux
+   bugs qui partageaient la même cause : la règle ci-dessus cible TOUT
+   span descendant de .statement, pas seulement les deux spans de premier
+   niveau qui portent chacun une ligne du titre. Elle attrapait donc aussi
+   .grad (bandeau bleu qui débordait du texte, signalé séparément) ET le
+   nouveau span imbriqué .whatsapp-word--v7 (qui forçait "WhatsApp" sur sa
+   propre ligne, détaché de "t'a aidé à démarrer." — confirmé par
+   getComputedStyle avant correction : les deux étaient bien en
+   display:block). Repasser ces deux-là en inline corrige les deux bugs
+   d'un seul geste : .grad redevient un span en ligne après un bloc
+   pleine largeur (il se retrouve donc toujours visuellement sur sa
+   propre ligne, sans qu'aucune règle n'ait besoin de le forcer), et son
+   fond dégradé épouse alors exactement la largeur du texte au lieu de la
+   largeur du conteneur. */
+.lv6 .statement span.grad,
+.lv6 .statement span.whatsapp-word--v7 { display: inline }
 .lv6 .statement--anton {
   letter-spacing: -.005em;
   line-height: .98;
@@ -371,7 +550,11 @@
 /* ── Hero — 3ᵉ carte flottante (cycle), en plus de .float-1/.float-2
    déjà définies dans landing-v6.css. Données liées à la boutique
    d'exemple "Maison Awa", jamais de vraie donnée marchande/cliente. ── */
-.lv6 .float-3 { top: 44%; right: -17%; animation: floaty 3.6s ease-in-out infinite; animation-delay: -2.2s }
+/* right rapproché de -17% à -4% (2026-10-21) : la carte élargie pour
+   tenir sur une ligne (voir .float-push--v7) dépassait le bord droit du
+   viewport à 1280px (right:1321px mesuré, pour une fenêtre de 1280px) —
+   texte visuellement coupé, repéré sur capture avant de livrer. */
+.lv6 .float-3 { top: 44%; right: -4%; animation: floaty 3.6s ease-in-out infinite; animation-delay: -2.2s }
 .lv6 .float-3 i { background: var(--blue) }
 @media (prefers-reduced-motion: reduce) {
   .lv6 .float-3 { animation: none }
@@ -398,7 +581,7 @@
 .lv6 .problem-blocks--v7 { display: flex; flex-direction: column }
 .lv6 .problem-block--v7 { padding: 18px 0; border-top: 1px solid var(--border) }
 .lv6 .problem-block--v7:first-child { padding-top: 0; border-top: none }
-.lv6 .problem-block--v7 strong { display: block; font-family: var(--display); font-size: 17.5px; font-weight: 700; color: var(--ink); margin-bottom: 7px; line-height: 1.3 }
+.lv6 .problem-block--v7 strong { display: block; font-family: var(--display); font-size: 17.5px; font-weight: 700; color: var(--ink); margin-bottom: 7px; line-height: 1.3; text-wrap: balance }
 .lv6 .problem-block--v7 p { font-size: 15px; color: var(--ink-2); line-height: 1.55; margin: 0 }
 .lv6 .problem-conclusion--v7 { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); font-family: var(--display); font-size: 17.5px; color: var(--ink) }
 .lv6 .scene--v7 { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 5 / 4; height: auto }
@@ -435,6 +618,19 @@
 }
 .lv6 .compare--v7 { gap: 28px }
 .lv6 .cmp--v7 { border-radius: 26px; border: none; padding: 32px 28px 28px; box-shadow: 0 24px 56px -28px rgba(23,40,70,.22) }
+/* Survol desktop uniquement (souris précise) — .reveal--v7 est posée sur
+   le conteneur .compare parent, pas sur .cmp--v7 lui-même (vérifié :
+   aucun conflit de transform/transition, le reveal repasse à
+   transform:none dès qu'il est révélé, bien avant qu'un survol soit
+   possible). Pas de curseur pointeur, les cartes ne sont pas cliquables. */
+@media (hover: hover) and (pointer: fine) {
+  .lv6 .cmp--v7 { transition: transform .22s ease, box-shadow .22s ease }
+  .lv6 .cmp--v7:hover { transform: translateY(-6px); box-shadow: 0 32px 68px -26px rgba(23,40,70,.32) }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .cmp--v7 { transition: none }
+  .lv6 .cmp--v7:hover { transform: none }
+}
 .lv6 .cmp--v7.cmp-bad  { background: rgba(255,241,242,.82) }
 .lv6 .cmp--v7.cmp-good { background: rgba(230,251,242,.82) }
 /* Texte de liste agrandi (2026-10-11, mini-visuel retiré) : 14,5px ->
@@ -528,28 +724,433 @@
   .lv6 .scene-bubble .sb-av { width: 21px; height: 21px; font-size: 9px }
 }
 
-/* ── Apparitions animées au scroll, propres à cette route (2026-10-11) —
-   écart n°8. .reveal--v7 n'est JAMAIS caché par défaut : seul le sélecteur
-   #top.js-ready (posé par le script inline dans page.tsx, voir ce fichier)
-   active le masquage initial. Sans JavaScript, ou si le script échoue
-   avant de s'exécuter, #top ne porte jamais .js-ready => le contenu reste
-   visible en permanence, jamais cette page ne dépend du JS pour être
-   lisible. RevealV7Init.tsx (IntersectionObserver, seuil 0.1, unobserve
-   après déclenchement) ajoute .visible une fois l'élément dans le
-   viewport ; si IntersectionObserver n'existe pas, il ajoute .visible à
-   tout de suite à tous les éléments concernés (voir ce composant). ── */
+/* ── Apparitions animées au scroll, propres à cette route (2026-10-13,
+   revu — écart n°8) : .reveal--v7 est TOUJOURS visible par défaut, plus
+   jamais conditionné à #top.js-ready. Seul RevealV7Init.tsx peut ajouter
+   .reveal-pending, et seulement aux éléments déjà sous la ligne de
+   flottaison au moment où ce code tourne — ce qui est déjà à l'écran au
+   chargement n'est jamais caché, même un instant. Sans JavaScript, ou si
+   le script échoue avant de s'exécuter, .reveal-pending n'est jamais
+   posée : contenu visible en permanence, aucune dépendance au JS pour
+   être lisible, à aucun moment, même brièvement. ── */
 .lv6 .reveal--v7 { opacity: 1 }
-/* #top porte déjà .lv6 sur ce même élément (pas un ancêtre séparé) — le
-   sélecteur descendant correct est #top.js-ready .reveal--v7, jamais
-   "#top.js-ready .lv6 ...", qui ne matcherait jamais rien (bug détecté et
-   corrigé le 2026-10-11 : testé avec JS activé, l'ancienne règle ne
-   s'appliquait jamais, confirmé via getComputedStyle). */
-#top.js-ready .reveal--v7 {
+.lv6 .reveal--v7.reveal-pending {
   opacity: 0;
   transform: translateY(16px);
   transition: opacity .3s ease, transform .3s ease;
 }
-#top.js-ready .reveal--v7.visible { opacity: 1; transform: none }
+.lv6 .reveal--v7.reveal-pending.visible { opacity: 1; transform: none }
 @media (prefers-reduced-motion: reduce) {
-  #top.js-ready .reveal--v7 { opacity: 1; transform: none; transition: none }
+  .lv6 .reveal--v7.reveal-pending { opacity: 1; transform: none; transition: none }
+}
+
+/* ── Entrée du hero — CSS pur, aucune dépendance JS (2026-10-13). L'état
+   de repos (prefers-reduced-motion:reduce, ou si ce bloc ne charge
+   jamais) est opacity:1 implicite : rien n'est caché hors de ce bloc. ── */
+@media (prefers-reduced-motion: no-preference) {
+  .lv6 .hero-badge-v7,
+  .lv6 .hero-v7-h1,
+  .lv6 .hero-v7-sub,
+  .lv6 .hero-ctas,
+  .lv6 .objections,
+  .lv6 .hero-stage {
+    animation: heroEnter .7s cubic-bezier(.16,1,.3,1) backwards;
+  }
+  .lv6 .hero-badge-v7 { animation-delay: 0s }
+  .lv6 .hero-v7-h1    { animation-delay: .08s }
+  .lv6 .hero-v7-sub   { animation-delay: .16s }
+  .lv6 .hero-ctas     { animation-delay: .24s }
+  .lv6 .objections    { animation-delay: .3s }
+  .lv6 .hero-stage    { animation-delay: .15s }
+}
+
+@keyframes heroEnter {
+  from { opacity: 0; transform: translateY(14px) }
+  to   { opacity: 1; transform: none }
+}
+
+/* ── Onglets Aujourd'hui/Semaine/Mois de la carte de ventes (2026-10-12) —
+   reprend RevenueCard.tsx (PERIODS), statique (un seul état actif,
+   aucune interaction dans ce mockup). ── */
+.lv6 .db-sales-tabs { display: flex; gap: 5px; margin-bottom: 8px }
+.lv6 .db-sales-tab { font-size: 9px; font-weight: 600; color: rgba(255,255,255,.75); background: rgba(255,255,255,.14); border-radius: 999px; padding: 3px 9px }
+.lv6 .db-sales-tab.on { color: var(--blue-2, #176bff); background: #fff }
+
+/* ── Bloc "Commandes en cours" du mockup tableau de bord (2026-10-12) —
+   remplit le vide sous .db-two, même langage visuel que .db-mini (cartes
+   blanches, coins arrondis, bordure fine, mêmes tailles de police).
+   Pastilles/badges calqués sur les vraies couleurs de statut (page.tsx:
+   407-441 du vrai tableau de bord, --db-amber/--db-primary/--db-money). ── */
+.lv6 .db-orders-head { font-size: 11px; font-weight: 700; color: #4b5a72; margin: 2px 0 7px }
+.lv6 .db-order-row {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #eaeef5; border-radius: 12px;
+  padding: 8px 10px; margin-bottom: 7px;
+}
+.lv6 .db-order-dot { width: 7px; height: 7px; border-radius: 50%; flex: none }
+.lv6 .db-order-info { flex: 1; min-width: 0 }
+.lv6 .db-order-info b { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--ink, #0b1830); line-height: 1.25 }
+.lv6 .db-order-info b i { font-style: normal; font-family: var(--mono); font-weight: 600; font-size: 8.5px; color: #b7c0cf }
+.lv6 .db-order-info small { display: block; font-size: 9.5px; color: #98a4b8; line-height: 1.2; margin-top: 1px }
+.lv6 .db-order-right { text-align: right; flex: none }
+.lv6 .db-order-right b { display: block; font-size: 11.5px; font-weight: 800; color: var(--ink, #0b1830); line-height: 1.25; margin-bottom: 2px }
+.lv6 .db-order-urgent { font-size: 8.5px; color: #e4972e; font-weight: 600 }
+.lv6 .db-order-badge { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px }
+.lv6 .db-order-badge--confirmed { background: #dbeafe; color: #1e40af }
+.lv6 .db-order-badge--preparing { background: #f3e8ff; color: #6b21a8 }
+
+/* ── "En attente" tronqué sous 900/760px (2026-10-12) — l'icône de coin de
+   .db-mini (landing-v6.css:546, position absolute, jamais modifiée) garde
+   une largeur fixe (22px) quelle que soit la largeur de la carte ; le
+   libellé lui-même ne réservait aucune marge pour l'éviter. Mesuré :
+   sous ces seuils (.phone passe à 300px puis 270px, landing-v6.css:827,
+   843), la carte réduite fait chevaucher "En attente" sur l'icône. Fix
+   additif : marge à droite du libellé, jamais touché .db-mini ni l'icône
+   elle-même. */
+@media (max-width: 900px) {
+  .lv6 .db-mini small { padding-right: 26px }
+}
+
+/* ── Physique ou digital — fond ciel plein, pas de dégradé aux extrémités
+   (2026-10-16, remplace le dégradé du 2026-10-15 qui se fondait dans les
+   sections voisines) : var(--sky) partout, un filet 1px var(--border) en
+   haut et en bas — même couleur de bordure que .card ailleurs dans ce
+   fichier, aucune nouvelle couleur introduite. ── */
+.lv6 .digital-section--v7 {
+  background: var(--sky);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+/* 2 cartes exactement ici (jamais 3, contrairement au défaut partagé
+   .cards-3 repeat(3,1fr)) : reproduit nous-même le même point de rupture
+   que landing-v6.css (760px) pour cette section précise, sans dépendre de
+   l'ordre de cascade avec la règle partagée. */
+.lv6 .digital-section--v7 .cards-3 { grid-template-columns: 1fr 1fr }
+@media (max-width: 760px) {
+  .lv6 .digital-section--v7 .cards-3 { grid-template-columns: 1fr }
+}
+.lv6 .card-detail--v7 { font-size: 13px; color: var(--ink-2); margin-top: 8px; line-height: 1.45 }
+
+/* ── "Ton activité dans ta poche" — 4 cartes 2×2 sous le paragraphe
+   d'intro (2026-10-16). La colonne de droite de .split devient plus
+   haute que le téléphone à gauche : align-items:center (landing-v6.css)
+   centrerait alors le téléphone au milieu de ce bloc plus grand au lieu
+   de l'aligner en haut avec le titre — repéré sur capture avant
+   correction, forcé en start ici uniquement pour cette section. ── */
+.lv6 .split--activity-v7 { align-items: start }
+/* ── Mockup tableau de bord — couleurs alignées sur la vraie page d'accueil
+   du dashboard (2026-10-21) : .db-sales/.db-ia (landing-v6.css, partagées
+   avec / et les pages pays, non modifiées) utilisaient un dégradé cyan
+   clair (#37a6e8→#1f8fdc) et un bouton Assistant IA bleu clair (#2f9fe3)
+   — aucun des deux ne correspond à la vraie page (RevenueCard.tsx:39,
+   bg-[var(--color-primary)], soit #0252EA en dur, src/app/globals.css:6 ;
+   bouton Assistant IA sombre en vrai, pas bleu clair, confirmé sur
+   capture réelle fournie). Overrides scopés .db-sales-v7/.db-ia-v7
+   (nouvelles classes ajoutées au JSX, jamais .db-sales/.db-ia directement
+   pour ne jamais changer le mockup dashboard de / ou des pages pays). */
+.lv6 .db-sales-v7 { background: #0252ea }
+.lv6 .db-sales-v7 .db-sales-tab.on { color: #0252ea }
+.lv6 .db-ia-v7 { background: #0b1220 }
+.lv6 .activity-cards--v7 {
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 28px;
+}
+.lv6 .activity-card--v7 { position: relative; padding-top: 30px; height: 100% }
+.lv6 .activity-card-num--v7 {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--border);
+}
+.lv6 .activity-card--v7 h3 { font-size: 15.5px; margin: 2px 0 6px }
+.lv6 .activity-card--v7 p  { font-size: 13px; line-height: 1.5; color: var(--ink-2); margin: 0 }
+.lv6 .activity-card--v7 .card-ico { width: 38px; height: 38px; margin-bottom: 10px }
+@media (max-width: 760px) {
+  .lv6 .activity-cards--v7 { grid-template-columns: 1fr }
+}
+.lv6 .card--featured-v7 {
+  position: relative;
+  border-color: var(--blue, #1d5ce6);
+  box-shadow: 0 8px 24px rgba(29,92,230,.12);
+}
+.lv6 .card-badge--v7 {
+  position: absolute;
+  top: -11px;
+  left: 20px;
+  background: var(--amber, #ffb020);
+  color: var(--navy, #0b1830);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+/* margin: 0 auto, pas seulement margin-bottom (2026-10-17) : un SVG a une
+   largeur explicite (96px) mais reste display:block — text-align:center
+   du conteneur ne centre pas une boîte de type bloc, seulement du texte/
+   inline, d'où l'alignement à gauche repéré sur la capture précédente. */
+.lv6 .card-illustration--v7 { display: block; margin: 0 auto 14px }
+
+/* ── Cartes boutiques vitrine (RealShopsShowcaseV7, 2026-10-17) — image de
+   couverture + logo + nom + catégorie + lien. 3 colonnes desktop ;
+   défilement horizontal propre sur mobile (scroll-snap), pas de JS. ── */
+.lv6 .shops-grid--v7 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 36px;
+}
+.lv6 .shop-card--v7 {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: transform .25s ease, box-shadow .25s ease;
+  position: relative;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lv6 .shop-card--v7:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(11,24,48,.1) }
+}
+.lv6 .shop-card-cover--v7 {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--sky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lv6 .shop-card-cover-logo--v7 { border-radius: 14px; object-fit: cover }
+.lv6 .shop-card-body--v7 { display: flex; align-items: center; gap: 12px; padding: 16px 18px 10px }
+.lv6 .shop-card-logo--v7 {
+  flex: none; width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+  display: grid; place-items: center; background: var(--blue-3); font-size: 13px; font-weight: 700; color: var(--blue);
+}
+.lv6 .shop-card-body--v7 b { display: block; font-size: 15px; color: var(--ink) }
+.lv6 .shop-card-body--v7 small { display: block; font-size: 12.5px; color: var(--ink-2); margin-top: 1px }
+.lv6 .shop-card-visit--v7 { display: block; padding: 2px 18px 16px; font-size: 13px; font-weight: 700; color: var(--blue) }
+/* line-clamp 2 natif — jamais affichée si vide ou si isDescriptionSafe()
+   l'a écartée (e-mail/téléphone/URL) côté composant, jamais ici. Le
+   padding est sur le wrapper, jamais sur l'élément clampé lui-même : testé
+   avec le padding directement sur .shop-card-desc--v7, le clamp laissait
+   passer une 3e ligne entière dans la zone de padding-bottom (repéré sur
+   la carte Ibuka Ndjoli, vraie description de 4 lignes) — isoler le
+   padding dans un wrapper neutre supprime l'ambiguïté. */
+.lv6 .shop-card-desc-wrap--v7 { padding: 0 18px 10px }
+.lv6 .shop-card-desc--v7 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .lv6 .shops-grid--v7 {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .lv6 .shop-card--v7 { scroll-snap-align: start }
+}
+
+/* ── Défilement infini (6+ boutiques), CSS pur — liste dupliquée +
+   translate, pas de JS (2026-10-18). ── */
+.lv6 .shops-marquee-wrap--v7 { margin-top: 36px; overflow: hidden }
+.lv6 .shops-marquee-track--v7 {
+  display: flex;
+  width: max-content;
+  animation: shopsMarqueeV7 45s linear infinite;
+}
+.lv6 .shops-marquee-set--v7 { display: flex; gap: 20px; padding-right: 20px }
+.lv6 .shops-marquee-track--v7 .shop-card--v7 { width: 300px; flex: none }
+@keyframes shopsMarqueeV7 {
+  from { transform: translateX(0) }
+  to   { transform: translateX(-50%) }
+}
+/* Pause au survol/focus — :focus-within sur le wrap, pas juste la track,
+   pour capter le focus clavier d'un lien à l'intérieur. Bug trouvé en
+   vérifiant avant de livrer (pas supposé) : cette règle ne visait que
+   l'ancien wrapper centré .shops-marquee-wrap--v7 — le composant de
+   production utilise maintenant .shops-marquee-fullbleed-wrap--v7, qui
+   n'aurait jamais déclenché la pause sans cet ajout. */
+.lv6 .shops-marquee-wrap--v7:hover .shops-marquee-track--v7,
+.lv6 .shops-marquee-wrap--v7:focus-within .shops-marquee-track--v7,
+.lv6 .shops-marquee-fullbleed-wrap--v7:hover .shops-marquee-track--v7,
+.lv6 .shops-marquee-fullbleed-wrap--v7:focus-within .shops-marquee-track--v7 {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv6 .shops-marquee-track--v7 { animation: none; width: auto }
+  .lv6 .shops-marquee-wrap--v7 { overflow-x: auto; scroll-snap-type: x mandatory }
+  .lv6 .shops-marquee-track--v7 .shop-card--v7 { scroll-snap-align: start }
+  .lv6 .shops-marquee-dup--v7 { display: none }
+}
+@media (max-width: 900px) {
+  /* Mobile : carrousel tactile manuel, jamais d'animation automatique, la
+     copie dupliquée pour la boucle desktop n'existe pas ici. */
+  .lv6 .shops-marquee-track--v7 { animation: none !important; width: auto }
+  .lv6 .shops-marquee-wrap--v7 {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .lv6 .shops-marquee-track--v7 .shop-card--v7 { width: 78vw; scroll-snap-align: start }
+  .lv6 .shops-marquee-dup--v7 { display: none }
+}
+
+/* ── Citation fondateur seule (2026-10-20) — classes neuves, jamais
+   .founder/.founder-card/.founder-ava (landing-v6.css, partagées avec /
+   et les pages pays, non touchées). Pas de guillemets décoratifs lourds :
+   les « » du texte suffisent, aucune icône de citation surdimensionnée en
+   fond. Fond var(--sky) + filets haut/bas (2026-10-21) : même traitement
+   que .digital-section--v7, pour une transition cohérente entre les deux
+   seules sections de la page à sortir du fond blanc par défaut. ── */
+.lv6 .founder-quote-sec--v7 {
+  background: var(--sky);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.lv6 .founder-quote-section--v7 { max-width: 760px }
+.lv6 .founder-quote--v7 {
+  font-family: var(--display);
+  /* Agrandi le 2026-10-21 (demande explicite "texte plus grand sur
+     desktop") — mesuré à nouveau après coup : toujours 3 lignes à 1024 et
+     1280px, pas 2 ni 4 (voir rapport). */
+  font-size: clamp(23px, 2.8vw, 32px);
+  line-height: 1.46;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -.01em;
+  margin: 28px 0 32px;
+}
+.lv6 .founder-quote-attribution--v7 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.lv6 .founder-quote-photo--v7 {
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: 50% 30%;
+  width: 88px;
+  height: 88px;
+  box-shadow: var(--shadow-sm);
+}
+.lv6 .founder-quote-attribution--v7 p { font-size: 14px; color: var(--ink-2); max-width: 420px; line-height: 1.5 }
+.lv6 .founder-quote-sub--v7 { color: var(--muted); font-size: 13px }
+@media (max-width: 480px) {
+  .lv6 .founder-quote-photo--v7 { width: 72px; height: 72px }
+}
+
+/* ── Tarifs (PricingHome.tsx), scopé via .pricing-home--v7 — jamais la
+   règle partagée .price/.plan (landing-v6.css), utilisée telle quelle par
+   PricingV6.tsx sur / et les pages pays. ── */
+
+/* Bug trouvé sur capture : "4 900" passait sur deux lignes malgré
+   l'espace insécable de toLocaleString('fr-FR') — pas fiable dans tous
+   les moteurs de rendu à cette taille de police. white-space:nowrap
+   explicite sur le prix et son conteneur direct. */
+.lv6 .pricing-home--v7 .price { white-space: nowrap; flex-wrap: nowrap; align-items: baseline }
+.lv6 .pricing-home--v7 .price em { white-space: nowrap }
+
+/* Hauteurs égales par rangée (2026-10-20) — align-items:stretch plutôt que
+   start (qui produisait des hauteurs très inégales entre Business/Pro/
+   Marques). Chaque carte devient une colonne flex ; la liste de
+   fonctionnalités absorbe l'espace restant (flex:1), ce qui pousse
+   naturellement le bouton (s'il existe) vers le bas de la carte — jamais
+   un bouton "flottant" à mi-hauteur sur la carte la plus courte. La mise
+   en avant de Business (bordure bleue, ombre, badge) vient de
+   .plan.best, déjà dans landing-v6.css — intacte, pas de changement ici. */
+/* Titre tarifs forcé sur 2 lignes sur desktop (2026-10-21) — le wrap
+   naturel (mesuré : ligne 1 jusqu'à 814px dans un conteneur de 820px,
+   soit 6px de marge) était trop fragile pour tenir de façon fiable selon
+   le rendu de police du navigateur/OS (c'est ce qui cassait sur une
+   autre machine, cf. rapport). <br> explicite + nowrap par ligne, plus
+   fiable qu'un wrap naturel à la limite du débordement. display:none
+   sous 760px (mobile) : retour au wrap libre comme demandé. */
+.lv6 .pricing-title-line--v7 { white-space: nowrap }
+.lv6 .pricing-title-break--v7 { display: block }
+@media (max-width: 760px) {
+  .lv6 .pricing-title-break--v7 { display: none }
+  .lv6 .pricing-title-line--v7 { white-space: normal }
+}
+.lv6 .pricing-home--v7 .plans { align-items: stretch }
+.lv6 .pricing-home--v7 .plan { display: flex; flex-direction: column }
+/* flex:1 absorbe l'espace vertical restant (nécessaire pour pousser le
+   bouton en bas), mais .plan ul est display:grid (landing-v6.css) dont le
+   align-content par défaut est "stretch" : sur la carte Marques (4 lignes
+   seulement, moins que Business/Pro), ça étirait les 4 lignes sur toute
+   la hauteur disponible au lieu de les regrouper en haut — confirmé par
+   mesure (ulHeight:340px pour 4 <li> contre 302px pour 8 <li> sur
+   Business). align-content:start regroupe les lignes en haut, flex:1
+   continue d'absorber l'espace restant (pour le bouton) mais sans
+   étirer les lignes entre elles. */
+.lv6 .pricing-home--v7 .plan ul { flex: 1; align-content: start }
+
+/* Bouton désactivé carte Marques (2026-10-21) — même forme que .btn-
+   secondary/.btn-full des autres cartes (cohérence visuelle), mais
+   visuellement éteint : opacité réduite, pas de survol (.btn-secondary
+   a un :hover avec transform + border-color dans landing-v6.css, annulé
+   ici), curseur par défaut du navigateur sur un <button disabled>
+   (jamais "pointer"). Pas de lien, pas de onClick — déjà garanti par
+   l'attribut disabled natif sur un <button>, pas un <Link>/<a>. */
+.lv6 .pricing-home--v7 .plan-btn-disabled--v7 {
+  opacity: .5;
+  cursor: default;
+}
+.lv6 .pricing-home--v7 .plan-btn-disabled--v7:hover {
+  transform: none;
+  border-color: inherit;
+}
+
+/* ── Ruban plein écran, validé en prévisualisation le 2026-10-21, passé
+   en production (RealShopsShowcaseV7.tsx) — remplace le wrapper centré
+   .shops-marquee-wrap--v7 pour la liste de 10 boutiques. Sort du
+   conteneur centré jusqu'au bord du viewport (50vw/-50vw), quelle que
+   soit la profondeur d'imbrication. ── */
+.lv6 .shops-marquee-fullbleed-wrap--v7 {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+  overflow: hidden;
+  padding: 8px 0;
+}
+/* overflow:hidden seul bloque tout défilement tactile sur mobile (vérifié
+   en prévisualisation : scrollWidth 3242px dans un clientWidth de 390px,
+   aucun moyen d'atteindre le reste des cartes) — overflow-x:auto sous
+   900px, comme pour .shops-marquee-wrap--v7, répété ici car ce wrapper
+   plein écran est une classe distincte. */
+@media (max-width: 900px) {
+  .lv6 .shops-marquee-fullbleed-wrap--v7 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

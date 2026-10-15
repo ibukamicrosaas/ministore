@@ -8,9 +8,15 @@ import { useEffect, useRef, useState } from 'react'
 // canaux) — aucune lecture automatique, le son ne peut donc jamais se
 // déclencher sans un geste explicite du visiteur.
 // `preload="none"` : rien n'est téléchargé tant que le visiteur ne clique
-// pas play (poster JPEG affiché à la place, candidat B retenu — 48 Ko,
-// écran "Réponds à 5 questions. Ta boutique sera prête.", l'ancien
-// poster reste dans public/landing-v7/, non supprimé).
+// pas play (poster WebP affiché à la place).
+// 2026-10-15 : vidéo recompressée en video-tekki-opt.mp4 (H.264/AAC, CRF24,
+// preset slow, +faststart, 1080x1920 inchangé, 8,09 Mo vs 15,57 Mo pour
+// l'original — aucune différence visible constatée en zoom serré sur le
+// texte fin et la photo du mockup) et poster par cover-tekki.webp (généré
+// depuis cover-tekki.png fourni, 196 Ko vs 465 Ko en PNG, mêmes dimensions).
+// video-tekki.mp4 (original), video-tekki-720.mp4 (variante basse résolution
+// écartée) et les anciens fichiers (video-mobile.mp4, video-mobile-poster-b.jpg)
+// restent dans public/landing-v7/, non supprimés, mais ne sont pas commités.
 //
 // Bouton de lecture central : composant client, propre à cette route
 // (jamais landing-v6.css/LandingV6Init.tsx, partagés). Masqué par défaut
@@ -45,11 +51,11 @@ export function VideoPoster() {
         controls
         playsInline
         preload="none"
-        poster="/landing-v7/video-mobile-poster-b.jpg"
+        poster="/landing-v7/cover-tekki.webp"
         width={1080}
         height={1920}
       >
-        <source src="/landing-v7/video-mobile.mp4" type="video/mp4" />
+        <source src="/landing-v7/video-tekki-opt.mp4" type="video/mp4" />
       </video>
       {showButton && (
         <button

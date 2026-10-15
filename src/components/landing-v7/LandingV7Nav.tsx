@@ -7,6 +7,26 @@ import Image from 'next/image'
 // Header propre à /preview/landing-v7 (Lot 2 — direction "socle visuel").
 // LandingNav.tsx (landing-v6, partagé avec / et les pages pays) n'est pas
 // modifié — même contenu/liens, nouvelle présentation uniquement.
+
+// Déplace le focus clavier vers la section ciblée après le saut d'ancre
+// (2026-10-24). Ne fait PAS preventDefault() : le saut natif du navigateur
+// (scroll + mise à jour de l'URL) reste intact et fonctionne sans aucun
+// JavaScript — ce handler ne fait qu'ajouter, en plus, un .focus()
+// déterministe sur la cible (tabIndex={-1} posé sur les 4 sections, voir
+// page.tsx/PricingHome.tsx/FAQHome.tsx), plutôt que de compter sur le
+// comportement natif de focus au changement de fragment, qui varie selon
+// les navigateurs. preventScroll:true : le scroll est déjà géré par le
+// saut natif + scroll-behavior:smooth (landing-v7.css), focus() ne doit
+// pas en déclencher un second.
+function focusAnchorTarget(e: React.MouseEvent<HTMLAnchorElement>) {
+  const href = e.currentTarget.getAttribute('href') ?? ''
+  if (!href.startsWith('#')) return
+  const id = href.slice(1)
+  window.setTimeout(() => {
+    document.getElementById(id)?.focus({ preventScroll: true })
+  }, 50)
+}
+
 export function LandingV7Nav() {
   const [open, setOpen] = useState(false)
   const toggleRef = useRef<HTMLButtonElement>(null)
@@ -35,10 +55,10 @@ export function LandingV7Nav() {
           </Link>
 
           <div className="nav-v7-links">
-            <a href="#probleme">Pourquoi TEKKIShop</a>
-            <a href="#comment">Comment ça marche</a>
-            <a href="#tarifs">Tarifs</a>
-            <a href="#faq">FAQ</a>
+            <a href="#probleme" onClick={focusAnchorTarget}>Pourquoi TEKKIShop</a>
+            <a href="#comment" onClick={focusAnchorTarget}>Comment ça marche</a>
+            <a href="#tarifs" onClick={focusAnchorTarget}>Tarifs</a>
+            <a href="#faq" onClick={focusAnchorTarget}>FAQ</a>
           </div>
 
           <div className="nav-v7-actions">
@@ -68,10 +88,10 @@ export function LandingV7Nav() {
       {open && (
         <div className="container">
           <div className="nav-v7-mobile">
-            <a href="#probleme" onClick={() => setOpen(false)}>Pourquoi TEKKIShop</a>
-            <a href="#comment" onClick={() => setOpen(false)}>Comment ça marche</a>
-            <a href="#tarifs" onClick={() => setOpen(false)}>Tarifs</a>
-            <a href="#faq" onClick={() => setOpen(false)}>FAQ</a>
+            <a href="#probleme" onClick={(e) => { focusAnchorTarget(e); setOpen(false) }}>Pourquoi TEKKIShop</a>
+            <a href="#comment" onClick={(e) => { focusAnchorTarget(e); setOpen(false) }}>Comment ça marche</a>
+            <a href="#tarifs" onClick={(e) => { focusAnchorTarget(e); setOpen(false) }}>Tarifs</a>
+            <a href="#faq" onClick={(e) => { focusAnchorTarget(e); setOpen(false) }}>FAQ</a>
             <Link href="/login" onClick={() => setOpen(false)}>Connexion</Link>
             <Link href="/start" className="btn btn-primary btn-full" onClick={() => setOpen(false)}>
               Créer ma boutique

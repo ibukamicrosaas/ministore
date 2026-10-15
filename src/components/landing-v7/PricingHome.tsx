@@ -49,7 +49,7 @@ function buildPlans(commissionLabel: string) {
         { label: 'Image de couverture boutique', locked: true },
         { label: 'Domaine personnalisé (.com)', locked: true },
       ] as PlanFeature[],
-      cta: { label: 'Choisir Business', href: '/start?plan=business', primary: true },
+      cta: { label: 'Commencer gratuitement', href: '/start?plan=business', primary: true },
       best: true,
     },
     {
@@ -62,15 +62,15 @@ function buildPlans(commissionLabel: string) {
       headLine: 'Pour les boutiques qui grandissent',
       features: [
         { label: 'Tout ce qu\'offre Business' },
-        { label: 'Assistant IA illimité pour ta boutique' },
+        { label: 'Assistant IA (200 messages/jour)' },
         { label: 'Domaine personnalisé (tonsite.com)' },
         { label: 'Image de couverture boutique' },
         { label: 'Marque TEKKIShop masquée — ta boutique, ta marque' },
         { label: 'Export CSV de tes commandes' },
         { label: 'Carte bancaire (via Stripe, à connecter)' },
-        { label: 'Support prioritaire par WhatsApp' },
+        { label: 'Support par WhatsApp' },
       ] as PlanFeature[],
-      cta: { label: 'Choisir Pro', href: '/start?plan=pro', primary: false },
+      cta: { label: 'Commencer gratuitement', href: '/start?plan=pro', primary: false },
     },
   ]
 }
@@ -95,11 +95,15 @@ export function PricingHome() {
   const PLANS = buildPlans(commissionLabel)
 
   return (
-    <section className="section" id="tarifs">
+    <section className="section pricing-home--v7" id="tarifs" tabIndex={-1}>
       <div className="container">
         <div className="section-head center reveal">
           <span className="label">Des prix accessibles</span>
-          <h2>Vends dès aujourd&rsquo;hui. <span className="grad">Paie après avoir vendu.</span></h2>
+          <h2>
+            <span className="pricing-title-line--v7">Vends dès aujourd&rsquo;hui.</span>
+            <br className="pricing-title-break--v7" />{' '}
+            <span className="grad pricing-title-line--v7">Paie après avoir vendu.</span>
+          </h2>
           <p className="lead">Ta boutique est en ligne dès ton premier produit publié, et tes 3 premières commandes sont offertes. Tu choisis un plan seulement quand tu veux continuer à en recevoir.</p>
         </div>
 
@@ -112,7 +116,11 @@ export function PricingHome() {
           </div>
         </div>
 
-        <div className="plans reveal" style={{ maxWidth: 780, margin: '46px auto 0' }}>
+        {/* Pas de maxWidth inline ici (cause du rétrécissement des cartes à
+            ~264px vs 365px dans tekkishop-landing-mockup.html, mesuré le
+            2026-10-21) — .plans hérite de .container (1180px, partagé),
+            comme le mockup, ce qui donne ~380px/carte à 1280px. */}
+        <div className="plans reveal">
           {PLANS.map((plan) => (
             <article key={plan.name} className={`plan${plan.best ? ' best' : ''}`}>
               {plan.badge && <div className="plan-badge">{plan.badge}</div>}
@@ -135,28 +143,32 @@ export function PricingHome() {
               <Link href={plan.cta.href} className={`btn ${plan.cta.primary ? 'btn-primary' : 'btn-secondary'} btn-full`}>
                 {plan.cta.label}
               </Link>
-              <p className="plan-pay-note">Paiement par mobile money ou CB</p>
+              <p className="plan-pay-note">14 jours d&rsquo;essai, puis tu choisis ton plan</p>
             </article>
           ))}
 
           {/* Plan Marques — affichage seul, "Bientôt", aucun formulaire (la
               liste d'attente attend sa propre migration, validée séparément) */}
+          {/* "Être prévenu" retiré (2026-10-20) : le bouton était `disabled`,
+              sans href ni onClick — aucun fonctionnement réel, ne menait
+              nulle part. Pas de bouton tant qu'il n'y a rien derrière. */}
           <article className="plan soon">
             <div className="plan-badge" style={{ background: 'var(--ink)', color: '#fff' }}>Bientôt</div>
             <div className="plan-name">Marques</div>
-            <p className="plan-desc">Pour les marques établies qui veulent un site complet.</p>
+            <p className="plan-desc">Pour les marques établies qui veulent aller plus loin : vendeuse IA qui répond à tes clients, pages et sections personnalisables.</p>
             <div className="price"><em>14 900</em><span>FCFA / mois</span></div>
             <p className="price-note">Disponible prochainement.</p>
             <ul>
               <li className="head">Pour les marques qui veulent aller plus loin</li>
               <li>{CHECK}Tout ce qu&rsquo;offre Pro</li>
               <li>{CHECK}Pages supplémentaires et pages collections</li>
-              <li>{CHECK}Vendeur IA qui répond à tes clients</li>
+              <li>{CHECK}Vendeuse IA qui répond à tes clients</li>
+              <li>{CHECK}Assistant IA illimité</li>
+              <li>{CHECK}Description de tes produits générée par l&rsquo;IA, à partir du titre et de l&rsquo;image</li>
             </ul>
-            <button type="button" className="btn btn-secondary btn-full" disabled style={{ opacity: .6, cursor: 'not-allowed' }}>
-              Être prévenu — bientôt
+            <button type="button" disabled aria-disabled="true" className="btn btn-secondary btn-full plan-btn-disabled--v7">
+              Bientôt disponible
             </button>
-            <p className="plan-pay-note">Liste d&rsquo;attente à venir</p>
           </article>
         </div>
 

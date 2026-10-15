@@ -1,21 +1,21 @@
 'use client'
 import { useState } from 'react'
 
-const LICENCE_COST = 1_200_000
+import { LICENSE_PRICE_FCFA, formatNumberFr } from './prices'
 
 const PLANS = [
-  { label: 'Découverte', price: 2_900 },
   { label: 'Business', price: 4_900 },
   { label: 'Pro', price: 9_900 },
 ]
 
 function fmt(n: number): string {
-  return Math.round(n).toLocaleString('fr-FR')
+  return formatNumberFr(Math.round(n))
 }
 
 export function LicenceSimulator() {
   const [shops, setShops] = useState(60)
-  const [planIdx, setPlanIdx] = useState(1)
+  const [planIdx, setPlanIdx] = useState(0)
+  const LICENCE_COST = LICENSE_PRICE_FCFA
 
   const price = PLANS[planIdx].price
   const monthly = shops * price
@@ -90,7 +90,7 @@ export function LicenceSimulator() {
         <div className="lic-sim-row lic-sim-hi">
           <div>
             <span className="lic-sim-rlabel">Licence remboursée au</span>
-            <small>Mois où le cumul dépasse les 1 200 000 F investis</small>
+            <small>Mois où le cumul dépasse les {fmt(LICENCE_COST)} F investis</small>
           </div>
           <b>{breakMonth ? `Mois ${breakMonth}` : 'Au-delà de 12 mois'}</b>
         </div>
@@ -103,12 +103,13 @@ export function LicenceSimulator() {
             {net >= 0 ? '+' : '−'}{fmt(Math.abs(net))}&nbsp;F
           </b>
         </div>
+        <p className="lic-sim-hint">Revenus avant frais d&apos;encaissement et de retrait.</p>
         <p className="lic-sim-legal">
-          Cette simulation est une projection arithmétique, pas une promesse. Dukka ne garantit aucun
+          Cette simulation est une projection arithmétique, pas une promesse. TEKKIShop ne garantit aucun
           niveau de chiffre d&apos;affaires ni de rentabilité&nbsp;: vos résultats dépendront de vos
           efforts commerciaux. Les montants indiqués sont bruts et n&apos;intègrent pas vos charges
           d&apos;exploitation (publicité, frais de paiement, communication, temps passé).
-          {' '}Le calcul retient un coût de licence de 1&nbsp;200&nbsp;000 FCFA, montant plancher&nbsp;: le vôtre peut être supérieur selon votre marché.
+          {' '}Le calcul retient le prix de la licence ({fmt(LICENCE_COST)} FCFA).
         </p>
       </div>
     </div>

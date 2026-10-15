@@ -28,18 +28,22 @@ export function MaisonAwaMockup() {
             <span className="st-tt">TikTok</span>
           </div>
           <button className="st-order" type="button" tabIndex={-1}>Commander</button>
-          {/* "Produits d'exemple" ajouté le 2026-10-09 : les prix (18 500 F,
-              24 000 F) n'étaient affichés nulle part comme des exemples —
-              seul le code savait que la boutique elle-même est fictive. */}
+          {/* "Produits d'exemple" ajouté le 2026-10-09 : les prix n'étaient
+              affichés nulle part comme des exemples — seul le code savait
+              que la boutique elle-même est fictive. Catalogue aligné le
+              2026-10-12 sur la vraie boutique tekki.shop/maison-awa
+              (capture directe) : Robe Adjoa "à partir de" (prix variable
+              réel), Pagne WAX Hollantex à la place d'"Ensemble Kita" (nom
+              qui n'existe nulle part sur la vraie boutique). */}
           <div className="st-sec">Produits d&rsquo;exemple</div>
           <div className="st-favs">
             <div className="st-fav">
               <i style={{ background: 'repeating-radial-gradient(circle at 30% 40%,#c2410c 0 6px,#fbbf24 6px 12px,#1e3a8a 12px 18px)' }} />
-              <div><b>Robe Adjoa</b><span>18 500 FCFA</span></div>
+              <div><b>Robe Adjoa</b><span>À partir de 45 000 FCFA</span></div>
             </div>
             <div className="st-fav">
               <i style={{ background: 'repeating-linear-gradient(135deg,#065f46 0 9px,#fbbf24 9px 14px,#7c2d12 14px 23px)' }} />
-              <div><b>Ensemble Kita</b><span>24 000 FCFA</span></div>
+              <div><b>Pagne WAX Hollantex</b><span>14 000 FCFA</span></div>
             </div>
           </div>
         </div>

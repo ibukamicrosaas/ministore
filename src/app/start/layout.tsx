@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Crée ta boutique en 60 secondes — TEKKIShop',
+  title: 'Crée ta boutique en ligne — TEKKIShop',
   description: 'Réponds à 5 questions et ta boutique en ligne est prête. Gratuit, depuis ton téléphone.',
 }
 

@@ -94,7 +94,7 @@ export function LoginForm() {
         {/* Numéro de téléphone avec sélecteur de pays */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Numéro WhatsApp
+            Numéro de téléphone
           </label>
           <div className="flex rounded-xl border border-gray-200 overflow-visible focus-within:border-[var(--color-primary)] focus-within:ring-1 focus-within:ring-[var(--color-primary)] transition-all">
             {/* Sélecteur pays */}
