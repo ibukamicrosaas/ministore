@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { APP_NAME } from '@/constants'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { APP_URL } from '@/constants'
+import { getPublicOrdersCount } from '@/lib/public-stats'
 import '../landing-v6.css'
 import { LandingNav } from '@/components/landing-v6/LandingNav'
 import { LandingFooter } from '@/components/landing-v6/LandingFooter'
@@ -9,12 +9,40 @@ import { LandingV6Init } from '@/components/landing-v6/LandingV6Init'
 import { JourneyTabs } from './JourneyTabs'
 import { RevenueCalcV6 } from './RevenueCalcV6'
 import { getCommissionRateRangeLabel, MIN_COMMISSION_RATE } from '@/lib/billing/commission'
+import { AFRICA_PLANS } from '@/lib/billing/plans'
 
 const COMMISSION_RANGE = getCommissionRateRangeLabel()
+const BUSINESS_PLAN = AFRICA_PLANS.find(p => p.key === 'business')!
+const PRO_PLAN = AFRICA_PLANS.find(p => p.key === 'pro')!
+
+// Description réutilisée pour meta/og/twitter — variante A validée le
+// 2026-10-16 (153 car., comptée avec Node), centrée sur le problème
+// WhatsApp plutôt que sur "mobile money inclus".
+const PD_DESCRIPTION = "Tu vends déjà ton ebook, ta formation ou tes templates sur WhatsApp ? Crée ta boutique en ligne et laisse tes clients payer et télécharger sans t'écrire."
 
 export const metadata = {
-  title: `Vendre des produits digitaux — Ebooks, guides, templates — ${APP_NAME}`,
-  description: "Vends tes ebooks, guides, templates, formations et autres produits digitaux avec TEKKIShop. Livraison automatique, paiement mobile money inclus.",
+  // title.absolute : le layout racine suffixe tout title en simple chaîne
+  // par " — TekkiShop" (confirmé par rendu réel, Playwright, sur cette
+  // page même : "...templates — TekkiShop — TekkiShop", 80 car.) — avec
+  // absolute, le titre affiché reste exactement les 51 caractères voulus.
+  title: { absolute: 'Vends tes ebooks et formations en ligne, en Afrique' },
+  description: PD_DESCRIPTION,
+  alternates: { canonical: `${APP_URL}/produits-digitaux` },
+  openGraph: {
+    title: 'Vends tes ebooks et formations en ligne, en Afrique',
+    description: PD_DESCRIPTION,
+    url: `${APP_URL}/produits-digitaux`,
+    siteName: 'TEKKIShop',
+    images: [{ url: '/og-tekkishop-2026.jpg', width: 1200, height: 630, alt: 'TEKKIShop : crée ta boutique en ligne et vends autrement, en Afrique', type: 'image/jpeg' }],
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Vends tes ebooks et formations en ligne, en Afrique',
+    description: PD_DESCRIPTION,
+    images: ['/og-tekkishop-2026.jpg'],
+  },
 }
 
 const PAYMENT_LOGOS = [
@@ -48,8 +76,8 @@ const USE_CASES = [
   {
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
     titre: 'Musicien ou producteur',
-    texte: 'Beats, jingles, effets sonores, partitions et fichiers audio.',
-    ex: 'Ex. : beat à 25 000 FCFA',
+    texte: 'Partitions (PDF) et packs de sons (ZIP).',
+    ex: 'Ex. : pack de partitions à 15 000 FCFA',
   },
   {
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>,
@@ -100,28 +128,13 @@ const FEATURES = [
 
 const PLANS = [
   {
-    tag: 'POUR COMMENCER',
-    name: 'Découverte',
-    price: '2 900',
-    desc: 'Pour lancer une première offre digitale et valider ton marché simplement.',
-    features: [
-      "Jusqu'à 10 produits en ligne",
-      'Paiement mobile money et à la livraison',
-      'Vente de produits digitaux',
-      'Commandes et livraison automatique',
-      'Assistant IA (20 messages/jour)',
-      `${COMMISSION_RANGE} sur les paiements en ligne selon ton pays, pour couvrir les frais des opérateurs`,
-    ],
-    cta: { label: 'Commencer avec Découverte', href: '/start?plan=decouverte', primary: false },
-  },
-  {
     tag: 'LE PLUS CHOISI',
     name: 'Business',
-    price: '4 900',
+    price: BUSINESS_PLAN.price,
     desc: 'Pour les créateurs qui veulent vendre régulièrement et développer plusieurs offres.',
     features: [
       'Produits illimités',
-      'Paiement mobile money et à la livraison',
+      'Paiement par mobile money',
       'Tableau de bord avancé',
       'Assistant IA (50 messages/jour)',
     ],
@@ -131,21 +144,21 @@ const PLANS = [
   {
     tag: 'POUR ALLER PLUS LOIN',
     name: 'Pro',
-    price: '9 900',
+    price: PRO_PLAN.price,
     desc: 'Pour les marques et créateurs ayant des besoins plus avancés.',
     features: [
       "Tout ce qu'offre Business",
-      'Assistant IA illimité',
+      'Assistant IA (200 messages/jour)',
       'Domaine personnalisé (tonsite.com)',
-      'Support prioritaire par WhatsApp',
-      'Export Excel des commandes',
+      'Support par WhatsApp',
+      'Export CSV des commandes',
     ],
     cta: { label: 'Choisir Pro', href: '/start?plan=pro', primary: false },
   },
 ]
 
 const FAQS = [
-  { q: 'Quels produits digitaux puis-je vendre ?', a: "Tu peux vendre notamment des ebooks, guides, templates, fichiers audio, ressources de formation, documents, tableaux et packs téléchargeables. Formats acceptés : PDF, EPUB, ZIP, DOCX, XLSX, MP3 et autres." },
+  { q: 'Quels produits digitaux puis-je vendre ?', a: "Tu peux vendre notamment des ebooks, guides, templates, ressources de formation, documents, tableaux et packs téléchargeables. Formats acceptés : PDF, EPUB, ZIP, DOCX, XLSX et autres." },
   { q: "Ai-je besoin d'un ordinateur ?", a: "Non. La création et la gestion de ta boutique sont pensées pour être réalisées depuis ton téléphone." },
   { q: 'Comment mon client reçoit-il son fichier ?', a: "Après validation de son paiement, l'accès au fichier lui est transmis automatiquement, sans intervention manuelle de ta part." },
   { q: 'Puis-je vendre des produits physiques et digitaux ?', a: "Oui. TEKKIShop te permet de réunir des produits physiques et digitaux dans le même environnement." },
@@ -156,12 +169,7 @@ const FAQS = [
 const CHECK_ICO = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
 
 export default async function ProduitsDigitauxPage() {
-  const admin = createAdminClient()
-  const { count: shopCount } = await admin
-    .from('shops')
-    .select('id', { count: 'exact', head: true })
-
-  const shopCountDisplay = shopCount ? shopCount.toLocaleString('fr-FR') : '1 400+'
+  const ordersCount = await getPublicOrdersCount()
 
   return (
     <>
@@ -326,7 +334,7 @@ export default async function ProduitsDigitauxPage() {
         .pd-feature p{color:#667085;font-size:14px;margin:0;line-height:1.55}
 
         /* ── Pricing ───────────────────────────── */
-        .pd-pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px;align-items:stretch}
+        .pd-pricing-grid{display:grid;grid-template-columns:repeat(2,minmax(280px,340px));gap:24px;justify-content:center;margin-top:44px;align-items:stretch}
         .pd-price-card{padding:28px;border:1px solid #e6e9ef;border-radius:26px;background:#fff;display:flex;flex-direction:column}
         .pd-price-card-best{background:#0b1830;color:#fff;border-color:#0b1830;transform:translateY(-8px);box-shadow:0 24px 70px rgba(11,27,53,.22)}
         .pd-price-tag{font-size:11.5px;font-weight:850;color:#7c3aed;margin-bottom:14px;letter-spacing:.05em}
@@ -430,7 +438,7 @@ export default async function ProduitsDigitauxPage() {
                   Transforme ce que tu sais en <span className="pd-accent">revenu.</span>
                 </h1>
                 <p className="pd-lead">
-                  Vends tes ebooks, guides, templates, formations, audios et fichiers depuis ton téléphone.
+                  Vends tes ebooks, guides, templates, formations et fichiers depuis ton téléphone.
                   Tes clients paient avec les moyens disponibles dans leur pays et reçoivent automatiquement leur achat.
                 </p>
                 <div className="pd-actions">
@@ -451,7 +459,7 @@ export default async function ProduitsDigitauxPage() {
                   ))}
                 </div>
                 <div className="pd-hero-chips">
-                  {['PDF', 'EPUB', 'ZIP', 'DOCX', 'XLSX', 'MP3'].map(f => (
+                  {['PDF', 'EPUB', 'ZIP', 'DOCX', 'XLSX'].map(f => (
                     <span key={f} className="pd-chip">{f}</span>
                   ))}
                 </div>
@@ -521,13 +529,19 @@ export default async function ProduitsDigitauxPage() {
         </section>
 
         {/* ── Proof bar ────────────────────────────────────────── */}
+        {/* 1ʳᵉ case masquée si ordersCount est null (jamais de repli
+            chiffré, même règle que getPublicOrdersCount() partout ailleurs)
+            — grille repassée à 3 colonnes dans ce cas pour ne pas laisser
+            de case vide, même motif que /login. */}
         <div className="pd-proofbar">
           <div className="pd-wrap">
-            <div className="pd-proof-grid">
-              <div className="pd-proof-item">
-                <strong>{shopCountDisplay}</strong>
-                <span>boutiques créées</span>
-              </div>
+            <div className="pd-proof-grid" style={ordersCount === null ? { gridTemplateColumns: 'repeat(3,1fr)' } : undefined}>
+              {ordersCount !== null && (
+                <div className="pd-proof-item">
+                  <strong>+{ordersCount.toLocaleString('fr-FR')}</strong>
+                  <span>commandes passées</span>
+                </div>
+              )}
               <div className="pd-proof-item">
                 <strong>6 pays</strong>
                 <span>déjà couverts</span>
@@ -556,10 +570,6 @@ export default async function ProduitsDigitauxPage() {
                 {p.name}
               </span>
             ))}
-            <span className="pd-pay-badge" style={{ color: '#12b76a' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}><polyline points="20 6 9 17 4 12"/></svg>
-              À la livraison
-            </span>
           </div>
         </div>
 
@@ -605,7 +615,7 @@ export default async function ProduitsDigitauxPage() {
                   {[
                     { b: 'Une vraie boutique en quelques minutes', p: "Ajoute ton produit, son prix, sa description et ton fichier." },
                     { b: 'Des paiements adaptés aux marchés locaux', p: "Tes clients paient directement pendant leur commande." },
-                    { b: 'Une livraison instantanée', p: "Après validation du paiement, l'accès au fichier est envoyé automatiquement." },
+                    { b: 'Une livraison automatique', p: "Après validation du paiement, l'accès au fichier est envoyé automatiquement." },
                     { b: 'Une activité qui tourne sans toi', p: "Ta boutique continue de vendre pendant que tu crées, travailles ou dors." },
                   ].map(item => (
                     <div key={item.b} className="pd-panel-row">
@@ -781,7 +791,7 @@ export default async function ProduitsDigitauxPage() {
                   Transparence totale
                 </span>
                 <h2 className="pd-h2 pd-calc-title">Vois combien tu peux gagner, <span style={{ color: '#a982ff' }}>exactement.</span></h2>
-                <p className="pd-calc-lead">La simulation ci-contre utilise le taux le plus bas ({MIN_COMMISSION_RATE}&nbsp;%, la commission réelle dépend de ton pays) et le plan Découverte à 2&nbsp;900&nbsp;FCFA par mois, comme exemple.</p>
+                <p className="pd-calc-lead">La simulation ci-contre utilise le taux le plus bas ({MIN_COMMISSION_RATE}&nbsp;%, la commission réelle dépend de ton pays) et le plan Business à {BUSINESS_PLAN.price}&nbsp;FCFA par mois, comme exemple.</p>
                 <div className="pd-transparent-card">
                   {['Pas de calcul caché', 'Tu fixes librement le prix de ton produit', 'Tu vois ton revenu avant même de publier'].map(t => (
                     <div key={t} className="pd-transparent-item">
@@ -882,12 +892,16 @@ export default async function ProduitsDigitauxPage() {
                   Pourquoi TEKKIShop existe
                 </span>
                 <p className="pd-mission-quote">
-                  &laquo;&nbsp;Vendre en ligne depuis l&apos;Afrique ne devrait pas nécessiter un développeur, un ordinateur ou des connaissances techniques.&nbsp;&raquo;
+                  &laquo;&nbsp;Vendre en ligne depuis l&apos;Afrique ne devrait pas être une galère. Notre mission&nbsp;: simplifier la vente pour les marchands, et l&apos;achat pour les clients.&nbsp;&raquo;
                 </p>
                 <p className="pd-mission-lead">
                   TEKKIShop est construit pour rendre la vente en ligne aussi simple que possible&nbsp;: créer sa boutique, ajouter ses produits, accepter des paiements et commencer à vendre.
                 </p>
-                <p className="pd-mission-credit">Ibuka Ndjoli — Fondateur de TEKKIShop</p>
+                <p className="pd-mission-credit">
+                  Ibuka Ndjoli &ndash; Fondateur de TEKKIShop
+                  <br />
+                  11&nbsp;ans d&apos;expérience en e&#8209;commerce
+                </p>
               </div>
             </div>
           </div>
@@ -932,8 +946,8 @@ export default async function ProduitsDigitauxPage() {
                 Créer ma boutique gratuitement
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </Link>
-              <a href="https://tekki.shop/marcusdawriter" target="_blank" rel="noopener noreferrer" className="pd-btn-ghost">
-                Voir une vraie boutique
+              <a href="https://tekki.shop/ibuka" target="_blank" rel="noopener noreferrer" className="pd-btn-ghost">
+                Voir un exemple de boutique
               </a>
             </div>
             <p className="pd-cta-note">Aucun code · 3 premières commandes offertes · Paie seulement après avoir vendu</p>
