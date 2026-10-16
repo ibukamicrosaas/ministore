@@ -134,7 +134,7 @@ const PLANS = [
     desc: 'Pour les créateurs qui veulent vendre régulièrement et développer plusieurs offres.',
     features: [
       'Produits illimités',
-      'Paiement mobile money et à la livraison',
+      'Paiement par mobile money',
       'Tableau de bord avancé',
       'Assistant IA (50 messages/jour)',
     ],
@@ -334,7 +334,7 @@ export default async function ProduitsDigitauxPage() {
         .pd-feature p{color:#667085;font-size:14px;margin:0;line-height:1.55}
 
         /* ── Pricing ───────────────────────────── */
-        .pd-pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px;align-items:stretch}
+        .pd-pricing-grid{display:grid;grid-template-columns:repeat(2,minmax(280px,340px));gap:24px;justify-content:center;margin-top:44px;align-items:stretch}
         .pd-price-card{padding:28px;border:1px solid #e6e9ef;border-radius:26px;background:#fff;display:flex;flex-direction:column}
         .pd-price-card-best{background:#0b1830;color:#fff;border-color:#0b1830;transform:translateY(-8px);box-shadow:0 24px 70px rgba(11,27,53,.22)}
         .pd-price-tag{font-size:11.5px;font-weight:850;color:#7c3aed;margin-bottom:14px;letter-spacing:.05em}
@@ -570,10 +570,6 @@ export default async function ProduitsDigitauxPage() {
                 {p.name}
               </span>
             ))}
-            <span className="pd-pay-badge" style={{ color: '#12b76a' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}><polyline points="20 6 9 17 4 12"/></svg>
-              À la livraison
-            </span>
           </div>
         </div>
 
@@ -950,8 +946,8 @@ export default async function ProduitsDigitauxPage() {
                 Créer ma boutique gratuitement
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </Link>
-              <a href="https://tekki.shop/mkstore" target="_blank" rel="noopener noreferrer" className="pd-btn-ghost">
-                Voir une vraie boutique
+              <a href="https://tekki.shop/ibuka" target="_blank" rel="noopener noreferrer" className="pd-btn-ghost">
+                Voir un exemple de boutique
               </a>
             </div>
             <p className="pd-cta-note">Aucun code · 3 premières commandes offertes · Paie seulement après avoir vendu</p>
