@@ -3,21 +3,27 @@ import Image from 'next/image'
 import { CheckCircle2 } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { APP_NAME } from '@/constants'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getPublicOrdersCount } from '@/lib/public-stats'
 
-// Rendu dynamique (pas de revalidate) : la page d'accueil (src/app/page.tsx)
-// affiche le même compteur de boutiques et se recalcule à chaque requête —
-// elle utilise createServerClient() (cookies), qui force ce comportement
-// automatiquement. Cette page n'utilise que le client service-role, sans API
-// dynamique, donc sans ce flag elle serait figée au build (aucune
-// revalidation), pas juste mise en cache 1h : les deux chiffres divergeraient
-// encore plus, pas moins.
+// Rendu dynamique (pas de revalidate) — inchangé après le passage de
+// shopsCount (createAdminClient direct) à getPublicOrdersCount() (2026-10-24) :
+// ce helper utilise lui aussi createAdminClient() en interne (pas de cookies,
+// pas d'API dynamique Next), donc par lui-même il ne force rien — c'est
+// uniquement ce `dynamic = 'force-dynamic'` explicite qui fait que /login se
+// recalcule à chaque requête. Aucun changement de comportement de cache :
+// toujours aucune revalidation ISR, toujours recalculé à chaque visite,
+// comme avant ce changement.
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: `Connexion — ${APP_NAME}`,
 }
 
+// Luxembourg ajouté le 2026-10-24 : présent dans LoginForm.tsx (sélecteur de
+// pays du formulaire, déjà fonctionnel) et dans country-groups.ts (référence
+// centrale utilisée par /start) depuis le début — seule CETTE liste
+// d'affichage l'omettait, faisant dire à tort "10 pays" alors que 11 pays
+// sont réellement couverts (6 Afrique + 5 Europe/Canada, LU inclus).
 const COUNTRIES = [
   { flag: '🇸🇳', name: 'Sénégal' },
   { flag: '🇨🇮', name: "Côte d'Ivoire" },
@@ -27,10 +33,16 @@ const COUNTRIES = [
   { flag: '🇧🇫', name: 'Burkina Faso' },
   { flag: '🇫🇷', name: 'France' },
   { flag: '🇧🇪', name: 'Belgique' },
+  { flag: '🇱🇺', name: 'Luxembourg' },
   { flag: '🇨🇭', name: 'Suisse' },
   { flag: '🇨🇦', name: 'Canada' },
 ]
 
+// "100% mobile" / "depuis ton téléphone" retirés le 2026-10-24 : le
+// dashboard a une vraie navigation desktop dédiée (Sidebar.tsx:81,
+// `hidden lg:flex`, distincte de BottomNav mobile) — l'exclusivité mobile
+// implicite de ces libellés est fausse, le reste (prix, mobile money,
+// pas de développeur) n'est pas remis en cause.
 const BENEFITS = [
   {
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
@@ -42,20 +54,21 @@ const BENEFITS = [
   },
   {
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
-    text: 'Gestion complète depuis ton téléphone',
+    text: 'Gestion complète, sur mobile ou ordinateur',
   },
 ]
-
-const STAR = <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 14, height: 14, color: '#f59e0b' }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ success?: string }>
 }) {
-  const admin = createAdminClient()
-  const { count: totalShopsCount } = await admin.from('shops').select('id', { count: 'exact', head: true })
-  const shopsCount = totalShopsCount ?? 0
+  // Remplace le compteur de boutiques par celui des commandes passées
+  // (2026-10-24, même source que /login d'origine visait déjà à aligner
+  // avec la page d'accueil — getPublicOrdersCount est le helper partagé
+  // utilisé là-bas, src/lib/public-stats.ts). null si la requête échoue :
+  // la ligne correspondante est masquée plus bas, jamais de repli chiffré.
+  const ordersCount = await getPublicOrdersCount()
 
   const { success } = await searchParams
   const paymentReceived = success === '1'
@@ -81,8 +94,7 @@ export default async function LoginPage({
         .lp-chips{display:flex;flex-wrap:wrap;gap:8px}
         .lp-chip{padding:7px 12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:999px;color:#c4d4e5;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
         .lp-testi{position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.08);padding-top:22px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
-        .lp-testi-ava{position:relative;width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.18)}
-        .lp-stars{display:flex;gap:2px;margin-bottom:8px}
+        .lp-testi-ava{position:relative;width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.18)}
         .lp-right{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(circle at 85% 5%,rgba(24,107,255,.055) 0%,transparent 22%),#fff;padding:28px 38px 28px}
         .lp-right-top{display:flex;justify-content:flex-end;margin-bottom:0}
         .lp-form-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 0 28px}
@@ -134,7 +146,9 @@ export default async function LoginPage({
           </div>
 
           <div className="lp-hero">
-            <p className="lp-eyebrow">Déjà {shopsCount} marchands nous font confiance</p>
+            {ordersCount !== null && (
+              <p className="lp-eyebrow">+{ordersCount.toLocaleString('fr-FR')} commandes passées sur des boutiques TEKKIShop</p>
+            )}
             <h2 className="lp-h1">
               La façon la plus simple<br />
               de <span>vendre en ligne</span><br />
@@ -152,7 +166,7 @@ export default async function LoginPage({
               ))}
             </div>
             <div className="lp-countries">
-              <b>Disponible dans 10 pays</b>
+              <b>11 pays couverts</b>
               <div className="lp-chips">
                 {COUNTRIES.map((c) => (
                   <span key={c.name} className="lp-chip">
@@ -164,19 +178,24 @@ export default async function LoginPage({
             </div>
           </div>
 
+          {/* Témoignage remplacé le 2026-10-24 : "Fatou D." était une
+              personne fictive (avatar générique /avatars/2.jpg, citation
+              inventée) — jamais présentée comme telle. Remplacée par la
+              citation réelle du fondateur, mot pour mot identique à celle
+              validée dans landing-v7 (src/app/preview/landing-v7/page.tsx,
+              section "Fondateur", récupérée par lecture directe, pas
+              réécrite de mémoire). Aucune étoile : il n'y a pas de système
+              de note marchande (déjà établi plus tôt dans ce chantier). */}
           <div className="lp-testi">
             <div className="lp-testi-ava">
-              <Image src="/avatars/2.jpg" alt="Fatou D." fill className="object-cover" sizes="42px" />
+              <Image src="/avatars/ibuka.jpg" alt="Ibuka Ndjoli" fill className="object-cover" style={{ objectPosition: '50% 20%' }} sizes="52px" />
             </div>
             <div>
-              <div className="lp-stars">
-                {[...Array(5)].map((_, i) => <span key={i}>{STAR}</span>)}
-              </div>
               <p style={{ color: '#c4d4e5', fontSize: 14, fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 8px' }}>
-                « Avant, je perdais mes commandes sur WhatsApp. Maintenant, tout est organisé et mes clients sont satisfaits. »
+                « Vendre en ligne depuis l&rsquo;Afrique ne devrait pas être une galère. Notre mission&nbsp;: simplifier la vente pour les marchands, et l&rsquo;achat pour les clients. »
               </p>
               <p style={{ color: '#fff', fontSize: 13, fontWeight: 700, margin: 0 }}>
-                Fatou D. <span style={{ color: '#4d6a8a', fontWeight: 500 }}>· Boutique mode, Dakar</span>
+                Ibuka Ndjoli <span style={{ color: '#4d6a8a', fontWeight: 500 }}>· Fondateur de TEKKIShop · 11 ans d&rsquo;expérience en e-commerce</span>
               </p>
             </div>
           </div>
@@ -209,10 +228,10 @@ export default async function LoginPage({
               {/* Heading */}
               <div className="lp-heading">
                 <div className="lp-mini">
-                  <Image src="/icone-tekkishop.svg" alt={APP_NAME} width={38} height={38} />
+                  <Image src="/icone-tekkishop-fallback.png" alt={APP_NAME} width={38} height={38} />
                 </div>
                 <h1 className="lp-h2">Heureux de te revoir</h1>
-                <p className="lp-sub2">Connecte-toi avec ton numéro WhatsApp et ton code PIN.</p>
+                <p className="lp-sub2">Connecte-toi avec ton numéro de téléphone et ton code PIN.</p>
               </div>
 
               {paymentReceived && (
@@ -227,18 +246,22 @@ export default async function LoginPage({
 
               <LoginForm />
 
-              {/* Statistiques */}
-              <div className="lp-proofs">
+              {/* Statistiques — la 1ère case se masque si ordersCount est
+                  null (jamais de repli chiffré) ; la grille repasse à 2
+                  colonnes dans ce cas pour ne pas laisser de case vide. */}
+              <div className="lp-proofs" style={ordersCount === null ? { gridTemplateColumns: 'repeat(2,1fr)' } : undefined}>
+                {ordersCount !== null && (
+                  <div className="lp-proof">
+                    <b>+{ordersCount.toLocaleString('fr-FR')}</b>
+                    <span>commandes passées</span>
+                  </div>
+                )}
                 <div className="lp-proof">
-                  <b>+{shopsCount}</b>
-                  <span>boutiques créées</span>
-                </div>
-                <div className="lp-proof">
-                  <b>10 pays</b>
+                  <b>11 pays</b>
                   <span>déjà disponibles</span>
                 </div>
                 <div className="lp-proof">
-                  <b>100&nbsp;% mobile</b>
+                  <b>Mobile ou ordinateur</b>
                   <span>création et gestion</span>
                 </div>
               </div>

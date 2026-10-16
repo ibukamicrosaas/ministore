@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import styles from './start.module.css'
 import { PinInput } from '@/components/ui/PinInput'
+import { Flag } from '@/components/ui/Flag'
 import { createDraftShop, completeSignupFromStart, joinWaitlist, activateTrialShop } from './actions'
 import { createProduct, uploadProductPhoto } from '@/lib/actions/products'
 import type { ProductPhoto } from '@/types'
@@ -120,7 +121,7 @@ function Proof({ html }: { html: string }) {
   return <div className={styles.proof} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-export function StartFlow({ shopCount }: { shopCount: number }) {
+export function StartFlow({ ordersCount }: { ordersCount: number | null }) {
   const [s, setS] = useState<State>(INIT)
   const [hydrated, setHydrated] = useState(false)
   const nomRef = useRef<HTMLInputElement>(null)
@@ -314,23 +315,31 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
           <>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blp)', color: 'var(--bld)', fontSize: '.8rem', fontWeight: 700, padding: '8px 15px', borderRadius: 99 }}>
-                <Circle size={14} /> 60 secondes chrono
+                {/* "60 secondes chrono" retiré le 2026-10-24 : non mesuré
+                    dans le code (aucun minuteur ne borne le parcours réel,
+                    qui compte 10 écrans jusqu'au premier produit, pas 5).
+                    "5 questions" est en revanche vrai au sens strict
+                    (5 écrans à choix, "Étape X/5" affiché) — remplacé par
+                    une formulation qui s'appuie sur ce fait vérifié. */}
+                <Circle size={14} /> 5 questions rapides
               </span>
             </div>
             <h1 className={styles.h1}>Réponds à 5 questions.<br />Ta boutique sera <span className={styles.bl}>prête</span>.</h1>
             <p className={styles.sub} style={{ marginTop: 15 }}>
               Pas de blabla, pas de formulaire compliqué. Tu réponds, on construit ta boutique pendant ce temps. Gratuit.
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 11, marginTop: 26, fontSize: '.86rem', color: 'var(--gr)' }}>
-              <div style={{ display: 'flex' }}>
-                {['/avatars/1.jpg', '/avatars/2.jpg', '/avatars/3.jpg'].map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={src} src={src} alt="" width={30} height={30}
-                    style={{ width: 30, height: 30, borderRadius: '50%', border: '2px solid #F6F8FC', marginLeft: i ? -8 : 0, objectFit: 'cover' }} />
-                ))}
+            {ordersCount !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 11, marginTop: 26, fontSize: '.86rem', color: 'var(--gr)' }}>
+                <div style={{ display: 'flex' }}>
+                  {['/avatars/1.jpg', '/avatars/2.jpg', '/avatars/3.jpg'].map((src, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={src} src={src} alt="" width={30} height={30}
+                      style={{ width: 30, height: 30, borderRadius: '50%', border: '2px solid #F6F8FC', marginLeft: i ? -8 : 0, objectFit: 'cover' }} />
+                  ))}
+                </div>
+                <span><b>+{ordersCount.toLocaleString('fr-FR')} commandes passées</b></span>
               </div>
-              <span><b>+{shopCount.toLocaleString('fr-FR')} marchands</b> ont déjà leur boutique</span>
-            </div>
+            )}
           </>
         )}
 
@@ -416,7 +425,7 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
               {countryList.map(c => (
                 <button key={c.code} className={`${styles.tile} ${s.pays === c.code ? styles.tileOn : ''}`}
                   onClick={() => setS(prev => ({ ...prev, pays: c.code }))}>
-                  <span className={styles.flag}>{c.flag}</span>
+                  <Flag code={c.code} countryName={c.name} size={24} />
                   <span>{c.name}</span>
                 </button>
               ))}
@@ -425,8 +434,13 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
               onClick={() => setS(prev => ({ ...prev, diaspora: !prev.diaspora, pays: null }))}>
               {s.diaspora ? '← Revenir aux pays d’Afrique' : 'Je suis en Europe ou au Canada'}
             </button>
+            {/* "instantanément" retiré le 2026-10-24 : payouts.ts utilise
+                un statut intermédiaire 'processing' qui peut rester bloqué
+                en attente de vérification manuelle si Bictorys ne répond
+                pas à temps ou si l'écriture finale échoue — pas un
+                mécanisme garanti instantané. */}
             {s.pays && paymentInfo && (
-              <Proof html={`Dès le premier jour, tes clients paient par <b>${paymentInfo.text}</b>, déjà intégré, rien à configurer. Et tu <b>retires ton argent instantanément</b>.`} />
+              <Proof html={`Dès le premier jour, tes clients paient par <b>${paymentInfo.text}</b>, déjà intégré, rien à configurer. Et tu <b>retires ton argent vers ton compte mobile money</b>, sans attendre un virement bancaire.`} />
             )}
             <div className={styles.spacer} style={{ paddingTop: 16 }}>
               <button className={styles.linkish} style={{ color: 'var(--bld)', fontWeight: 600 }} onClick={() => goTo(41)}>
@@ -439,7 +453,7 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
         {/* ── 4 bis · Pays non couvert ──────────────────────────────────────── */}
         {s.step === 41 && (
           <>
-            <h2 className={styles.h2}>TekkiShop n&apos;est pas encore chez toi.</h2>
+            <h2 className={styles.h2}>TEKKIShop n&apos;est pas encore chez toi.</h2>
             <p className={styles.sub}>On ouvre les pays un par un. Dis-nous où tu es : c&apos;est ce qui nous dit lequel ouvrir ensuite.</p>
 
             <div className={styles.altbox}>
@@ -455,7 +469,7 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
                       onChange={e => setS(prev => ({ ...prev, waitPays: e.target.value }))} />
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.lab} htmlFor="wt">Ton numéro WhatsApp</label>
+                    <label className={styles.lab} htmlFor="wt">Ton numéro de téléphone</label>
                     <input id="wt" type="tel" inputMode="tel" placeholder="+237 6 00 00 00 00" value={s.waitTel}
                       onChange={e => setS(prev => ({ ...prev, waitTel: e.target.value }))} />
                   </div>
@@ -561,9 +575,9 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
             <p className={styles.sub}>
               C&apos;est ce qui protège <b style={{ color: 'var(--nt)' }}>{s.nom}</b>, ton argent et tes commandes. Toi seul y accèdes, depuis n&apos;importe quel téléphone.
             </p>
-            <label className={styles.lab} htmlFor="tel">Ton numéro WhatsApp</label>
+            <label className={styles.lab} htmlFor="tel">Ton numéro de téléphone</label>
             <div className={styles.phonerow}>
-              <div className={styles.dial}><span>{paysEntry?.flag}</span> {paysEntry?.dial}</div>
+              <div className={styles.dial}>{paysEntry && <Flag code={paysEntry.code} countryName={paysEntry.name} size={22} />} {paysEntry?.dial}</div>
               <input id="tel" type="tel" inputMode="tel" placeholder={paysEntry?.placeholder}
                 value={s.localNum} onChange={e => setS(prev => ({ ...prev, localNum: e.target.value }))} />
             </div>
@@ -574,7 +588,9 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
             </div>
             {error && <div className={styles.errorBox}>{error}</div>}
             <div className={styles.reassure}>
-              <span><Check size={14} /> +{shopCount.toLocaleString('fr-FR')} boutiques créées</span>
+              {ordersCount !== null && (
+                <span><Check size={14} /> +{ordersCount.toLocaleString('fr-FR')} commandes passées</span>
+              )}
               <span><Check size={14} /> Création gratuite</span>
               <span><Check size={14} /> Aucun engagement</span>
             </div>
@@ -677,7 +693,7 @@ export function StartFlow({ shopCount }: { shopCount: number }) {
         {s.step === 0 && (
           <>
             <button className={`${styles.btn} ${styles.btnBl}`} onClick={() => goTo(1)}>C&apos;est parti <ArrowRight size={19} /></button>
-            <Link href="/login" className={styles.linkish}>J&apos;ai déjà un compte TekkiShop</Link>
+            <Link href="/login" className={styles.linkish}>J&apos;ai déjà un compte TEKKIShop</Link>
           </>
         )}
         {s.step === 1 && (
