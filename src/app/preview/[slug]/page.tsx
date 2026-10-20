@@ -3,15 +3,22 @@ import { redirect, notFound } from 'next/navigation'
 import { Eye, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ShopHomeLayout } from '@/components/pwa/ShopHomeLayout'
+import { VitrineHomeLayout } from '@/components/vitrine/VitrineHomeLayout'
 import type { Shop, Product } from '@/types'
 import { withEffectiveVariants } from '@/lib/products/effective-variants'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { params: Promise<{ slug: string }> }
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ vitrine?: string }> }
 
-export default async function PreviewPage({ params }: Props) {
+export default async function PreviewPage({ params, searchParams }: Props) {
   const { slug } = await params
+  // Paramètre transitoire, jamais lu ni présent sur la route publique réelle
+  // ([shop-slug]/page.tsx) — Lot A, PLAN-THEME-VITRINE.md §14. Aucune lecture
+  // de shop.theme ici : la colonne n'existe pas encore (aucune migration
+  // dans ce lot).
+  const { vitrine } = await searchParams
+  const showVitrine = vitrine === '1'
   const supabase = await createServerClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -27,9 +34,10 @@ export default async function PreviewPage({ params }: Props) {
 
   // Pas de filtre is_active — c'est le but de la prévisualisation
   // Cast as any pour éviter les erreurs de type sur les colonnes ajoutées après génération des types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawShop } = await (supabase as any)
     .from('shops')
-    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, target_countries, accept_cash_on_delivery, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, is_active, trial_ends_at, verification_status, grid_image_ratio')
+    .select('id, name, description, logo_url, primary_color, city, address, phone_whatsapp, available_days, delivery_options, delivery_zones, country, target_countries, accept_cash_on_delivery, accept_online_payment, stripe_connect_enabled, plan, currency, cover_image_url, about_photo_url, business_category, badges, social_links, opening_hours, product_layout, is_active, trial_ends_at, verification_status, grid_image_ratio')
     .eq('slug', slug)
     .single() as {
       data: (Shop & {
@@ -82,7 +90,18 @@ export default async function PreviewPage({ params }: Props) {
         </Link>
       </div>
 
-      <ShopHomeLayout shop={shop} products={products} shopSlug={slug} basePath={`/${slug}`} previewMode />
+      {showVitrine ? (
+        <VitrineHomeLayout
+          shop={shop}
+          products={products}
+          shopSlug={slug}
+          basePath={`/preview/${slug}?vitrine=1`}
+          previewMode
+          productLinkPrefix={`/preview/${slug}/produit/`}
+        />
+      ) : (
+        <ShopHomeLayout shop={shop} products={products} shopSlug={slug} basePath={`/${slug}`} previewMode />
+      )}
     </div>
   )
 }
