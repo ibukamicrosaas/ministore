@@ -391,7 +391,7 @@ export async function sendLicenceApplicationEmail(params: LicenceApplicationEmai
         <p style="margin:0;font-size:13px;color:#374151;white-space:pre-wrap;">${escapeHtml(params.experience)}</p>
       </div>
       <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;">
-        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">100 premiers marchands</p>
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Plan d'acquisition et financement</p>
         <p style="margin:0;font-size:13px;color:#374151;white-space:pre-wrap;">${escapeHtml(params.acquisitionPlan)}</p>
       </div>
     </div>
@@ -403,7 +403,7 @@ export async function sendLicenceApplicationEmail(params: LicenceApplicationEmai
     await resend.emails.send({
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
-      subject: `Candidature licence — ${params.country} (${params.fullName})`,
+      subject: `Candidature licence : ${params.country} (${params.fullName})`,
       html,
     })
   } catch (err) {

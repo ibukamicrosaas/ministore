@@ -1,10 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { WAITLIST_SUFFIX } from '@/app/licence/prices'
+import { displayCountryLabel, isWaitlistCountry } from '@/app/licence/prices'
 import { FileText, Mail, Phone } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
-export const metadata = { title: 'Candidatures de licence — TEKKIShop Admin' }
+export const metadata = { title: 'Candidatures de licence · TEKKIShop Admin' }
 
 type RawApplication = {
   id: string
@@ -40,7 +40,7 @@ export default async function LicenceApplicationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Candidatures de licence</h1>
         <p className="text-gray-500 mt-1 text-sm">
-          Reçues via le formulaire public /licence — {applications.length} au total.
+          Reçues via le formulaire public /licence : {applications.length} au total.
         </p>
       </div>
 
@@ -60,8 +60,8 @@ export default async function LicenceApplicationsPage() {
                     <div>
                       <p className="text-sm font-bold text-gray-900">{a.full_name}</p>
                       <p className="text-xs font-semibold text-sky-600 mt-0.5">
-                        {a.country}
-                        {a.country.endsWith(WAITLIST_SUFFIX) && (
+                        {displayCountryLabel(a.country)}
+                        {isWaitlistCountry(a.country) && (
                           <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
                             Liste d&apos;attente
                           </span>
@@ -91,7 +91,7 @@ export default async function LicenceApplicationsPage() {
                       <p className="text-xs text-gray-700 whitespace-pre-wrap">{a.experience}</p>
                     </div>
                     <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">100 premiers marchands</p>
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Plan d&apos;acquisition et financement</p>
                       <p className="text-xs text-gray-700 whitespace-pre-wrap">{a.acquisition_plan}</p>
                     </div>
                   </div>

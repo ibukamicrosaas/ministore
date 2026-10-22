@@ -13,6 +13,7 @@ interface LicenceApplicationInput {
   email:            string
   experience:       string
   acquisitionPlan:  string
+  financing:        string
 }
 
 export async function submitLicenceApplication(
@@ -23,11 +24,17 @@ export async function submitLicenceApplication(
   const whatsappPhone   = input.whatsappPhone?.trim()
   const email           = input.email?.trim()
   const experience      = input.experience?.trim()
-  const acquisitionPlan = input.acquisitionPlan?.trim()
+  const acquisitionPlanText = input.acquisitionPlan?.trim()
+  const financing       = input.financing?.trim()
 
-  if (!country || !fullName || !whatsappPhone || !email || !experience || !acquisitionPlan) {
+  if (!country || !fullName || !whatsappPhone || !email || !experience || !acquisitionPlanText || !financing) {
     return { error: 'Tous les champs sont requis.' }
   }
+
+  // Pas de colonne dédiée : le financement est enregistré à la suite du plan
+  // d'acquisition, sous l'intitulé « Financement : » (admin et e-mail l'affichent
+  // dans le même bloc).
+  const acquisitionPlan = `${acquisitionPlanText}\n\nFinancement : ${financing}`
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: 'Adresse e-mail invalide.' }
   }
