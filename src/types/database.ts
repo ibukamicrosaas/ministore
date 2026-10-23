@@ -993,6 +993,10 @@ export type Database = {
         Args: { p_shop_id: string }
         Returns: undefined
       }
+      try_consume_licence_application_slot: {
+        Args: { p_ip_hash: string }
+        Returns: boolean
+      }
       upsert_client_from_order: {
         Args: {
           p_shop_id: string
