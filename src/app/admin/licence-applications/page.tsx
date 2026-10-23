@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { displayCountryLabel, isWaitlistCountry } from '@/app/licence/prices'
+import { applicationPlanAndFinancingText } from './application-display'
 import { FileText, Mail, Phone } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -13,7 +14,7 @@ type RawApplication = {
   whatsapp_phone: string
   email: string
   experience: string
-  acquisition_plan: string
+  acquisition_plan: string | null
   status: string
   created_at: string
 }
@@ -92,7 +93,7 @@ export default async function LicenceApplicationsPage() {
                     </div>
                     <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Plan d&apos;acquisition et financement</p>
-                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{a.acquisition_plan}</p>
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{applicationPlanAndFinancingText(a.acquisition_plan)}</p>
                     </div>
                   </div>
                 </div>
