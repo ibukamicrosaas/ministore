@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { submitLicenceApplication } from '@/lib/actions/licence'
-import { WAITLIST_SUFFIX } from './prices'
+import { WAITLIST_SUFFIX, isWaitlistCountry } from './prices'
 
 interface TerritoryOption {
   name: string
@@ -13,7 +13,7 @@ interface Props {
 }
 
 // Valeur enregistrée dans licence_applications.country. Convention existante
-// (« <pays> — <précision> ») : les pays ouverts gardent leur nom seul, les
+// (« <pays> (<précision>) ») : les pays ouverts gardent leur nom seul, les
 // pays en liste d'attente portent WAITLIST_SUFFIX (prices.ts, partagé avec
 // l'admin), ce qui les rend identifiables sans migration.
 const OTHER_COUNTRY = 'Autre pays (à préciser ci-dessous)'
@@ -42,6 +42,7 @@ export function LicenceForm({ territories }: Props) {
       email:           (fd.get('email') as string)?.trim() ?? '',
       experience:      (fd.get('experience') as string)?.trim() ?? '',
       acquisitionPlan: (fd.get('plan') as string)?.trim() ?? '',
+      financing:       (fd.get('financing') as string)?.trim() ?? '',
     })
 
     setSubmitting(false)
@@ -49,7 +50,7 @@ export function LicenceForm({ territories }: Props) {
       setError(result.error)
       return
     }
-    setWaitlisted(countryValue.endsWith(WAITLIST_SUFFIX))
+    setWaitlisted(isWaitlistCountry(countryValue))
     setSubmitted(true)
   }
 
@@ -70,7 +71,7 @@ export function LicenceForm({ territories }: Props) {
         <p style={{ margin: 0, color: '#697893', fontSize: 15, lineHeight: 1.65 }}>
           {waitlisted
             ? "Votre candidature est enregistrée. Ce pays n'est pas encore ouvert : nous vous prévenons dès l'intégration du paiement mobile."
-            : 'Merci. Nous avons bien reçu votre candidature — vous recevrez une réponse motivée sous cinq jours ouvrés, que nous poursuivions ou non.'}
+            : 'Merci. Nous avons bien reçu votre candidature. Vous recevrez une réponse motivée sous cinq jours ouvrés, que nous poursuivions ou non.'}
         </p>
       </div>
     )
@@ -78,6 +79,9 @@ export function LicenceForm({ territories }: Props) {
 
   return (
     <form className="lic-form-card" onSubmit={handleSubmit} noValidate>
+      <p style={{ margin: '0 0 18px', fontSize: 14, fontWeight: 600, color: '#0b1830', lineHeight: 1.5 }}>
+        Première vague&nbsp;: un seul licencié par pays. La première signature suivie du paiement complet l&apos;emporte.
+      </p>
       {error && (
         <p style={{ margin: '0 0 16px', padding: '10px 14px', borderRadius: 10, background: '#fdecec', color: '#c0392b', fontSize: 13.5 }}>
           {error}
@@ -127,6 +131,15 @@ export function LicenceForm({ territories }: Props) {
           required
         />
         <small>C&apos;est la partie que nous lisons le plus attentivement.</small>
+      </div>
+      <div className="lic-field">
+        <label htmlFor="f-financing">Comment financerez-vous la licence et vos six premiers mois d&apos;activité&nbsp;?</label>
+        <textarea
+          id="f-financing"
+          name="financing"
+          placeholder="Épargne, associés, revenus actuels, prêt…"
+          required
+        />
       </div>
       <button className="lic-btn lic-btn-primary lic-btn-full" type="submit" disabled={submitting}>
         {submitting ? 'Envoi en cours…' : 'Envoyer ma candidature'}
