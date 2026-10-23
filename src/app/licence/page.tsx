@@ -575,18 +575,18 @@ export default async function LicencePage() {
             <div className="lic-head lic-center reveal">
               <span className="lic-label">L&apos;opportunité</span>
               <h2 className="lic-h2">Deux problèmes. <span className="lic-grad">Une seule réponse.</span></h2>
-              <p className="lic-lead">La licence TEKKIShop existe parce que deux besoins se répondent, et que personne ne les avait encore mis en face l&apos;un de l&apos;autre.</p>
+              <p className="lic-lead">La licence TEKKIShop existe parce que deux besoins se répondent, et que TEKKIShop les met en face l&apos;un de l&apos;autre.</p>
             </div>
             <div className="lic-two-col reveal">
               <div className="lic-panel lic-panel-a">
                 <span className="lic-panel-tag">D&apos;un côté</span>
-                <h3 className="lic-h3">Des centaines de milliers de commerçants sans boutique</h3>
-                <p>Dans chaque pays d&apos;Afrique de l&apos;Ouest, des vendeurs travaillent depuis WhatsApp, Instagram et TikTok. Ils renvoient les mêmes photos, répètent les mêmes prix, perdent des commandes dans leurs conversations. Aucun outil pensé pour eux ne leur est proposé dans leur langue, à leur prix, avec leurs moyens de paiement. TEKKIShop s&apos;adresse à ceux qui vendent déjà et sont submergés de messages, pas aux débutants qui veulent se lancer.</p>
+                <h3 className="lic-h3">Des commerçants qui vendent sans boutique en ligne</h3>
+                <p>Dans chaque pays d&apos;Afrique de l&apos;Ouest, des vendeurs travaillent depuis WhatsApp, Instagram et TikTok. Ils renvoient les mêmes photos, répètent les mêmes prix, perdent des commandes dans leurs conversations. Peu d&apos;outils sont vraiment pensés pour eux, dans leur langue, à leur prix, avec leurs moyens de paiement. TEKKIShop s&apos;adresse à ceux qui vendent déjà et sont submergés de messages, pas aux débutants qui veulent se lancer.</p>
               </div>
               <div className="lic-panel lic-panel-b">
                 <span className="lic-panel-tag">De l&apos;autre</span>
                 <h3 className="lic-h3">Des entrepreneurs qui veulent lancer un SaaS</h3>
-                <p>Construire une plateforme e-commerce mobile-first avec paiements mobile money demande 12 à 18 mois, une équipe technique et un budget à sept chiffres. La majorité des projets meurent avant la première ligne de chiffre d&apos;affaires, non par manque de marché, mais par manque de produit.</p>
+                <p>Construire et fiabiliser une plateforme de ce type prend du temps et demande un budget conséquent.</p>
               </div>
             </div>
             <p className="lic-arrow-join reveal">La licence branche les deux ↓</p>
@@ -865,7 +865,7 @@ export default async function LicencePage() {
               <div className="lic-fitbox lic-fit-yes">
                 <h3 className="lic-h3">Elle est faite pour vous si…</h3>
                 <ul>
-                  <li><b>✓</b> Vous voulez lancer un SaaS mais ne voulez pas passer deux ans à le construire.</li>
+                  <li><b>✓</b> Vous voulez lancer un SaaS mais ne voulez pas le construire vous-même.</li>
                   <li><b>✓</b> Vous connaissez votre marché local et savez comment atteindre les commerçants.</li>
                   <li><b>✓</b> Vous êtes à l&apos;aise avec la vente, le terrain et la relation client.</li>
                   <li><b>✓</b> Vous pouvez consacrer à ce projet du temps et un budget d&apos;acquisition.</li>
