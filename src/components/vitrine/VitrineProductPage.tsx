@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { ArrowLeft, Check, MessageCircle, PackageCheck, Truck, Wallet } from 'lucide-react'
 import type { Shop, Product } from '@/types'
-import { ShareButton } from '@/components/pwa/ShareButton'
 import { ReportContentLink } from '@/components/pwa/ReportContentLink'
+import { ShareButton } from '@/components/pwa/ShareButton'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { getVitrinePaymentInfo, summarizePayment } from './vitrine-payment'
@@ -89,24 +89,29 @@ export function VitrineProductPage({ shop, product, relatedProducts, shopSlug, b
           <b aria-current="page">{product.name}</b>
         </nav>
 
+        <Link href={home} className="vt-pg-back vt-only-m"><ArrowLeft size={18} aria-hidden="true" />{shop.name}</Link>
+
         <div className="vt-pdetail">
           <div className="vt-pg-wrap">
             <div className="vt-pg">
               <ProductGallery photos={photos} alt={product.name} />
-              <Link href={home} className="vt-pg-back vt-only-m"><ArrowLeft size={18} aria-hidden="true" />{shop.name}</Link>
             </div>
           </div>
 
           <div className="vt-pinfo">
             {category && <span className="vt-pcat">{category}</span>}
-            <h1>{product.name}</h1>
+            <div className="vt-ptitle-row">
+              <h1>{product.name}</h1>
+              <div className="vt-only-d">
+                <ShareButton url={previewMode ? '#' : `https://tekki.shop/${shopSlug}/produit/${product.slug ?? product.id}`} title={product.name} primaryColor={tokens.brand} />
+              </div>
+            </div>
             <div className="vt-prow">
               <span className="vt-pprice">{formatPrice(product.price, currency)}</span>
               {showStruckPrice && <span className="vt-pprice-old">{formatPrice(originalPrice as number, currency)}</span>}
               {showInStockBadge && <span className="vt-stock"><Check size={15} aria-hidden="true" />En stock</span>}
               {soldOut && <span className="vt-stock vt-out">Rupture de stock</span>}
             </div>
-            {showExtract && <DigitalExtractButton text={product.digital_preview_text!.trim()} productName={product.name} />}
 
             <div className="vt-pact">
               {previewMode ? (
@@ -146,15 +151,13 @@ export function VitrineProductPage({ shop, product, relatedProducts, shopSlug, b
 
             {product.description && (
               <section className="vt-pdesc">
-                <h2 className="vt-only-m" style={{ display: 'block' }}>Description</h2>
                 <ClampedLines text={product.description} maxLines={6} />
               </section>
             )}
 
+            {showExtract && <DigitalExtractButton text={product.digital_preview_text!.trim()} productName={product.name} />}
+
             <div className="vt-pmisc">
-              <div className="vt-only-m" style={{ display: 'flex' }}>
-                <ShareButton url={previewMode ? '#' : `https://tekki.shop/${shopSlug}/produit/${product.slug ?? product.id}`} title={product.name} primaryColor={tokens.brand} />
-              </div>
               <ReportContentLink shopId={shop.id} productId={product.id} />
             </div>
           </div>

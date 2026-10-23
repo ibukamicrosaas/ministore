@@ -194,7 +194,7 @@ export function ClampedLines({ text, maxLines, className, moreClassName = 'vt-pd
       <p
         ref={ref}
         className={className}
-        style={expanded ? undefined : { display: '-webkit-box', WebkitLineClamp: maxLines, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        style={expanded ? undefined : { display: '-webkit-box', WebkitLineClamp: maxLines, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'clip' }}
       >
         {text}
       </p>
@@ -403,7 +403,7 @@ export function VitrineFooter({ shop, homeHref, waNumber, waLink, payment, compa
         )}
 
         <div className="vt-foot-bot">
-          <ReportContentLink shopId={shop.id} className="text-white/70" />
+          <ReportContentLink shopId={shop.id} className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors" />
           <a href="https://tekki.shop">Créée avec <b>TEKKIShop</b> ↗</a>
         </div>
       </div>
