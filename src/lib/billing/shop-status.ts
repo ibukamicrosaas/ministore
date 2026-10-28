@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { formatPrice, type ShopCurrency } from '@/lib/utils/country-groups'
 import { sendWhatsApp, buildFreeOrdersActivatedMessage } from '@/lib/notifications/whatsapp'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { netOfCommission } from '@/lib/billing/balance'
 
 export type ShopStatus = 'draft' | 'trial' | 'expired' | 'active'
 
@@ -70,7 +71,7 @@ export async function setShopStatus(
     // Revenus. Voir ADDITIF-argent-commandes-retenues.md.
     const commissionRate = getCommissionRate(shop.country)
     const fundsGross = result?.released_funds_gross ?? 0
-    const fundsNet    = fundsGross - Math.floor(fundsGross * (commissionRate / 100))
+    const fundsNet    = netOfCommission(fundsGross, commissionRate)
 
     await admin.from('shop_events').insert({
       shop_id: shopId,

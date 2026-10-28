@@ -8,6 +8,8 @@ import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
+import { computeBalance } from '@/lib/billing/balance'
+import { loadBalanceInputs } from '@/lib/billing/balance-data'
 import * as Sentry from '@sentry/nextjs'
 
 // Méthodes confirmées par Bictorys uniquement — tmoney/mobicash/maxit/celtis
@@ -91,29 +93,21 @@ export async function POST(req: NextRequest) {
     }, { status: 400 })
   }
 
-  // Calcul serveur-side (ne pas faire confiance au montant envoyé par le client)
-  // grossBalance = total collecté − total déjà sorti (gross_amount des payouts actifs)
-  const [paymentsResult, payoutsResult] = await Promise.all([
-    supabase
-      .from('payments')
-      .select('amount')
-      .eq('shop_id', profile.shop_id)
-      .eq('status', 'completed'),
-    admin
-      .from('payouts')
-      .select('gross_amount')
-      .eq('shop_id', profile.shop_id)
-      .in('status', ['pending', 'processing', 'completed']),
-  ])
-
-  const totalCollected   = (paymentsResult.data ?? []).reduce((s, p) => s + p.amount, 0)
-  const totalPaidOutGross = (payoutsResult.data ?? []).reduce((s, p) => s + p.gross_amount, 0)
-  const grossBalance     = totalCollected - totalPaidOutGross
+  // Calcul serveur-side (ne pas faire confiance au montant envoyé par le client).
+  // Même formule que la page Revenus, voir lib/billing/balance.ts : grossBalance
+  // = encaissé hors fonds retenus − brut (gross_amount) des retraits actifs.
+  const { payments, payouts, error: balanceError } = await loadBalanceInputs(admin, profile.shop_id)
+  if (balanceError) {
+    console.error('[payouts/request] chargement du solde:', balanceError)
+    return NextResponse.json({ error: 'Impossible de calculer ton solde, réessaie dans un instant.' }, { status: 500 })
+  }
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
-  const commissionRate       = getCommissionRate(shop?.country ?? null)
-  const commissionAmount     = Math.floor(grossBalance * (commissionRate / 100))
-  const amountAfterCommission = grossBalance - commissionAmount
+  const commissionRate = getCommissionRate(shop?.country ?? null)
+  const balance = computeBalance(payments, payouts, commissionRate)
+  const grossBalance          = balance.remainingGross
+  const commissionAmount      = balance.remainingCommission
+  const amountAfterCommission = balance.available
 
   // Frais de retrait PAY OUT (opérateur + Bictorys) — désormais facturés au
   // marchand, distincts de la commission ci-dessus. payoutFeeRate déjà

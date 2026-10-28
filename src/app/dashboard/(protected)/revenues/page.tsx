@@ -10,6 +10,8 @@ import { isEuCaCountry, getPayoutMethods, formatPrice, PAYOUT_METHODS_BY_COUNTRY
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
+import { computeBalance } from '@/lib/billing/balance'
+import { loadBalanceInputs } from '@/lib/billing/balance-data'
 
 export const metadata = { title: 'Revenus — TekkiShop' }
 
@@ -71,32 +73,19 @@ export default async function RevenuesPage() {
     }))
     .filter((m): m is { label: string; key: PayoutMethodKey; number: string; feeRate: number | null } => !!m.number)
 
-  // Total collecté via paiements en ligne (status completed). Les paiements
-  // liés à une commande encore retenue (is_held=true, released_at IS NULL)
-  // sont exclus : cet argent existe mais n'est pas disponible tant que la
-  // boutique n'est pas activée — voir ADDITIF-argent-commandes-retenues.md.
-  // Pas de colonne dédiée : le blocage se dérive de is_held/released_at,
-  // même principe que le reste du modèle free_orders.
-  const { data: paymentsData } = await supabase
-    .from('payments')
-    .select('amount, orders!inner(is_held, released_at)')
-    .eq('shop_id', shopId)
-    .eq('status', 'completed')
+  // Solde : une seule formule pour la page, la route de retrait, l'admin et
+  // l'assistant IA, voir lib/billing/balance.ts (fonds retenus exclus,
+  // retraits consommés au brut, commission prélevée une fois sur le restant).
+  const { payments: balancePayments, payouts: balancePayouts, error: balanceError } =
+    await loadBalanceInputs(supabase, shopId)
+  if (balanceError) console.error('[revenues] chargement du solde:', balanceError)
+  const balance = computeBalance(balancePayments, balancePayouts, commissionRate)
 
-  type PaymentWithOrder = { amount: number; orders: { is_held: boolean; released_at: string | null } | null }
-  const allPayments = (paymentsData ?? []) as unknown as PaymentWithOrder[]
-  const isBlocked = (o: PaymentWithOrder['orders']) => !!o && o.is_held === true && o.released_at === null
-
-  const totalCollected = allPayments
-    .filter(p => !isBlocked(p.orders))
-    .reduce((s, p) => s + p.amount, 0)
-  const blockedGross = allPayments
-    .filter(p => isBlocked(p.orders))
-    .reduce((s, p) => s + p.amount, 0)
-
-  const commissionTotal = Math.floor(totalCollected * (commissionRate / 100))
-  const totalNet = totalCollected - commissionTotal
-  const blockedNet = blockedGross - Math.floor(blockedGross * (commissionRate / 100))
+  const totalCollected  = balance.collectedAvailable
+  const blockedGross    = balance.blockedGross
+  const commissionTotal = balance.commissionTotal
+  const totalNet        = balance.totalNet
+  const blockedNet      = balance.blockedNet
 
   // Historique des reversements
   const { data: payoutsData } = await supabase
@@ -107,15 +96,9 @@ export default async function RevenuesPage() {
 
   const payouts = (payoutsData ?? []) as Payout[]
 
-  const totalPaidOut = payouts
-    .filter(p => p.status === 'completed')
-    .reduce((s, p) => s + p.net_amount, 0)
-
-  const totalPending = payouts
-    .filter(p => p.status === 'pending' || p.status === 'processing')
-    .reduce((s, p) => s + p.net_amount, 0)
-
-  const availableBalance = totalNet - totalPaidOut - totalPending
+  const totalPaidOut = balance.paidOutNet
+  const totalPending = balance.pendingNet
+  const availableBalance = balance.available
 
   const hasPayoutMethod = payoutMethodsWithNumbers.length > 0
   const canRequestPayout = !euCa && availableBalance >= PAYOUT_MIN_AMOUNT && hasPayoutMethod

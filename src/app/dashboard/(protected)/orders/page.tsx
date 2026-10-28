@@ -13,6 +13,7 @@ import { loadOrdersForMerchant } from '@/lib/orders/redact'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 import { logShopEvent } from '@/lib/billing/events'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { netOfCommission } from '@/lib/billing/balance'
 
 function relativeTime(dateStr: string): string {
   const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / 36e5)
@@ -110,7 +111,7 @@ export default async function OrdersPage({
   function heldFundsNet(orderId: string): number | null {
     const gross = paidAmountByOrder.get(orderId)
     if (gross === undefined) return null
-    return gross - Math.floor(gross * (commissionRate / 100))
+    return netOfCommission(gross, commissionRate)
   }
 
   const { data: allOrders } = await supabase

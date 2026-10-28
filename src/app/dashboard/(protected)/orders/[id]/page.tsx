@@ -12,6 +12,7 @@ import {
 import { ORDER_STATUS_LABELS } from '@/constants'
 import { advanceOrderStatus } from '@/lib/actions/orders'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { netOfCommission } from '@/lib/billing/balance'
 import { CancelOrderButton } from './CancelOrderButton'
 import { CopyReviewLinkButton } from './CopyReviewLinkButton'
 import { SendToDeliveryButton } from './SendToDeliveryButton'
@@ -146,7 +147,7 @@ export default async function OrderDetailPage({
       .eq('status', 'completed')
       .maybeSingle()
     if (paymentData) {
-      heldFundsNet = paymentData.amount - Math.floor(paymentData.amount * (commissionRate / 100))
+      heldFundsNet = netOfCommission(paymentData.amount, commissionRate)
     }
   }
 
