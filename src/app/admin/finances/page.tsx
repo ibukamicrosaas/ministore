@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { computeBalance, toBalancePayments, type BalancePayout } from '@/lib/billing/balance'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AdminWithdrawSection } from './AdminWithdrawSection'
@@ -102,19 +103,19 @@ export default async function AdminFinancesPage({
     // Paiements marchands all-time
     admin
       .from('payments')
-      .select('amount, shops!inner(country)')
+      .select('amount, shop_id, orders(is_held, released_at), shops!inner(country)')
       .eq('status', 'completed'),
 
     // Reversements effectués all-time
     admin
       .from('payouts')
-      .select('net_amount, gross_amount, completed_at')
+      .select('shop_id, net_amount, gross_amount, completed_at')
       .eq('status', 'completed'),
 
     // Reversements en attente all-time
     admin
       .from('payouts')
-      .select('net_amount')
+      .select('shop_id, status, net_amount, gross_amount')
       .in('status', ['pending', 'processing']),
 
     // Retraits admin all-time
@@ -170,7 +171,6 @@ export default async function AdminFinancesPage({
   const orderNetPeriod = orderGrossPeriod - orderCommPeriod
 
   const { gross: orderGrossAll, commission: orderCommAll } = sumGrossAndCommission(paymentsAll as unknown as PaymentShopRow[] | null)
-  const orderNetAll = orderGrossAll - orderCommAll
   // Taux moyen affiché — indicatif seulement, la vraie commission varie par
   // boutique (pays + clés propres), voir sumGrossAndCommission ci-dessus.
   const blendedCommissionRate = orderGrossAll > 0 ? Math.round((orderCommAll / orderGrossAll) * 1000) / 10 : 0
@@ -181,7 +181,39 @@ export default async function AdminFinancesPage({
   const totalPendingNet   = (payoutsPending ?? []).reduce((s, p) => s + p.net_amount, 0)
 
   // ── Soldes globaux ──
-  const merchantHeld     = Math.max(0, orderNetAll - totalPaidOutNet - totalPendingNet)
+  // Argent détenu pour les marchands = somme, boutique par boutique, du
+  // disponible (formule unique, lib/billing/balance.ts) et des fonds retenus.
+  // Plus d'agrégat global : un retrait soustrait son brut, et un solde négatif
+  // d'une boutique n'en annule pas un autre.
+  type OrderJoin = { is_held: boolean | null; released_at: string | null }
+  type PaymentRowForBalance = { amount: number; orders?: OrderJoin | OrderJoin[] | null }
+  const paymentsByShop = new Map<string, { country: string | null; rows: PaymentRowForBalance[] }>()
+  for (const p of (paymentsAll ?? []) as unknown as (PaymentShopRow & PaymentRowForBalance & { shop_id: string })[]) {
+    const entry = paymentsByShop.get(p.shop_id) ?? { country: shopOfPayment(p)?.country ?? null, rows: [] }
+    entry.rows.push({ amount: p.amount, orders: p.orders })
+    paymentsByShop.set(p.shop_id, entry)
+  }
+  const payoutsByShop = new Map<string, BalancePayout[]>()
+  const pushPayout = (shopId: string, q: BalancePayout) => {
+    const list = payoutsByShop.get(shopId) ?? []
+    list.push(q)
+    payoutsByShop.set(shopId, list)
+  }
+  for (const q of (payoutsCompleted ?? []) as unknown as { shop_id: string; net_amount: number; gross_amount: number }[]) {
+    pushPayout(q.shop_id, { status: 'completed', grossAmount: q.gross_amount, netAmount: q.net_amount })
+  }
+  for (const q of (payoutsPending ?? []) as unknown as { shop_id: string; status: string; net_amount: number; gross_amount: number }[]) {
+    pushPayout(q.shop_id, { status: q.status, grossAmount: q.gross_amount, netAmount: q.net_amount })
+  }
+  let merchantHeld = 0
+  for (const [shopId, entry] of paymentsByShop) {
+    const b = computeBalance(
+      toBalancePayments(entry.rows),
+      payoutsByShop.get(shopId) ?? [],
+      getCommissionRate(entry.country),
+    )
+    merchantHeld += b.available + b.blockedNet
+  }
   const tekkishopBalance = subAvailable + orderCommAll - totalPaidOutGross + totalPaidOutNet
 
   const periods: Period[] = ['today', '7d', '30d', '3m', '6m', '1y']

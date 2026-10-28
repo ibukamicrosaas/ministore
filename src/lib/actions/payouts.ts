@@ -7,6 +7,7 @@ import { getPayoutMethods } from '@/lib/utils/country-groups'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
+import { commissionOn } from '@/lib/billing/balance'
 import { revalidatePath } from 'next/cache'
 import * as Sentry from '@sentry/nextjs'
 
@@ -106,7 +107,7 @@ export async function processPayout(
 
   // Commission PAY IN (encaissement) — jamais dérivée du plan, voir commission.ts.
   const commissionRate = getCommissionRate(country)
-  const commissionAmount = Math.round(grossAmount * (commissionRate / 100))
+  const commissionAmount = commissionOn(grossAmount, commissionRate)
   const amountAfterCommission = grossAmount - commissionAmount
 
   // Frais de retrait PAY OUT — désormais facturés au marchand, distincts de

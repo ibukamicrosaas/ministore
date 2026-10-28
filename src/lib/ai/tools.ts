@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { APP_URL } from '@/constants'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { computeBalance, toBalancePayments, toBalancePayouts } from '@/lib/billing/balance'
 
 // Tous les tools sont en LECTURE SEULE.
 // Le shop_id est toujours injecté côté serveur depuis la session — jamais depuis le client.
@@ -327,24 +328,28 @@ export function buildAiTools(shopId: string) {
       inputSchema: zodSchema(z.object({})),
       execute: async () => {
         const [paymentsRes, payoutsRes, shopRes] = await Promise.all([
-          admin.from('payments').select('amount').eq('shop_id', shopId).eq('status', 'completed'),
+          admin.from('payments').select('amount, orders(is_held, released_at)').eq('shop_id', shopId).eq('status', 'completed'),
           admin
             .from('payouts')
-            .select('net_amount, status, created_at')
+            .select('gross_amount, net_amount, status, created_at')
             .eq('shop_id', shopId)
             .in('status', ['pending', 'processing', 'completed'])
             .order('created_at', { ascending: false }),
           admin.from('shops').select('country').eq('id', shopId).single(),
         ])
 
-        const total_collected = (paymentsRes.data ?? []).reduce((s, p) => s + p.amount, 0)
-        const total_paid_out = (payoutsRes.data ?? []).reduce((s, p) => s + p.net_amount, 0)
-        const available_balance = Math.max(0, total_collected - total_paid_out)
-        const pending_payout = (payoutsRes.data ?? [])
-          .filter((p) => p.status === 'pending' || p.status === 'processing')
-          .reduce((s, p) => s + p.net_amount, 0)
-
+        // Même formule que la page Revenus, voir lib/billing/balance.ts.
         const commission_rate = getCommissionRate(shopRes.data?.country)
+        const balance = computeBalance(
+          toBalancePayments(paymentsRes.data as unknown as Parameters<typeof toBalancePayments>[0]),
+          toBalancePayouts(payoutsRes.data),
+          commission_rate,
+        )
+
+        const total_collected = balance.collectedAvailable + balance.blockedGross
+        const total_paid_out = balance.paidOutNet
+        const available_balance = balance.available
+        const pending_payout = balance.pendingNet
 
         return {
           total_collected,

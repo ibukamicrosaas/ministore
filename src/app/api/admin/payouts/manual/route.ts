@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
+import { computeBalance } from '@/lib/billing/balance'
+import { loadBalanceInputs } from '@/lib/billing/balance-data'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
@@ -43,16 +45,9 @@ export async function POST(req: NextRequest) {
   const commissionRate = getCommissionRate(shop.country)
 
   // Calcul du solde disponible pour information (non bloquant — admin connaît son contexte)
-  const [{ data: payments }, { data: payouts }] = await Promise.all([
-    admin.from('payments').select('amount').eq('shop_id', shop.id).eq('status', 'completed'),
-    admin.from('payouts').select('gross_amount').eq('shop_id', shop.id).in('status', ['pending', 'processing', 'completed']),
-  ])
-
-  const totalCollected   = (payments ?? []).reduce((s, p) => s + p.amount, 0)
-  const totalPaidOut     = (payouts ?? []).reduce((s, p) => s + p.gross_amount, 0)
-  const grossBalance     = totalCollected - totalPaidOut
-  const commissionAmount = Math.floor(grossBalance * (commissionRate / 100))
-  const netBalance       = grossBalance - commissionAmount
+  const { payments, payouts, error: balanceError } = await loadBalanceInputs(admin, shop.id)
+  if (balanceError) console.error('[admin/payouts/manual] chargement du solde:', balanceError)
+  const netBalance = computeBalance(payments, payouts, commissionRate).available
 
   // Reversement manuel hors Bictorys (virement bancaire, espèces...) : pas de
   // frais de retrait Bictorys à appliquer ici, seulement la commission PAY IN.
