@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { processPayout } from '@/lib/actions/payouts'
 import { sendSMS } from '@/lib/notifications/whatsapp'
 import { recordCronRun } from '@/lib/cron/health'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 
 export const maxDuration = 300
 
@@ -10,6 +11,11 @@ export const maxDuration = 300
 const BICTORYS_METHODS = new Set(['wave', 'orange_money'])
 
 export async function GET(req: NextRequest) {
+  // Hors production : aucune lecture, aucune écriture, aucun enregistrement de passage du cron.
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ skipped: true, reason: PAYOUTS_DISABLED_MESSAGE, processed: 0 })
+  }
+
   const cronSecret = req.headers.get('authorization')?.replace('Bearer ', '')
   const envSecret  = process.env.CRON_SECRET
 

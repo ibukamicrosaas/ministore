@@ -8,6 +8,7 @@ import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import { commissionOn } from '@/lib/billing/balance'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 import { revalidatePath } from 'next/cache'
 import * as Sentry from '@sentry/nextjs'
 
@@ -36,6 +37,8 @@ export async function processPayout(
   grossAmount: number,
   payoutMethod: string,
 ): Promise<{ error?: string }> {
+  if (!arePayoutsEnabled()) return { error: PAYOUTS_DISABLED_MESSAGE }
+
   const privateKey         = process.env.BICTORYS_PRIVATE_KEY
   const merchantSecretCode = process.env.BICTORYS_MERCHANT_SECRET_CODE  // optionnel
   if (!privateKey) return { error: 'BICTORYS_PRIVATE_KEY non configuré.' }

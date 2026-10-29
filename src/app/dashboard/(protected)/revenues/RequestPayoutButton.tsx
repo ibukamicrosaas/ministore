@@ -38,9 +38,13 @@ export function RequestPayoutButton({ shopId, availableBalance, payoutMethods, c
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method: selected.key }),
       })
-      const data = await res.json() as { success?: boolean; auto?: boolean; error?: string }
+      const data = await res.json() as { success?: boolean; auto?: boolean; error?: string; code?: string }
       if (!res.ok || !data.success) {
-        toast.error(data.error ?? 'Erreur lors de la demande')
+        toast.error(
+          data.code === 'payouts_disabled'
+            ? 'Les retraits sont désactivés sur cette version de test. Fais ta demande depuis le site officiel de TEKKIShop.'
+            : data.error ?? 'Erreur lors de la demande',
+        )
         return
       }
       toast.success(data.auto ? 'Retrait effectué ✓' : 'Demande de retrait envoyée ✓')
