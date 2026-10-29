@@ -48,12 +48,56 @@ test('message exact et code stable', () => {
   assert.equal(PAYOUTS_DISABLED_CODE, 'payouts_disabled')
 })
 
+// Inventaire : tout fichier de src qui appelle l'API de retrait Bictorys ou écrit dans une table de retraits
+// doit figurer dans ENTRY_POINTS, ou dans la liste des fichiers sans effet de retrait ci-dessous.
+// Un nouveau fichier qui apparaît dans ce balayage fait échouer ce test tant qu'il n'est pas classé.
+import { readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+
+const ROOT = new URL('../../', import.meta.url).pathname
+function walk(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name)
+    if (statSync(p).isDirectory()) walk(p, out)
+    else if (/\.(ts|tsx)$/.test(name)) out.push(p.slice(ROOT.length))
+  }
+  return out
+}
+// Lectures seules, définitions ou composants sans effet : revus à la main.
+const SANS_EFFET = new Set([
+  'src/lib/payments/bictorys.ts',            // définit createBictorysPayout, appelé seulement depuis les points d'entrée
+  'src/lib/billing/balance-data.ts',         // lecture
+  'src/lib/ai/tools.ts',                     // lecture
+  'src/lib/actions/country-admin.ts',        // lectures de country_manager_payouts
+  'src/app/admin/page.tsx',                  // lecture
+  'src/app/admin/finances/page.tsx',         // lecture
+  'src/app/admin/payouts/page.tsx',          // lecture
+  'src/app/dashboard/(protected)/revenues/page.tsx', // lecture
+])
+const WRITES = /createBictorysPayout\(|processPayout\(|from\('(payouts|admin_withdrawals)'\)[\s\S]{0,40}\.(insert|update|delete|upsert)|from\('country_manager_payouts' as never\)[\s\S]{0,80}\.(insert|update|delete|upsert)/
+
+test('aucun fichier non classé n\'écrit un retrait ou n\'appelle l\'API de retrait', () => {
+  const inconnus = []
+  for (const f of walk(join(ROOT, 'src'))) {
+    if (ENTRY_POINTS.includes(f) || SANS_EFFET.has(f)) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    if (WRITES.test(src)) inconnus.push(f)
+  }
+  assert.deepEqual(inconnus, [])
+})
+
 // Garde structurelle : dans chaque point d'entrée, l'appel de la garde précède toute lecture de session,
 // toute lecture du corps, tout accès base et toute lecture de clé Bictorys.
-const ENTRY_POINTS = [
+const ROUTES_403 = [
   'src/app/api/payouts/request/route.ts',
   'src/app/api/admin/finances/withdraw/route.ts',
   'src/app/api/admin/payouts/manual/route.ts',
+  'src/app/api/admin/payouts/[id]/complete/route.ts',
+  'src/app/api/country-admin/request-payout/route.ts',
+  'src/app/api/admin/cm-payouts/[id]/complete/route.ts',
+]
+const ENTRY_POINTS = [
+  ...ROUTES_403,
   'src/lib/actions/payouts.ts',
   'src/app/api/cron/process-pending-payouts/route.ts',
 ]
@@ -72,8 +116,8 @@ for (const file of ENTRY_POINTS) {
   })
 }
 
-test('les routes de retrait répondent 403 avec le message et le code', () => {
-  for (const file of ENTRY_POINTS.slice(0, 3)) {
+test('les six routes de retrait répondent 403 avec le message et le code', () => {
+  for (const file of ROUTES_403) {
     const src = readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8')
     assert.match(src, /PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE \}, \{ status: 403 \}/, file)
   }

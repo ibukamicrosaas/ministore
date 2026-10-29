@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_CODE, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
@@ -8,6 +9,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ error: PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE }, { status: 403 })
+  }
+
   const { id } = await params
 
   const supabase = await createServerClient()
