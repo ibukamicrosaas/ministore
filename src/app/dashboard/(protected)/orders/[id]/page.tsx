@@ -20,6 +20,8 @@ import { DigitalDeliveryCard } from './DigitalDeliveryCard'
 import type { Profile, OrderItem } from '@/types'
 import { APP_URL } from '@/constants'
 import { loadOrderForMerchant } from '@/lib/orders/redact'
+import { loadDownloadTokensForMerchantOrder } from '@/lib/orders/digital-order'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const metadata = { title: 'Commande — TekkiShop' }
 
@@ -151,16 +153,15 @@ export default async function OrderDetailPage({
     }
   }
 
-  // Tokens de téléchargement pour les commandes digitales
-  const { data: downloadTokensData } = await supabase
-    .from('download_tokens' as never)
-    .select('id, token, expires_at, download_count, max_downloads, downloaded_at, products(name, digital_file_name)' as never)
-    .eq('order_id', id)
-  const downloadTokens = (downloadTokensData ?? []) as Array<{
-    id: string; token: string; expires_at: string
-    download_count: number; max_downloads: number; downloaded_at: string | null
-    products: { name: string; digital_file_name: string | null } | null
-  }>
+  // Tokens de téléchargement pour les commandes digitales. download_tokens n'a
+  // aucune policy RLS : la session du marchand n'y lit rien (l'écran affichait
+  // « Aucun lien généré » même quand les liens existaient). Lecture admin,
+  // limitée à cette commande ET à cette boutique, jamais pour une commande retenue.
+  const downloadTokens = await loadDownloadTokensForMerchantOrder(createAdminClient(), {
+    orderId: id,
+    shopId:  profile.shop_id,
+    blocked,
+  })
 
   const clientWhatsapp = merchantClient.clientWhatsapp ?? merchantClient.clientPhone
   const waLink = clientWhatsapp

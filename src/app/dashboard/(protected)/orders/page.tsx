@@ -10,6 +10,7 @@ import { fr } from 'date-fns/locale'
 import { ORDER_STATUS_LABELS } from '@/constants'
 import type { Profile } from '@/types'
 import { loadOrdersForMerchant } from '@/lib/orders/redact'
+import { isFullyDigitalOrder } from '@/lib/orders/digital-order'
 import { getFreeOrdersSummary } from '@/lib/orders/free-orders-summary'
 import { logShopEvent } from '@/lib/billing/events'
 import { getCommissionRate } from '@/lib/billing/commission'
@@ -225,6 +226,9 @@ export default async function OrdersPage({
               .map(i => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
               .join(', ')
             const isHomeDelivery = order.delivery_type === 'home_delivery'
+            // Achat entièrement digital : delivery_type est forcé à 'store_pickup'
+            // à la commande (OrderForm), « Retrait » serait faux — on affiche le mode réel.
+            const isDigitalOrder = isFullyDigitalOrder(order.order_items)
 
             if (blocked) {
               const netFunds = heldFundsNet(order.id)
@@ -298,7 +302,11 @@ export default async function OrdersPage({
                   {/* Meta + status badge */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 text-[11px] text-gray-400">
-                      {isHomeDelivery ? (
+                      {isDigitalOrder ? (
+                        <span className="flex items-center gap-1">
+                          <Download className="h-3 w-3" />Numérique
+                        </span>
+                      ) : isHomeDelivery ? (
                         <span className="flex items-center gap-1">
                           <Home className="h-3 w-3" />Livraison
                         </span>

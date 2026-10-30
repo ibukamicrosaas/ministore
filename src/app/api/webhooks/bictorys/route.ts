@@ -17,6 +17,7 @@ import { sendPushToShop } from '@/lib/push/send'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { sendPurchaseCapiEvent } from '@/lib/meta/conversions-api'
+import { isFullyDigitalOrder } from '@/lib/orders/digital-order'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 Ko — un webhook Bictorys ne dépasse jamais ça
 
@@ -440,6 +441,7 @@ async function handleOrderWebhook(
     deliveryDate: o.delivery_date ?? undefined,
     paymentType:  o.payment_type,
     orderUrl,
+    isDigitalOrder: isFullyDigitalOrder(o.order_items),
   })
 
   const clientNotif = await sendWhatsApp(clientWhatsapp, confirmMsg)

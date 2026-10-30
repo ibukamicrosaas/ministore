@@ -4,6 +4,7 @@
 // sendWhatsApp est conservé comme alias pour la compatibilité avec les appelants existants.
 
 import { sendLafricamobileSms } from './lafricamobile'
+import { confirmationDeliveryLabel } from '../orders/digital-order'
 
 function normalizePhone(phone: string): string {
   const cleaned = phone.replace(/\s+/g, '')
@@ -92,9 +93,11 @@ export function buildOrderConfirmationMessage(params: {
   deliveryDate?: string
   paymentType: string
   orderUrl: string
+  /** Achat entièrement digital : delivery_type y est forcé à 'store_pickup', mais le mode réel est le téléchargement. */
+  isDigitalOrder?: boolean
 }): string {
-  const delivery = params.deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait boutique'
-  const date     = params.deliveryDate ? ` le ${params.deliveryDate}` : ''
+  const delivery = confirmationDeliveryLabel(params.deliveryType, params.isDigitalOrder)
+  const date     = params.isDigitalOrder || !params.deliveryDate ? '' : ` le ${params.deliveryDate}`
   return `Commande confirmee chez ${params.shopName}!\n${params.items}\nTotal: ${params.totalPrice.toLocaleString('fr-FR')} FCFA | ${delivery}${date}\n${params.orderUrl}`
 }
 
