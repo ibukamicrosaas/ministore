@@ -21,6 +21,64 @@ export function confirmationDeliveryLabel(
   return deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait boutique'
 }
 
+/**
+ * Mode affiché dans le SMS « Nouvelle commande » envoyé à la vendeuse : même
+ * règle que pour la cliente, mais avec le vocabulaire court de ce SMS
+ * (« Livraison » / « Retrait »).
+ */
+export function merchantAlertDeliveryLabel(
+  deliveryType: 'home_delivery' | 'store_pickup',
+  isDigitalOrder: boolean | undefined,
+): string {
+  if (isDigitalOrder) return 'Numerique'
+  return deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait'
+}
+
+/** Message renvoyé à la cliente quand un panier digital arrive sans e-mail. */
+export const DIGITAL_EMAIL_REQUIRED_MESSAGE =
+  "Une adresse e-mail est obligatoire pour un achat numérique : c'est là que ton lien de téléchargement est envoyé."
+
+/**
+ * Un panier qui contient au moins un produit digital doit avoir une adresse
+ * e-mail (panier mixte compris). Seul le formulaire l'exigeait, et seulement
+ * pour un panier 100 % digital : un appel direct à l'API contournait la règle.
+ */
+export function digitalOrderEmailError(hasDigitalItem: boolean, email: string | null | undefined): string | null {
+  if (!hasDigitalItem) return null
+  return typeof email === 'string' && email.trim() !== '' ? null : DIGITAL_EMAIL_REQUIRED_MESSAGE
+}
+
+export type ExistingToken = {
+  product_id: string
+  token: string
+  expires_at: string
+  download_count: number
+  max_downloads: number
+}
+
+/**
+ * Décide, pour chaque produit digital d'une commande, s'il faut réutiliser un
+ * lien encore valide (non expiré, non épuisé) ou en créer un. Le bouton de la
+ * vendeuse créait un lien neuf à chaque clic, même si un lien valide existait :
+ * plusieurs clics = plusieurs liens actifs pour la même commande.
+ */
+export function planDownloadTokens(
+  productIds: string[],
+  existing: ExistingToken[],
+  now: number,
+): { reuse: { product_id: string; token: string; expires_at: string }[]; create: string[] } {
+  const reuse: { product_id: string; token: string; expires_at: string }[] = []
+  const create: string[] = []
+  for (const productId of new Set(productIds)) {
+    const valid = existing
+      .filter(t => t.product_id === productId && new Date(t.expires_at).getTime() > now && t.download_count < t.max_downloads)
+      .sort((a, b) => new Date(b.expires_at).getTime() - new Date(a.expires_at).getTime())[0]
+    if (valid) reuse.push({ product_id: productId, token: valid.token, expires_at: valid.expires_at })
+    else create.push(productId)
+  }
+  return { reuse, create }
+}
+
 export type MerchantDownloadToken = {
   id: string
   token: string

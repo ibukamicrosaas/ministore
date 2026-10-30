@@ -10,9 +10,11 @@ import {
   buildQuotaWarningMessage,
 } from '@/lib/notifications/whatsapp'
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
 import { sendPushToShop } from '@/lib/push/send'
 import { APP_URL, MAX_HELD_ORDERS } from '@/constants'
 import { redactClient, REDACTED_LABEL } from '@/lib/orders/redact'
+import { digitalOrderEmailError } from '@/lib/orders/digital-order'
 import { getHeldPhysicalOrderCount } from '@/lib/orders/held-orders'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
@@ -234,6 +236,13 @@ export async function POST(req: NextRequest) {
   // une commande.
   const hasPhysicalItem = items.some(it => productMap.get(it.product_id)?.product_type !== 'digital')
   const hasDigitalItem  = items.some(it => productMap.get(it.product_id)?.product_type === 'digital')
+  // E-mail obligatoire dès qu'un produit digital est dans le panier : le lien de
+  // téléchargement y est envoyé. Refusé avant toute écriture (aucune commande
+  // créée, aucun stock touché).
+  const digitalEmailError = digitalOrderEmailError(hasDigitalItem, client_email)
+  if (digitalEmailError) {
+    return NextResponse.json({ error: digitalEmailError }, { status: 400 })
+  }
   const isOnlinePaymentRequested = payment_type === 'online_full' || payment_type === 'online_deposit'
   // Boutique expired + article physique : la protection de l'acheteur l'emporte
   // (argent bloqué chez un marchand inactif qui ne peut pas expédier) — décidée
@@ -570,7 +579,9 @@ export async function POST(req: NextRequest) {
         deliveryType:      delivery_type,
         deliveryDate:      delivery_date,
         orderDashboardUrl: `${APP_URL}/dashboard/orders/${order.id}`,
-      })
+      }).then(r => reportEmailOutcome(
+        { shopId, orderId: order.id, type: 'new_order_shop', toEmail: shopEmail, label: 'Alerte nouvelle commande (e-mail vendeur)' }, r,
+      ))
     }
   }
 
@@ -659,7 +670,9 @@ export async function POST(req: NextRequest) {
       deliveryDate: delivery_date,
       paymentType:  payment_type,
       orderUrl,
-    })
+    }).then(r => reportEmailOutcome(
+      { shopId, orderId: order.id, type: 'order_confirmation', toEmail: client_email, label: 'Confirmation de commande (e-mail client)' }, r,
+    ))
   }
 
   // Si paiement en ligne → renvoyer vers la page de paiement
@@ -723,6 +736,7 @@ export async function POST(req: NextRequest) {
           deliveryType: delivery_type,
           deliveryDate: delivery_date ?? undefined,
           paymentType:  payment_type,
+          isDigitalOrder: hasDigitalItem && !hasPhysicalItem,
         })
 
     const shopNotif = await sendWhatsApp(shop.phone_whatsapp, alertMsg)

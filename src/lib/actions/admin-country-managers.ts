@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { APP_URL } from '@/constants'
 import { sendCountryManagerInviteEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
@@ -56,12 +57,16 @@ export async function addCountryManager(formData: FormData) {
 
     userId = linkData.user.id
 
-    await sendCountryManagerInviteEmail({
+    const inviteResult = await sendCountryManagerInviteEmail({
       toEmail:      email,
       name,
       countryLabel: country,
       inviteLink:   linkData.properties.action_link,
     })
+    if (!inviteResult.success) {
+      console.error('[addCountryManager] e-mail d\'invitation non envoyé:', inviteResult.error)
+      await reportEmailOutcome({ toEmail: email, label: 'Invitation Country Manager (e-mail)' }, inviteResult)
+    }
   }
 
   const { error: insertError } = await admin

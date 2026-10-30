@@ -9,6 +9,8 @@ import {
   buildHeldOrderMerchantAlertMessage,
 } from '@/lib/notifications/whatsapp'
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
+import { isFullyDigitalOrder } from '@/lib/orders/digital-order'
 import { sendPushToShop } from '@/lib/push/send'
 import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { formatPrice } from '@/lib/utils/country-groups'
@@ -229,7 +231,9 @@ export async function POST(req: NextRequest) {
                   deliveryType:      ord.delivery_type,
                   deliveryDate:      ord.delivery_date,
                   orderDashboardUrl: `${APP_URL}/dashboard/orders/${ord.id}`,
-                })
+                }).then(r => reportEmailOutcome(
+                  { shopId: ord.shop_id, orderId: ord.id, type: 'new_order_shop', toEmail: ord.shops?.email ?? '', label: 'Alerte nouvelle commande (e-mail vendeur)' }, r,
+                ))
               }
 
               if (ord.shops.phone_whatsapp) {
@@ -249,6 +253,7 @@ export async function POST(req: NextRequest) {
                       deliveryType: ord.delivery_type,
                       deliveryDate: ord.delivery_date ?? undefined,
                       paymentType:  ord.payment_type,
+                      isDigitalOrder: isFullyDigitalOrder(ord.order_items),
                     })
 
                 const shopNotif = await sendWhatsApp(ord.shops.phone_whatsapp, alertMsg)
@@ -299,7 +304,9 @@ export async function POST(req: NextRequest) {
                 deliveryDate: ord.delivery_date,
                 paymentType:  ord.payment_type,
                 orderUrl,
-              })
+              }).then(r => reportEmailOutcome(
+                { shopId: ord.shop_id, orderId: ord.id, type: 'order_confirmation', toEmail: ord.clients?.email ?? '', label: 'Confirmation de commande (e-mail client)' }, r,
+              ))
             }
           }
         }

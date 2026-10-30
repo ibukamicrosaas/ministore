@@ -23,12 +23,19 @@ interface Props {
   blocked?: boolean
 }
 
+function validityLabel(tokens: { expiresAt?: string }[]): string {
+  const dates = tokens.map(t => t.expiresAt).filter((d): d is string => !!d).map(d => new Date(d).getTime())
+  if (dates.length === 0) return '48h'
+  const earliest = new Date(Math.min(...dates))
+  return `jusqu'au ${earliest.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${earliest.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+}
+
 export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, appUrl, blocked = false }: Props) {
   const [copied, setCopied]       = useState<string | null>(null)
   const [resending, setResending] = useState(false)
   const [resendError, setResendError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalTokens, setModalTokens] = useState<{ token: string; downloadUrl: string; productName: string }[]>([])
+  const [modalTokens, setModalTokens] = useState<{ token: string; downloadUrl: string; productName: string; expiresAt?: string }[]>([])
 
   const hasValidToken = tokens.some(dt =>
     new Date(dt.expires_at) > new Date() && dt.download_count < dt.max_downloads
@@ -69,11 +76,12 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
     try {
       const res = await fetch(`/api/dashboard/orders/${orderId}/resend-digital`, { method: 'POST' })
       if (res.ok) {
-        const data = await res.json() as { ok: boolean; tokens: { token: string; downloadUrl: string; productName?: string }[] }
+        const data = await res.json() as { ok: boolean; tokens: { token: string; downloadUrl: string; productName?: string; expiresAt?: string }[] }
         setModalTokens(data.tokens.map(t => ({
           token:       t.token,
           downloadUrl: t.downloadUrl,
           productName: t.productName ?? 'ton fichier',
+          expiresAt:   t.expiresAt,
         })))
         setModalOpen(true)
       } else {
@@ -101,7 +109,8 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
           ? [`*${t.productName}* :`, t.downloadUrl, '']
           : [t.downloadUrl]
       ),
-      `_Lien${modalTokens.length > 1 ? 's' : ''} valide${modalTokens.length > 1 ? 's' : ''} 48h — max 5 téléchargements._`,
+      // Un lien réutilisé peut avoir moins de 48 h devant lui : on annonce sa vraie échéance.
+      `_Lien${modalTokens.length > 1 ? 's' : ''} valide${modalTokens.length > 1 ? 's' : ''} ${validityLabel(modalTokens)} — max 5 téléchargements._`,
     ]
     return lines.filter(l => l !== null).join('\n')
   }
@@ -180,7 +189,8 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
         </div>
       )}
 
-      {/* Bouton regénérer — si aucun token valide */}
+      {/* Prépare un message WhatsApp (rien n'est envoyé d'ici) — si aucun token valide.
+          Le serveur réutilise un lien valide s'il en existe un. */}
       {!hasValidToken && (
         <div className="pt-2 border-t border-gray-100">
           {resendError && (
@@ -192,7 +202,7 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
             className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm font-semibold text-gray-600 hover:border-sky-400 hover:text-sky-600 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`h-4 w-4 ${resending ? 'animate-spin' : ''}`} />
-            {resending ? 'Génération en cours...' : 'Générer un nouveau lien et envoyer au client'}
+            {resending ? 'Préparation en cours...' : 'Préparer le message WhatsApp'}
           </button>
         </div>
       )}
@@ -210,7 +220,7 @@ export function DigitalDeliveryCard({ tokens, orderId, clientPhone, clientName, 
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Envoyer à {clientName}</p>
-                <p className="text-[11px] text-gray-500">Lien généré — prêt à envoyer</p>
+                <p className="text-[11px] text-gray-500">Message prêt — rien n&apos;est envoyé tant que tu n&apos;ouvres pas WhatsApp</p>
               </div>
             </div>
             <button

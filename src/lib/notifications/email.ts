@@ -2,6 +2,7 @@ import { Resend } from 'resend'
 import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { APP_URL } from '@/constants'
+import { classifyResendError, missingKeyResult, type EmailResult } from './email-result'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -45,6 +46,29 @@ function buildBrandHeader(shopName: string, label: string, shopColor?: string | 
     </div>`
 }
 
+// Envoi commun aux gabarits ci-dessous. resend.emails.send() renvoie
+// { data, error } sans lever : un simple try/catch laissait passer un refus
+// (domaine non vérifié, clé invalide) sans aucune trace — c'est ce qui a rendu
+// muets les e-mails de commande le 30/10. On lit donc toujours `error`.
+async function deliver(
+  label: string,
+  payload: Parameters<Resend['emails']['send']>[0],
+): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
+  try {
+    const { error } = await resend.emails.send(payload)
+    if (error) {
+      console.error(`[email] ${label} refusé par Resend:`, error.name, error.message)
+      return classifyResendError(error)
+    }
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue'
+    console.error(`[email] ${label} failed:`, message)
+    return { success: false, error: message }
+  }
+}
+
 interface NewOrderAlertParams {
   toEmail: string
   shopName: string
@@ -59,8 +83,8 @@ interface NewOrderAlertParams {
   orderDashboardUrl: string
 }
 
-export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promise<void> {
-  if (!resend) return
+export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -101,16 +125,12 @@ export async function sendNewOrderAlertEmail(params: NewOrderAlertParams): Promi
 </body>
 </html>`
 
-  try {
-    await resend.emails.send({
+  return deliver('sendNewOrderAlertEmail', {
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
       subject: `Nouvelle commande — ${params.clientName} · ${params.totalPrice.toLocaleString('fr-FR')} FCFA`,
       html,
-    })
-  } catch (err) {
-    console.error('[email] sendNewOrderAlertEmail failed:', err)
-  }
+  })
 }
 
 interface ReviewRequestParams {
@@ -123,8 +143,8 @@ interface ReviewRequestParams {
   reviewUrl: string       // /{shopSlug}/avis/{clientToken}
 }
 
-export async function sendReviewRequestEmail(params: ReviewRequestParams): Promise<void> {
-  if (!resend) return
+export async function sendReviewRequestEmail(params: ReviewRequestParams): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
 
   const productList = params.productNames
     .map(n => `<li style="margin:4px 0;color:#374151;font-size:14px;">${n}</li>`)
@@ -185,16 +205,12 @@ export async function sendReviewRequestEmail(params: ReviewRequestParams): Promi
 </body>
 </html>`
 
-  try {
-    await resend.emails.send({
+  return deliver('sendReviewRequestEmail', {
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
       subject: `Ton avis compte ! Comment s'est passée ta commande chez ${params.shopName} ?`,
       html,
-    })
-  } catch (err) {
-    console.error('[email] sendReviewRequestEmail failed:', err)
-  }
+  })
 }
 
 interface OrderConfirmationParams {
@@ -229,8 +245,8 @@ interface OrderConfirmationParams {
   orderUrl: string
 }
 
-export async function sendOrderConfirmationEmail(params: OrderConfirmationParams): Promise<void> {
-  if (!resend) return // silencieux si RESEND_API_KEY non configurée
+export async function sendOrderConfirmationEmail(params: OrderConfirmationParams): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
 
   const cur = params.currency
 
@@ -344,16 +360,12 @@ export async function sendOrderConfirmationEmail(params: OrderConfirmationParams
 </body>
 </html>`
 
-  try {
-    await resend.emails.send({
+  return deliver('sendOrderConfirmationEmail', {
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
       subject: `Commande confirmée — ${params.shopName}`,
       html,
-    })
-  } catch (err) {
-    console.error('[email] sendOrderConfirmationEmail failed:', err)
-  }
+  })
 }
 
 interface LicenceApplicationEmailParams {
@@ -366,8 +378,8 @@ interface LicenceApplicationEmailParams {
   acquisitionPlan: string
 }
 
-export async function sendLicenceApplicationEmail(params: LicenceApplicationEmailParams): Promise<void> {
-  if (!resend) return // silencieux si RESEND_API_KEY non configurée
+export async function sendLicenceApplicationEmail(params: LicenceApplicationEmailParams): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
 
   const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -399,16 +411,12 @@ export async function sendLicenceApplicationEmail(params: LicenceApplicationEmai
 </body>
 </html>`
 
-  try {
-    await resend.emails.send({
+  return deliver('sendLicenceApplicationEmail', {
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
       subject: `Candidature licence : ${params.country} (${params.fullName})`,
       html,
-    })
-  } catch (err) {
-    console.error('[email] sendLicenceApplicationEmail failed:', err)
-  }
+  })
 }
 
 interface CountryManagerInviteEmailParams {
@@ -422,8 +430,8 @@ interface CountryManagerInviteEmailParams {
 // pour ce lien — on récupère le lien via admin.auth.admin.generateLink()
 // et on l'envoie nous-mêmes via Resend, même principe que le reste des
 // e-mails transactionnels de ce fichier.
-export async function sendCountryManagerInviteEmail(params: CountryManagerInviteEmailParams): Promise<void> {
-  if (!resend) return
+export async function sendCountryManagerInviteEmail(params: CountryManagerInviteEmailParams): Promise<EmailResult> {
+  if (!resend) return missingKeyResult()
 
   const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -446,16 +454,12 @@ export async function sendCountryManagerInviteEmail(params: CountryManagerInvite
 </body>
 </html>`
 
-  try {
-    await resend.emails.send({
+  return deliver('sendCountryManagerInviteEmail', {
       from:    FROM_ADDRESS,
       to:      [params.toEmail],
       subject: `Ton accès Country Manager TEKKIShop — ${params.countryLabel}`,
       html,
-    })
-  } catch (err) {
-    console.error('[email] sendCountryManagerInviteEmail failed:', err)
-  }
+  })
 }
 
 interface StockBackEmailParams {
