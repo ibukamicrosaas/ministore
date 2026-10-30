@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createBictorysPayout, detectCountryFromPhone } from '@/lib/payments/bictorys'
 import type { BictorysPayoutPaymentType } from '@/lib/payments/bictorys'
 import { CM_PLAN_PRICES } from '@/lib/country-manager-config'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_CODE, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
@@ -22,6 +23,10 @@ const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
 type AdminWithdrawal = { id: string }
 
 export async function POST(req: NextRequest) {
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ error: PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE }, { status: 403 })
+  }
+
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !ADMIN_USER_IDS.includes(user.id)) {

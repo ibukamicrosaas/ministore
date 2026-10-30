@@ -10,6 +10,7 @@ import { getCommissionRate } from '@/lib/billing/commission'
 import { getPayoutFeeRate } from '@/lib/billing/payout-fees'
 import { computeBalance } from '@/lib/billing/balance'
 import { loadBalanceInputs } from '@/lib/billing/balance-data'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_CODE, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 import * as Sentry from '@sentry/nextjs'
 
 // Méthodes confirmées par Bictorys uniquement — tmoney/mobicash/maxit/celtis
@@ -24,6 +25,10 @@ const PAYOUT_METHOD_BICTORYS: Record<string, BictorysPayoutPaymentType> = {
 }
 
 export async function POST(req: NextRequest) {
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ error: PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE }, { status: 403 })
+  }
+
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })

@@ -5,10 +5,15 @@ import type { PayoutMethodKey } from '@/lib/utils/country-groups'
 import { getCommissionRate } from '@/lib/billing/commission'
 import { computeBalance } from '@/lib/billing/balance'
 import { loadBalanceInputs } from '@/lib/billing/balance-data'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_CODE, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
 
 export async function POST(req: NextRequest) {
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ error: PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE }, { status: 403 })
+  }
+
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !ADMIN_USER_IDS.includes(user.id)) {

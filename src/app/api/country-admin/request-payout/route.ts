@@ -3,8 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireCountryManagerFull, getCMSubscriptionBalance } from '@/lib/actions/country-admin'
 import { CM_PAYOUT_MIN } from '@/lib/country-manager-config'
 import { getPayoutMethods, type PayoutMethodKey } from '@/lib/utils/country-groups'
+import { arePayoutsEnabled, PAYOUTS_DISABLED_CODE, PAYOUTS_DISABLED_MESSAGE } from '@/lib/billing/payouts-guard'
 
 export async function POST(req: NextRequest) {
+  if (!arePayoutsEnabled()) {
+    return NextResponse.json({ error: PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE }, { status: 403 })
+  }
+
   let cm: Awaited<ReturnType<typeof requireCountryManagerFull>>
   try {
     cm = await requireCountryManagerFull()
