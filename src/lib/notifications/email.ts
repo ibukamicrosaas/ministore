@@ -3,6 +3,7 @@ import { formatPrice } from '@/lib/utils/country-groups'
 import type { ShopCurrency } from '@/lib/utils/country-groups'
 import { APP_URL } from '@/constants'
 import { classifyResendError, missingKeyResult, type EmailResult } from './email-result'
+import { redactEmails } from './email-alert'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -58,13 +59,13 @@ async function deliver(
   try {
     const { error } = await resend.emails.send(payload)
     if (error) {
-      console.error(`[email] ${label} refusé par Resend:`, error.name, error.message)
+      console.error(`[email] ${label} refusé par Resend:`, error.name, redactEmails(error.message ?? ''))
       return classifyResendError(error)
     }
     return { success: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur inconnue'
-    console.error(`[email] ${label} failed:`, message)
+    console.error(`[email] ${label} failed:`, redactEmails(message))
     return { success: false, error: message }
   }
 }

@@ -10,6 +10,11 @@
 
 import type { EmailResult } from './email-result'
 
+/** Retire toute adresse e-mail d'un texte destiné aux journaux. */
+export function redactEmails(text: string): string {
+  return text.replace(/[^\s<>"'(),;:]+@[^\s<>"'(),;:]+/g, '[e-mail]')
+}
+
 export const ALERT_JOB_NAME = 'email-config-alert'
 export const ALERT_WINDOW_MS = 6 * 60 * 60 * 1000
 
@@ -119,6 +124,13 @@ export async function recordEmailOutcome(
         error_message:     result.error ?? null,
       })
       if (error) console.error('[email] journalisation', ctx.label, error.message)
+    }
+
+    if (!result.success) {
+      // Ligne de classement pour les journaux Vercel : sans adresse e-mail.
+      console.error(
+        `[email] refus classé ${result.configError ? 'configuration' : 'passager'} — ${ctx.label} — erreur Resend: ${result.errorName ?? 'inconnue'} — ${redactEmails(result.error ?? '').slice(0, 160)} — alerte admin ${result.configError && deps.alertEnabled ? 'autorisée' : 'non déclenchée'}`,
+      )
     }
 
     if (!result.success && result.configError && deps.alertEnabled) {

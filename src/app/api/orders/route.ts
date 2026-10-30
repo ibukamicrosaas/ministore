@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   sendWhatsApp,
@@ -567,7 +567,8 @@ export async function POST(req: NextRequest) {
     // Alerte email au marchand si email configuré (fire-and-forget)
     const shopEmail = (shop as typeof shop & { email?: string | null }).email
     if (shopEmail) {
-      void sendNewOrderAlertEmail({
+      after(
+        sendNewOrderAlertEmail({
         toEmail:           shopEmail,
         shopName:          shop.name,
         shopColor:         shop.primary_color,
@@ -580,8 +581,8 @@ export async function POST(req: NextRequest) {
         deliveryDate:      delivery_date,
         orderDashboardUrl: `${APP_URL}/dashboard/orders/${order.id}`,
       }).then(r => reportEmailOutcome(
-        { shopId, orderId: order.id, type: 'new_order_shop', toEmail: shopEmail, label: 'Alerte nouvelle commande (e-mail vendeur)' }, r,
-      ))
+        { shopId, orderId: order.id, type: 'new_order_shop', toEmail: shopEmail, label: 'Alerte nouvelle commande (e-mail vendeur)' }, r)),
+      )
     }
   }
 
@@ -645,7 +646,8 @@ export async function POST(req: NextRequest) {
   // Pour les paiements en ligne, l'email part depuis le webhook après confirmation du paiement —
   // pas ici, pour ne pas laisser croire au client que sa commande est validée avant qu'il ait payé.
   if (client_email && !isOnlinePayment) {
-    void sendOrderConfirmationEmail({
+    after(
+      sendOrderConfirmationEmail({
       toEmail:          client_email,
       clientName:       client_first_name,
       shopName:         shop.name,
@@ -671,8 +673,8 @@ export async function POST(req: NextRequest) {
       paymentType:  payment_type,
       orderUrl,
     }).then(r => reportEmailOutcome(
-      { shopId, orderId: order.id, type: 'order_confirmation', toEmail: client_email, label: 'Confirmation de commande (e-mail client)' }, r,
-    ))
+      { shopId, orderId: order.id, type: 'order_confirmation', toEmail: client_email, label: 'Confirmation de commande (e-mail client)' }, r)),
+    )
   }
 
   // Si paiement en ligne → renvoyer vers la page de paiement

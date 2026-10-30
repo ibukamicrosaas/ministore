@@ -154,3 +154,38 @@ test('redactRawResponse : retire le numéro sous toutes ses formes et tronque', 
   assert.equal(redactRawResponse('to=221700000000 / +221700000000', '+221700000000'), 'to=[destinataire] / [destinataire]')
   assert.equal(redactRawResponse('x'.repeat(500), '+221700000000').length, 300)
 })
+
+async function captureErrors(fn) {
+  const lines = []; const orig = console.error
+  console.error = (...a) => { lines.push(a.join(' ')) }
+  try { await fn() } finally { console.error = orig }
+  return lines
+}
+
+test('journal Vercel : refus de configuration classé « configuration » avec le nom Resend, sans e-mail', async () => {
+  const admin = fakeAdmin(); const sent = []
+  const refusal = { ...domainRefusal, message: `${domainRefusal.message} (to: client@example.com)` }
+  const lines = await captureErrors(() => recordEmailOutcome(deps(admin, sent), ctx, classifyResendError(refusal)))
+  const line = lines.find(l => l.includes('refus classé'))
+  assert.match(line, /refus classé configuration/)
+  assert.match(line, /erreur Resend: validation_error/)
+  assert.doesNotMatch(line, /@/)
+})
+
+test('journal Vercel : panne passagère classée « passager »', async () => {
+  const admin = fakeAdmin(); const sent = []
+  const lines = await captureErrors(() => recordEmailOutcome(deps(admin, sent), ctx, classifyResendError({ name: 'rate_limit_exceeded', statusCode: 429, message: 'Too many requests' })))
+  assert.match(lines.find(l => l.includes('refus classé')), /refus classé passager.*rate_limit_exceeded.*alerte admin non déclenchée/)
+})
+
+test('journal Vercel : clé absente et aperçu (alerte coupée)', async () => {
+  const admin = fakeAdmin(); const sent = []
+  const lines = await captureErrors(() => recordEmailOutcome(deps(admin, sent, { alertEnabled: false }), ctx, missingKeyResult()))
+  assert.match(lines.find(l => l.includes('refus classé')), /configuration.*missing_api_key.*alerte admin non déclenchée/)
+})
+
+test('envoi réussi : aucune ligne de refus', async () => {
+  const admin = fakeAdmin(); const sent = []
+  const lines = await captureErrors(() => recordEmailOutcome(deps(admin, sent), ctx, { success: true }))
+  assert.equal(lines.length, 0)
+})

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { constructStripeEvent } from '@/lib/payments/stripe'
 import type Stripe from 'stripe'
@@ -219,7 +219,8 @@ export async function POST(req: NextRequest) {
               }, ord.id, 'new_order_shop')
 
               if (ord.shops.email) {
-                void sendNewOrderAlertEmail({
+                after(
+                  sendNewOrderAlertEmail({
                   toEmail:           ord.shops.email,
                   shopName:          ord.shops.name,
                   shopColor:         ord.shops.primary_color,
@@ -232,8 +233,8 @@ export async function POST(req: NextRequest) {
                   deliveryDate:      ord.delivery_date,
                   orderDashboardUrl: `${APP_URL}/dashboard/orders/${ord.id}`,
                 }).then(r => reportEmailOutcome(
-                  { shopId: ord.shop_id, orderId: ord.id, type: 'new_order_shop', toEmail: ord.shops?.email ?? '', label: 'Alerte nouvelle commande (e-mail vendeur)' }, r,
-                ))
+                  { shopId: ord.shop_id, orderId: ord.id, type: 'new_order_shop', toEmail: ord.shops?.email ?? '', label: 'Alerte nouvelle commande (e-mail vendeur)' }, r)),
+                )
               }
 
               if (ord.shops.phone_whatsapp) {
@@ -278,7 +279,8 @@ export async function POST(req: NextRequest) {
               const isDigitalOrder = ord.order_items.length > 0 && ord.order_items.every(i => i.products?.product_type === 'digital')
               const isDeposit = ord.payment_type === 'online_deposit' && (ord.deposit_amount ?? 0) > 0
               const orderUrl = `${APP_URL}/${ord.shops.slug}/commander/success?order_id=${ord.id}&token=${ord.client_token}`
-              void sendOrderConfirmationEmail({
+              after(
+                sendOrderConfirmationEmail({
                 toEmail:          ord.clients.email,
                 clientName:       ord.clients.first_name,
                 shopName:         ord.shops.name,
@@ -305,8 +307,8 @@ export async function POST(req: NextRequest) {
                 paymentType:  ord.payment_type,
                 orderUrl,
               }).then(r => reportEmailOutcome(
-                { shopId: ord.shop_id, orderId: ord.id, type: 'order_confirmation', toEmail: ord.clients?.email ?? '', label: 'Confirmation de commande (e-mail client)' }, r,
-              ))
+                { shopId: ord.shop_id, orderId: ord.id, type: 'order_confirmation', toEmail: ord.clients?.email ?? '', label: 'Confirmation de commande (e-mail client)' }, r)),
+              )
             }
           }
         }

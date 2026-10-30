@@ -529,7 +529,7 @@ export function OrderForm({
     // obligatoire — c'est là que le lien de téléchargement est envoyé. Même
     // règle imposée côté serveur par api/orders (digitalOrderEmailError).
     if (hasDigitalItem && !clientEmail.trim())
-      newErrors.email = "L'e-mail est obligatoire pour un achat numérique : ton lien de téléchargement y est envoyé."
+      newErrors.email = "Une adresse e-mail est obligatoire pour un achat numérique. C’est à cette adresse que vous recevrez votre lien de téléchargement."
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)

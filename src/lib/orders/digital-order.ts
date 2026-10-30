@@ -36,7 +36,7 @@ export function merchantAlertDeliveryLabel(
 
 /** Message renvoyé à la cliente quand un panier digital arrive sans e-mail. */
 export const DIGITAL_EMAIL_REQUIRED_MESSAGE =
-  "Une adresse e-mail est obligatoire pour un achat numérique : c'est là que ton lien de téléchargement est envoyé."
+  "Une adresse e-mail est obligatoire pour un achat numérique. C’est à cette adresse que vous recevrez votre lien de téléchargement."
 
 /**
  * Un panier qui contient au moins un produit digital doit avoir une adresse

@@ -11,7 +11,9 @@ test('panier avec produit digital et sans e-mail : refus avec un message clair',
   for (const email of [undefined, null, '', '   ']) {
     assert.equal(digitalOrderEmailError(true, email), DIGITAL_EMAIL_REQUIRED_MESSAGE)
   }
-  assert.match(DIGITAL_EMAIL_REQUIRED_MESSAGE, /e-mail est obligatoire pour un achat numérique/)
+  assert.equal(DIGITAL_EMAIL_REQUIRED_MESSAGE, "Une adresse e-mail est obligatoire pour un achat numérique. C’est à cette adresse que vous recevrez votre lien de téléchargement.")
+  assert.doesNotMatch(DIGITAL_EMAIL_REQUIRED_MESSAGE, /:/)
+  assert.doesNotMatch(DIGITAL_EMAIL_REQUIRED_MESSAGE, /\b(tu|ton|ta|tes|toi)\b/i)
 })
 
 test('panier avec produit digital et un e-mail : accepté (panier mixte compris)', () => {
