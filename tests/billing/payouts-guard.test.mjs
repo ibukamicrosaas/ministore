@@ -122,3 +122,17 @@ test('les six routes de retrait répondent 403 avec le message et le code', () =
     assert.match(src, /PAYOUTS_DISABLED_MESSAGE, code: PAYOUTS_DISABLED_CODE \}, \{ status: 403 \}/, file)
   }
 })
+
+// Route de vérification de l'environnement : réservée aux administrateurs, 404 sinon,
+// aucun accès base ni Bictorys, renvoie { vercelEnv, payoutsEnabled }.
+test('env-check : admin seulement, 404 sinon, sans base ni Bictorys', () => {
+  const src = readFileSync(new URL('../../src/app/api/admin/env-check/route.ts', import.meta.url), 'utf8')
+  const body = src.slice(src.search(/export async function GET/))
+  assert.match(src, /ADMIN_USER_IDS\.includes\(user\.id\)/)
+  assert.match(body, /\{ status: 404 \}/)
+  assert.ok(body.indexOf('{ status: 404 }') < body.indexOf('vercelEnv'), 'le 404 doit précéder la réponse')
+  assert.match(body, /vercelEnv: process\.env\.VERCEL_ENV \?\? null, payoutsEnabled: arePayoutsEnabled\(\)/)
+  for (const interdit of ['createAdminClient', '.from(', '.rpc(', 'bictorys', 'BICTORYS']) {
+    assert.ok(!src.includes(interdit), `${interdit} ne doit pas apparaître`)
+  }
+})
