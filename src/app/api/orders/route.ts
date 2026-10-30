@@ -685,6 +685,7 @@ export async function POST(req: NextRequest) {
         deliveryDate: delivery_date ?? undefined,
         paymentType:  payment_type,
         orderUrl,
+        isDigitalOrder: hasDigitalItem && !hasPhysicalItem,
       })
 
   const clientNotif = await sendWhatsApp(client_whatsapp, confirmMsg)
