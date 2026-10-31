@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCronRequest } from '@/lib/auth/verify-cron'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendReviewRequestEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
 import { APP_URL } from '@/constants'
 
 export const runtime = 'nodejs'
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
     const productNames = order.order_items.map(i => i.product_name).filter(Boolean)
 
     try {
-      await sendReviewRequestEmail({
+      const result = await sendReviewRequestEmail({
         toEmail:      clientEmail,
         clientName:   order.clients!.first_name,
         shopName:     shop.name,
@@ -78,6 +79,19 @@ export async function GET(req: NextRequest) {
         productNames: productNames.length > 0 ? productNames : ['Votre commande'],
         reviewUrl,
       })
+
+      // Resend renvoie un refus au lieu de lever : la commande n'est marquée
+      // « demande envoyée » que si l'envoi a réussi, sinon le prochain passage
+      // du cron la retente. Rien n'est journalisé par commande (notification_logs
+      // n'a pas de type dédié aux avis) — seule la config déclenche l'alerte.
+      if (!result.success) {
+        await reportEmailOutcome({ toEmail: clientEmail, label: 'Demande d\'avis (e-mail client)' }, result)
+        console.error('[cron/review-requests] e-mail refusé pour la commande', order.id, result.error)
+        failed++
+        // Refus de configuration : inutile d'essayer les commandes suivantes.
+        if (result.configError) break
+        continue
+      }
 
       await supabase
         .from('orders')

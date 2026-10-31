@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendLicenceApplicationEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
 import { headers } from 'next/headers'
 
 const NOTIFY_EMAIL = 'ibuka.ndjoli@gmail.com'
@@ -76,7 +77,7 @@ export async function submitLicenceApplication(
     return { error: 'Impossible d\'envoyer ta candidature. Réessaie.' }
   }
 
-  await sendLicenceApplicationEmail({
+  const emailResult = await sendLicenceApplicationEmail({
     toEmail: NOTIFY_EMAIL,
     country,
     fullName,
@@ -85,6 +86,10 @@ export async function submitLicenceApplication(
     experience,
     acquisitionPlan,
   })
+  if (!emailResult.success) {
+    console.error('[submitLicenceApplication] e-mail de notification non envoyé:', emailResult.error)
+    await reportEmailOutcome({ toEmail: NOTIFY_EMAIL, label: 'Candidature licence (e-mail interne)' }, emailResult)
+  }
 
   return {}
 }

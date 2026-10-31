@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyBictorysSignature, getBictorysCharge, type BictorysWebhookPayload } from '@/lib/payments/bictorys'
@@ -11,6 +11,7 @@ import {
 import { APP_URL } from '@/constants'
 import { activatePlan } from '@/lib/billing/activate-plan'
 import { sendOrderConfirmationEmail, sendNewOrderAlertEmail } from '@/lib/notifications/email'
+import { reportEmailOutcome } from '@/lib/notifications/email-outcome'
 import { loadOrderForMerchant, REDACTED_LABEL } from '@/lib/orders/redact'
 import { buildHeldOrderMerchantAlertMessage } from '@/lib/notifications/whatsapp'
 import { sendPushToShop } from '@/lib/push/send'
@@ -477,6 +478,7 @@ async function handleOrderWebhook(
           deliveryType: o.delivery_type,
           deliveryDate: o.delivery_date ?? undefined,
           paymentType:  o.payment_type,
+          isDigitalOrder: isFullyDigitalOrder(o.order_items),
         })
 
     const shopNotif = await sendWhatsApp(o.shops.phone_whatsapp, alertMsg)
@@ -504,7 +506,8 @@ async function handleOrderWebhook(
   }, o.id, 'new_order_shop')
 
   if (o.shops.email) {
-    void sendNewOrderAlertEmail({
+    after(
+      sendNewOrderAlertEmail({
       toEmail:           o.shops.email,
       shopName:          o.shops.name,
       shopColor:         o.shops.primary_color,
@@ -516,7 +519,9 @@ async function handleOrderWebhook(
       deliveryType:      o.delivery_type,
       deliveryDate:      o.delivery_date,
       orderDashboardUrl: `${APP_URL}/dashboard/orders/${o.id}`,
-    })
+    }).then(r => reportEmailOutcome(
+      { shopId: o.shop_id, orderId: o.id, type: 'new_order_shop', toEmail: o.shops?.email ?? '', label: 'Alerte nouvelle commande (e-mail vendeur)' }, r)),
+    )
   }
 
   // ── Produits digitaux : générer les tokens et envoyer le lien WhatsApp ────
@@ -586,7 +591,8 @@ async function handleOrderWebhook(
     const itemsSummaryEmail = o.order_items
       .map(i => `• ${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''} — ${formatPrice(i.line_total, shopCurrency)}`)
       .join('\n')
-    void sendOrderConfirmationEmail({
+    after(
+      sendOrderConfirmationEmail({
       toEmail:          o.clients.email,
       clientName:       o.clients.first_name,
       shopName:         o.shops.name,
@@ -612,7 +618,9 @@ async function handleOrderWebhook(
       deliveryDate: o.delivery_date,
       paymentType:  o.payment_type,
       orderUrl,
-    })
+    }).then(r => reportEmailOutcome(
+      { shopId: o.shop_id, orderId: o.id, type: 'order_confirmation', toEmail: o.clients?.email ?? '', label: 'Confirmation de commande (e-mail client)' }, r)),
+    )
   }
 
   console.log('[handleOrderWebhook] ✅ Commande confirmée — notifications envoyées')

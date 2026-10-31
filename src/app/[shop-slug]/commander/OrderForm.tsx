@@ -525,11 +525,11 @@ export function OrderForm({
     if (!phoneNum.trim())  newErrors.phone     = 'Votre téléphone est obligatoire.'
     if (hasPhysicalItem && deliveryType === 'home_delivery' && !address.trim())
       newErrors.address = "L'adresse de livraison est obligatoire."
-    // Panier 100% digital : l'e-mail devient obligatoire (§8) — c'est le seul moyen
-    // de retrouver son fichier hors de cette session. Validation client uniquement
-    // pour ce lot, sur décision explicite — pas de renfort côté serveur ici.
-    if (!hasPhysicalItem && hasDigitalItem && !clientEmail.trim())
-      newErrors.email = "L'e-mail est obligatoire pour un achat numérique."
+    // Panier contenant un produit digital (mixte compris) : l'e-mail est
+    // obligatoire — c'est là que le lien de téléchargement est envoyé. Même
+    // règle imposée côté serveur par api/orders (digitalOrderEmailError).
+    if (hasDigitalItem && !clientEmail.trim())
+      newErrors.email = "Une adresse e-mail est obligatoire pour un achat numérique. C’est à cette adresse que vous recevrez votre lien de téléchargement."
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)

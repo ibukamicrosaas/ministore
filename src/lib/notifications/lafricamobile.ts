@@ -11,6 +11,18 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;')
 }
 
+// Réponse brute à journaliser pour documenter le format réel d'un succès et d'une
+// erreur (non documenté dans le dépôt : aujourd'hui tout HTTP 2xx vaut « sent »).
+// Le numéro du destinataire en est retiré, le reste est tronqué.
+export function redactRawResponse(raw: string, to: string): string {
+  const digits = to.replace(/\D/g, '')
+  let out = raw
+  for (const variant of [to, `+${digits}`, digits]) {
+    if (variant) out = out.split(variant).join('[destinataire]')
+  }
+  return out.replace(/\s+/g, ' ').trim().slice(0, 300)
+}
+
 interface SendLafricamobileSmsParams {
   to: string
   text: string
@@ -55,6 +67,10 @@ export async function sendLafricamobileSms(
     })
 
     const rawResponse = await res.text()
+
+    // Étape de relevé : la règle de statut ci-dessous n'est PAS modifiée tant que
+    // le format d'un succès et d'une erreur n'est pas connu.
+    console.log(`[lafricamobile] HTTP ${res.status} réponse brute: ${redactRawResponse(rawResponse, to)}`)
 
     if (!res.ok) {
       return { success: false, rawResponse, error: `Lafricamobile HTTP ${res.status}` }

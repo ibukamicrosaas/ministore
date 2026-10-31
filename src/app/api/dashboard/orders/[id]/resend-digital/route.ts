@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { APP_URL } from '@/constants'
 import { isOrderBlocked } from '@/lib/orders/redact'
+import { planDownloadTokens, type ExistingToken } from '@/lib/orders/digital-order'
 
 export async function POST(
   req: NextRequest,
@@ -76,16 +77,44 @@ export async function POST(
     return NextResponse.json({ error: 'Aucun produit digital dans cette commande' }, { status: 400 })
   }
 
+  // Réutilise un lien encore valide au lieu d'en créer un à chaque appel : un
+  // second clic (ou un double envoi) ne multiplie plus les liens actifs.
+  const { data: existingData, error: existingError } = await supabase
+    .from('download_tokens')
+    .select('product_id, token, expires_at, download_count, max_downloads')
+    .eq('order_id', orderId)
+    .eq('shop_id', profileData.shop_id)
+
+  if (existingError) {
+    console.error('[resend-digital] lecture download_tokens', existingError.message)
+    return NextResponse.json({ error: 'Impossible de vérifier les liens existants. Réessaie.' }, { status: 500 })
+  }
+
+  const productNameById = new Map(digitalItems.map(i => [i.product_id, i.products?.digital_file_name ?? 'ton fichier']))
+  const plan = planDownloadTokens(
+    digitalItems.map(i => i.product_id),
+    (existingData ?? []) as ExistingToken[],
+    Date.now(),
+  )
+
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
 
-  const newTokens: { token: string; downloadUrl: string; productName: string }[] = []
+  const newTokens: { token: string; downloadUrl: string; productName: string; expiresAt: string; reused: boolean }[] =
+    plan.reuse.map(r => ({
+      token:       r.token,
+      downloadUrl: `${APP_URL}/telechargement/${r.token}`,
+      productName: productNameById.get(r.product_id) ?? 'ton fichier',
+      expiresAt:   r.expires_at,
+      reused:      true,
+    }))
 
-  for (const item of digitalItems) {
-    const { data: tokenData } = await supabase
+  let createFailures = 0
+  for (const productId of plan.create) {
+    const { data: tokenData, error: insertError } = await supabase
       .from('download_tokens')
       .insert({
         order_id:      orderId,
-        product_id:    item.product_id,
+        product_id:    productId,
         shop_id:       profileData.shop_id,
         expires_at:    expiresAt,
         max_downloads: 5,
@@ -93,11 +122,25 @@ export async function POST(
       .select('token')
       .single()
 
-    if (tokenData?.token) {
-      const downloadUrl   = `${APP_URL}/telechargement/${tokenData.token}`
-      const productName   = item.products?.digital_file_name ?? 'ton fichier'
-      newTokens.push({ token: tokenData.token, downloadUrl, productName })
+    if (insertError) console.error('[resend-digital] création du lien', productId, insertError.message)
+
+    if (!tokenData?.token) {
+      createFailures++
+    } else {
+      newTokens.push({
+        token:       tokenData.token,
+        downloadUrl: `${APP_URL}/telechargement/${tokenData.token}`,
+        productName: productNameById.get(productId) ?? 'ton fichier',
+        expiresAt,
+        reused:      false,
+      })
     }
+  }
+
+  // Un lien manque : ne pas laisser croire à la vendeuse que tout est prêt. Les
+  // liens déjà créés restent valides et seront réutilisés au prochain essai.
+  if (createFailures > 0 || newTokens.length === 0) {
+    return NextResponse.json({ error: 'Impossible de générer le lien. Réessaie dans un instant.' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true, tokens: newTokens })

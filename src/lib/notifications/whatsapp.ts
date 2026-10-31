@@ -4,7 +4,7 @@
 // sendWhatsApp est conservé comme alias pour la compatibilité avec les appelants existants.
 
 import { sendLafricamobileSms } from './lafricamobile'
-import { confirmationDeliveryLabel } from '../orders/digital-order'
+import { confirmationDeliveryLabel, merchantAlertDeliveryLabel } from '../orders/digital-order'
 
 function normalizePhone(phone: string): string {
   const cleaned = phone.replace(/\s+/g, '')
@@ -113,10 +113,12 @@ export function buildNewOrderAlertMessage(params: {
   deliveryType: 'home_delivery' | 'store_pickup'
   deliveryDate?: string
   paymentType: string
+  /** Achat entièrement digital : « Numerique » au lieu de « Retrait », sans date. */
+  isDigitalOrder?: boolean
 }): string {
-  const delivery = params.deliveryType === 'home_delivery' ? 'Livraison' : 'Retrait'
+  const delivery = merchantAlertDeliveryLabel(params.deliveryType, params.isDigitalOrder)
   const payment  = params.paymentType === 'on_delivery' ? 'A la reception' : params.paymentType === 'on_site' ? 'En boutique' : 'Paye en ligne'
-  const date     = params.deliveryDate ? ` | ${params.deliveryDate}` : ''
+  const date     = params.isDigitalOrder || !params.deliveryDate ? '' : ` | ${params.deliveryDate}`
   const amount   = params.totalPriceFormatted ?? `${params.totalPrice.toLocaleString('fr-FR')} FCFA`
   return `Nouvelle commande - ${params.clientName} (${params.clientPhone})\n${params.items}\n${amount} | ${delivery}${date} | ${payment}`
 }
